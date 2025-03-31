@@ -2,29 +2,16 @@ from typing import Callable
 from collections import defaultdict
 
 import scipy
-import numpy as np
-import scipy.sparse.linalg as spla
-from scipy.spatial import cKDTree
-from scipy.sparse import csc_matrix
-from scipy.sparse.linalg import spsolve
-from scipy.spatial import cKDTree
-from scipy.sparse import csc_matrix
-from scipy.sparse.linalg import splu
+import numpy as npu
 
 import skfem
-from skfem import MeshTet, Basis, ElementTetP1, asm
+from skfem import Basis, asm
 from skfem.helpers import ddot, sym_grad, eye, trace, eye
 from skfem.models.elasticity import lame_parameters
-from skfem.models.elasticity import linear_elasticity
 from skfem.assembly import BilinearForm
-from skfem.assembly import LinearForm
 from skfem import asm, Basis
-from skfem.models.poisson import laplace
-from scipy.sparse.linalg import spsolve
 from skfem import BilinearForm
 from skfem.assembly import BilinearForm
-
-from numba import njit
 
 import numpy as np
 from skfem import BilinearForm, asm, Basis
