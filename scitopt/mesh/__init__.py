@@ -1,5 +1,5 @@
 
-from scitopt.tools.mesh.problem import TaskConfig
+from scitopt.mesh.task import TaskConfig
 
 __all__ = []
 __all__.append("TaskConfig")

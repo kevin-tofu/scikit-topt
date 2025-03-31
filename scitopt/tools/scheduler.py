@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 def schedule_exp_slowdown(
     it, total, start=1.0, target=0.4, rate=10.0
 ):
+    if total <= 0:
+        raise ValueError("total must be positive")
+
     t = it / total
     if start > target:
         return target + (start - target) * np.exp(-rate * t)
@@ -31,30 +34,22 @@ class Scheduler():
         self,
         name: str,
         init_value: float,
-        targe_value: float,
+        target_value: float,
         rate: float,
         iters_max: int,
         func: Callable = schedule_exp_slowdown
     ):
         self.name = name
         self.init_value = init_value
-        self.targe_value = targe_value
+        self.target_value = target_value
         self.iters_max = iters_max
         self.rate = rate
         self.func = func
-    
-    @property
-    def name(self):
-        return self.name
 
-    @property
-    def iters_max(self):
-        return self.iters_max
-
-    def value(self, iter: int):
+    def value(self, iter: int | np.ndarray):
         
         ret = self.func(
-            iter, self.iters_max, self.init_value, self.targe_value, self.targe_value
+            iter, self.iters_max, self.init_value, self.target_value, self.rate
         )
         return ret
 
@@ -76,27 +71,28 @@ class Schedulers():
         self,
         name: str,
         init_value: float,
-        targe_value: float,
+        target_value: float,
         rate: float,
         iters_max: int,
         func: Callable = schedule_exp_slowdown
     ):
-        self.scheduler_list.append(
-            Scheduler(
-                name, init_value, targe_value, rate, iters_max, func
-            )
+        s = Scheduler(
+            name, init_value, target_value, rate, iters_max, func
         )
-    
+        # print(s.name)
+        self.scheduler_list.append(s)
+
+
     def export(
         self,
         fname: Optional[str]=None
     ):
         schedules = dict()
         for sche in self.scheduler_list:
-           schedules[sche.name] = [ sche.value(it) for it in range(sche.iters_max)]
+           schedules[sche.name] = [ sche.value(it) for it in range(1, sche.iters_max+1)]
     
         if fname is None:
-            fname = "./progress.jpg"
+            fname = "progress.jpg"
         plt.clf()
         num_graphs = len(schedules)
         graphs_per_page = 8
@@ -122,9 +118,8 @@ class Schedulers():
                 idx = i - start
                 p = idx // cols
                 q = idx % cols
-                d = np.array(h.data)
 
-                ax[p, q].plot(d, marker='o', linestyle='-')
+                ax[p, q].plot(h, marker='o', linestyle='-')
                 ax[p, q].set_xlabel("Iteration")
                 ax[p, q].set_ylabel(k)
                 ax[p, q].set_title(f"{k} Progress")
@@ -138,5 +133,6 @@ class Schedulers():
                 ax[p, q].axis("off")
 
             fig.tight_layout()
-            fig.savefig(f"{self.dst_path}/{page_index}{fname}")
+            print(f"{self.dst_path}/schedule-{page_index}{fname}")
+            fig.savefig(f"{self.dst_path}/schedule-{page_index}{fname}")
             plt.close("all")

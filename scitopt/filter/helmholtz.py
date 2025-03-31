@@ -1,9 +1,10 @@
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Optional
 import numpy as np
 import scipy
-from scipy.sparse import coo_matrix, csc_matrix, spsolve
-from scipy.sparse.linalg import splu
+from scipy.sparse import coo_matrix, csc_matrix
+from scipy.sparse.linalg import splu, spsolve
 import skfem
 
 
@@ -113,8 +114,7 @@ def prepare_helmholtz_filter(mesh: skfem.Mesh, radius: float):
 
     M = csc_matrix(np.diag(volumes_normalized))
     A = M + radius**2 * laplacian
-    A_solver = splu(A)
-    return A_solver, M
+    return A, M
 
 
 def apply_helmholtz_filter(rho_element: np.ndarray, solver, M) -> np.ndarray:
@@ -135,22 +135,42 @@ def apply_filter_gradient(v: np.ndarray, solver, M) -> np.ndarray:
 
 @dataclass
 class HelmholtzFilter():
-    A_solver: scipy.sparse.linalg.SuperLU
+    A: scipy.sparse.linalg.SuperLU
     M: csc_matrix
+    A_solver: Optional[scipy.sparse.linalg.SuperLU]
 
 
     @classmethod
     def from_defaults(
         cls,
-        mesh: skfem.Mesh, radius: float
+        mesh: skfem.Mesh,
+        radius: float,
+        dst_path: Optional[str]=None
     ):
-        A_solver, M = prepare_helmholtz_filter(mesh, radius)
+        A, M = prepare_helmholtz_filter(mesh, radius)
+        if isinstance(dst_path, str):
+            scipy.sparse.save_npz(f"{dst_path}/M.npz", M)
+            scipy.sparse.save_npz(f"{dst_path}/A.npz", A)
+
+        # A_solver = splu(A)
         return cls(
-            A_solver, M
+            A, M, None
         )
     
-    def helmholtz_filter(self, rho_element: np.ndarray):
+    @classmethod
+    def from_file(cls, dst_path: str):
+        M = scipy.sparse.load_npz(f"{dst_path}/M.npz")
+        A = scipy.sparse.load_npz(f"{dst_path}/A.npz")
+        A_solver = splu(A)
+        return cls(
+            A, M, A_solver
+        )
+    
+    def filter(self, rho_element: np.ndarray):
         return apply_helmholtz_filter(rho_element, self.A_solver, self.M)
 
-    def helmholtz_gradient(self, v: np.ndarray):
+    def gradient(self, v: np.ndarray):
         return apply_filter_gradient(v, self.A_solver, self.M)
+
+    def create_solver(self):
+        self.A_solver = splu(self.A)
