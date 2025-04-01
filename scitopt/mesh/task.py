@@ -24,9 +24,9 @@ class TaskConfig():
     basis: skfem.Basis
     dirichlet_points: np.ndarray
     dirichlet_nodes: np.ndarray
-    force_points: np.ndarray
-    force_nodes: np.ndarray
-    force: np.ndarray
+    force_points: np.ndarray | list[np.ndarray]
+    force_nodes: np.ndarray | list[np.ndarray]
+    force: np.ndarray | list[np.ndarray]
     design_elements: np.ndarray
     free_nodes: np.ndarray
     free_elements: np.ndarray
@@ -44,9 +44,9 @@ class TaskConfig():
         basis: skfem.Basis,
         dirichlet_points: np.ndarray,
         dirichlet_nodes: np.ndarray,
-        force_points: np.ndarray,
-        force_nodes: np.ndarray,
-        force_value: float,
+        force_points: np.ndarray | list[np.ndarray],
+        force_nodes: np.ndarray | list[np.ndarray],
+        force_value: float | list[float],
         design_elements: np.ndarray,
     ) -> 'TaskConfig':
         bc_elements = utils.get_elements_with_points_fast(
@@ -55,9 +55,15 @@ class TaskConfig():
         adjacency = utils.build_element_adjacency_matrix_fast(mesh)
         # Elements that are next to boundary condition
         bc_elements_adj = utils.get_adjacent_elements_fast(adjacency, bc_elements)
-        force_elements = utils.get_elements_with_points_fast(
-            mesh, [force_points]
-        )
+        if isinstance(force_points, np.ndarray):
+            force_elements = utils.get_elements_with_points_fast(
+                mesh, [force_points]
+            )
+        else:
+            force_elements = utils.get_elements_with_points_fast(
+                mesh, force_points
+            )
+            
         elements_related_with_bc = np.concatenate([bc_elements, bc_elements_adj, force_elements])
         
         # design_elements = np.setdiff1d(design_elements, elements_related_with_bc)
@@ -78,8 +84,24 @@ class TaskConfig():
         # free_nodes = np.setdiff1d(np.arange(basis.N), dirichlet_nodes)
         free_nodes = setdiff1d(np.arange(basis.N), dirichlet_nodes)
         free_elements = utils.get_elements_with_points_fast(mesh, [free_nodes])
-        F = np.zeros(basis.N)
-        F[force_nodes] = force_value / len(force_nodes)
+        if isinstance(force_nodes, np.ndarray):
+            if isinstance(force_value, float):
+                force = np.zeros(basis.N)
+                force[force_nodes] = force_value / len(force_nodes)
+            elif isinstance(force_value, list):
+                force = list()
+                for fv in force_value:
+                    print("fv", fv)
+                    f_temp = np.zeros(basis.N)
+                    f_temp[force_nodes] = fv / len(force_nodes)
+                    force.append(f_temp)    
+        elif isinstance(force_nodes, list):
+            force = list()
+            for fn_loop, fv in zip(force_nodes, force_value):
+                f_temp = np.zeros(basis.N)
+                f_temp[fn_loop] = fv / len(fn_loop)
+                force.append(f_temp)
+            
 
         return cls(
             E0,
@@ -91,7 +113,7 @@ class TaskConfig():
             dirichlet_nodes,
             force_points,
             force_nodes,
-            F,
+            force,
             design_elements,
             free_nodes,
             free_elements,

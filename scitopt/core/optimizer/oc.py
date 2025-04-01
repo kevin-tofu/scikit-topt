@@ -162,14 +162,13 @@ class OC_Optimizer():
         p, vol_frac, beta, move_limit = (
             self.schedulers.values(0)[k] for k in ['p', 'vol_frac', 'beta', 'move_limit']
         )
-        compliance, u = solver.computer_compliance_simp(prb, rho, p)
-        self.recorder.feed_data("compliance", compliance)
         eta = cfg.eta
         rho_min = cfg.rho_min
         rho_max = 1.0
         tolerance = 1e-4
         eps = 1e-6
         rho_prev = np.zeros_like(rho)
+        force_list = prb.force if isinstance(prb.force, list) else [prb.force]
         
         for iter in range(1, cfg.max_iters+1):
             print(f"iterations: {iter} / {cfg.max_iters}")
@@ -179,35 +178,47 @@ class OC_Optimizer():
             print(
                 f"p {p:0.4f}, vol_frac {vol_frac:0.4f}, beta {beta:0.4f}, move_limit {move_limit:0.4f}"
             )
+            
             rho_prev[:] = rho[:]
             rho_filtered = self.helmholz_solver.filter(rho)
             rho_filtered[prb.fixed_elements_in_rho] = 1.0
             rho_projected = projection.heaviside_projection(
                 rho_filtered, beta=beta, eta=cfg.beta_eta
             )
-            compliance, u = solver.computer_compliance_simp(prb, rho_projected, p)
+            dC_drho_sum = 0
+            strain_energy_sum = 0
+            for force in force_list:
+                compliance, u = solver.computer_compliance_simp_basis(
+                    prb.basis, prb.free_nodes, prb.dirichlet_nodes, force,
+                    prb.E0, prb.Emin, p, prb.nu0, rho
+                )
             
-            # Compute strain energy and obtain derivatives
-            strain_energy = composer.compute_strain_energy(
-                u,
-                prb.basis.element_dofs,
-                prb.basis, rho_projected,
-                prb.E0, prb.Emin, p, prb.nu0
-            )
-            dC_drho_projected = derivatives.dC_drho_ramp(
-                rho_projected, strain_energy, prb.E0, prb.Emin, p
-            )
-            dH = projection.heaviside_projection_derivative(
-                rho_filtered, beta=beta, eta=cfg.beta_eta
-            )
-            grad_filtered = dC_drho_projected * dH
-            dC_drho = self.helmholz_solver.gradient(grad_filtered)
-            dC_drho = dC_drho[prb.design_elements]
+                # Compute strain energy and obtain derivatives
+                strain_energy = composer.compute_strain_energy(
+                    u,
+                    prb.basis.element_dofs,
+                    prb.basis, rho_projected,
+                    prb.E0, prb.Emin, p, prb.nu0
+                )
+                strain_energy_sum += strain_energy
+                dC_drho_projected = derivatives.dC_drho_ramp(
+                    rho_projected, strain_energy, prb.E0, prb.Emin, p
+                )
+                dH = projection.heaviside_projection_derivative(
+                    rho_filtered, beta=beta, eta=cfg.beta_eta
+                )
+                grad_filtered = dC_drho_projected * dH
+                dC_drho = self.helmholz_solver.gradient(grad_filtered)
+                dC_drho = dC_drho[prb.design_elements]
+                dC_drho_sum += dC_drho
+            
+            dC_drho_sum /= len(force_list)
+            strain_energy_sum /= len(force_list)
 
             # 
             # Correction with Lagrange multipliers Bisection Method
             # 
-            safe_dC = dC_drho - np.mean(dC_drho)
+            safe_dC = dC_drho_sum - np.mean(dC_drho_sum)
             norm = np.percentile(np.abs(safe_dC), 95) + 1e-8
             safe_dC = safe_dC / norm
             # safe_dC = safe_dC / (np.max(np.abs(safe_dC)) + 1e-8)
@@ -347,12 +358,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
 
-    # if args.problem == "toy1":
-    #     prb = problem.toy1()
-    # elif args.problem == "toy2":
-    #     prb = problem.toy2()
+    if args.problem == "toy":
+        prb = toy_problem.toy()
+    elif args.problem == "toy2":
+        prb = toy_problem.toy2()
+    
     print("load toy problem")
-    prb = toy_problem.toy()
     
     print("generate OC_RAMP_Config")
     cfg = OC_RAMP_Config.from_defaults(

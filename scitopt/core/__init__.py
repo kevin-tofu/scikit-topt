@@ -1,4 +1,4 @@
-from scitopt.core.optimizer import OC_RAMP_Config, OC_Optimizer
+from scitopt.core.optimizer.oc import OC_RAMP_Config, OC_Optimizer
 
 
 __all__ = []
