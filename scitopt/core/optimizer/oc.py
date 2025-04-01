@@ -18,7 +18,6 @@ from scitopt import filter
 from scitopt.fea import composer
 
 
-
 @dataclass
 class OC_RAMP_Config():
     dst_path: str = "./result"
@@ -52,11 +51,11 @@ class OC_RAMP_Config():
             json.dump(asdict(self), f, indent=2)
 
 
-class OCOptimizer():
+class OC_Optimizer():
     def __init__(
         self,
+        cfg: OC_RAMP_Config,
         prb: mesh.TaskConfig,
-        cfg: OC_RAMP_Config
     ):
         self.prb = prb
         self.cfg = cfg
@@ -183,7 +182,6 @@ class OCOptimizer():
             rho_prev[:] = rho[:]
             rho_filtered = self.helmholz_solver.filter(rho)
             rho_filtered[prb.fixed_elements_in_rho] = 1.0
-            # rho[:] = rho_filtered # Soft Filter
             rho_projected = projection.heaviside_projection(
                 rho_filtered, beta=beta, eta=cfg.beta_eta
             )
@@ -253,12 +251,6 @@ class OCOptimizer():
             self.recorder.feed_data("lambda_v", lmid)
             self.recorder.feed_data("vol_error", vol_error)
             self.recorder.feed_data("strain_energy", strain_energy)
-            # self.recorder_params.feed_data("p", p)
-            # self.recorder_params.feed_data("vol_frac", vol_frac)
-            # self.recorder_params.feed_data("beta", beta)
-            # self.recorder_params.feed_data("move_limit", move_limit)
-            
-            
             
             # if np.sum(np.abs(rho_diff)) < 1e-3:
             #     noise_strength = 0.03
@@ -274,10 +266,7 @@ class OCOptimizer():
                 print(f"Saving at iteration {iter}")
                 self.recorder.print()
                 # self.recorder_params.print()
-
                 self.recorder.export_progress()
-                # self.recorder_params.export_progress("params-sequence.jpg")
-                    
                 visualization.save_info_on_mesh(
                     prb,
                     rho_projected, rho_prev,
@@ -294,14 +283,12 @@ class OCOptimizer():
             f"{self.cfg.dst_path}/rho-histo/last.jpg"
         )
 
-        threshold = 0.05
+        threshold = 0.5
         remove_elements = prb.design_elements[rho_projected[prb.design_elements] <= threshold]
-        kept_elements = np.setdiff1d(prb.all_elements, remove_elements)
+        mask = ~np.isin(prb.all_elements, remove_elements)
+        kept_elements = prb.all_elements[mask]
         visualization.export_submesh(prb, kept_elements, 0.5, f"{self.cfg.dst_path}/cubic_top.vtk")
-
-        self.export_mesh(rho_projected, "last")
-
-        
+        # self.export_mesh(rho_projected, "last")
 
 
 if __name__ == '__main__':
@@ -373,7 +360,7 @@ if __name__ == '__main__':
     )
     
     print("optimizer")
-    optimizer = OCOptimizer(prb, cfg)
+    optimizer = OC_Optimizer(cfg, prb)
     print("parameterize")
     optimizer.parameterize(preprocess=True)
     # optimizer.load_parameters()

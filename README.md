@@ -1,5 +1,6 @@
-# Scikit-Topt
-## SCikit Topology Optimization
+# Scikit Topology Optimization (Scikit-Topt)
+## Abstract
+ 
 
 ### Install Package
 ```bash
@@ -23,6 +24,20 @@ python ./scitopt/core/optimizer/oc.py \
  --eta 1.0 \
  --record_times 80 \
  --max_iters 200
+```
+
+### Analyze from Python Script
+
+```Python
+import scitopt
+
+toy = scitopt.mesh.toy_problem.toy()
+cfg = scitopt.core.OC_RAMP_Config
+
+optimizer = scitopt.core.OC_Optimizer(cfg, toy)
+
+optimizer.parameterize(preprocess=True)
+optimizer.optimize()
 ```
 
 
