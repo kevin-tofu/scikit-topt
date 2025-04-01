@@ -3,7 +3,6 @@ import skfem
 from scitopt.fea import composer
 
 
-
 def computer_compliance_simp_basis(
     basis, free_nodes, dirichlet_nodes, force,
     E0, Emin, p, nu0,
@@ -14,7 +13,8 @@ def computer_compliance_simp_basis(
         Emin, p, nu0
     )
     K_e, F_e = skfem.enforce(K, force, D=dirichlet_nodes)
-    u = scipy.sparse.linalg.spsolve(K_e, F_e)
+    # u = scipy.sparse.linalg.spsolve(K_e, F_e)
+    u = skfem.solve(K_e, F_e)
     f_free = force[free_nodes]
     compliance = f_free @ u[free_nodes]
     return (compliance, u)

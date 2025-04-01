@@ -247,7 +247,7 @@ if __name__ == '__main__':
 
     # 
     K1_e, F1_e = skfem.enforce(K1, _F, D=prb.dirichlet_nodes)
-    K1_e_np = K1_e.toarray()
+    # K1_e_np = K1_e.toarray()
     U1_e = scipy.sparse.linalg.spsolve(K1_e, F1_e)
     u = U1_e
     K = K1_e.toarray()

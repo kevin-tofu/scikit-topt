@@ -9,6 +9,11 @@ from scitopt import tools
 from scitopt.mesh import utils
 
 
+def setdiff1d(a, b):
+    mask = ~np.isin(a, b)
+    a = a[mask]
+    return a
+
 
 @dataclass
 class TaskConfig():
@@ -44,30 +49,35 @@ class TaskConfig():
         force_value: float,
         design_elements: np.ndarray,
     ) -> 'TaskConfig':
-        
-        bc_elements = utils.get_elements_with_points(
+        bc_elements = utils.get_elements_with_points_fast(
             mesh, [dirichlet_points]
         )
-        bc_elements_adj = utils.get_adjacent_elements(mesh, bc_elements)
-        force_elements = utils.get_elements_with_points(
+        adjacency = utils.build_element_adjacency_matrix_fast(mesh)
+        # Elements that are next to boundary condition
+        bc_elements_adj = utils.get_adjacent_elements_fast(adjacency, bc_elements)
+        force_elements = utils.get_elements_with_points_fast(
             mesh, [force_points]
         )
         elements_related_with_bc = np.concatenate([bc_elements, bc_elements_adj, force_elements])
         
-        design_elements = np.setdiff1d(design_elements, elements_related_with_bc)
+        # design_elements = np.setdiff1d(design_elements, elements_related_with_bc)
+        design_elements = setdiff1d(design_elements, force_elements)
+
         if len(design_elements) == 0:
             error_msg = "⚠️Warning: `design_elements` is empty"
             raise ValueError(error_msg)
         
         all_elements = np.arange(mesh.nelements)
-        fixed_elements_in_rho = np.setdiff1d(all_elements, design_elements)
+        # fixed_elements_in_rho = np.setdiff1d(all_elements, design_elements)
+        fixed_elements_in_rho = setdiff1d(all_elements, design_elements)
         print(
             f"all_elements: {all_elements.shape}",
             f"design_elements: {design_elements.shape}",
             f"fixed_elements_in_rho: {fixed_elements_in_rho.shape}"
         )
-        free_nodes = np.setdiff1d(np.arange(basis.N), dirichlet_nodes)
-        free_elements = utils.get_elements_with_points(mesh, [free_nodes])
+        # free_nodes = np.setdiff1d(np.arange(basis.N), dirichlet_nodes)
+        free_nodes = setdiff1d(np.arange(basis.N), dirichlet_nodes)
+        free_elements = utils.get_elements_with_points_fast(mesh, [free_nodes])
         F = np.zeros(basis.N)
         F[force_nodes] = force_value / len(force_nodes)
 

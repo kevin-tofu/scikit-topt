@@ -5,7 +5,17 @@ import numpy as np
 import scipy
 from scipy.sparse import coo_matrix, csc_matrix
 from scipy.sparse.linalg import splu, spsolve
+from scipy.sparse.linalg import cg
+from scipy.sparse.linalg import LinearOperator, spilu
 import skfem
+
+
+def compute_tet_volumes(mesh):
+    coords = mesh.p[:, mesh.t]  # (3, 4, n_elements)
+    a = coords[:, 1, :] - coords[:, 0, :]
+    b = coords[:, 2, :] - coords[:, 0, :]
+    c = coords[:, 3, :] - coords[:, 0, :]
+    return np.abs(np.einsum('ij,ij->j', a, np.cross(b, c, axis=0))) / 6.0
 
 
 def adjacency_matrix_volume(mesh):
@@ -38,8 +48,48 @@ def adjacency_matrix_volume(mesh):
     return (adjacency, volumes)
 
 
+def adjacency_matrix_volume_fast(mesh):
+    n_elements = mesh.t.shape[1]
+
+    # -------------------------
+    # 1. ベクトル化された体積計算
+    # -------------------------
+    coords = mesh.p[:, mesh.t]  # shape: (3, 4, n_elements)
+    a = coords[:, 1, :] - coords[:, 0, :]
+    b = coords[:, 2, :] - coords[:, 0, :]
+    c = coords[:, 3, :] - coords[:, 0, :]
+    volumes = np.abs(np.einsum('ij,ij->j', a, np.cross(b, c, axis=0))) / 6.0
+
+    # -------------------------
+    # 2. 高速face→要素マップ構築（sorted排除は安全のため残す）
+    # -------------------------
+    face_to_elements = defaultdict(list)
+
+    t = mesh.t.T  # shape: (n_elements, 4)
+    # 全要素に対して面を列挙
+    for i in range(n_elements):
+        tet = t[i]
+        # 各面を小さい順にtuple化（一意なキー）
+        face_to_elements[tuple(sorted((tet[0], tet[1], tet[2])))] += [i]
+        face_to_elements[tuple(sorted((tet[0], tet[1], tet[3])))] += [i]
+        face_to_elements[tuple(sorted((tet[0], tet[2], tet[3])))] += [i]
+        face_to_elements[tuple(sorted((tet[1], tet[2], tet[3])))] += [i]
+
+    # -------------------------
+    # 3. 面共有から隣接情報作成
+    # -------------------------
+    adjacency = defaultdict(list)
+    for face, elems in face_to_elements.items():
+        if len(elems) == 2:
+            i, j = elems
+            adjacency[i].append(j)
+            adjacency[j].append(i)
+
+    return adjacency, volumes
+
+
 def element_to_element_laplacian_tet(mesh, radius):
-    adjacency, volumes = adjacency_matrix_volume(mesh)
+    adjacency, volumes = adjacency_matrix_volume_fast(mesh)
     n_elements = mesh.t.shape[1]
     element_centers = np.mean(mesh.p[:, mesh.t], axis=1).T
     rows = []
@@ -111,33 +161,73 @@ def prepare_helmholtz_filter(mesh: skfem.Mesh, radius: float):
     """
     laplacian, volumes = element_to_element_laplacian_tet(mesh, radius)
     volumes_normalized = volumes / np.mean(volumes)
+    # V = csc_matrix(np.diag(volumes_normalized))
+    V = scipy.sparse.diags(volumes_normalized, format="csc")
+    A = V + radius**2 * laplacian
+    return A, V
 
-    M = csc_matrix(np.diag(volumes_normalized))
-    A = M + radius**2 * laplacian
-    return A, M
 
-
-def apply_helmholtz_filter(rho_element: np.ndarray, solver, M) -> np.ndarray:
+def apply_helmholtz_filter_lu(
+    rho_element: np.ndarray, solver: scipy.sparse.linalg.SuperLU,
+    V: scipy.sparse._csc.csc_matrix
+) -> np.ndarray:
     """
     Apply the Helmholtz filter using precomputed solver and M.
     """
-    rhs = M @ rho_element
+    rhs = V @ rho_element
     rho_filtered = solver.solve(rhs)
     return rho_filtered
 
 
-def apply_filter_gradient(v: np.ndarray, solver, M) -> np.ndarray:
+def apply_filter_gradient_lu(
+    vec: np.ndarray, solver: scipy.sparse.linalg.SuperLU,
+    V: scipy.sparse._csc.csc_matrix
+) -> np.ndarray:
     """
     Apply the Jacobian of the Helmholtz filter: d(rho_filtered)/d(rho) to a vector.
     """
-    return solver.solve(M @ v)
+    return solver.solve(V @ vec)
+
+
+def apply_helmholtz_filter_cg(
+    rho_element: np.ndarray,
+    A: scipy.sparse._csc.csc_matrix, V: scipy.sparse._csc.csc_matrix,
+    M: Optional[LinearOperator] = None,
+    rtol=1e-6,
+    maxiter=1000
+) -> np.ndarray:
+    """
+    Apply the Helmholtz filter using precomputed solver and M.
+    """
+    rhs = V @ rho_element
+    rho_filtered, info = cg(A, rhs, M=M, rtol=rtol, maxiter=maxiter)
+    print("helmholtz_filter_cg-info: ", info)
+    return rho_filtered
+
+
+def apply_filter_gradient_cg(
+    vec: np.ndarray,
+    A: scipy.sparse._csc.csc_matrix, V: scipy.sparse._csc.csc_matrix,
+    M: Optional[LinearOperator] = None,
+    rtol=1e-6,
+    maxiter=1000
+) -> np.ndarray:
+    """
+    Apply the Jacobian of the Helmholtz filter: d(rho_filtered)/d(rho) to a vector.
+    """
+    ret, info = cg(A, V @ vec, M=M, rtol=rtol, maxiter=maxiter)
+    print("filter_gradient_cg-info: ", info)
+    return ret
 
 
 @dataclass
 class HelmholtzFilter():
     A: scipy.sparse.linalg.SuperLU
-    M: csc_matrix
-    A_solver: Optional[scipy.sparse.linalg.SuperLU]
+    V: csc_matrix
+    A_solver: Optional[scipy.sparse.linalg.SuperLU]=None
+    M: Optional[LinearOperator]=None
+    rtol: float=1e-6
+    maxiter: int=1000
 
 
     @classmethod
@@ -147,30 +237,51 @@ class HelmholtzFilter():
         radius: float,
         dst_path: Optional[str]=None
     ):
-        A, M = prepare_helmholtz_filter(mesh, radius)
+        A, V = prepare_helmholtz_filter(mesh, radius)
         if isinstance(dst_path, str):
-            scipy.sparse.save_npz(f"{dst_path}/M.npz", M)
+            scipy.sparse.save_npz(f"{dst_path}/V.npz", V)
             scipy.sparse.save_npz(f"{dst_path}/A.npz", A)
 
         # A_solver = splu(A)
         return cls(
-            A, M, None
+            A, V, None
         )
     
     @classmethod
     def from_file(cls, dst_path: str):
-        M = scipy.sparse.load_npz(f"{dst_path}/M.npz")
+        V = scipy.sparse.load_npz(f"{dst_path}/V.npz")
         A = scipy.sparse.load_npz(f"{dst_path}/A.npz")
-        A_solver = splu(A)
-        return cls(
-            A, M, A_solver
-        )
-    
-    def filter(self, rho_element: np.ndarray):
-        return apply_helmholtz_filter(rho_element, self.A_solver, self.M)
+        # A_solver = splu(A)
+        return cls(A, V)
 
+
+    def filter(self, rho_element: np.ndarray):
+        if self.A_solver is not None:
+            self.A_solver = splu(self.A)
+            return apply_helmholtz_filter_lu(rho_element, self.A_solver, self.V)
+        else:
+            return apply_helmholtz_filter_cg(
+                rho_element, self.A, self.V, M=self.M,
+                rtol=self.rtol,
+                maxiter=self.maxiter
+            )
+
+        
     def gradient(self, v: np.ndarray):
-        return apply_filter_gradient(v, self.A_solver, self.M)
+        if self.A_solver is not None:
+            self.A_solver = splu(self.A)
+            return apply_filter_gradient_lu(v, self.A_solver, self.V)
+        else:
+            return apply_filter_gradient_cg(
+                v, self.A, self.V,
+                M=self.M,
+                rtol=self.rtol,
+                maxiter=self.maxiter
+            )
 
     def create_solver(self):
         self.A_solver = splu(self.A)
+    
+    def create_LinearOperator(self):
+        ilu = spilu(self.A.tocsc())
+        self.M = LinearOperator(self.A.shape, lambda x: ilu.solve(x))

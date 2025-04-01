@@ -129,12 +129,16 @@ class OCOptimizer():
         )
         self.schedulers.export()
     
-    def parameterize(self, make_splu=True):
+    def parameterize(self, preprocess=True):
         self.helmholz_solver = filter.HelmholtzFilter.from_defaults(
             self.prb.mesh, self.cfg.filter_radius, f"{self.cfg.dst_path}/matrices"
         )
-        if make_splu:
-            self.helmholz_solver.create_solver()
+        if preprocess:
+            print("preprocessing....")
+            # self.helmholz_solver.create_solver()
+            self.helmholz_solver.create_LinearOperator()
+            print("...end")
+
 
     def load_parameters(self):
         self.helmholz_solver = filter.HelmholtzFilter.from_file(
@@ -293,7 +297,7 @@ class OCOptimizer():
         threshold = 0.05
         remove_elements = prb.design_elements[rho_projected[prb.design_elements] <= threshold]
         kept_elements = np.setdiff1d(prb.all_elements, remove_elements)
-        visualization.export_submesh(prb.mesh, kept_elements, f"{self.cfg.dst_path}/cubic_top.vtk")
+        visualization.export_submesh(prb, kept_elements, 0.5, f"{self.cfg.dst_path}/cubic_top.vtk")
 
         self.export_mesh(rho_projected, "last")
 
@@ -360,14 +364,18 @@ if __name__ == '__main__':
     #     prb = problem.toy1()
     # elif args.problem == "toy2":
     #     prb = problem.toy2()
+    print("load toy problem")
     prb = toy_problem.toy()
     
-    
+    print("generate OC_RAMP_Config")
     cfg = OC_RAMP_Config.from_defaults(
         **vars(args)
     )
-
+    
+    print("optimizer")
     optimizer = OCOptimizer(prb, cfg)
-    optimizer.parameterize(make_splu=True)
+    print("parameterize")
+    optimizer.parameterize(preprocess=True)
     # optimizer.load_parameters()
+    print("optimize")
     optimizer.optimize()
