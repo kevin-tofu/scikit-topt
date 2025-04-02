@@ -95,9 +95,9 @@ def toy2():
     x_len = 16.0
     y_len = 9.0
     z_len = 2.0
-    mesh_size = 0.5
+    # mesh_size = 0.5
     # mesh_size = 0.3
-    # mesh_size = 0.1
+    mesh_size = 0.1
 
     gmsh.model.add('plate')
     gmsh.model.occ.addBox(0, 0, 0, x_len, y_len, z_len)

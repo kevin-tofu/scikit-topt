@@ -6,7 +6,7 @@ from scipy.sparse.linalg import cg
 from scitopt.fea import composer
 
 
-def computer_compliance_simp_basis(
+def compute_compliance_simp_basis(
     basis, free_nodes, dirichlet_nodes, force,
     E0, Emin, p, nu0,
     rho,
@@ -23,7 +23,7 @@ def computer_compliance_simp_basis(
     return (compliance, u)
 
 
-def computer_compliance_basis_numba(
+def compute_compliance_basis_numba(
     basis, free_nodes, dirichlet_nodes, force,
     E0, Emin, p, nu0,
     rho,
@@ -38,18 +38,18 @@ def computer_compliance_basis_numba(
     # u = skfem.solve(K_e, F_e)
     u, info = skfem.solve(K_e, F_e, solver=cg)
     
-    print("computer_compliance_simp_basis_numba-info", info)
+    print("compute_compliance_simp_basis_numba-info", info)
     f_free = force[free_nodes]
     compliance = f_free @ u[free_nodes]
     return (compliance, u)
 
 
-def computer_compliance_simp(
+def compute_compliance_simp(
     prb,
     rho,
     p
 ) -> tuple:
-    return computer_compliance_simp_basis(
+    return compute_compliance_simp_basis(
         prb.basis, prb.free_nodes, prb.dirichlet_nodes, prb.force,
         prb.E0, prb.Emin, p, prb.nu0, rho
     )

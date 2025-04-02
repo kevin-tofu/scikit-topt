@@ -192,7 +192,7 @@ class OC_Optimizer():
             dC_drho_sum = 0
             strain_energy_sum = 0
             for force in force_list:
-                compliance, u = solver.computer_compliance_simp_basis(
+                compliance, u = solver.compute_compliance_simp_basis(
                     tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
                     tsk.E0, tsk.Emin, p, tsk.nu0, rho
                 )
@@ -359,7 +359,7 @@ class OC_Optimizer():
             strain_energy_sum = 0.0
 
             for force in force_list:
-                compliance, u = solver.computer_compliance_basis_numba(
+                compliance, u = solver.compute_compliance_basis_numba(
                     tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
                     tsk.E0, tsk.Emin, p, tsk.nu0, rho
                 )
