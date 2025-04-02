@@ -226,7 +226,7 @@ class HelmholtzFilter():
     V: csc_matrix
     A_solver: Optional[scipy.sparse.linalg.SuperLU]=None
     M: Optional[LinearOperator]=None
-    rtol: float=1e-6
+    rtol: float=1e-5
     maxiter: int=1000
 
 

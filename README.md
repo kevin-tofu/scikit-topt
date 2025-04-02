@@ -10,7 +10,7 @@ poetry add scitopt
 
 ### Optimize Toy Problem with command line.
 ```bash
-python ./scitopt/core/optimizer/oc.py \
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1  MKL_NUM_THREADS=1 PYTHONPATH=./ python ./scitopt/core/optimizer/oc.py \
  --dst_path ./result/test1_oc \
  --p 3.0 \
  --p_rate 12.0 \

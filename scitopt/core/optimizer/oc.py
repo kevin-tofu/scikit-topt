@@ -359,19 +359,22 @@ class OC_Optimizer():
             strain_energy_sum = 0.0
 
             for force in force_list:
-                compliance, u = solver.computer_compliance_simp_basis(
+                compliance, u = solver.computer_compliance_basis_numba(
                     tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
                     tsk.E0, tsk.Emin, p, tsk.nu0, rho
                 )
-
-                strain_energy = composer.compute_strain_energy(
+                strain_energy = composer.compute_strain_energy_numba(
                     u,
+                    # tsk.basis.element_dofs[:, tsk.design_elements],
                     tsk.basis.element_dofs,
-                    tsk.basis, rho_projected,
-                    tsk.E0, tsk.Emin, p, tsk.nu0
+                    tsk.mesh.p,
+                    rho_projected,
+                    tsk.E0,
+                    tsk.Emin,
+                    p,
+                    tsk.nu0,
                 )
                 strain_energy_sum += strain_energy
-
                 dC_drho_projected[:] = derivatives.dC_drho_ramp(
                     rho_projected, strain_energy, tsk.E0, tsk.Emin, p
                 )
@@ -397,7 +400,8 @@ class OC_Optimizer():
                 np.negative(dC_drho_sum, out=scaling_rate)
                 scaling_rate /= (lmid + eps)
                 np.power(scaling_rate, eta, out=scaling_rate)
-
+                np.clip(scaling_rate, 0.5, 1.5, out=scaling_rate)
+                
                 np.multiply(rho_e, scaling_rate, out=rho_candidate)
                 np.maximum(rho_e - move_limit, rho_min, out=tmp_lower)
                 np.minimum(rho_e + move_limit, rho_max, out=tmp_upper)
@@ -407,7 +411,6 @@ class OC_Optimizer():
                     rho_candidate, beta=beta, eta=cfg.beta_eta, out=rho_candidate
                 )
                 vol_error = np.mean(rho_candidate) - vol_frac
-
                 if vol_error > 0:
                     l1 = lmid
                 else:
@@ -440,14 +443,14 @@ class OC_Optimizer():
                 self.recorder.print()
                 # self.recorder_params.print()
                 self.recorder.export_progress()
-                # visualization.save_info_on_mesh(
-                #     tsk,
-                #     rho_projected, rho_prev,
-                #     f"{cfg.dst_path}/mesh_rho/info_mesh-{iter}.vtu"
-                # )
-                # visualization.export_submesh(
-                #     tsk, rho_projected, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
-                # )
+                visualization.save_info_on_mesh(
+                    tsk,
+                    rho_projected, rho_prev,
+                    f"{cfg.dst_path}/mesh_rho/info_mesh-{iter}.vtu"
+                )
+                visualization.export_submesh(
+                    tsk, rho_projected, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
+                )
 
             # https://qiita.com/fujitagodai4/items/7cad31cc488bbb51f895
 
@@ -534,8 +537,8 @@ if __name__ == '__main__':
     print("optimizer")
     optimizer = OC_Optimizer(cfg, tsk)
     print("parameterize")
-    # optimizer.parameterize(preprocess=True)
-    optimizer.parameterize(preprocess=False)
+    optimizer.parameterize(preprocess=True)
+    # optimizer.parameterize(preprocess=False)
     # optimizer.load_parameters()
     print("optimize")
     optimizer.optimize()

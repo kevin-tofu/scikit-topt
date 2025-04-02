@@ -300,7 +300,6 @@ def compute_strain_energy(
     return energies
 
 
-
 @njit
 def compute_strain_energy_numba(
     u,
