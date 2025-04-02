@@ -257,7 +257,6 @@ class HelmholtzFilter():
 
     def filter(self, rho_element: np.ndarray):
         if self.A_solver is not None:
-            self.A_solver = splu(self.A)
             return apply_helmholtz_filter_lu(rho_element, self.A_solver, self.V)
         else:
             return apply_helmholtz_filter_cg(
@@ -269,7 +268,6 @@ class HelmholtzFilter():
         
     def gradient(self, v: np.ndarray):
         if self.A_solver is not None:
-            self.A_solver = splu(self.A)
             return apply_filter_gradient_lu(v, self.A_solver, self.V)
         else:
             return apply_filter_gradient_cg(

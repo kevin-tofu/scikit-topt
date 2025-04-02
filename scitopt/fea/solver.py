@@ -1,3 +1,4 @@
+from typing import Callable
 import scipy
 import skfem
 from scipy.sparse.linalg import cg
@@ -22,19 +23,22 @@ def computer_compliance_simp_basis(
     return (compliance, u)
 
 
-def computer_compliance_simp_basis_fast(
+def computer_compliance_basis_numba(
     basis, free_nodes, dirichlet_nodes, force,
     E0, Emin, p, nu0,
     rho,
+    elem_func: Callable=composer.ramp_interpolation_numba
 ) -> tuple:
-    K = composer.assemble_stiffness_matrix(
+    K = composer.assemble_stiffness_matrix_numba(
         basis, rho, E0,
-        Emin, p, nu0
+        Emin, p, nu0, elem_func
     )
     K_e, F_e = skfem.enforce(K, force, D=dirichlet_nodes)
     # u = scipy.sparse.linalg.spsolve(K_e, F_e)
     # u = skfem.solve(K_e, F_e)
-    u = skfem.solve(K_e, F_e, solver=cg)
+    u, info = skfem.solve(K_e, F_e, solver=cg)
+    
+    print("computer_compliance_simp_basis_numba-info", info)
     f_free = force[free_nodes]
     compliance = f_free @ u[free_nodes]
     return (compliance, u)

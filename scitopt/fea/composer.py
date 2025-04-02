@@ -25,11 +25,8 @@ def simp_interpolation(rho, E0, Emin, p):
     return E_elem
 
 
-
-
-
 @njit
-def ram_interpolation(rho, E0, Emin, p):
+def ramp_interpolation(rho, E0, Emin, p):
     """
     ram: E(rho) = Emin + (E0 - Emin) * [rho / (1 + p(1 - rho))]
     Parameters:
@@ -46,7 +43,7 @@ def ram_interpolation(rho, E0, Emin, p):
 
 
 simp_interpolation_numba = simp_interpolation
-ramp_interpolation_numba = ram_interpolation
+ramp_interpolation_numba = ramp_interpolation
 
 
 @njit
@@ -207,7 +204,7 @@ def assemble_stiffness_matrix_ramp(
         basis,
         rho,
         E0, Emin, p, nu,
-        elem_func=ram_interpolation
+        elem_func=ramp_interpolation
     )
 
 

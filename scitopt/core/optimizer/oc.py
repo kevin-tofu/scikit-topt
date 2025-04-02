@@ -7,6 +7,7 @@ from dataclasses import dataclass, asdict
 import numpy as np
 import scipy
 import scipy.sparse.linalg as spla
+from numba import njit
 import skfem
 import meshio
 from scitopt import mesh
@@ -55,15 +56,15 @@ class OC_Optimizer():
     def __init__(
         self,
         cfg: OC_RAMP_Config,
-        prb: mesh.TaskConfig,
+        tsk: mesh.TaskConfig,
     ):
-        self.prb = prb
+        self.tsk = tsk
         self.cfg = cfg
         if not os.path.exists(self.cfg.dst_path):
             os.makedirs(self.cfg.dst_path)
-        # self.prb.export(self.cfg.dst_path)
+        # self.tsk.export(self.cfg.dst_path)
         self.cfg.export(self.cfg.dst_path)
-        self.prb.nodes_stats(self.cfg.dst_path)
+        self.tsk.nodes_stats(self.cfg.dst_path)
         
         if os.path.exists(f"{self.cfg.dst_path}/mesh_rho"):
             shutil.rmtree(f"{self.cfg.dst_path}/mesh_rho")
@@ -130,13 +131,16 @@ class OC_Optimizer():
     
     def parameterize(self, preprocess=True):
         self.helmholz_solver = filter.HelmholtzFilter.from_defaults(
-            self.prb.mesh, self.cfg.filter_radius, f"{self.cfg.dst_path}/matrices"
+            self.tsk.mesh, self.cfg.filter_radius, f"{self.cfg.dst_path}/matrices"
         )
         if preprocess:
             print("preprocessing....")
             # self.helmholz_solver.create_solver()
             self.helmholz_solver.create_LinearOperator()
             print("...end")
+        else:
+            self.helmholz_solver.create_solver()
+            
 
 
     def load_parameters(self):
@@ -145,16 +149,16 @@ class OC_Optimizer():
         )
     
     
-    def optimize(self):
+    def optimize_org(self):
         
         self.init_schedulers(1.0, 0.8, 0.8, cfg.beta / 10.0)
         e_rho = skfem.ElementTetP1()
-        # basis_rho = skfem.Basis(prb.mesh, e_rho)
-        rho = np.ones(prb.all_elements.shape)
-        # rho[prb.design_elements] = 0.95
-        # rho[prb.design_elements] = cfg.vol_frac
-        rho[prb.design_elements] = np.random.uniform(
-            0.5, 0.8, size=len(prb.design_elements)
+        # basis_rho = skfem.Basis(tsk.mesh, e_rho)
+        rho = np.ones(tsk.all_elements.shape)
+        # rho[tsk.design_elements] = 0.95
+        # rho[tsk.design_elements] = cfg.vol_frac
+        rho[tsk.design_elements] = np.random.uniform(
+            0.5, 0.8, size=len(tsk.design_elements)
         )
         rho_projected = projection.heaviside_projection(
             rho, beta=cfg.beta / 10.0, eta=cfg.beta_eta
@@ -168,7 +172,7 @@ class OC_Optimizer():
         tolerance = 1e-4
         eps = 1e-6
         rho_prev = np.zeros_like(rho)
-        force_list = prb.force if isinstance(prb.force, list) else [prb.force]
+        force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
         
         for iter in range(1, cfg.max_iters+1):
             print(f"iterations: {iter} / {cfg.max_iters}")
@@ -181,7 +185,7 @@ class OC_Optimizer():
             
             rho_prev[:] = rho[:]
             rho_filtered = self.helmholz_solver.filter(rho)
-            rho_filtered[prb.fixed_elements_in_rho] = 1.0
+            rho_filtered[tsk.fixed_elements_in_rho] = 1.0
             rho_projected = projection.heaviside_projection(
                 rho_filtered, beta=beta, eta=cfg.beta_eta
             )
@@ -189,27 +193,27 @@ class OC_Optimizer():
             strain_energy_sum = 0
             for force in force_list:
                 compliance, u = solver.computer_compliance_simp_basis(
-                    prb.basis, prb.free_nodes, prb.dirichlet_nodes, force,
-                    prb.E0, prb.Emin, p, prb.nu0, rho
+                    tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
+                    tsk.E0, tsk.Emin, p, tsk.nu0, rho
                 )
             
                 # Compute strain energy and obtain derivatives
                 strain_energy = composer.compute_strain_energy(
                     u,
-                    prb.basis.element_dofs,
-                    prb.basis, rho_projected,
-                    prb.E0, prb.Emin, p, prb.nu0
+                    tsk.basis.element_dofs,
+                    tsk.basis, rho_projected,
+                    tsk.E0, tsk.Emin, p, tsk.nu0
                 )
                 strain_energy_sum += strain_energy
                 dC_drho_projected = derivatives.dC_drho_ramp(
-                    rho_projected, strain_energy, prb.E0, prb.Emin, p
+                    rho_projected, strain_energy, tsk.E0, tsk.Emin, p
                 )
                 dH = projection.heaviside_projection_derivative(
                     rho_filtered, beta=beta, eta=cfg.beta_eta
                 )
                 grad_filtered = dC_drho_projected * dH
                 dC_drho = self.helmholz_solver.gradient(grad_filtered)
-                dC_drho = dC_drho[prb.design_elements]
+                dC_drho = dC_drho[tsk.design_elements]
                 dC_drho_sum += dC_drho
             
             dC_drho_sum /= len(force_list)
@@ -226,7 +230,7 @@ class OC_Optimizer():
             # safe_dC = np.clip(safe_dC, -5, 5)
 
             
-            rho_e = rho_projected[prb.design_elements].copy()
+            rho_e = rho_projected[tsk.design_elements].copy()
             # l1, l2 = 1e-9, 1e4
             l1, l2 = 1e-9, 500
             lmid = 0.5 * (l1 + l2)
@@ -251,12 +255,12 @@ class OC_Optimizer():
                 else:
                     l2 = lmid
 
-            rho[prb.design_elements] = rho_candidate
+            rho[tsk.design_elements] = rho_candidate
             rho_diff = rho - rho_prev
 
-            self.recorder.feed_data("rho_diff", rho_diff[prb.design_elements])
+            self.recorder.feed_data("rho_diff", rho_diff[tsk.design_elements])
             self.recorder.feed_data("scaling_rate", scaling_rate)
-            self.recorder.feed_data("rho", rho_projected[prb.design_elements])
+            self.recorder.feed_data("rho", rho_projected[tsk.design_elements])
             self.recorder.feed_data("compliance", compliance)
             self.recorder.feed_data("dC", dC_drho)
             self.recorder.feed_data("lambda_v", lmid)
@@ -265,12 +269,12 @@ class OC_Optimizer():
             
             # if np.sum(np.abs(rho_diff)) < 1e-3:
             #     noise_strength = 0.03
-            #     # rho[prb.design_elements] += np.random.uniform(
-            #     #     -noise_strength, noise_strength, size=prb.design_elements.shape
+            #     # rho[tsk.design_elements] += np.random.uniform(
+            #     #     -noise_strength, noise_strength, size=tsk.design_elements.shape
             #     # )
-            #     rho[prb.design_elements] += -safe_dC / (np.abs(safe_dC).max() + 1e-8) * 0.05 \
-            #         + np.random.normal(0, noise_strength, size=prb.design_elements.shape)
-            #     rho[prb.design_elements] = np.clip(rho[prb.design_elements], cfg.rho_min, cfg.rho_max)
+            #     rho[tsk.design_elements] += -safe_dC / (np.abs(safe_dC).max() + 1e-8) * 0.05 \
+            #         + np.random.normal(0, noise_strength, size=tsk.design_elements.shape)
+            #     rho[tsk.design_elements] = np.clip(rho[tsk.design_elements], cfg.rho_min, cfg.rho_max)
 
             if iter % (cfg.max_iters // self.cfg.record_times) == 0 or iter == 1:
             # if True:
@@ -279,28 +283,185 @@ class OC_Optimizer():
                 # self.recorder_params.print()
                 self.recorder.export_progress()
                 visualization.save_info_on_mesh(
-                    prb,
+                    tsk,
                     rho_projected, rho_prev,
                     f"{cfg.dst_path}/mesh_rho/info_mesh-{iter}.vtu"
                 )
                 visualization.export_submesh(
-                    prb, rho_projected, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
+                    tsk, rho_projected, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
                 )
 
             # https://qiita.com/fujitagodai4/items/7cad31cc488bbb51f895
 
         visualization.rho_histo_plot(
-            rho_projected[prb.design_elements],
+            rho_projected[tsk.design_elements],
             f"{self.cfg.dst_path}/rho-histo/last.jpg"
         )
 
         threshold = 0.5
-        remove_elements = prb.design_elements[rho_projected[prb.design_elements] <= threshold]
-        mask = ~np.isin(prb.all_elements, remove_elements)
-        kept_elements = prb.all_elements[mask]
-        visualization.export_submesh(prb, kept_elements, 0.5, f"{self.cfg.dst_path}/cubic_top.vtk")
-        # self.export_mesh(rho_projected, "last")
+        remove_elements = tsk.design_elements[rho_projected[tsk.design_elements] <= threshold]
+        mask = ~np.isin(tsk.all_elements, remove_elements)
+        kept_elements = tsk.all_elements[mask]
+        visualization.export_submesh(tsk, kept_elements, 0.5, f"{self.cfg.dst_path}/cubic_top.vtk")
+            # self.export_mesh(rho_projected, "last")
 
+
+    def optimize(self):
+        @njit
+        def compute_safe_dC(dC):
+            mean_val = np.mean(dC)
+            dC -= mean_val
+            norm = np.percentile(np.abs(dC), 95) + 1e-8
+            dC /= norm
+
+        self.init_schedulers(1.0, 0.8, 0.8, cfg.beta / 10.0)
+
+        rho = np.ones(tsk.all_elements.shape)
+        rho[tsk.design_elements] = np.random.uniform(0.5, 0.8, size=len(tsk.design_elements))
+
+        eta = cfg.eta
+        rho_min = cfg.rho_min
+        rho_max = 1.0
+        tolerance = 1e-4
+        eps = 1e-6
+
+        rho_prev = np.zeros_like(rho)
+        rho_filtered = np.zeros_like(rho)
+        rho_projected = np.zeros_like(rho)
+        dH = np.empty_like(rho)
+        grad_filtered = np.empty_like(rho)
+        dC_drho_projected = np.empty_like(rho)
+
+        dC_drho_sum = np.zeros_like(rho[tsk.design_elements])
+        scaling_rate = np.empty_like(rho[tsk.design_elements])
+        rho_candidate = np.empty_like(rho[tsk.design_elements])
+        tmp_lower = np.empty_like(rho[tsk.design_elements])
+        tmp_upper = np.empty_like(rho[tsk.design_elements])
+
+        force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
+
+        for iter in range(1, cfg.max_iters + 1):
+            print(f"iterations: {iter} / {cfg.max_iters}")
+            p, vol_frac, beta, move_limit = (
+                self.schedulers.values(iter)[k] for k in ['p', 'vol_frac', 'beta', 'move_limit']
+            )
+            print(f"p {p:.4f}, vol_frac {vol_frac:.4f}, beta {beta:.4f}, move_limit {move_limit:.4f}")
+
+            rho_prev[:] = rho[:]
+            rho_filtered[:] = self.helmholz_solver.filter(rho)
+            rho_filtered[tsk.fixed_elements_in_rho] = 1.0
+
+            projection.heaviside_projection_inplace(
+                rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
+            )
+
+            dC_drho_sum[:] = 0.0
+            strain_energy_sum = 0.0
+
+            for force in force_list:
+                compliance, u = solver.computer_compliance_simp_basis(
+                    tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
+                    tsk.E0, tsk.Emin, p, tsk.nu0, rho
+                )
+
+                strain_energy = composer.compute_strain_energy(
+                    u,
+                    tsk.basis.element_dofs,
+                    tsk.basis, rho_projected,
+                    tsk.E0, tsk.Emin, p, tsk.nu0
+                )
+                strain_energy_sum += strain_energy
+
+                dC_drho_projected[:] = derivatives.dC_drho_ramp(
+                    rho_projected, strain_energy, tsk.E0, tsk.Emin, p
+                )
+
+                projection.heaviside_projection_derivative_inplace(
+                    rho_filtered, beta=beta, eta=cfg.beta_eta, out=dH
+                )
+                np.multiply(dC_drho_projected, dH, out=grad_filtered)
+
+                dC_drho_full = self.helmholz_solver.gradient(grad_filtered)
+                dC_drho_sum += dC_drho_full[tsk.design_elements]
+
+            dC_drho_sum /= len(force_list)
+            strain_energy_sum /= len(force_list)
+
+            compute_safe_dC(dC_drho_sum)
+
+            rho_e = rho_projected[tsk.design_elements]
+            l1, l2 = 1e-9, 500
+
+            while abs(l2 - l1) > tolerance * (l1 + l2) / 2.0:
+                lmid = 0.5 * (l1 + l2)
+                np.negative(dC_drho_sum, out=scaling_rate)
+                scaling_rate /= (lmid + eps)
+                np.power(scaling_rate, eta, out=scaling_rate)
+
+                np.multiply(rho_e, scaling_rate, out=rho_candidate)
+                np.maximum(rho_e - move_limit, rho_min, out=tmp_lower)
+                np.minimum(rho_e + move_limit, rho_max, out=tmp_upper)
+                np.clip(rho_candidate, tmp_lower, tmp_upper, out=rho_candidate)
+
+                projection.heaviside_projection_inplace(
+                    rho_candidate, beta=beta, eta=cfg.beta_eta, out=rho_candidate
+                )
+                vol_error = np.mean(rho_candidate) - vol_frac
+
+                if vol_error > 0:
+                    l1 = lmid
+                else:
+                    l2 = lmid
+
+            rho[tsk.design_elements] = rho_candidate
+            rho_diff = np.average(rho[tsk.design_elements] - rho_prev[tsk.design_elements])
+
+            self.recorder.feed_data("rho_diff", rho_diff)
+            self.recorder.feed_data("scaling_rate", scaling_rate)
+            self.recorder.feed_data("rho", rho_projected)
+            self.recorder.feed_data("compliance", compliance)
+            self.recorder.feed_data("dC", dC_drho_sum)
+            self.recorder.feed_data("lambda_v", lmid)
+            self.recorder.feed_data("vol_error", vol_error)
+            self.recorder.feed_data("strain_energy", strain_energy)
+            
+            # if np.sum(np.abs(rho_diff)) < 1e-3:
+            #     noise_strength = 0.03
+            #     # rho[tsk.design_elements] += np.random.uniform(
+            #     #     -noise_strength, noise_strength, size=tsk.design_elements.shape
+            #     # )
+            #     rho[tsk.design_elements] += -safe_dC / (np.abs(safe_dC).max() + 1e-8) * 0.05 \
+            #         + np.random.normal(0, noise_strength, size=tsk.design_elements.shape)
+            #     rho[tsk.design_elements] = np.clip(rho[tsk.design_elements], cfg.rho_min, cfg.rho_max)
+
+            if iter % (cfg.max_iters // self.cfg.record_times) == 0 or iter == 1:
+            # if True:
+                print(f"Saving at iteration {iter}")
+                self.recorder.print()
+                # self.recorder_params.print()
+                self.recorder.export_progress()
+                # visualization.save_info_on_mesh(
+                #     tsk,
+                #     rho_projected, rho_prev,
+                #     f"{cfg.dst_path}/mesh_rho/info_mesh-{iter}.vtu"
+                # )
+                # visualization.export_submesh(
+                #     tsk, rho_projected, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
+                # )
+
+            # https://qiita.com/fujitagodai4/items/7cad31cc488bbb51f895
+
+        visualization.rho_histo_plot(
+            rho_projected[tsk.design_elements],
+            f"{self.cfg.dst_path}/rho-histo/last.jpg"
+        )
+
+        threshold = 0.5
+        remove_elements = tsk.design_elements[rho_projected[tsk.design_elements] <= threshold]
+        mask = ~np.isin(tsk.all_elements, remove_elements)
+        kept_elements = tsk.all_elements[mask]
+        visualization.export_submesh(tsk, kept_elements, 0.5, f"{self.cfg.dst_path}/cubic_top.vtk")
+        # self.export_mesh(rho_projected, "last")
 
 if __name__ == '__main__':
 
@@ -359,9 +520,9 @@ if __name__ == '__main__':
     
 
     if args.problem == "toy":
-        prb = toy_problem.toy()
+        tsk = toy_problem.toy()
     elif args.problem == "toy2":
-        prb = toy_problem.toy2()
+        tsk = toy_problem.toy2()
     
     print("load toy problem")
     
@@ -371,9 +532,10 @@ if __name__ == '__main__':
     )
     
     print("optimizer")
-    optimizer = OC_Optimizer(cfg, prb)
+    optimizer = OC_Optimizer(cfg, tsk)
     print("parameterize")
-    optimizer.parameterize(preprocess=True)
+    # optimizer.parameterize(preprocess=True)
+    optimizer.parameterize(preprocess=False)
     # optimizer.load_parameters()
     print("optimize")
     optimizer.optimize()
