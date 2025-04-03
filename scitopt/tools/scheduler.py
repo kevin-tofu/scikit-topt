@@ -45,9 +45,12 @@ class Scheduler():
         self.iters_max = iters_max
         self.rate = rate
         self.func = func
+        
+        
 
     def value(self, iter: int | np.ndarray):
-        
+        if self.rate < 0:
+            return self.target_value
         ret = self.func(
             iter, self.iters_max, self.init_value, self.target_value, self.rate
         )

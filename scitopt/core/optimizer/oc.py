@@ -345,17 +345,17 @@ class OC_Optimizer():
             del data
         else:
             rho[tsk.design_elements] = np.random.uniform(
-                0.5, 0.8, size=len(tsk.design_elements)
+                0.7, 0.9, size=len(tsk.design_elements)
             )
-            rho[tsk.design_elements] -= np.average(rho[tsk.design_elements])
-            rho[tsk.design_elements] += cfg.vol_frac_init
+            # rho[tsk.design_elements] -= np.average(rho[tsk.design_elements])
+            # rho[tsk.design_elements] += cfg.vol_frac_init
         print("np.average(rho[tsk.design_elements]):", np.average(rho[tsk.design_elements]))
         
         self.init_schedulers()
         eta = cfg.eta
         rho_min = cfg.rho_min
         rho_max = 1.0
-        tolerance = 1e-2
+        tolerance = 1e-6
         eps = 1e-6
 
         rho_prev = np.zeros_like(rho)
@@ -385,6 +385,7 @@ class OC_Optimizer():
             p, vol_frac, beta, move_limit = (
                 self.schedulers.values(iter)[k] for k in ['p', 'vol_frac', 'beta', 'move_limit']
             )
+            # beta = 1.0
             print(f"p {p:.4f}, vol_frac {vol_frac:.4f}, beta {beta:.4f}, move_limit {move_limit:.4f}")
 
             rho_prev[:] = rho[:]
@@ -400,7 +401,9 @@ class OC_Optimizer():
             for force in force_list:
                 compliance, u = solver.compute_compliance_basis_numba(
                     tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
-                    tsk.E0, tsk.Emin, p, tsk.nu0, rho_projected
+                    tsk.E0, tsk.Emin, p, tsk.nu0,
+                    rho_projected
+                    # rho
                 )
                 strain_energy = composer.compute_strain_energy_numba(
                     u,
@@ -432,19 +435,23 @@ class OC_Optimizer():
             compute_safe_dC(dC_drho_sum)
 
             rho_e = rho_projected[tsk.design_elements]
-            l1, l2 = 1e-9, 500
-
-            for _ in range(100):
-                if abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
-                    break
+            # l1, l2 = 1e-9, 500
+            l1 = 200.0
+            l2 = 1000.0
+            # for _ in range(100):
+            # while abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
+            while abs(l2 - l1) > tolerance * (l1 + l2) / 2.0:
                 lmid = 0.5 * (l1 + l2)
+                # if abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
+                #     break
                 np.negative(dC_drho_sum, out=scaling_rate)
                 scaling_rate /= (lmid + eps)
                 sign = np.sign(scaling_rate)
                 np.abs(scaling_rate, out=scaling_rate)
                 np.power(scaling_rate, eta, out=scaling_rate)
                 scaling_rate *= sign
-                np.clip(scaling_rate, 0.5, 1.5, out=scaling_rate)
+                # np.clip(scaling_rate, 0.5, 1.5, out=scaling_rate)
+                np.clip(scaling_rate, 0.1, 3.0, out=scaling_rate)
                 
                 np.multiply(rho_e, scaling_rate, out=rho_candidate)
                 np.maximum(rho_e - move_limit, rho_min, out=tmp_lower)
@@ -462,6 +469,9 @@ class OC_Optimizer():
                 else:
                     l2 = lmid
 
+            print(
+                f"λ: {lmid:.4e}, vol_error: {vol_error:.4f}, mean(rho): {np.mean(rho_candidate):.4f}"
+            )
             rho[tsk.design_elements] = rho_candidate
             # rho[tsk.fixed_elements_in_rho] = 1.0
             rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
@@ -488,7 +498,7 @@ class OC_Optimizer():
             if iter % (cfg.max_iters // self.cfg.record_times) == 0 or iter == 1:
             # if True:
                 print(f"Saving at iteration {iter}")
-                self.recorder.print()
+                # self.recorder.print()
                 # self.recorder_params.print()
                 self.recorder.export_progress()
                 visualization.save_info_on_mesh(
