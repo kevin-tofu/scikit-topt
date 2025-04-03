@@ -59,6 +59,47 @@ class OC_RAMP_Config():
             json.dump(asdict(self), f, indent=2)
 
 
+@njit
+def bisection_with_projection(
+    dC, rho_e, rho_min, rho_max, move_limit,
+    eta, eps, vol_frac,
+    beta, beta_eta,
+    max_iter=100, tolerance=1e-4,
+    l1 = 1.0,
+    l2 = 1000.0
+):
+
+    tanh_be = np.tanh(beta * beta_eta)
+    tanh_b1e = np.tanh(beta * (1.0 - beta_eta))
+    denom = tanh_be + tanh_b1e
+
+    for _ in range(max_iter):
+        lmid = 0.5 * (l1 + l2)
+
+        scaling_rate = -dC / (lmid + eps)
+        scaling_rate = np.sign(scaling_rate) * (np.abs(scaling_rate) ** eta)
+        scaling_rate = np.clip(scaling_rate, 0.8, 1.2)
+
+        rho_candidate = rho_e * scaling_rate
+        lower = np.maximum(rho_e - move_limit, rho_min)
+        upper = np.minimum(rho_e + move_limit, rho_max)
+        rho_candidate = np.clip(rho_candidate, lower, upper)
+
+        rho_projected = (tanh_be + np.tanh(beta * (rho_candidate - beta_eta))) / denom
+
+        mean_rho = np.mean(rho_projected)
+        vol_error = mean_rho - vol_frac
+
+        if abs(vol_error) < 1e-3 or abs(l2 - l1) < tolerance * (l1 + l2) / 2.0:
+            break
+        if vol_error > 0:
+            l1 = lmid
+        else:
+            l2 = lmid
+
+    return rho_candidate, lmid
+
+
 class OC_Optimizer():
     def __init__(
         self,
@@ -243,29 +284,36 @@ class OC_Optimizer():
             
             rho_e = rho_projected[tsk.design_elements].copy()
             # l1, l2 = 1e-9, 1e4
-            l1, l2 = 1e-9, 500
-            lmid = 0.5 * (l1 + l2)
-            while abs(l2 - l1) > tolerance * (l1 + l2) / 2.0:
-            # while (l2 - l1) / (0.5 * (l1 + l2) + eps) > tolerance:
-            # while abs(vol_error) > 1e-2:
-                lmid = 0.5 * (l1 + l2)
-                scaling_rate = (- safe_dC / (lmid + eps)) ** eta
-                scaling_rate = np.clip(scaling_rate, 0.5, 1.5)
+            # l1, l2 = 1e-9, 500
+            # lmid = 0.5 * (l1 + l2)
+            # while abs(l2 - l1) > tolerance * (l1 + l2) / 2.0:
+            # # while (l2 - l1) / (0.5 * (l1 + l2) + eps) > tolerance:
+            # # while abs(vol_error) > 1e-2:
+            #     lmid = 0.5 * (l1 + l2)
+            #     scaling_rate = (- safe_dC / (lmid + eps)) ** eta
+            #     scaling_rate = np.clip(scaling_rate, 0.5, 1.5)
 
-                rho_candidate = np.clip(
-                    rho_e * scaling_rate,
-                    np.maximum(rho_e - move_limit, rho_min),
-                    np.minimum(rho_e + move_limit, rho_max)
-                )
-                rho_candidate_projected = projection.heaviside_projection(
-                    rho_candidate, beta=beta, eta=cfg.beta_eta
-                )
-                vol_error = np.mean(rho_candidate_projected) - vol_frac
-                if vol_error > 0:
-                    l1 = lmid
-                else:
-                    l2 = lmid
+            #     rho_candidate = np.clip(
+            #         rho_e * scaling_rate,
+            #         np.maximum(rho_e - move_limit, rho_min),
+            #         np.minimum(rho_e + move_limit, rho_max)
+            #     )
+            #     rho_candidate_projected = projection.heaviside_projection(
+            #         rho_candidate, beta=beta, eta=cfg.beta_eta
+            #     )
+            #     vol_error = np.mean(rho_candidate_projected) - vol_frac
+            #     if vol_error > 0:
+            #         l1 = lmid
+            #     else:
+            #         l2 = lmid
 
+
+            rho_candidate, lmid = bisection_with_projection(
+                safe_dC, rho_e, rho_min, rho_max, move_limit,
+                cfg.beta_eta, eps, vol_frac,
+                beta, cfg.beta_eta,
+                max_iter=100, tolerance=1e-4,
+            )
             rho[tsk.design_elements] = rho_candidate
             rho[tsk.fixed_elements_in_rho] = 1.0
             rho_diff = rho - rho_prev
@@ -435,9 +483,9 @@ class OC_Optimizer():
             compute_safe_dC(dC_drho_sum)
 
             rho_e = rho_projected[tsk.design_elements]
-            # l1, l2 = 1e-9, 500
-            l1 = 200.0
-            l2 = 1000.0
+            l1, l2 = 1e-9, 500
+            # l1 = 200.0
+            # l2 = 1000.0
             # for _ in range(100):
             # while abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
             while abs(l2 - l1) > tolerance * (l1 + l2) / 2.0:
@@ -450,8 +498,10 @@ class OC_Optimizer():
                 np.abs(scaling_rate, out=scaling_rate)
                 np.power(scaling_rate, eta, out=scaling_rate)
                 scaling_rate *= sign
+                np.clip(scaling_rate, 0.8, 1.2, out=scaling_rate)
                 # np.clip(scaling_rate, 0.5, 1.5, out=scaling_rate)
-                np.clip(scaling_rate, 0.1, 3.0, out=scaling_rate)
+                # np.clip(scaling_rate, 0.1, 3.0, out=scaling_rate)
+                # np.clip(scaling_rate, 0.1, 5.0, out=scaling_rate)
                 
                 np.multiply(rho_e, scaling_rate, out=rho_candidate)
                 np.maximum(rho_e - move_limit, rho_min, out=tmp_lower)
@@ -632,3 +682,4 @@ if __name__ == '__main__':
     # optimizer.load_parameters()
     print("optimize")
     optimizer.optimize()
+    # optimizer.optimize_org()

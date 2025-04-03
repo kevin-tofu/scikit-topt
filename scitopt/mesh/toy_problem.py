@@ -88,7 +88,7 @@ def toy_base(mesh_size: float):
 
 
 def toy():
-    return toy_base(0.5)
+    return toy_base(0.3)
 
 
 def toy_fine():
