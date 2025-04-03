@@ -1,7 +1,7 @@
 from typing import Callable
+import numpy as np
 import scipy
-from scipy.sparse.linalg import cg
-from scipy.sparse.linalg import spilu, LinearOperator
+from scipy.sparse.linalg import cg, spilu, LinearOperator
 import skfem
 from scitopt.fea import composer
 
@@ -37,23 +37,22 @@ def compute_compliance_basis_numba(
     )
     K_e, F_e = skfem.enforce(K, force, D=dirichlet_nodes)
     
-    # if True:
-    #     M_diag = K.diagonal()
-    #     M_inv = 1.0 / M_diag
-    #     M = scipy.linalg.LinearOperator(K.shape, matvec=lambda x: M_inv * x)
+    try:
+        if True:
+            M_diag = K.diagonal()
+            M_inv = 1.0 / M_diag
+            M = LinearOperator(K.shape, matvec=lambda x: M_inv * x)
 
-    # else:
-    #     ilu = spilu(K.tocsc())
-    #     M = LinearOperator(K.shape, matvec=ilu.solve)
-
-    u, info = skfem.solve(K_e, F_e, solver=cg)
-    # u, info = cg(K_e, F_e, M, rtol=rtol, maxiter=maxiter)
-    
-    # u = scipy.sparse.linalg.spsolve(K_e, F_e)
+        else:
+            ilu = spilu(K.tocsc())
+            M = LinearOperator(K.shape, matvec=ilu.solve)
+        # u, info = skfem.solve(K_e, F_e, solver=cg)
+        u, info = cg(A=K_e, b=F_e, M=M, rtol=rtol, maxiter=maxiter)
+        print("compute_compliance_simp_basis_numba-info", info)
+    except Exception as e:
+        print(f"exception - {e}")
+        u = scipy.sparse.linalg.spsolve(K_e, F_e)
     # u = skfem.solve(K_e, F_e)
-    
-    
-    print("compute_compliance_simp_basis_numba-info", info)
     f_free = force[free_nodes]
     compliance = f_free @ u[free_nodes]
     return (compliance, u)
@@ -71,4 +70,15 @@ def compute_compliance_simp(
 
 
 if __name__ == '__main__':
-    pass
+    
+    from scitopt.mesh import toy_problem
+    tsk = toy_problem.toy()
+    
+    rho = np.ones(tsk.all_elements.shape)
+    p = 1.0
+    compliacne, u = compute_compliance_basis_numba(
+        tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, tsk.force,
+        tsk.E0, tsk.Emin, p, tsk.nu0,
+        rho,
+    )
+    print(f"compliacne: {compliacne}")

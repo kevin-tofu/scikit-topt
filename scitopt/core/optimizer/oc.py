@@ -32,9 +32,9 @@ class OC_RAMP_Config():
     vol_frac: float = 0.4  # the maximum valume ratio
     vol_frac_rate: float = 20.0
     beta_init: float = 1.0
-    beta: float = 8
+    beta: float = 16
     beta_rate: float = 20.
-    beta_eta: float = 0.3
+    beta_eta: float = 0.5
     filter_radius: float = 0.05
     eta: float = 0.3
     rho_min: float = 1e-3
@@ -194,8 +194,9 @@ class OC_Optimizer():
             )
             
             rho_prev[:] = rho[:]
+            
             rho_filtered = self.helmholz_solver.filter(rho)
-            rho_filtered[tsk.fixed_elements_in_rho] = 1.0
+            # rho_filtered[tsk.fixed_elements_in_rho] = 1.0
             rho_projected = projection.heaviside_projection(
                 rho_filtered, beta=beta, eta=cfg.beta_eta
             )
@@ -266,6 +267,7 @@ class OC_Optimizer():
                     l2 = lmid
 
             rho[tsk.design_elements] = rho_candidate
+            rho[tsk.fixed_elements_in_rho] = 1.0
             rho_diff = rho - rho_prev
 
             self.recorder.feed_data("rho_diff", rho_diff[tsk.design_elements])
@@ -328,9 +330,8 @@ class OC_Optimizer():
             norm = np.percentile(np.abs(dC), 95) + 1e-8
             dC /= norm
 
-        rho = np.ones(tsk.all_elements.shape)
-        self.init_schedulers()
 
+        rho = np.ones(tsk.all_elements.shape)
         if cfg.restart:
             if cfg.restart_from > 0:
                 data = np.load(
@@ -346,19 +347,30 @@ class OC_Optimizer():
             rho[tsk.design_elements] = np.random.uniform(
                 0.5, 0.8, size=len(tsk.design_elements)
             )
+            rho[tsk.design_elements] -= np.average(rho[tsk.design_elements])
+            rho[tsk.design_elements] += cfg.vol_frac_init
+        print("np.average(rho[tsk.design_elements]):", np.average(rho[tsk.design_elements]))
         
+        self.init_schedulers()
         eta = cfg.eta
         rho_min = cfg.rho_min
         rho_max = 1.0
-        tolerance = 1e-4
+        tolerance = 1e-2
         eps = 1e-6
 
         rho_prev = np.zeros_like(rho)
+
         rho_filtered = np.zeros_like(rho)
         rho_projected = np.zeros_like(rho)
         dH = np.empty_like(rho)
         grad_filtered = np.empty_like(rho)
         dC_drho_projected = np.empty_like(rho)
+        
+        # rho_filtered = np.zeros_like(tsk.design_elements)
+        # rho_projected = np.zeros_like(tsk.design_elements)
+        # dH = np.empty_like(tsk.design_elements)
+        # grad_filtered = np.empty_like(tsk.design_elements)
+        # dC_drho_projected = np.empty_like(tsk.design_elements)
 
         dC_drho_sum = np.zeros_like(rho[tsk.design_elements])
         scaling_rate = np.empty_like(rho[tsk.design_elements])
@@ -422,11 +434,16 @@ class OC_Optimizer():
             rho_e = rho_projected[tsk.design_elements]
             l1, l2 = 1e-9, 500
 
-            while abs(l2 - l1) > tolerance * (l1 + l2) / 2.0:
+            for _ in range(100):
+                if abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
+                    break
                 lmid = 0.5 * (l1 + l2)
                 np.negative(dC_drho_sum, out=scaling_rate)
                 scaling_rate /= (lmid + eps)
+                sign = np.sign(scaling_rate)
+                np.abs(scaling_rate, out=scaling_rate)
                 np.power(scaling_rate, eta, out=scaling_rate)
+                scaling_rate *= sign
                 np.clip(scaling_rate, 0.5, 1.5, out=scaling_rate)
                 
                 np.multiply(rho_e, scaling_rate, out=rho_candidate)
@@ -438,13 +455,17 @@ class OC_Optimizer():
                     rho_candidate, beta=beta, eta=cfg.beta_eta, out=rho_candidate
                 )
                 vol_error = np.mean(rho_candidate) - vol_frac
+                if abs(vol_error) < 1e-3:
+                    break
                 if vol_error > 0:
                     l1 = lmid
                 else:
                     l2 = lmid
 
             rho[tsk.design_elements] = rho_candidate
-            rho_diff = np.average(rho[tsk.design_elements] - rho_prev[tsk.design_elements])
+            # rho[tsk.fixed_elements_in_rho] = 1.0
+            rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
+
 
             self.recorder.feed_data("rho_diff", rho_diff)
             self.recorder.feed_data("scaling_rate", scaling_rate)
@@ -565,6 +586,9 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--beta_rate', '-BR', type=float, default=20.0, help=''
+    )
+    parser.add_argument(
+        '--beta_eta', '-BE', type=float, default=0.5, help=''
     )
     parser.add_argument(
         '--restart', '-RS', type=misc.str2bool, default=False, help=''
