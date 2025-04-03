@@ -12,7 +12,7 @@ from scitopt.mesh import utils
 def setdiff1d(a, b):
     mask = ~np.isin(a, b)
     a = a[mask]
-    return a
+    return np.ascontiguousarray(a)
 
 
 @dataclass

@@ -79,7 +79,8 @@ def get_elements_with_points_fast(mesh, target_nodes):
     for node in all_target_nodes:
         elems.update(node_to_elements.get(node, []))
 
-    return np.array(sorted(elems), dtype=np.int32)
+    # return np.array(sorted(elems), dtype=np.int32)
+    return np.ascontiguousarray(np.array(sorted(elems), dtype=np.int32))
 
 
 def build_element_adjacency_matrix_fast(mesh):

@@ -1,5 +1,5 @@
 # Scikit Topology Optimization (Scikit-Topt)
-## 
+## Features
  There are few topology optimization codes built on mesh-based frameworks available on GitHub (It may be just that I do not know this field so well though). Moreover, many of them are hard-coded, making them difficult to understand. As far as I know, there doesn’t seem to be a project that serves as a de facto standard. To contribute to the open-source community and education—which I’ve always benefited from—I decided to start this project. 
  
   The currently supported features are as follows:
@@ -10,6 +10,15 @@
 - High-performance computation using sparse matrices and Numba  
 - easy installation with pip/poetry
 
+
+## ToDO
+- density interpolation
+- density visualization
+- coarse to fine optimization
+- switching cg to splu
+- stabilize
+- set break point from the optimization loop
+- Add Optimization ALgorithms such as Modified OC / MMA
 
 ### Install Package
 ```bash

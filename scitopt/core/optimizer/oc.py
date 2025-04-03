@@ -10,13 +10,14 @@ import scipy.sparse.linalg as spla
 from numba import njit
 import skfem
 import meshio
-from scitopt import mesh
+import scitopt
 from scitopt import tools
 from scitopt.core import derivatives, projection
 from scitopt.core import visualization
 from scitopt.fea import solver
 from scitopt import filter
 from scitopt.fea import composer
+from scitopt.core import misc
 
 
 @dataclass
@@ -24,10 +25,13 @@ class OC_RAMP_Config():
     dst_path: str = "./result"
     record_times: int=20
     max_iters: int=200
-    p: float = 3
+    p_init: float = 1.0
+    p: float = 3.0
     p_rate: float = 20.0
+    vol_frac_init: float = 0.8
     vol_frac: float = 0.4  # the maximum valume ratio
     vol_frac_rate: float = 20.0
+    beta_init: float = 1.0
     beta: float = 8
     beta_rate: float = 20.
     beta_eta: float = 0.3
@@ -35,8 +39,11 @@ class OC_RAMP_Config():
     eta: float = 0.3
     rho_min: float = 1e-3
     rho_max: float = 1.0
+    move_limit_init: float = 0.8
     move_limit: float = 0.2
     move_limit_rate: float = 20.0
+    restart: bool = False
+    restart_from: int = -1
     
 
     @classmethod
@@ -56,10 +63,10 @@ class OC_Optimizer():
     def __init__(
         self,
         cfg: OC_RAMP_Config,
-        tsk: mesh.TaskConfig,
+        tsk: scitopt.mesh.TaskConfig,
     ):
-        self.tsk = tsk
         self.cfg = cfg
+        self.tsk = tsk
         if not os.path.exists(self.cfg.dst_path):
             os.makedirs(self.cfg.dst_path)
         # self.tsk.export(self.cfg.dst_path)
@@ -72,8 +79,8 @@ class OC_Optimizer():
         if os.path.exists(f"{self.cfg.dst_path}/rho-histo"):
             shutil.rmtree(f"{self.cfg.dst_path}/rho-histo")
         os.makedirs(f"{self.cfg.dst_path}/rho-histo")
-        if not os.path.exists(f"{self.cfg.dst_path}/matrices"):
-            os.makedirs(f"{self.cfg.dst_path}/matrices")
+        if not os.path.exists(f"{self.cfg.dst_path}/data"):
+            os.makedirs(f"{self.cfg.dst_path}/data")
 
         self.recorder = tools.HistoriesLogger(self.cfg.dst_path)
         self.recorder.add("rho")
@@ -93,10 +100,13 @@ class OC_Optimizer():
         self.schedulers = tools.Schedulers(self.cfg.dst_path)
     
     
-    def init_schedulers(
-        self,
-        p_init, vol_frac_init, move_init, beta_init
-    ):
+    def init_schedulers(self):
+
+        cfg = self.cfg
+        p_init = cfg.p_init
+        vol_frac_init = cfg.vol_frac_init
+        move_limit_init = cfg.move_limit_init
+        beta_init = cfg.beta_init
         self.schedulers.add(
             "p",
             p_init,
@@ -115,7 +125,7 @@ class OC_Optimizer():
         # print(cfg.move_limit, cfg.move_limit_rate)
         self.schedulers.add(
             "move_limit",
-            move_init,
+            move_limit_init,
             cfg.move_limit,
             cfg.move_limit_rate,
             cfg.max_iters
@@ -131,7 +141,7 @@ class OC_Optimizer():
     
     def parameterize(self, preprocess=True):
         self.helmholz_solver = filter.HelmholtzFilter.from_defaults(
-            self.tsk.mesh, self.cfg.filter_radius, f"{self.cfg.dst_path}/matrices"
+            self.tsk.mesh, self.cfg.filter_radius, f"{self.cfg.dst_path}/data"
         )
         if preprocess:
             print("preprocessing....")
@@ -140,26 +150,26 @@ class OC_Optimizer():
             print("...end")
         else:
             self.helmholz_solver.create_solver()
-            
-
 
     def load_parameters(self):
         self.helmholz_solver = filter.HelmholtzFilter.from_file(
-            f"{self.cfg.dst_path}/matrices"
+            f"{self.cfg.dst_path}/data"
         )
-    
+
     
     def optimize_org(self):
         
-        self.init_schedulers(1.0, 0.8, 0.8, cfg.beta / 10.0)
+        cfg = self.cfg
+        tsk = self.tsk
+        
+        self.init_schedulers()
         e_rho = skfem.ElementTetP1()
         # basis_rho = skfem.Basis(tsk.mesh, e_rho)
         rho = np.ones(tsk.all_elements.shape)
         # rho[tsk.design_elements] = 0.95
         # rho[tsk.design_elements] = cfg.vol_frac
-        rho[tsk.design_elements] = np.random.uniform(
-            0.5, 0.8, size=len(tsk.design_elements)
-        )
+        
+        
         rho_projected = projection.heaviside_projection(
             rho, beta=cfg.beta / 10.0, eta=cfg.beta_eta
         )
@@ -307,6 +317,10 @@ class OC_Optimizer():
 
 
     def optimize(self):
+
+        cfg = self.cfg
+        tsk = self.tsk
+        
         @njit
         def compute_safe_dC(dC):
             mean_val = np.mean(dC)
@@ -314,11 +328,25 @@ class OC_Optimizer():
             norm = np.percentile(np.abs(dC), 95) + 1e-8
             dC /= norm
 
-        self.init_schedulers(1.0, 0.8, 0.8, cfg.beta / 10.0)
-
         rho = np.ones(tsk.all_elements.shape)
-        rho[tsk.design_elements] = np.random.uniform(0.5, 0.8, size=len(tsk.design_elements))
+        self.init_schedulers()
 
+        if cfg.restart:
+            if cfg.restart_from > 0:
+                data = np.load(
+                    f"{cfg.dst_path}/data/{str(cfg.restart_from).zfill(6)}-rho.npz"
+                )
+            else:
+                iter, data_path = misc.find_latest_iter_file(cfg.dst_path)
+                data = np.load(data_path)
+
+            rho[tsk.design_elements] = data["rho_design_elements"]
+            del data
+        else:
+            rho[tsk.design_elements] = np.random.uniform(
+                0.5, 0.8, size=len(tsk.design_elements)
+            )
+        
         eta = cfg.eta
         rho_min = cfg.rho_min
         rho_max = 1.0
@@ -357,11 +385,10 @@ class OC_Optimizer():
 
             dC_drho_sum[:] = 0.0
             strain_energy_sum = 0.0
-
             for force in force_list:
                 compliance, u = solver.compute_compliance_basis_numba(
                     tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
-                    tsk.E0, tsk.Emin, p, tsk.nu0, rho
+                    tsk.E0, tsk.Emin, p, tsk.nu0, rho_projected
                 )
                 strain_energy = composer.compute_strain_energy_numba(
                     u,
@@ -451,6 +478,13 @@ class OC_Optimizer():
                 visualization.export_submesh(
                     tsk, rho_projected, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
                 )
+                np.savez_compressed(
+                    f"{cfg.dst_path}/data/{str(iter).zfill(6)}-rho.npz",
+                    rho_design_elements=rho[tsk.design_elements],
+                    # compliance=compliance
+                )
+
+
 
             # https://qiita.com/fujitagodai4/items/7cad31cc488bbb51f895
 
@@ -466,28 +500,26 @@ class OC_Optimizer():
         visualization.export_submesh(tsk, kept_elements, 0.5, f"{self.cfg.dst_path}/cubic_top.vtk")
         # self.export_mesh(rho_projected, "last")
 
+
 if __name__ == '__main__':
 
     import argparse
     from scitopt.mesh import toy_problem
     
+    
     parser = argparse.ArgumentParser(
         description=''
     )
-    parser.add_argument(
-        '--p', '-P', type=float, default=3.0, help=''
-    )
-    parser.add_argument(
-        '--vol_frac', '-V', type=float, default=0.4, help=''
-    )
-    parser.add_argument(
-        '--learning_rate', '-LR', type=float, default=0.1, help=''
-    )
+
+    
     parser.add_argument(
         '--max_iters', '-NI', type=int, default=200, help=''
     )
     parser.add_argument(
         '--filter_radius', '-DR', type=float, default=0.05, help=''
+    )
+    parser.add_argument(
+        '--move_limit_init', '-MLI', type=float, default=0.8, help=''
     )
     parser.add_argument(
         '--move_limit', '-ML', type=float, default=0.2, help=''
@@ -505,27 +537,51 @@ if __name__ == '__main__':
         '--dst_path', '-DP', type=str, default="./result/test0", help=''
     )
     parser.add_argument(
-        '--problem', '-PM', type=str, default="toy2", help=''
+        '--task', '-PM', type=str, default="toy", help=''
+    )
+    parser.add_argument(
+        '--vol_frac_init', '-VI', type=float, default=0.8, help=''
+    )
+    parser.add_argument(
+        '--vol_frac', '-V', type=float, default=0.4, help=''
     )
     parser.add_argument(
         '--vol_frac_rate', '-VFT', type=float, default=20.0, help=''
     )
     parser.add_argument(
+        '--p_init', '-PI', type=float, default=1.0, help=''
+    )
+    parser.add_argument(
+        '--p', '-P', type=float, default=3.0, help=''
+    )
+    parser.add_argument(
         '--p_rate', '-PT', type=float, default=20.0, help=''
     )
     parser.add_argument(
-        '--beta', '-B', type=float, default=100.0, help=''
+        '--beta_init', '-BI', type=float, default=0.1, help=''
+    )
+    parser.add_argument(
+        '--beta', '-B', type=float, default=5.0, help=''
     )
     parser.add_argument(
         '--beta_rate', '-BR', type=float, default=20.0, help=''
     )
+    parser.add_argument(
+        '--restart', '-RS', type=misc.str2bool, default=False, help=''
+    )
+    parser.add_argument(
+        '--restart_from', '-RF', type=int, default=-1, help=''
+    )
+    
     args = parser.parse_args()
     
 
-    if args.problem == "toy":
+    if args.task == "toy":
         tsk = toy_problem.toy()
-    elif args.problem == "toy2":
+    elif args.task == "toy2":
         tsk = toy_problem.toy2()
+    else:
+        raise ValueError("task is not indicated")
     
     print("load toy problem")
     
