@@ -193,30 +193,40 @@ def apply_helmholtz_filter_cg(
     rho_element: np.ndarray,
     A: scipy.sparse._csc.csc_matrix, V: scipy.sparse._csc.csc_matrix,
     M: Optional[LinearOperator] = None,
-    rtol=1e-6,
-    maxiter=1000
+    rtol: float=1e-6,
+    maxiter: Optional[int]=None
 ) -> np.ndarray:
     """
     Apply the Helmholtz filter using precomputed solver and M.
     """
+    n_elements = A.shape
+    _maxiter = min(1000, max(300, n_elements // 5)) if maxiter is None else maxiter
     rhs = V @ rho_element
-    rho_filtered, info = cg(A, rhs, M=M, rtol=rtol, maxiter=maxiter)
+    rho_filtered, info = cg(A, rhs, M=M, rtol=rtol, maxiter=_maxiter)
     print("helmholtz_filter_cg-info: ", info)
+    if info > 0:
+        raise RuntimeError("helmholtz_filter_cg does not converge")
     return rho_filtered
 
 
 def apply_filter_gradient_cg(
     vec: np.ndarray,
-    A: scipy.sparse._csc.csc_matrix, V: scipy.sparse._csc.csc_matrix,
+    A: scipy.sparse._csc.csc_matrix,
+    V: scipy.sparse._csc.csc_matrix,
     M: Optional[LinearOperator] = None,
-    rtol=1e-6,
-    maxiter=1000
+    rtol: float=1e-6,
+    maxiter: Optional[int]=None
 ) -> np.ndarray:
     """
     Apply the Jacobian of the Helmholtz filter: d(rho_filtered)/d(rho) to a vector.
     """
-    ret, info = cg(A, V @ vec, M=M, rtol=rtol, maxiter=maxiter)
+    n_elements = A.shape
+    _maxiter = min(1000, max(300, n_elements // 5)) if maxiter is None else maxiter
+
+    ret, info = cg(A, V @ vec, M=M, rtol=rtol, maxiter=_maxiter)
     print("filter_gradient_cg-info: ", info)
+    if info > 0:
+        raise RuntimeError("filter_gradient_cg does not converge")
     return ret
 
 
@@ -280,6 +290,26 @@ class HelmholtzFilter():
     def create_solver(self):
         self.A_solver = splu(self.A)
     
-    def create_LinearOperator(self):
-        ilu = spilu(self.A.tocsc())
-        self.M = LinearOperator(self.A.shape, lambda x: ilu.solve(x))
+    def create_LinearOperator(
+        self,
+        rtol: float=1e-5,
+        maxiter: int=-1
+    ):
+        self.rtol = rtol
+        n_dof = self.A.shape[0]
+        self.maxiter = maxiter if maxiter > 0 else n_dof // 4
+        
+        # 
+        M_inv = 1.0 / self.A.diagonal()
+        def apply_M(x):
+            return M_inv * x
+
+        self.M = LinearOperator(
+            self.A.shape, matvec=apply_M
+        )
+        
+        # or
+        # Algebraic Multigrid
+        # import pyamg
+        # ml = pyamg.ruge_stuben_solver(A)
+        # x = ml.solve(b, tol=1e-8)

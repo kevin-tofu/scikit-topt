@@ -378,16 +378,17 @@ class OC_Optimizer():
             norm = np.percentile(np.abs(dC), 95) + 1e-8
             dC /= norm
 
-
         rho = np.ones(tsk.all_elements.shape)
+        iter_begin = 1
         if cfg.restart:
             if cfg.restart_from > 0:
                 data = np.load(
                     f"{cfg.dst_path}/data/{str(cfg.restart_from).zfill(6)}-rho.npz"
                 )
             else:
-                iter, data_path = misc.find_latest_iter_file(cfg.dst_path)
+                iter, data_path = misc.find_latest_iter_file(f"{cfg.dst_path}/data")
                 data = np.load(data_path)
+                iter_begin = iter
 
             rho[tsk.design_elements] = data["rho_design_elements"]
             del data
@@ -413,12 +414,6 @@ class OC_Optimizer():
         dH = np.empty_like(rho)
         grad_filtered = np.empty_like(rho)
         dC_drho_projected = np.empty_like(rho)
-        
-        # rho_filtered = np.zeros_like(tsk.design_elements)
-        # rho_projected = np.zeros_like(tsk.design_elements)
-        # dH = np.empty_like(tsk.design_elements)
-        # grad_filtered = np.empty_like(tsk.design_elements)
-        # dC_drho_projected = np.empty_like(tsk.design_elements)
 
         dC_drho_sum = np.zeros_like(rho[tsk.design_elements])
         scaling_rate = np.empty_like(rho[tsk.design_elements])
@@ -428,7 +423,7 @@ class OC_Optimizer():
 
         force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
 
-        for iter in range(1, cfg.max_iters + 1):
+        for iter in range(iter_begin, cfg.max_iters + iter_begin):
             print(f"iterations: {iter} / {cfg.max_iters}")
             p, vol_frac, beta, move_limit = (
                 self.schedulers.values(iter)[k] for k in ['p', 'vol_frac', 'beta', 'move_limit']
@@ -565,8 +560,6 @@ class OC_Optimizer():
                     # compliance=compliance
                 )
 
-
-
             # https://qiita.com/fujitagodai4/items/7cad31cc488bbb51f895
 
         visualization.rho_histo_plot(
@@ -574,12 +567,16 @@ class OC_Optimizer():
             f"{self.cfg.dst_path}/rho-histo/last.jpg"
         )
 
-        threshold = 0.5
-        remove_elements = tsk.design_elements[rho_projected[tsk.design_elements] <= threshold]
-        mask = ~np.isin(tsk.all_elements, remove_elements)
-        kept_elements = tsk.all_elements[mask]
-        visualization.export_submesh(tsk, kept_elements, 0.5, f"{self.cfg.dst_path}/cubic_top.vtk")
+        # threshold = 0.5
+        # remove_elements = tsk.design_elements[rho_projected[tsk.design_elements] <= threshold]
+        # mask = ~np.isin(tsk.all_elements, remove_elements)
+        # kept_elements = tsk.all_elements[mask]
+        # Error
+        # visualization.export_submesh(tsk, kept_elements, 0.5, f"{self.cfg.dst_path}/cubic_top.vtk")
         # self.export_mesh(rho_projected, "last")
+        visualization.export_submesh(
+            tsk, rho_projected, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
+        )
 
 
 if __name__ == '__main__':
@@ -618,9 +615,6 @@ if __name__ == '__main__':
         '--dst_path', '-DP', type=str, default="./result/test0", help=''
     )
     parser.add_argument(
-        '--task', '-PM', type=str, default="toy", help=''
-    )
-    parser.add_argument(
         '--vol_frac_init', '-VI', type=float, default=0.8, help=''
     )
     parser.add_argument(
@@ -656,12 +650,16 @@ if __name__ == '__main__':
     parser.add_argument(
         '--restart_from', '-RF', type=int, default=-1, help=''
     )
-    
+    parser.add_argument(
+        '--task', '-T', type=str, default="toy1", help=''
+    )
     args = parser.parse_args()
     
 
-    if args.task == "toy":
-        tsk = toy_problem.toy()
+    if args.task == "toy1":
+        tsk = toy_problem.toy1()
+    elif args.task == "toy1_fine":
+        tsk = toy_problem.toy1_fine()
     elif args.task == "toy2":
         tsk = toy_problem.toy2()
     else:

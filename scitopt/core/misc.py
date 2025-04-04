@@ -4,7 +4,7 @@ import re
 
 
 def find_latest_iter_file(dst_path: str):
-    pattern = re.compile(r"(\d{6})\.npz")
+    pattern = re.compile(r"(\d{6})-rho\.npz")
     max_iter = -1
     latest_file = None
 
