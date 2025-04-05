@@ -1,6 +1,6 @@
 [project]
 name = "scitopt"
-version = "0.0.3a"
+version = "0.0.3b"
 description = ""
 authors = [
     {name = "Kevin-Tofu",email = "koheitech001@gmail.com"}
