@@ -16,16 +16,14 @@
 
 
 
-
-
-## ToDO
+## ToDo
 - density interpolation
 - density visualization
 - coarse to fine optimization
-- switching cg to splu
 - stabilize
 - set break point from the optimization loop
-- Add Optimization ALgorithms such as Modified OC / MMA
+- Add LevelSet
+- Add Optimization ALgorithms such as MMA
 
 ### Install Package
 ```bash
