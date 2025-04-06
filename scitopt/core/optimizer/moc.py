@@ -196,9 +196,13 @@ class MOC_SIMP_Optimizer():
             rho[tsk.design_elements] = data["rho_design_elements"]
             del data
         else:
-            rho[tsk.design_elements] = np.random.uniform(
-                0.7, 0.9, size=len(tsk.design_elements)
+            rho[tsk.design_elements] = np.minimum(
+                np.random.uniform(
+                    cfg.vol_frac_init - 0.2, cfg.vol_frac_init + 0.2, size=len(tsk.design_elements)
+                ),
+                1.0
             )
+
             # rho[tsk.design_elements] -= np.average(rho[tsk.design_elements])
             # rho[tsk.design_elements] += cfg.vol_frac_init
         print("np.average(rho[tsk.design_elements]):", np.average(rho[tsk.design_elements]))

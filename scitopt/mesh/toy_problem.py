@@ -154,7 +154,8 @@ def toy_msh(
 
     print("generate config")
     E0 = 1.0
-    F = [0.3, -0.3]
+    # F = [0.3, -0.3]
+    F = 0.3
     print("F:", F)
     return task.TaskConfig.from_defaults(
         E0,

@@ -89,7 +89,7 @@ def oc_log_update(rho, dC, move, eta, rho_min, rho_max):
 
 
 def kkt_moc_log_update(rho, dL, move, eta, rho_min, rho_max):
-    eps = 1e-8
+    # eps = 1e-8
     log_rho = np.log(np.clip(rho, rho_min, 1.0))
     rho_new = np.exp(log_rho - eta * dL)
     rho_new = np.clip(rho_new, rho - move, rho + move)
@@ -210,8 +210,11 @@ class MOC_RAMP_Optimizer():
             rho[tsk.design_elements] = data["rho_design_elements"]
             del data
         else:
-            rho[tsk.design_elements] = np.random.uniform(
-                0.7, 0.9, size=len(tsk.design_elements)
+            rho[tsk.design_elements] = np.minimum(
+                np.random.uniform(
+                    cfg.vol_frac_init - 0.2, cfg.vol_frac_init + 0.2, size=len(tsk.design_elements)
+                ),
+                1.0
             )
             # rho[tsk.design_elements] -= np.average(rho[tsk.design_elements])
             # rho[tsk.design_elements] += cfg.vol_frac_init

@@ -27,4 +27,3 @@ jobs:
 
       - name: Run tests with coverage
         run: PYTHONPATH=. poetry run pytest --cov=scitopt --cov-report=xml
-      
