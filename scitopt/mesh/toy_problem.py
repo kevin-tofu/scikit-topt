@@ -118,6 +118,57 @@ def toy2():
         F,
         design_elements
     )
+
+
+def toy_msh(
+    msh_path: str = 'plate.msh'
+):
+    import pathlib
+    x_len = 16.0
+    y_len = 9.0
+    z_len = 2.0
+    mesh = skfem.MeshTet.load(pathlib.Path(msh_path))
+    e = skfem.ElementVector(skfem.ElementTetP1())
+    basis = skfem.Basis(mesh, e, intorder=3)
+    
+    # 
+    e = skfem.ElementVector(skfem.ElementTetP1())
+    basis = skfem.Basis(mesh, e, intorder=3)
+    dirichlet_points = utils.get_point_indices_in_range(
+        basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
+    )
+    dirichlet_nodes = utils.get_dofs_in_range(
+        basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
+    ).all()
+    F_points = utils.get_point_indices_in_range(
+        basis, (x_len, x_len), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)
+    )
+    F_nodes = utils.get_dofs_in_range(
+        basis, (x_len, x_len), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)
+    ).nodal['u^2']
+    design_elements = utils.get_elements_in_box(
+        mesh,
+        # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
+        (0.0, x_len), (0.0, y_len), (0.0, z_len)
+    )
+
+    print("generate config")
+    E0 = 1.0
+    F = [0.3, -0.3]
+    print("F:", F)
+    return task.TaskConfig.from_defaults(
+        E0,
+        0.30,
+        1e-3 * E0,
+        mesh,
+        basis,
+        dirichlet_points,
+        dirichlet_nodes,
+        F_points,
+        F_nodes,
+        F,
+        design_elements
+    )
     
     
 if __name__ == '__main__':

@@ -54,7 +54,7 @@ OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1  MKL_NUM_THREADS=1 PYTHONPATH=./ python
 ```Python
 import scitopt
 
-tsk = scitopt.mesh.toy_problem.toy()
+tsk = scitopt.mesh.toy_problem.toy1()
 cfg = scitopt.core.OC_RAMP_Config()
 
 optimizer = scitopt.core.OC_Optimizer(cfg, tsk)

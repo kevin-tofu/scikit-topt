@@ -418,7 +418,7 @@ if __name__ == '__main__':
     elif args.task == "toy2":
         tsk = toy_problem.toy2()
     else:
-        raise ValueError("task is not indicated")
+        tsk = toy_problem.toy_toy_msh(args.task)
     
     print("load toy problem")
     
