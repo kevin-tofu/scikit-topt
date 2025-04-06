@@ -1,5 +1,5 @@
 ![CI](https://github.com/kevin-tofu/scikit-topt/actions/workflows/python-tests.yml/badge.svg)
-[![PyPI version](https://img.shields.io/pypi/v/scitopt.svg)](https://pypi.org/project/scitopt/)
+[![PyPI version](https://img.shields.io/pypi/v/scitopt.svg?cacheSeconds=60)](https://pypi.org/project/scitopt/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 # Scikit Topology Optimization (Scikit-Topt)
