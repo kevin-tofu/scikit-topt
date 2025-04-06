@@ -1,4 +1,4 @@
-[project]
+[tool.poetry]
 name = "scitopt"
 version = "0.0.3b"
 description = ""
