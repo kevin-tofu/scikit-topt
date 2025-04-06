@@ -252,12 +252,15 @@ class MOC_RAMP_Optimizer():
 
             dC_drho_sum[:] = 0.0
             strain_energy_sum = 0.0
+            compliance_avg = 0.0
             for force in force_list:
                 compliance, u = solver.compute_compliance_basis_numba(
                     tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
                     tsk.E0, tsk.Emin, p, tsk.nu0,
-                    rho_projected
+                    rho_projected,
+                    elem_func=composer.ramp_interpolation_numba
                 )
+                compliance_avg += compliance
                 strain_energy = composer.compute_strain_energy_numba(
                     u,
                     tsk.basis.element_dofs,
@@ -281,6 +284,7 @@ class MOC_RAMP_Optimizer():
                 dC_drho_full = self.helmholz_solver.gradient(grad_filtered)
                 dC_drho_sum += dC_drho_full[tsk.design_elements]
 
+            compliance_avg /= len(force_list)
             dC_drho_sum /= len(force_list)
             strain_energy_sum /= len(force_list)
             
@@ -304,18 +308,12 @@ class MOC_RAMP_Optimizer():
             )
             rho[tsk.fixed_elements_in_rho] = 1.0
 
-            # 
-            # 
-            rho_diff = rho - rho_prev
-            # vol_error_prev = vol_error
-            # rho_frac = int(len(rho[tsk.design_elements]) * vol_frac)
-            
             rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
 
 
             self.recorder.feed_data("rho_diff", rho_diff)
             self.recorder.feed_data("rho", rho_projected)
-            self.recorder.feed_data("compliance", compliance)
+            self.recorder.feed_data("compliance", compliance_avg)
             self.recorder.feed_data("dC", dL)
             self.recorder.feed_data("dC_drho_sum", dC_drho_sum)
             self.recorder.feed_data("lambda_v", lambda_v)

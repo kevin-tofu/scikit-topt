@@ -49,7 +49,7 @@ OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1  MKL_NUM_THREADS=1 PYTHONPATH=./ python
  --max_iters 200
 ```
 
-### Analyze from Python Script
+### Optimize Toy Problem with Python Script
 
 ```Python
 import scitopt
@@ -63,19 +63,6 @@ optimizer.parameterize(preprocess=True)
 optimizer.optimize()
 ```
 
-
-## Acknowledgements
-### Standing on the shoulders of proverbial giants
- This software does not exist in a vacuum.
-Scikit-Topt is standing on the shoulders of proverbial giants. In particular, I want to thank the following projects for constituting the technical backbone of the project:
- - Scipy
- - PyAMG
- - Scikit-fem
- - Numba
- - MeshIO
- - Gmsh
- - Matplotlib
- - Topology Optimization Community
 
 
 ## Optiization Algorithm
@@ -193,3 +180,19 @@ This is often implemented via solving a sparse linear system using finite elemen
 - Improves manufacturability of the design
 
 ---
+
+
+
+## Acknowledgements
+### Standing on the shoulders of proverbial giants
+ This software does not exist in a vacuum.
+Scikit-Topt is standing on the shoulders of proverbial giants. In particular, I want to thank the following projects for constituting the technical backbone of the project:
+ - Scipy
+ - PyAMG
+ - Scikit-fem
+ - Numba
+ - MeshIO
+ - Gmsh
+ - Matplotlib
+ - Topology Optimization Community
+
