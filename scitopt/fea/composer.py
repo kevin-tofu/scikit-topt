@@ -73,7 +73,7 @@ def assemble_stiffness_matrix(
     Returns:
         Sparse stiffness matrix (scipy.sparse.csr_matrix) assembled for the given density distribution.
     """
-    # 1. Compute Young's modulus for each element using SIMP
+    # 1. Compute Young's modulus for each element using SIMP / RAMP
     E_elem = elem_func(rho, E0, Emin, p)  # array of size [n_elements]
     
     # 2. Compute Lamé parameters for each element

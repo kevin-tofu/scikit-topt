@@ -42,8 +42,11 @@ class OC_RAMP_Config():
     move_limit_init: float = 0.8
     move_limit: float = 0.2
     move_limit_rate: float = 20.0
+    bisec_lambda_low: float=-20.0
+    bisec_lambda_high: float=20.0
     restart: bool = False
     restart_from: int = -1
+    
     
 
     @classmethod
@@ -224,8 +227,11 @@ class OC_Optimizer():
             rho[tsk.design_elements] = data["rho_design_elements"]
             del data
         else:
-            rho[tsk.design_elements] = np.random.uniform(
-                0.7, 0.9, size=len(tsk.design_elements)
+            rho[tsk.design_elements] = np.minimum(
+                np.random.uniform(
+                    cfg.vol_frac_init - 0.2, cfg.vol_frac_init + 0.2, size=len(tsk.design_elements)
+                ),
+                1.0
             )
             # rho[tsk.design_elements] -= np.average(rho[tsk.design_elements])
             # rho[tsk.design_elements] += cfg.vol_frac_init
@@ -309,23 +315,37 @@ class OC_Optimizer():
             compute_safe_dC(dC_drho_sum)
 
             rho_e = rho_projected[tsk.design_elements]
-            l1, l2 = 1e-9, 500
-            # l1 = 200.0
-            # l2 = 1000.0
+            # l1, l2 = 1e-9, 500
+            # l1, l2 = -20.0, 500.0
+            l1, l2 = cfg.bisec_lambda_low, cfg.bisec_lambda_high
             # for _ in range(100):
             # while abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
-            while abs(l2 - l1) > tolerance * (l1 + l2) / 2.0:
+            # while abs(l2 - l1) > tolerance * (l1 + l2) / 2.0:
+            while abs(l2 - l1) > 1e-4:
                 lmid = 0.5 * (l1 + l2)
+                # print("lmid:", lmid)
                 # if abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
                 #     break
-                np.negative(dC_drho_sum, out=scaling_rate)
-                scaling_rate /= (lmid + eps)
-                sign = np.sign(scaling_rate)
+                
+                # 0 < lmid 
+                # np.negative(dC_drho_sum, out=scaling_rate)
+                # scaling_rate /= (lmid + eps)
+                # sign = np.sign(scaling_rate)
+                # np.abs(scaling_rate, out=scaling_rate)
+                # np.power(scaling_rate, eta, out=scaling_rate)
+                # scaling_rate *= sign
+                
+                # -k < lmid < l
+                np.negative(dC_drho_sum, out=scaling_rate) 
+                scaling_rate /= (np.abs(lmid) + eps)
                 np.abs(scaling_rate, out=scaling_rate)
                 np.power(scaling_rate, eta, out=scaling_rate)
-                scaling_rate *= sign
-                np.clip(scaling_rate, 0.8, 1.2, out=scaling_rate)
-                # np.clip(scaling_rate, 0.5, 1.5, out=scaling_rate)
+                if lmid < 0:
+                    scaling_rate = 1.0 / scaling_rate
+
+                # Clip
+                # np.clip(scaling_rate, 0.8, 1.2, out=scaling_rate)
+                np.clip(scaling_rate, 0.5, 1.5, out=scaling_rate)
                 # np.clip(scaling_rate, 0.1, 3.0, out=scaling_rate)
                 # np.clip(scaling_rate, 0.1, 5.0, out=scaling_rate)
                 
@@ -353,9 +373,9 @@ class OC_Optimizer():
             rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
 
 
+            self.recorder.feed_data("rho", rho_projected)
             self.recorder.feed_data("rho_diff", rho_diff)
             self.recorder.feed_data("scaling_rate", scaling_rate)
-            self.recorder.feed_data("rho", rho_projected)
             self.recorder.feed_data("compliance", compliance)
             self.recorder.feed_data("dC", dC_drho_sum)
             self.recorder.feed_data("lambda_v", lmid)
@@ -474,6 +494,12 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--beta_eta', '-BE', type=float, default=0.5, help=''
+    )
+    parser.add_argument(
+        '--bisec_lambda_low', '-BSL', type=float, default=-20.0, help=''
+    )
+    parser.add_argument(
+        '--bisec_lambda_higher', '-BSH', type=float, default=20.0, help=''
     )
     parser.add_argument(
         '--restart', '-RS', type=misc.str2bool, default=False, help=''
