@@ -50,7 +50,7 @@ OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1  MKL_NUM_THREADS=1 PYTHONPATH=./ python
 import scitopt
 
 tsk = scitopt.mesh.toy_problem.toy()
-cfg = scitopt.core.OC_RAMP_Config
+cfg = scitopt.core.OC_RAMP_Config()
 
 optimizer = scitopt.core.OC_Optimizer(cfg, tsk)
 
@@ -64,6 +64,7 @@ optimizer.optimize()
  This software does not exist in a vacuum.
 Scikit-Topt is standing on the shoulders of proverbial giants. In particular, I want to thank the following projects for constituting the technical backbone of the project:
  - Scipy
+ - PyAMG
  - Scikit-fem
  - Numba
  - MeshIO

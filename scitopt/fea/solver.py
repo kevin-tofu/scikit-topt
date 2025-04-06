@@ -45,8 +45,8 @@ def compute_compliance_basis_numba(
         elif n_dof < 30000:
             chosen_solver = 'cg'
         else:
-            # chosen_solver = 'pyamg'
-            chosen_solver = 'cg'
+            chosen_solver = 'pyamg'
+            # chosen_solver = 'cg'
             
     else:
         chosen_solver = solver
@@ -65,7 +65,7 @@ def compute_compliance_basis_numba(
             import pyamg
             ml = pyamg.ruge_stuben_solver(K)
             u = ml.solve(F_e, tol=1e-8)
-            info = 0
+            # info = 0
 
         elif chosen_solver == 'spsolve':
             u = scipy.sparse.linalg.spsolve(K_e, F_e)

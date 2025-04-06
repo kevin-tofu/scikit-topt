@@ -86,6 +86,8 @@ def toy_base(mesh_size: float):
         design_elements
     )
 
+def toy_test():
+    return toy_base(0.6)
 
 def toy1():
     return toy_base(0.3)
