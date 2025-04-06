@@ -278,6 +278,7 @@ class OC_Optimizer():
 
             dC_drho_sum[:] = 0.0
             strain_energy_sum = 0.0
+            compliance_avg = 0.0
             for force in force_list:
                 compliance, u = solver.compute_compliance_basis_numba(
                     tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
@@ -285,6 +286,7 @@ class OC_Optimizer():
                     rho_projected,
                     composer.ramp_interpolation_numba
                 )
+                compliance_avg += compliance
                 strain_energy = composer.compute_strain_energy_numba(
                     u,
                     # tsk.basis.element_dofs[:, tsk.design_elements],
@@ -311,6 +313,7 @@ class OC_Optimizer():
 
             dC_drho_sum /= len(force_list)
             strain_energy_sum /= len(force_list)
+            compliance_avg /= len(force_list)
 
             compute_safe_dC(dC_drho_sum)
 
@@ -376,7 +379,7 @@ class OC_Optimizer():
             self.recorder.feed_data("rho", rho_projected)
             self.recorder.feed_data("rho_diff", rho_diff)
             self.recorder.feed_data("scaling_rate", scaling_rate)
-            self.recorder.feed_data("compliance", compliance)
+            self.recorder.feed_data("compliance", compliance_avg)
             self.recorder.feed_data("dC", dC_drho_sum)
             self.recorder.feed_data("lambda_v", lmid)
             self.recorder.feed_data("vol_error", vol_error)

@@ -135,10 +135,10 @@ def toy_msh(
     e = skfem.ElementVector(skfem.ElementTetP1())
     basis = skfem.Basis(mesh, e, intorder=3)
     dirichlet_points = utils.get_point_indices_in_range(
-        basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
+        basis, (0.0, 0.3), (0.0, y_len), (0.0, z_len)
     )
     dirichlet_nodes = utils.get_dofs_in_range(
-        basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
+        basis, (0.0, 0.3), (0.0, y_len), (0.0, z_len)
     ).all()
     F_points = utils.get_point_indices_in_range(
         basis, (x_len, x_len), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)

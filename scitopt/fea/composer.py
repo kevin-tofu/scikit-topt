@@ -105,7 +105,7 @@ def assemble_stiffness_matrix(
 
 
 @njit(parallel=True)
-def _assemble_stiffness_matrix_numba(
+def _assemble_stiffness_matrix_numba_tet(
     p_coords, t_conn, element_dofs, E0, Emin, nu, E_elem
 ):
     n_elements = t_conn.shape[1]
@@ -164,6 +164,94 @@ def _assemble_stiffness_matrix_numba(
     return data, (row, col)
 
 
+
+@njit(parallel=True)
+def _assemble_stiffness_matrix_hex8_gauss(
+    p_coords, t_conn, element_dofs, E0, Emin, nu, E_elem):
+    n_elements = t_conn.shape[1]
+    ndofs = 24  # 8 nodes * 3 dofs
+
+    data = np.zeros(n_elements * ndofs * ndofs)
+    row = np.zeros_like(data, dtype=np.int32)
+    col = np.zeros_like(data, dtype=np.int32)
+
+    lam = (nu * E0) / ((1.0 + nu) * (1.0 - 2.0 * nu))
+    mu = E0 / (2.0 * (1.0 + nu))
+
+    C0 = np.array([
+        [lam + 2 * mu, lam,         lam,         0,       0,       0],
+        [lam,          lam + 2 * mu, lam,         0,       0,       0],
+        [lam,          lam,         lam + 2 * mu, 0,       0,       0],
+        [0,            0,           0,            mu,      0,       0],
+        [0,            0,           0,            0,       mu,      0],
+        [0,            0,           0,            0,       0,       mu],
+    ])
+
+    # Gauss points and weights for 2x2x2 integration
+    gp = np.array([ -np.sqrt(1/3), np.sqrt(1/3) ])
+    weights = np.array([1.0, 1.0])
+
+    for e in prange(n_elements):
+        nodes = t_conn[:, e]
+        coords = p_coords[:, nodes]  # (3, 8)
+        E_eff = E_elem[e]
+        C = C0 * (E_eff / E0)
+        ke = np.zeros((24, 24))
+
+        for i in range(2):
+            for j in range(2):
+                for k in range(2):
+                    xi, eta, zeta = gp[i], gp[j], gp[k]
+                    w = weights[i] * weights[j] * weights[k]
+
+                    # Shape function derivatives wrt natural coordinates
+                    dN_nat = np.array([
+                        [-(1 - eta) * (1 - zeta), -(1 - xi) * (1 - zeta), -(1 - xi) * (1 - eta)],
+                        [ (1 - eta) * (1 - zeta), -(1 + xi) * (1 - zeta), -(1 + xi) * (1 - eta)],
+                        [ (1 + eta) * (1 - zeta),  (1 + xi) * (1 - zeta), -(1 + xi) * (1 + eta)],
+                        [-(1 + eta) * (1 - zeta),  (1 - xi) * (1 - zeta), -(1 - xi) * (1 + eta)],
+                        [-(1 - eta) * (1 + zeta), -(1 - xi) * (1 + zeta),  (1 - xi) * (1 - eta)],
+                        [ (1 - eta) * (1 + zeta), -(1 + xi) * (1 + zeta),  (1 + xi) * (1 - eta)],
+                        [ (1 + eta) * (1 + zeta),  (1 + xi) * (1 + zeta),  (1 + xi) * (1 + eta)],
+                        [-(1 + eta) * (1 + zeta),  (1 - xi) * (1 + zeta),  (1 - xi) * (1 + eta)],
+                    ]) / 8.0  # shape (8, 3)
+
+                    J = np.zeros((3, 3))
+                    for a in range(8):
+                        for i_dim in range(3):
+                            for j_dim in range(3):
+                                J[i_dim, j_dim] += dN_nat[a, j_dim] * coords[i_dim, a]
+
+                    detJ = np.linalg.det(J)
+                    invJ = np.linalg.inv(J)
+                    dN_global = dN_nat @ invJ.T  # (8, 3)
+
+                    B = np.zeros((6, 24))
+                    for a in range(8):
+                        dNdx, dNdy, dNdz = dN_global[a]
+                        B[0, 3*a]     = dNdx
+                        B[1, 3*a + 1] = dNdy
+                        B[2, 3*a + 2] = dNdz
+                        B[3, 3*a]     = dNdy
+                        B[3, 3*a + 1] = dNdx
+                        B[4, 3*a + 1] = dNdz
+                        B[4, 3*a + 2] = dNdy
+                        B[5, 3*a + 2] = dNdx
+                        B[5, 3*a]     = dNdz
+
+                    ke += B.T @ C @ B * detJ * w
+
+        dofs = element_dofs[:, e]
+        for i in range(24):
+            for j in range(24):
+                idx = e * 24 * 24 + i * 24 + j
+                data[idx] = ke[i, j]
+                row[idx] = dofs[i]
+                col[idx] = dofs[j]
+
+    return data, (row, col)
+
+
 def assemble_stiffness_matrix_numba(
     basis, rho, E0, Emin, pval, nu,
     elem_func: Callable=ramp_interpolation_numba
@@ -172,9 +260,17 @@ def assemble_stiffness_matrix_numba(
     t_conn = basis.mesh.t
     element_dofs = basis.element_dofs
     E_elem = elem_func(rho, E0, Emin, pval)
-    data, rowcol = _assemble_stiffness_matrix_numba(
-        p_coords, t_conn, element_dofs, E0, Emin, nu, E_elem
-    )
+    
+    if isinstance(basis.mesh, skfem.MeshTet):
+        data, rowcol = _assemble_stiffness_matrix_numba_tet(
+            p_coords, t_conn, element_dofs, E0, Emin, nu, E_elem
+        )
+    elif isinstance(basis.mesh, skfem.MeshHex):
+        data, rowcol = _assemble_stiffness_matrix_hex8_gauss(
+            p_coords, t_conn, element_dofs, E0, Emin, nu, E_elem
+        )
+    else:
+        raise ValueError("mesh is not tet nor hex")
     
     ndof = basis.N
     return scipy.sparse.coo_matrix(
