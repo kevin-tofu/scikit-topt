@@ -235,6 +235,7 @@ class OC_Optimizer():
             )
             # rho[tsk.design_elements] -= np.average(rho[tsk.design_elements])
             # rho[tsk.design_elements] += cfg.vol_frac_init
+        rho[tsk.fixed_elements_in_rho] = 1.0
         print("np.average(rho[tsk.design_elements]):", np.average(rho[tsk.design_elements]))
         
         self.init_schedulers()
@@ -372,7 +373,7 @@ class OC_Optimizer():
                 f"λ: {lmid:.4e}, vol_error: {vol_error:.4f}, mean(rho): {np.mean(rho_candidate):.4f}"
             )
             rho[tsk.design_elements] = rho_candidate
-            # rho[tsk.fixed_elements_in_rho] = 1.0
+            rho[tsk.fixed_elements_in_rho] = 1.0
             rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
 
 

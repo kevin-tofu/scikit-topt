@@ -67,7 +67,8 @@ class TaskConfig():
         elements_related_with_bc = np.concatenate([bc_elements, bc_elements_adj, force_elements])
         
         # design_elements = np.setdiff1d(design_elements, elements_related_with_bc)
-        design_elements = setdiff1d(design_elements, force_elements)
+        # design_elements = setdiff1d(design_elements, force_elements)
+        design_elements = setdiff1d(design_elements, elements_related_with_bc)
 
         if len(design_elements) == 0:
             error_msg = "⚠️Warning: `design_elements` is empty"
@@ -75,7 +76,8 @@ class TaskConfig():
         
         all_elements = np.arange(mesh.nelements)
         # fixed_elements_in_rho = np.setdiff1d(all_elements, design_elements)
-        fixed_elements_in_rho = setdiff1d(all_elements, design_elements)
+        # fixed_elements_in_rho = setdiff1d(all_elements, design_elements)
+        fixed_elements_in_rho = np.concatenate([bc_elements, force_elements])
         print(
             f"all_elements: {all_elements.shape}",
             f"design_elements: {design_elements.shape}",
