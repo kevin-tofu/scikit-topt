@@ -192,7 +192,6 @@ Scikit-Topt is standing on the shoulders of proverbial giants. In particular, I 
  - Scikit-fem
  - Numba
  - MeshIO
- - Gmsh
  - Matplotlib
  - Topology Optimization Community
 
