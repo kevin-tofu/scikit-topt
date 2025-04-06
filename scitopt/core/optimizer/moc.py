@@ -119,7 +119,7 @@ class MOC_SIMP_Optimizer():
         self.recorder.add("rho_diff")
         self.recorder.add("vol_error")
         self.recorder.add("compliance")
-        self.recorder.add("dC")
+        self.recorder.add("dL")
         self.recorder.add("dC_drho_sum")
         self.recorder.add("lambda_v")
         self.recorder.add("strain_energy")
@@ -210,7 +210,7 @@ class MOC_SIMP_Optimizer():
         
         rho_prev = np.zeros_like(rho)
         rho_filtered = np.zeros_like(rho)
-        dC_drho_projected = np.empty_like(rho)
+        dC_drho_filtered = np.empty_like(rho)
 
         dC_drho_sum = np.zeros_like(rho[tsk.design_elements])
         force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
@@ -230,6 +230,7 @@ class MOC_SIMP_Optimizer():
             rho_filtered[tsk.fixed_elements_in_rho] = 1.0
             dC_drho_sum[:] = 0.0
             strain_energy_sum = 0.0
+            compliance_avg = 0.0
             for force in force_list:
                 compliance, u = solver.compute_compliance_basis_numba(
                     tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
@@ -237,6 +238,7 @@ class MOC_SIMP_Optimizer():
                     rho_filtered,
                     elem_func=composer.simp_interpolation_numba
                 )
+                compliance_avg += compliance
                 strain_energy = composer.compute_strain_energy_numba(
                     u,
                     tsk.basis.element_dofs,
@@ -248,22 +250,30 @@ class MOC_SIMP_Optimizer():
                     tsk.nu0,
                 )
                 strain_energy_sum += strain_energy
-                dC_drho_projected[:] = derivatives.dC_drho_simp(
+                
+                # rho_safe = np.clip(rho_filtered, 1e-3, 1.0)
+                dC_drho_filtered[:] = derivatives.dC_drho_simp(
                     rho_filtered, strain_energy, tsk.E0, tsk.Emin, p
                 )
-                dC_drho_full = self.helmholz_solver.gradient(dC_drho_projected)
-                dC_drho_sum += dC_drho_full[tsk.design_elements]
+                dC_drho_sum += self.helmholz_solver.gradient(dC_drho_filtered)[tsk.design_elements]
+                # dC_drho_full = self.helmholz_solver.gradient(dC_drho_filtered)
+                
 
             dC_drho_sum /= len(force_list)
             strain_energy_sum /= len(force_list)
+            compliance_avg /= len(force_list)
             
             rho_e = rho[tsk.design_elements]
             vol_error = np.mean(rho_e) - vol_frac
             lambda_v = cfg.lambda_decay * lambda_v + cfg.mu_p * vol_error
             lambda_v = np.clip(lambda_v, 1e-3, 50.0)
 
-            dL = dC_drho_sum + lambda_v  # dv = 1
-            dL /= np.mean(np.abs(dL)) + 1e-8
+            # dL = dC_drho_sum + lambda_v  # dv = 1
+            dL = dC_drho_sum + lambda_v * np.ones_like(dC_drho_sum)
+            # dL /= np.mean(np.abs(dL)) + 1e-8
+            # dL -= np.mean(dL)
+            dL_min, dL_max = dL.min(), dL.max()
+            dL = 2 * (dL - dL_min) / (dL_max - dL_min + 1e-8) - 1
 
 
             rho[tsk.design_elements] = kkt_moc_log_update(
@@ -299,9 +309,9 @@ class MOC_SIMP_Optimizer():
 
             self.recorder.feed_data("rho", rho)
             self.recorder.feed_data("rho_diff", rho_diff)
-            self.recorder.feed_data("compliance", compliance)
+            self.recorder.feed_data("compliance", compliance_avg)
             self.recorder.feed_data("dC_drho_sum", dC_drho_sum)
-            self.recorder.feed_data("dC", dC_drho_sum)
+            self.recorder.feed_data("dL", dL)
             self.recorder.feed_data("lambda_v", lambda_v)
             self.recorder.feed_data("vol_error", vol_error)
             self.recorder.feed_data("strain_energy", strain_energy)
@@ -424,6 +434,7 @@ if __name__ == '__main__':
     else:
         tsk = toy_problem.toy_msh(args.task)
     
+    tsk.Emin = 1e-2
     print("load toy problem")
     
     print("generate MOC_SIMP_Config")
