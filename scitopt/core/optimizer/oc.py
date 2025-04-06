@@ -494,7 +494,7 @@ if __name__ == '__main__':
     elif args.task == "toy2":
         tsk = toy_problem.toy2()
     else:
-        tsk = toy_problem.toy_toy_msh(args.task)
+        tsk = toy_problem.toy_msh(args.task)
     
     print("load toy problem")
     
