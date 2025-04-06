@@ -12,7 +12,7 @@
 - easy installation with pip/poetry
 
 
-![CI](https://github.com/kevin-tofu/scitopt/actions/workflows/python-tests.yml/badge.svg)
+![CI](https://github.com/kevin-tofu/scikit-topt/actions/workflows/python-tests.yml/badge.svg)
 
 
 ## ToDO
