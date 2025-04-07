@@ -42,8 +42,8 @@ class OC_RAMP_Config():
     move_limit_init: float = 0.8
     move_limit: float = 0.2
     move_limit_rate: float = 20.0
-    bisec_lambda_low: float=-20.0
-    bisec_lambda_high: float=20.0
+    bisec_lambda_lower: float=-20.0
+    bisec_lambda_higher: float=20.0
     restart: bool = False
     restart_from: int = -1
     
@@ -229,13 +229,14 @@ class OC_Optimizer():
         else:
             rho[tsk.design_elements] = np.minimum(
                 np.random.uniform(
-                    cfg.vol_frac_init - 0.2, cfg.vol_frac_init + 0.2, size=len(tsk.design_elements)
+                    cfg.vol_frac_init - 0.2,
+                    cfg.vol_frac_init + 0.2,
+                    size=len(tsk.design_elements)
                 ),
                 1.0
             )
             # rho[tsk.design_elements] -= np.average(rho[tsk.design_elements])
             # rho[tsk.design_elements] += cfg.vol_frac_init
-        rho[tsk.fixed_elements_in_rho] = 1.0
         print("np.average(rho[tsk.design_elements]):", np.average(rho[tsk.design_elements]))
         
         self.init_schedulers()
@@ -261,7 +262,7 @@ class OC_Optimizer():
 
         force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
 
-        for iter in range(iter_begin, cfg.max_iters + iter_begin):
+        for iter_local, iter in enumerate(range(iter_begin, cfg.max_iters + iter_begin)):
             print(f"iterations: {iter} / {cfg.max_iters}")
             p, vol_frac, beta, move_limit = (
                 self.schedulers.values(iter)[k] for k in ['p', 'vol_frac', 'beta', 'move_limit']
@@ -271,7 +272,7 @@ class OC_Optimizer():
 
             rho_prev[:] = rho[:]
             rho_filtered[:] = self.helmholz_solver.filter(rho)
-            rho_filtered[tsk.fixed_elements_in_rho] = 1.0
+            rho_filtered[tsk.bc_force_elements] = 1.0
 
             projection.heaviside_projection_inplace(
                 rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
@@ -309,8 +310,9 @@ class OC_Optimizer():
                 )
                 np.multiply(dC_drho_projected, dH, out=grad_filtered)
 
-                dC_drho_full = self.helmholz_solver.gradient(grad_filtered)
-                dC_drho_sum += dC_drho_full[tsk.design_elements]
+                # dC_drho_full = self.helmholz_solver.gradient(grad_filtered)
+                # dC_drho_sum += dC_drho_full[tsk.design_elements]
+                dC_drho_sum += self.helmholz_solver.gradient(grad_filtered)[tsk.design_elements]
 
             dC_drho_sum /= len(force_list)
             strain_energy_sum /= len(force_list)
@@ -321,7 +323,7 @@ class OC_Optimizer():
             rho_e = rho_projected[tsk.design_elements]
             # l1, l2 = 1e-9, 500
             # l1, l2 = -20.0, 500.0
-            l1, l2 = cfg.bisec_lambda_low, cfg.bisec_lambda_high
+            l1, l2 = cfg.bisec_lambda_lower, cfg.bisec_lambda_higher
             # for _ in range(100):
             # while abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
             # while abs(l2 - l1) > tolerance * (l1 + l2) / 2.0:
@@ -332,20 +334,20 @@ class OC_Optimizer():
                 #     break
                 
                 # 0 < lmid 
-                # np.negative(dC_drho_sum, out=scaling_rate)
-                # scaling_rate /= (lmid + eps)
-                # sign = np.sign(scaling_rate)
-                # np.abs(scaling_rate, out=scaling_rate)
-                # np.power(scaling_rate, eta, out=scaling_rate)
-                # scaling_rate *= sign
-                
-                # -k < lmid < l
-                np.negative(dC_drho_sum, out=scaling_rate) 
-                scaling_rate /= (np.abs(lmid) + eps)
+                np.negative(dC_drho_sum, out=scaling_rate)
+                scaling_rate /= (lmid + eps)
+                sign = np.sign(scaling_rate)
                 np.abs(scaling_rate, out=scaling_rate)
                 np.power(scaling_rate, eta, out=scaling_rate)
-                if lmid < 0:
-                    scaling_rate = 1.0 / scaling_rate
+                scaling_rate *= sign
+                
+                # -k < lmid < l
+                # np.negative(dC_drho_sum, out=scaling_rate)
+                # scaling_rate /= (np.abs(lmid) + eps)
+                # np.abs(scaling_rate, out=scaling_rate)
+                # np.power(scaling_rate, eta, out=scaling_rate)
+                # if lmid < 0:
+                #     scaling_rate = 1.0 / scaling_rate
 
                 # Clip
                 # np.clip(scaling_rate, 0.8, 1.2, out=scaling_rate)
@@ -373,11 +375,15 @@ class OC_Optimizer():
                 f"λ: {lmid:.4e}, vol_error: {vol_error:.4f}, mean(rho): {np.mean(rho_candidate):.4f}"
             )
             rho[tsk.design_elements] = rho_candidate
-            rho[tsk.fixed_elements_in_rho] = 1.0
+            # if iter_local < 120:
+            #     rho[tsk.bc_force_elements] = 1.0
+            # else:
+            #     rho[tsk.fixed_elements_in_rho] = 1.0
+            # rho[tsk.fixed_elements_in_rho] = 1.0
             rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
 
 
-            self.recorder.feed_data("rho", rho_projected)
+            self.recorder.feed_data("rho", rho_projected[tsk.design_elements])
             self.recorder.feed_data("rho_diff", rho_diff)
             self.recorder.feed_data("scaling_rate", scaling_rate)
             self.recorder.feed_data("compliance", compliance_avg)
@@ -412,7 +418,7 @@ class OC_Optimizer():
                 np.savez_compressed(
                     f"{cfg.dst_path}/data/{str(iter).zfill(6)}-rho.npz",
                     rho_design_elements=rho[tsk.design_elements],
-                    # compliance=compliance
+                    rho_projected_design_elements=rho_projected[tsk.design_elements],
                 )
 
             # https://qiita.com/fujitagodai4/items/7cad31cc488bbb51f895
@@ -421,14 +427,6 @@ class OC_Optimizer():
             rho_projected[tsk.design_elements],
             f"{self.cfg.dst_path}/rho-histo/last.jpg"
         )
-
-        # threshold = 0.5
-        # remove_elements = tsk.design_elements[rho_projected[tsk.design_elements] <= threshold]
-        # mask = ~np.isin(tsk.all_elements, remove_elements)
-        # kept_elements = tsk.all_elements[mask]
-        # Error
-        # visualization.export_submesh(tsk, kept_elements, 0.5, f"{self.cfg.dst_path}/cubic_top.vtk")
-        # self.export_mesh(rho_projected, "last")
         visualization.export_submesh(
             tsk, rho_projected, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
         )
@@ -500,7 +498,7 @@ if __name__ == '__main__':
         '--beta_eta', '-BE', type=float, default=0.5, help=''
     )
     parser.add_argument(
-        '--bisec_lambda_low', '-BSL', type=float, default=-20.0, help=''
+        '--bisec_lambda_lower', '-BSL', type=float, default=-20.0, help=''
     )
     parser.add_argument(
         '--bisec_lambda_higher', '-BSH', type=float, default=20.0, help=''

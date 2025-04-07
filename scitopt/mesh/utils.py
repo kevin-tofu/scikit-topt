@@ -83,6 +83,54 @@ def get_elements_with_points_fast(mesh, target_nodes):
     return np.ascontiguousarray(np.array(sorted(elems), dtype=np.int32))
 
 
+def get_elements_with_nodes_fast(
+    mesh: skfem.Mesh, target_nodes: np.ndarray | list[np.ndarray]
+) -> np.ndarray:
+    """
+    Fast retrieval of element indices that contain any of the given node indices.
+
+    Parameters
+    ----------
+    mesh : skfem.Mesh
+        The mesh object from scikit-fem.
+    target_nodes : np.ndarray | list[np.ndarray]
+        Array or list of arrays of global node indices.
+
+    Returns
+    -------
+    elems : np.ndarray
+        Sorted, unique array of element indices that include any of the target nodes.
+    """
+
+    # Initialize cache once
+    if not hasattr(get_elements_with_nodes_fast, "_cache"):
+        get_elements_with_nodes_fast._cache = {}
+
+    mesh_id = id(mesh)
+    if mesh_id not in get_elements_with_nodes_fast._cache:
+        # Build: node index → set of element indices
+        node_to_elements = defaultdict(set)
+        for e, nodes in enumerate(mesh.t.T):  # mesh.t.T: shape = (n_elements, nodes_per_element)
+            for n in nodes:
+                node_to_elements[n].add(e)
+        get_elements_with_nodes_fast._cache[mesh_id] = node_to_elements
+
+    node_to_elements = get_elements_with_nodes_fast._cache[mesh_id]
+
+    # Normalize target_nodes
+    if isinstance(target_nodes, np.ndarray):
+        all_target_nodes = np.unique(target_nodes)
+    else:
+        all_target_nodes = np.unique(np.concatenate(target_nodes))
+
+    # Accumulate matching element indices
+    elems = set()
+    for node in all_target_nodes:
+        elems.update(node_to_elements.get(node, []))
+
+    return np.ascontiguousarray(np.array(sorted(elems), dtype=np.int32))
+
+
 def build_element_adjacency_matrix_fast(mesh):
     node_to_elements = defaultdict(set)
     for e, nodes in enumerate(mesh.t.T):
@@ -116,9 +164,30 @@ def get_adjacent_elements_fast(adjacency, element_indices):
     return np.array(sorted(neighbors), dtype=np.int32)
 
 
+def get_boundary_nodes_from_elements(elements: np.ndarray, mesh: skfem.Mesh, dirichlet_nodes: np.ndarray) -> np.ndarray:
+    """
+    Given a set of element indices, return the indices of boundary (Dirichlet) nodes contained in those elements.
+
+    Parameters
+    ----------
+    elements : np.ndarray
+        Array of element indices (e.g., bc_force_elements).
+    mesh : skfem.Mesh
+        The skfem mesh object.
+    dirichlet_nodes : np.ndarray
+        Global indices of nodes where Dirichlet boundary conditions are applied.
+
+    Returns
+    -------
+    boundary_nodes : np.ndarray
+        Unique indices of boundary nodes contained in the specified elements.
+    """
+    element_nodes = mesh.t[:, elements].flatten()
+    boundary_nodes = np.intersect1d(element_nodes, dirichlet_nodes)
+    return boundary_nodes
+
 
 def in_box(coords, x_range, y_range, z_range):
-    """汎用的な座標範囲フィルタ"""
     return (
         (x_range[0] <= coords[0]) & (coords[0] <= x_range[1]) &
         (y_range[0] <= coords[1]) & (coords[1] <= y_range[1]) &
