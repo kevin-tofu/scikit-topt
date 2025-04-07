@@ -32,21 +32,20 @@ class OC_RAMP_Config():
     vol_frac: float = 0.4  # the maximum valume ratio
     vol_frac_rate: float = 20.0
     beta_init: float = 1.0
-    beta: float = 16
-    beta_rate: float = 20.
-    beta_eta: float = 0.5
-    filter_radius: float = 0.05
-    eta: float = 0.3
+    beta: float = 5
+    beta_rate: float = 12.
+    beta_eta: float = 0.50
+    filter_radius: float = 0.40
+    eta: float = 0.5
     rho_min: float = 1e-3
     rho_max: float = 1.0
-    move_limit_init: float = 0.8
-    move_limit: float = 0.2
-    move_limit_rate: float = 20.0
-    bisec_lambda_lower: float=-20.0
-    bisec_lambda_higher: float=20.0
+    move_limit_init: float = 0.20
+    move_limit: float = 0.15
+    move_limit_rate: float = 5.0
+    bisec_lambda_lower: float=1e-5
+    bisec_lambda_higher: float=500
     restart: bool = False
     restart_from: int = -1
-    
     
 
     @classmethod
@@ -272,7 +271,7 @@ class OC_Optimizer():
 
             rho_prev[:] = rho[:]
             rho_filtered[:] = self.helmholz_solver.filter(rho)
-            rho_filtered[tsk.bc_force_elements] = 1.0
+            rho_filtered[tsk.dirichlet_force_elements] = 1.0
 
             projection.heaviside_projection_inplace(
                 rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
@@ -376,7 +375,7 @@ class OC_Optimizer():
             )
             rho[tsk.design_elements] = rho_candidate
             # if iter_local < 120:
-            #     rho[tsk.bc_force_elements] = 1.0
+            #     rho[tsk.dirichlet_force_elements] = 1.0
             # else:
             #     rho[tsk.fixed_elements_in_rho] = 1.0
             # rho[tsk.fixed_elements_in_rho] = 1.0

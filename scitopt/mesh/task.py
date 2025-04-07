@@ -32,7 +32,7 @@ class TaskConfig():
     free_elements: np.ndarray
     all_elements: np.ndarray
     fixed_elements_in_rho: np.ndarray
-    bc_force_elements: np.ndarray
+    dirichlet_force_elements: np.ndarray
 
     @classmethod
     def from_defaults(
@@ -65,7 +65,7 @@ class TaskConfig():
                 mesh, force_points
             )
             
-        elements_related_with_bc = np.concatenate([bc_elements, bc_elements_adj, force_elements])
+        # elements_related_with_bc = np.concatenate([bc_elements, bc_elements_adj, force_elements])
         
         # design_elements = np.setdiff1d(design_elements, elements_related_with_bc)
         design_elements = setdiff1d(design_elements, force_elements)
@@ -77,12 +77,12 @@ class TaskConfig():
         
         all_elements = np.arange(mesh.nelements)
         fixed_elements_in_rho = setdiff1d(all_elements, design_elements)
-        bc_force_elements = np.concatenate([bc_elements, force_elements])
+        dirichlet_force_elements = np.concatenate([bc_elements, force_elements])
         print(
             f"all_elements: {all_elements.shape}",
             f"design_elements: {design_elements.shape}",
             f"fixed_elements_in_rho: {fixed_elements_in_rho.shape}",
-            f"bc_force_elements: {bc_force_elements.shape}"
+            f"dirichlet_force_elements: {dirichlet_force_elements.shape}"
         )
         # free_nodes = np.setdiff1d(np.arange(basis.N), dirichlet_nodes)
         free_nodes = setdiff1d(np.arange(basis.N), dirichlet_nodes)
@@ -122,7 +122,7 @@ class TaskConfig():
             free_elements,
             all_elements,
             fixed_elements_in_rho,
-            bc_force_elements
+            dirichlet_force_elements
         )
         
     def nodes_stats(self, dst_path: str):
