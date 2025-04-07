@@ -45,8 +45,8 @@ def compute_compliance_basis_numba(
         elif n_dof < 30000:
             chosen_solver = 'cg'
         else:
-            # chosen_solver = 'pyamg'
-            chosen_solver = 'cg'
+            chosen_solver = 'pyamg'
+            # chosen_solver = 'cg'
             
     else:
         chosen_solver = solver
@@ -88,6 +88,50 @@ def compute_compliance_basis_numba(
     f_free = force[free_nodes]
     compliance = f_free @ u[free_nodes]
     return (compliance, u)
+
+
+def compute_compliance_batch(
+    basis, free_nodes, dirichlet_nodes, force_batch,
+    E0, Emin, p, nu0,
+    rho,
+    elem_func: Callable = composer.ramp_interpolation_numba,
+    solver: Literal['spsolve'] = 'spsolve',
+    rtol: float = 1e-6,
+    maxiter: int = None,
+) -> tuple:
+    """
+    Parameters:
+        force_batch: np.ndarray of shape (n_dof, n_load_cases)
+    Returns:
+        compliance_all: np.ndarray of shape (n_load_cases,)
+        u_all: np.ndarray of shape (n_dof, n_load_cases)
+    """
+    K = composer.assemble_stiffness_matrix_numba(
+        basis, rho, E0, Emin, p, nu0, elem_func
+    )
+
+    n_cases = force_batch.shape[1]
+    n_dof = K.shape[0]
+    
+    # Apply boundary condition once (assuming same dirichlet_nodes for all)
+    K_e, _ = skfem.enforce(K, np.zeros(n_dof), D=dirichlet_nodes)
+    
+    # Apply boundary condition to all force vectors
+    F_batch = np.zeros((n_dof, n_cases))
+    for i in range(n_cases):
+        _, F_batch[:, i] = skfem.enforce(K, force_batch[:, i], D=dirichlet_nodes)
+
+    if solver != "spsolve":
+        raise NotImplementedError("Currently only 'spsolve' is supported for batch.")
+
+    # Solve Ku = f for all cases
+    u_all = scipy.sparse.linalg.spsolve(K_e, F_batch)  # shape: (n_dof, n_cases)
+
+    f_free = force_batch[free_nodes, :]
+    u_free = u_all[free_nodes, :]
+    compliance_all = np.sum(f_free * u_free, axis=0)  # f^T u for each case
+
+    return compliance_all, u_all
 
 
 def compute_compliance_simp(

@@ -5,17 +5,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def schedule_exp_slowdown(
-    it, total, start=1.0, target=0.4, rate=10.0
-):
+def schedule_exp_slowdown(it, total, start=1.0, target=0.4, rate=10.0):
     if total <= 0:
         raise ValueError("total must be positive")
 
     t = it / total
+    decay = np.exp(-rate * t)
+    final_decay = np.exp(-rate)
+
     if start > target:
-        return target + (start - target) * np.exp(-rate * t)
+        return target + (start - target) * (decay - final_decay) / (1 - final_decay)
     else:
-        return target - (target - start) * np.exp(-rate * t)
+        return target - (target - start) * (decay - final_decay) / (1 - final_decay)
 
 
 def schedule_exp_accelerate(
