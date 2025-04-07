@@ -45,8 +45,8 @@ def compute_compliance_basis_numba(
         elif n_dof < 30000:
             chosen_solver = 'cg'
         else:
-            chosen_solver = 'pyamg'
-            # chosen_solver = 'cg'
+            # chosen_solver = 'pyamg'
+            chosen_solver = 'cg'
             
     else:
         chosen_solver = solver
