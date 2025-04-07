@@ -43,7 +43,7 @@ class OC_RAMP_Config():
     move_limit: float = 0.15
     move_limit_rate: float = 5.0
     bisec_lambda_lower: float=1e-5
-    bisec_lambda_higher: float=500
+    bisec_lambda_upper: float=500
     restart: bool = False
     restart_from: int = -1
     
@@ -61,45 +61,64 @@ class OC_RAMP_Config():
             json.dump(asdict(self), f, indent=2)
 
 
-@njit
+# @njit
 def bisection_with_projection(
     dC, rho_e, rho_min, rho_max, move_limit,
     eta, eps, vol_frac,
     beta, beta_eta,
+    scaling_rate, rho_candidate, tmp_lower, tmp_upper,
     max_iter=100, tolerance=1e-4,
     l1 = 1.0,
     l2 = 1000.0
 ):
-
-    tanh_be = np.tanh(beta * beta_eta)
-    tanh_b1e = np.tanh(beta * (1.0 - beta_eta))
-    denom = tanh_be + tanh_b1e
-
-    for _ in range(max_iter):
+    # for _ in range(100):
+    # while abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
+    # while abs(l2 - l1) > tolerance * (l1 + l2) / 2.0:
+    while abs(l2 - l1) > tolerance:
         lmid = 0.5 * (l1 + l2)
+        # print("lmid:", lmid)
+        # if abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
+        #     break
+        
+        # 0 < lmid 
+        np.negative(dC, out=scaling_rate)
+        scaling_rate /= (lmid + eps)
+        sign = np.sign(scaling_rate)
+        np.abs(scaling_rate, out=scaling_rate)
+        np.power(scaling_rate, eta, out=scaling_rate)
+        scaling_rate *= sign
+        
+        # -k < lmid < l
+        # np.negative(dC_drho_sum, out=scaling_rate)
+        # scaling_rate /= (np.abs(lmid) + eps)
+        # np.abs(scaling_rate, out=scaling_rate)
+        # np.power(scaling_rate, eta, out=scaling_rate)
+        # if lmid < 0:
+        #     scaling_rate = 1.0 / scaling_rate
 
-        scaling_rate = -dC / (lmid + eps)
-        scaling_rate = np.sign(scaling_rate) * (np.abs(scaling_rate) ** eta)
-        scaling_rate = np.clip(scaling_rate, 0.8, 1.2)
+        # Clip
+        # np.clip(scaling_rate, 0.8, 1.2, out=scaling_rate)
+        np.clip(scaling_rate, 0.5, 1.5, out=scaling_rate)
+        # np.clip(scaling_rate, 0.1, 3.0, out=scaling_rate)
+        # np.clip(scaling_rate, 0.1, 5.0, out=scaling_rate)
+        
+        np.multiply(rho_e, scaling_rate, out=rho_candidate)
+        np.maximum(rho_e - move_limit, rho_min, out=tmp_lower)
+        np.minimum(rho_e + move_limit, rho_max, out=tmp_upper)
+        np.clip(rho_candidate, tmp_lower, tmp_upper, out=rho_candidate)
 
-        rho_candidate = rho_e * scaling_rate
-        lower = np.maximum(rho_e - move_limit, rho_min)
-        upper = np.minimum(rho_e + move_limit, rho_max)
-        rho_candidate = np.clip(rho_candidate, lower, upper)
-
-        rho_projected = (tanh_be + np.tanh(beta * (rho_candidate - beta_eta))) / denom
-
-        mean_rho = np.mean(rho_projected)
-        vol_error = mean_rho - vol_frac
-
-        if abs(vol_error) < 1e-3 or abs(l2 - l1) < tolerance * (l1 + l2) / 2.0:
+        projection.heaviside_projection_inplace(
+            rho_candidate, beta=beta, eta=beta_eta, out=rho_candidate
+        )
+        vol_error = np.mean(rho_candidate) - vol_frac
+        if abs(vol_error) < 1e-3:
             break
         if vol_error > 0:
             l1 = lmid
         else:
             l2 = lmid
-
-    return rho_candidate, lmid
+            
+    return rho_candidate, lmid, vol_error
 
 
 class OC_Optimizer():
@@ -320,56 +339,15 @@ class OC_Optimizer():
             compute_safe_dC(dC_drho_sum)
 
             rho_e = rho_projected[tsk.design_elements]
-            # l1, l2 = 1e-9, 500
-            # l1, l2 = -20.0, 500.0
-            l1, l2 = cfg.bisec_lambda_lower, cfg.bisec_lambda_higher
-            # for _ in range(100):
-            # while abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
-            # while abs(l2 - l1) > tolerance * (l1 + l2) / 2.0:
-            while abs(l2 - l1) > 1e-4:
-                lmid = 0.5 * (l1 + l2)
-                # print("lmid:", lmid)
-                # if abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
-                #     break
-                
-                # 0 < lmid 
-                np.negative(dC_drho_sum, out=scaling_rate)
-                scaling_rate /= (lmid + eps)
-                sign = np.sign(scaling_rate)
-                np.abs(scaling_rate, out=scaling_rate)
-                np.power(scaling_rate, eta, out=scaling_rate)
-                scaling_rate *= sign
-                
-                # -k < lmid < l
-                # np.negative(dC_drho_sum, out=scaling_rate)
-                # scaling_rate /= (np.abs(lmid) + eps)
-                # np.abs(scaling_rate, out=scaling_rate)
-                # np.power(scaling_rate, eta, out=scaling_rate)
-                # if lmid < 0:
-                #     scaling_rate = 1.0 / scaling_rate
-
-                # Clip
-                # np.clip(scaling_rate, 0.8, 1.2, out=scaling_rate)
-                np.clip(scaling_rate, 0.5, 1.5, out=scaling_rate)
-                # np.clip(scaling_rate, 0.1, 3.0, out=scaling_rate)
-                # np.clip(scaling_rate, 0.1, 5.0, out=scaling_rate)
-                
-                np.multiply(rho_e, scaling_rate, out=rho_candidate)
-                np.maximum(rho_e - move_limit, rho_min, out=tmp_lower)
-                np.minimum(rho_e + move_limit, rho_max, out=tmp_upper)
-                np.clip(rho_candidate, tmp_lower, tmp_upper, out=rho_candidate)
-
-                projection.heaviside_projection_inplace(
-                    rho_candidate, beta=beta, eta=cfg.beta_eta, out=rho_candidate
-                )
-                vol_error = np.mean(rho_candidate) - vol_frac
-                if abs(vol_error) < 1e-3:
-                    break
-                if vol_error > 0:
-                    l1 = lmid
-                else:
-                    l2 = lmid
-
+            rho_candidate, lmid, vol_error = bisection_with_projection(
+                dC_drho_sum, rho_e, cfg.rho_min, cfg.rho_max, move_limit,
+                cfg.eta, eps, vol_frac,
+                beta, cfg.beta_eta,
+                scaling_rate, rho_candidate, tmp_lower, tmp_upper,
+                max_iter=100, tolerance=1e-4,
+                l1 = cfg.bisec_lambda_lower,
+                l2 = cfg.bisec_lambda_upper
+            )
             print(
                 f"λ: {lmid:.4e}, vol_error: {vol_error:.4f}, mean(rho): {np.mean(rho_candidate):.4f}"
             )
@@ -391,15 +369,7 @@ class OC_Optimizer():
             self.recorder.feed_data("vol_error", vol_error)
             self.recorder.feed_data("strain_energy", strain_energy)
             
-            # if np.sum(np.abs(rho_diff)) < 1e-3:
-            #     noise_strength = 0.03
-            #     # rho[tsk.design_elements] += np.random.uniform(
-            #     #     -noise_strength, noise_strength, size=tsk.design_elements.shape
-            #     # )
-            #     rho[tsk.design_elements] += -safe_dC / (np.abs(safe_dC).max() + 1e-8) * 0.05 \
-            #         + np.random.normal(0, noise_strength, size=tsk.design_elements.shape)
-            #     rho[tsk.design_elements] = np.clip(rho[tsk.design_elements], cfg.rho_min, cfg.rho_max)
-
+            
             if iter % (cfg.max_iters // self.cfg.record_times) == 0 or iter == 1:
             # if True:
                 print(f"Saving at iteration {iter}")
@@ -500,7 +470,7 @@ if __name__ == '__main__':
         '--bisec_lambda_lower', '-BSL', type=float, default=-20.0, help=''
     )
     parser.add_argument(
-        '--bisec_lambda_higher', '-BSH', type=float, default=20.0, help=''
+        '--bisec_lambda_upper', '-BSH', type=float, default=20.0, help=''
     )
     parser.add_argument(
         '--restart', '-RS', type=misc.str2bool, default=False, help=''
