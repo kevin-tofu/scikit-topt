@@ -474,7 +474,7 @@ if __name__ == '__main__':
     def test_1():
         from scitopt.mesh import toy_problem
 
-        tsk = toy_problem.toy()
+        tsk = toy_problem.toy_msh("plate-0.2.msh")
         rho = np.ones(tsk.all_elements.shape)
 
         K1 = assemble_stiffness_matrix(
@@ -593,7 +593,8 @@ if __name__ == '__main__':
     def test_2():
         import time
         from scitopt.mesh import toy_problem
-        tsk = toy_problem.toy()
+        # tsk = toy_problem.toy1()
+        tsk = toy_problem.toy_msh("plate-0.2.msh")
         
         rho = np.ones(tsk.all_elements.shape)
         p = 1

@@ -148,7 +148,7 @@ def compute_compliance_simp(
 if __name__ == '__main__':
     
     from scitopt.mesh import toy_problem
-    tsk = toy_problem.toy()
+    tsk = toy_problem.toy_msh("plate-0.2.msh")
     
     rho = np.ones(tsk.all_elements.shape)
     p = 1.0

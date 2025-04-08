@@ -259,7 +259,7 @@ def apply_filter_gradient_cg(
 
 @dataclass
 class HelmholtzFilter():
-    A: scipy.sparse.linalg.SuperLU
+    A: csc_matrix
     V: csc_matrix
     A_solver: Optional[scipy.sparse.linalg.SuperLU]=None
     M: Optional[LinearOperator]=None
@@ -333,7 +333,9 @@ class HelmholtzFilter():
         self.maxiter = maxiter if maxiter > 0 else n_dof // 4
         
         # 
-        M_inv = 1.0 / self.A.diagonal()
+        eps = 1e-8
+        M_inv = 1.0 / (self.A.diagonal() + eps)
+
         def apply_M(x):
             return M_inv * x
 
