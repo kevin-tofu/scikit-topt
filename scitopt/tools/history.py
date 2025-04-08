@@ -10,11 +10,13 @@ class HistoryLogger():
         name: str,
         constants: Optional[list[float]]=None,
         constant_names: Optional[list[str]]=None,
+        ylog: bool=False
     ):
         self.data = list()
         self.name = name
         self.constants = constants
         self.constant_names = constant_names
+        self.ylog = ylog
     
     def exists(self):
         ret = True if len(self.data) > 0 else False
@@ -52,11 +54,13 @@ class HistoriesLogger():
         name: str,
         constants: Optional[list[float]] = None,
         constant_names: Optional[list[str]] = None,
+        ylog: bool = False
     ):
         hist = HistoryLogger(
             name,
             constants=constants,
-            constant_names=constant_names
+            constant_names=constant_names,
+            ylog=ylog
         )
         self.histories[name] = hist
     
@@ -109,6 +113,8 @@ class HistoriesLogger():
 
                     ax[p, q].set_xlabel("Iteration")
                     ax[p, q].set_ylabel(h.name)
+                    if h.ylog is True:
+                        ax[p, q].set_yscale('log')
                     ax[p, q].set_title(f"{h.name} Progress")
                     ax[p, q].grid(True)
 

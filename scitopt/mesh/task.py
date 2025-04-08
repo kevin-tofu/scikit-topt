@@ -24,8 +24,10 @@ class TaskConfig():
     basis: skfem.Basis
     dirichlet_points: np.ndarray
     dirichlet_nodes: np.ndarray
+    dirichlet_elements: np.ndarray
     force_points: np.ndarray | list[np.ndarray]
     force_nodes: np.ndarray | list[np.ndarray]
+    force_elements: np.ndarray
     force: np.ndarray | list[np.ndarray]
     design_elements: np.ndarray
     free_nodes: np.ndarray
@@ -50,12 +52,12 @@ class TaskConfig():
         design_elements: np.ndarray,
         
     ) -> 'TaskConfig':
-        bc_elements = utils.get_elements_with_points_fast(
+        dirichlet_elements = utils.get_elements_with_points_fast(
             mesh, [dirichlet_points]
         )
         adjacency = utils.build_element_adjacency_matrix_fast(mesh)
         # Elements that are next to boundary condition
-        bc_elements_adj = utils.get_adjacent_elements_fast(adjacency, bc_elements)
+        # bc_elements_adj = utils.get_adjacent_elements_fast(adjacency, dirichlet_elements)
         if isinstance(force_points, np.ndarray):
             force_elements = utils.get_elements_with_points_fast(
                 mesh, [force_points]
@@ -65,7 +67,7 @@ class TaskConfig():
                 mesh, force_points
             )
             
-        # elements_related_with_bc = np.concatenate([bc_elements, bc_elements_adj, force_elements])
+        # elements_related_with_bc = np.concatenate([bc_elements, dirichlet_elements_adj, force_elements])
         
         # design_elements = np.setdiff1d(design_elements, elements_related_with_bc)
         design_elements = setdiff1d(design_elements, force_elements)
@@ -77,7 +79,7 @@ class TaskConfig():
         
         all_elements = np.arange(mesh.nelements)
         fixed_elements_in_rho = setdiff1d(all_elements, design_elements)
-        dirichlet_force_elements = np.concatenate([bc_elements, force_elements])
+        dirichlet_force_elements = np.concatenate([dirichlet_elements, force_elements])
         print(
             f"all_elements: {all_elements.shape}",
             f"design_elements: {design_elements.shape}",
@@ -114,8 +116,10 @@ class TaskConfig():
             basis,
             dirichlet_points,
             dirichlet_nodes,
+            dirichlet_elements,
             force_points,
             force_nodes,
+            force_elements,
             force,
             design_elements,
             free_nodes,
