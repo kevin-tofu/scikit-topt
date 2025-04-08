@@ -114,7 +114,9 @@ def element_to_element_laplacian_tet(mesh, radius):
     return laplacian, volumes
 
 
-def helmholtz_filter_element_based_tet(rho_element: np.ndarray, mesh: skfem.Mesh, radius: float) -> np.ndarray:
+def helmholtz_filter_element_based_tet(
+    rho_element: np.ndarray, mesh: skfem.Mesh, radius: float
+) -> np.ndarray:
     """
     """
     laplacian, volumes = element_to_element_laplacian_tet(mesh, radius)
@@ -165,7 +167,8 @@ def prepare_helmholtz_filter(
     """
     laplacian, volumes = element_to_element_laplacian_tet(mesh, radius)
     
-    if exclude_nonadjacent and design_elements_mask is not None:
+    if False:
+    # if exclude_nonadjacent and design_elements_mask is not None:
         centroids = np.mean(mesh.p[:, mesh.t], axis=1).T
         tree = scipy.spatial.cKDTree(centroids)
         n_elements = mesh.t.shape[1]

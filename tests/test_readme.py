@@ -3,7 +3,7 @@ import pytest
 
 
 def oc_ramp_optimize(tsk):
-    cfg = scitopt.core.OC_RAMP_Config()
+    cfg = scitopt.core.OC_Config()
     cfg.max_iters = 1
     cfg.record_times = 1
 

@@ -141,6 +141,8 @@ def toy_msh(
     dirichlet_nodes = utils.get_dofs_in_range(
         basis, (0.0, 0.3), (0.0, y_len), (0.0, z_len)
     ).all()
+    # .nodal['u^1']
+    # .all()
     F_points = utils.get_point_indices_in_range(
         basis, (x_len-eps, x_len), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)
     )
@@ -156,7 +158,8 @@ def toy_msh(
     print("generate config")
     E0 = 1.0
     # F = [0.3, -0.3]
-    F = 0.3
+    # F = 0.3
+    F = 1.0
     print("F:", F)
     return task.TaskConfig.from_defaults(
         E0,

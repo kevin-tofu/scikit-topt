@@ -72,6 +72,7 @@ class TaskConfig():
         # design_elements = np.setdiff1d(design_elements, elements_related_with_bc)
         design_elements = setdiff1d(design_elements, force_elements)
         # design_elements = setdiff1d(design_elements, elements_related_with_bc)
+        
 
         if len(design_elements) == 0:
             error_msg = "⚠️Warning: `design_elements` is empty"
