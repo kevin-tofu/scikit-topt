@@ -1,4 +1,5 @@
 import os
+from typing import Literal
 import inspect
 import math
 import shutil
@@ -21,18 +22,19 @@ from scitopt.core import misc
 
 
 @dataclass
-class OC_RAMP_Config():
+class OC_Config():
     dst_path: str = "./result"
+    interpolation: Literal["SIMP", "RAMP"] = "SIMP"
     record_times: int=20
     max_iters: int=200
     p_init: float = 1.0
-    p: float = 3.0
+    p: float = 5.0
     p_rate: float = 20.0
     vol_frac_init: float = 0.8
     vol_frac: float = 0.4  # the maximum valume ratio
     vol_frac_rate: float = 20.0
     beta_init: float = 1.0
-    beta: float = 5
+    beta: float = 3
     beta_rate: float = 12.
     beta_eta: float = 0.50
     filter_radius: float = 0.40
@@ -122,7 +124,7 @@ def bisection_with_projection(
 class OC_Optimizer():
     def __init__(
         self,
-        cfg: OC_RAMP_Config,
+        cfg: OC_Config,
         tsk: scitopt.mesh.TaskConfig,
     ):
         self.cfg = cfg
@@ -144,7 +146,7 @@ class OC_Optimizer():
 
         self.recorder = tools.HistoriesLogger(self.cfg.dst_path)
         self.recorder.add("rho")
-        self.recorder.add("rho_diff")
+        self.recorder.add("dC_drho_dirichlet")
         self.recorder.add("lambda_v", ylog=True)
         self.recorder.add("vol_error")
         self.recorder.add("compliance")
@@ -221,27 +223,32 @@ class OC_Optimizer():
         cfg = self.cfg
         tsk = self.tsk
         
-        # @njit
-        # def compute_safe_dC(dC):
-        #     mean_val = np.mean(dC)
-        #     dC -= mean_val
-        #     norm = np.percentile(np.abs(dC), 95) + 1e-8
-        #     dC /= norm
-            
-        # @njit
-        # def compute_safe_dC(dC):
-        #     mean_val = np.mean(dC)
-        #     dC[:] -= mean_val
-        #     norm = np.percentile(np.abs(dC), 95) + 1e-8
-        #     if norm > 0:
-        #         dC[:] /= norm
-        #     dC[:] = np.where(dC < 1e-6, 1e-6, dC)
-        
         @njit
         def compute_safe_dC(dC):
+            mean_val = np.mean(dC)
+            dC -= mean_val
             norm = np.percentile(np.abs(dC), 95) + 1e-8
-            if norm > 0:
-                dC[:] /= norm
+            dC /= norm
+            
+        # @njit
+        # def compute_safe_dC(dC, min_threshold=0.05):
+        #     n = dC.size
+        #     mean_val = np.sum(dC) / n
+        #     for i in range(n):
+        #         dC[i] -= mean_val
+        #     max_abs = 0.0
+        #     for i in range(n):
+        #         abs_val = abs(dC[i])
+        #         if abs_val > max_abs:
+        #             max_abs = abs_val
+        #     norm = max_abs + 1e-8
+        #     for i in range(n):
+        #         dC[i] /= norm
+        #         if abs(dC[i]) < min_threshold:
+        #             dC[i] = min_threshold if dC[i] >= 0 else -min_threshold
+
+        #     return dC
+
 
 
         # @njit
@@ -249,19 +256,17 @@ class OC_Optimizer():
         #     norm = np.percentile(np.abs(dC), 95) + 1e-8
         #     if norm > 0:
         #         dC[:] /= norm
-            # dC[:] = np.maximum(dC, 1e-3)
-            # dC[:] = np.where(dC < 1e-4, 1e-4, dC)
-            
+
         # @njit
         # def compute_safe_dC(dC):
         #     norm = np.max(np.abs(dC)) + 1e-8
         #     dC[:] /= norm
         #     dC[:] = np.maximum(dC, 1e-4)
+        
 
-
-        rho = np.ones(tsk.all_elements.shape)
+        rho = np.ones_like(tsk.all_elements)
         rho = rho * cfg.vol_frac if cfg.vol_frac_rate < 0 else rho * cfg.vol_frac_init
-        # rho = np.ones(tsk.all_elements.shape) * 0.3
+        # rho = np.ones(tsk.all_elements.shape) * 0.5
         iter_begin = 1
         if cfg.restart:
             if cfg.restart_from > 0:
@@ -303,24 +308,38 @@ class OC_Optimizer():
         grad_filtered = np.empty_like(rho)
         dC_drho_projected = np.empty_like(rho)
 
-        dC_drho_sum = np.zeros_like(rho[tsk.design_elements])
+        # dC_drho_ave = np.zeros_like(rho)
+        dC_drho_full = np.zeros_like(rho)
+        dC_drho_dirichlet = np.zeros_like(rho[tsk.dirichlet_elements])
+        dC_drho_ave = np.zeros_like(rho[tsk.design_elements])
         scaling_rate = np.empty_like(rho[tsk.design_elements])
         rho_candidate = np.empty_like(rho[tsk.design_elements])
         tmp_lower = np.empty_like(rho[tsk.design_elements])
         tmp_upper = np.empty_like(rho[tsk.design_elements])
         force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
         rho_min_boundary = 0.2
+        
+        if cfg.interpolation == "SIMP":
+        # if False:
+            density_interpolation = composer.simp_interpolation_numba
+            dC_drho_func = derivatives.dC_drho_simp
+        elif cfg.interpolation == "RAMP":
+            density_interpolation = composer.ramp_interpolation_numba
+            dC_drho_func = derivatives.dC_drho_ramp
+        else:
+            raise ValueError("should be SIMP or RAMP")
+
 
         for iter_local, iter in enumerate(range(iter_begin, cfg.max_iters + iter_begin)):
             print(f"iterations: {iter} / {cfg.max_iters}")
             p, vol_frac, beta, move_limit = (
                 self.schedulers.values(iter)[k] for k in ['p', 'vol_frac', 'beta', 'move_limit']
             )
-            # beta = 1.0
             print(f"p {p:.4f}, vol_frac {vol_frac:.4f}, beta {beta:.4f}, move_limit {move_limit:.4f}")
 
             rho_prev[:] = rho[:]
             rho_filtered[:] = self.helmholz_solver.filter(rho)
+            rho_filtered[tsk.force_elements] = 1.0
             # rho_filtered[tsk.dirichlet_force_elements] = 1.0
             # rho_filtered[tsk.dirichlet_force_elements] = 1.0
             # if iter_local < 120:
@@ -331,20 +350,24 @@ class OC_Optimizer():
             projection.heaviside_projection_inplace(
                 rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
             )
+            # if True:
             if False:
                 rho_projected[tsk.dirichlet_elements] = np.maximum(
                     rho_projected[tsk.dirichlet_elements], rho_min_boundary
                 )
 
-            dC_drho_sum[:] = 0.0
+            dC_drho_ave[:] = 0.0
+            dC_drho_dirichlet[:] = 0.0
             strain_energy_sum = 0.0
             compliance_avg = 0.0
+            # dC_drho_dirichlet_scaling = True if iter_local < 50 else False
             for force in force_list:
                 compliance, u = solver.compute_compliance_basis_numba(
                     tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
                     tsk.E0, tsk.Emin, p, tsk.nu0,
                     rho_projected,
-                    composer.ramp_interpolation_numba
+                    # rho_filtered,
+                    density_interpolation
                 )
                 compliance_avg += compliance
                 strain_energy = composer.compute_strain_energy_numba(
@@ -353,36 +376,45 @@ class OC_Optimizer():
                     tsk.basis.element_dofs,
                     tsk.mesh.p,
                     rho_projected,
+                    # rho_filtered,
                     tsk.E0,
                     tsk.Emin,
                     p,
                     tsk.nu0,
                 )
                 strain_energy_sum += strain_energy
-                dC_drho_projected[:] = derivatives.dC_drho_ramp(
-                    rho_projected, strain_energy, tsk.E0, tsk.Emin, p
+                dC_drho_projected[:] = dC_drho_func(
+                    # rho_filtered,
+                    rho_projected,
+                    strain_energy, tsk.E0, tsk.Emin, p
                 )
-
                 projection.heaviside_projection_derivative_inplace(
-                    rho_filtered, beta=beta, eta=cfg.beta_eta, out=dH
+                    rho_filtered,
+                    beta=beta, eta=cfg.beta_eta, out=dH
                 )
                 np.multiply(dC_drho_projected, dH, out=grad_filtered)
+                dC_drho_full[:] = self.helmholz_solver.gradient(grad_filtered)
+                # if dC_drho_dirichlet_scaling:
+                #     dC_drho_full[tsk.dirichlet_elements] *= 10.0
+                dC_drho_ave += dC_drho_full[tsk.design_elements]
+                # dC_drho_ave += self.helmholz_solver.gradient(grad_filtered)
+                dC_drho_dirichlet += dC_drho_full[tsk.dirichlet_elements]
 
-                # dC_drho_full = self.helmholz_solver.gradient(grad_filtered)
-                # dC_drho_sum += dC_drho_full[tsk.design_elements]
-                dC_drho_sum += self.helmholz_solver.gradient(grad_filtered)[tsk.design_elements]
-
-            dC_drho_sum /= len(force_list)
+            dC_drho_ave /= len(force_list)
+            dC_drho_dirichlet /= len(force_list)
             strain_energy_sum /= len(force_list)
             compliance_avg /= len(force_list)
 
-            compute_safe_dC(dC_drho_sum)
+            compute_safe_dC(dC_drho_ave)
+            # dC_drho_ave[:] = self.helmholz_solver.filter(dC_drho_ave)
 
             rho_e = rho_projected[tsk.design_elements]
             # bisection_with_projection
             # bisection_with_projection_bi
             rho_candidate, lmid, vol_error = bisection_with_projection(
-                dC_drho_sum, rho_e, cfg.rho_min, cfg.rho_max, move_limit,
+                dC_drho_ave,
+                # dC_drho_ave[tsk.design_elements],
+                rho_e, cfg.rho_min, cfg.rho_max, move_limit,
                 cfg.eta, eps, vol_frac,
                 beta, cfg.beta_eta,
                 scaling_rate, rho_candidate, tmp_lower, tmp_upper,
@@ -403,10 +435,10 @@ class OC_Optimizer():
 
 
             self.recorder.feed_data("rho", rho_projected[tsk.design_elements])
-            self.recorder.feed_data("rho_diff", rho_diff)
+            self.recorder.feed_data("dC_drho_dirichlet", dC_drho_dirichlet)
             self.recorder.feed_data("scaling_rate", scaling_rate)
             self.recorder.feed_data("compliance", compliance_avg)
-            self.recorder.feed_data("dC", dC_drho_sum)
+            self.recorder.feed_data("dC", dC_drho_ave)
             self.recorder.feed_data("lambda_v", lmid)
             self.recorder.feed_data("vol_error", vol_error)
             self.recorder.feed_data("strain_energy", strain_energy)
@@ -453,7 +485,9 @@ if __name__ == '__main__':
         description=''
     )
 
-    
+    parser.add_argument(
+        '--interpolation', '-I', type=str, default="SIMP", help=''
+    )
     parser.add_argument(
         '--max_iters', '-NI', type=int, default=200, help=''
     )
@@ -540,8 +574,8 @@ if __name__ == '__main__':
     
     print("load toy problem")
     
-    print("generate OC_RAMP_Config")
-    cfg = OC_RAMP_Config.from_defaults(
+    print("generate OC_Config")
+    cfg = OC_Config.from_defaults(
         **vars(args)
     )
     
