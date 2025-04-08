@@ -126,7 +126,7 @@ def toy_msh(
     import pathlib
     x_len = 8.0
     y_len = 6.0
-    z_len = 4.0
+    z_len = 2.0
     eps = 0.1
     mesh = skfem.MeshTet.load(pathlib.Path(msh_path))
     e = skfem.ElementVector(skfem.ElementTetP1())

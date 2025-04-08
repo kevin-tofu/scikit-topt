@@ -37,7 +37,7 @@ class OC_RAMP_Config():
     beta_eta: float = 0.50
     filter_radius: float = 0.40
     eta: float = 0.5
-    rho_min: float = 1e-3
+    rho_min: float = 0.05
     rho_max: float = 1.0
     move_limit_init: float = 0.20
     move_limit: float = 0.15
@@ -61,7 +61,7 @@ class OC_RAMP_Config():
             json.dump(asdict(self), f, indent=2)
 
 
-# @njit
+
 def bisection_with_projection(
     dC, rho_e, rho_min, rho_max, move_limit,
     eta, eps, vol_frac,
@@ -87,18 +87,10 @@ def bisection_with_projection(
         np.abs(scaling_rate, out=scaling_rate)
         np.power(scaling_rate, eta, out=scaling_rate)
         scaling_rate *= sign
-        
-        # -k < lmid < l
-        # np.negative(dC_drho_sum, out=scaling_rate)
-        # scaling_rate /= (np.abs(lmid) + eps)
-        # np.abs(scaling_rate, out=scaling_rate)
-        # np.power(scaling_rate, eta, out=scaling_rate)
-        # if lmid < 0:
-        #     scaling_rate = 1.0 / scaling_rate
 
         # Clip
-        # np.clip(scaling_rate, 0.8, 1.2, out=scaling_rate)
-        np.clip(scaling_rate, 0.5, 1.5, out=scaling_rate)
+        np.clip(scaling_rate, 0.8, 1.2, out=scaling_rate)
+        # np.clip(scaling_rate, 0.5, 1.5, out=scaling_rate)
         # np.clip(scaling_rate, 0.1, 3.0, out=scaling_rate)
         # np.clip(scaling_rate, 0.1, 5.0, out=scaling_rate)
         
@@ -111,14 +103,20 @@ def bisection_with_projection(
             rho_candidate, beta=beta, eta=beta_eta, out=rho_candidate
         )
         vol_error = np.mean(rho_candidate) - vol_frac
-        if abs(vol_error) < 1e-3:
+        if abs(vol_error) < 1e-6:
             break
         if vol_error > 0:
             l1 = lmid
         else:
             l2 = lmid
+        
+        # if abs(l2 - l1) < 1e-6:
+        #     l1 *= 0.9
+        #     l2 *= 1.1
             
     return rho_candidate, lmid, vol_error
+
+
 
 
 class OC_Optimizer():
@@ -147,7 +145,7 @@ class OC_Optimizer():
         self.recorder = tools.HistoriesLogger(self.cfg.dst_path)
         self.recorder.add("rho")
         self.recorder.add("rho_diff")
-        self.recorder.add("lambda_v")
+        self.recorder.add("lambda_v", ylog=True)
         self.recorder.add("vol_error")
         self.recorder.add("compliance")
         self.recorder.add("dC")
@@ -223,14 +221,47 @@ class OC_Optimizer():
         cfg = self.cfg
         tsk = self.tsk
         
+        # @njit
+        # def compute_safe_dC(dC):
+        #     mean_val = np.mean(dC)
+        #     dC -= mean_val
+        #     norm = np.percentile(np.abs(dC), 95) + 1e-8
+        #     dC /= norm
+            
+        # @njit
+        # def compute_safe_dC(dC):
+        #     mean_val = np.mean(dC)
+        #     dC[:] -= mean_val
+        #     norm = np.percentile(np.abs(dC), 95) + 1e-8
+        #     if norm > 0:
+        #         dC[:] /= norm
+        #     dC[:] = np.where(dC < 1e-6, 1e-6, dC)
+        
         @njit
         def compute_safe_dC(dC):
-            mean_val = np.mean(dC)
-            dC -= mean_val
             norm = np.percentile(np.abs(dC), 95) + 1e-8
-            dC /= norm
+            if norm > 0:
+                dC[:] /= norm
+
+
+        # @njit
+        # def compute_safe_dC(dC):
+        #     norm = np.percentile(np.abs(dC), 95) + 1e-8
+        #     if norm > 0:
+        #         dC[:] /= norm
+            # dC[:] = np.maximum(dC, 1e-3)
+            # dC[:] = np.where(dC < 1e-4, 1e-4, dC)
+            
+        # @njit
+        # def compute_safe_dC(dC):
+        #     norm = np.max(np.abs(dC)) + 1e-8
+        #     dC[:] /= norm
+        #     dC[:] = np.maximum(dC, 1e-4)
+
 
         rho = np.ones(tsk.all_elements.shape)
+        rho = rho * cfg.vol_frac if cfg.vol_frac_rate < 0 else rho * cfg.vol_frac_init
+        # rho = np.ones(tsk.all_elements.shape) * 0.3
         iter_begin = 1
         if cfg.restart:
             if cfg.restart_from > 0:
@@ -245,16 +276,16 @@ class OC_Optimizer():
             rho[tsk.design_elements] = data["rho_design_elements"]
             del data
         else:
-            rho[tsk.design_elements] = np.minimum(
-                np.random.uniform(
-                    cfg.vol_frac_init - 0.2,
-                    cfg.vol_frac_init + 0.2,
-                    size=len(tsk.design_elements)
-                ),
-                1.0
-            )
-            # rho[tsk.design_elements] -= np.average(rho[tsk.design_elements])
-            # rho[tsk.design_elements] += cfg.vol_frac_init
+            # rho[tsk.design_elements] = np.minimum(
+            #     np.random.uniform(
+            #         cfg.vol_frac_init - 0.2,
+            #         cfg.vol_frac_init + 0.2,
+            #         size=len(tsk.design_elements)
+            #     ),
+            #     1.0
+            # )
+            pass
+        rho[tsk.dirichlet_force_elements] = 1.0
         print("np.average(rho[tsk.design_elements]):", np.average(rho[tsk.design_elements]))
         
         self.init_schedulers()
@@ -277,8 +308,8 @@ class OC_Optimizer():
         rho_candidate = np.empty_like(rho[tsk.design_elements])
         tmp_lower = np.empty_like(rho[tsk.design_elements])
         tmp_upper = np.empty_like(rho[tsk.design_elements])
-
         force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
+        rho_min_boundary = 0.2
 
         for iter_local, iter in enumerate(range(iter_begin, cfg.max_iters + iter_begin)):
             print(f"iterations: {iter} / {cfg.max_iters}")
@@ -290,11 +321,20 @@ class OC_Optimizer():
 
             rho_prev[:] = rho[:]
             rho_filtered[:] = self.helmholz_solver.filter(rho)
-            rho_filtered[tsk.dirichlet_force_elements] = 1.0
+            # rho_filtered[tsk.dirichlet_force_elements] = 1.0
+            # rho_filtered[tsk.dirichlet_force_elements] = 1.0
+            # if iter_local < 120:
+            #     rho_filtered[tsk.dirichlet_force_elements] = 1.0
+            # else:
+            #     rho_filtered[tsk.fixed_elements_in_rho] = 1.0
 
             projection.heaviside_projection_inplace(
                 rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
             )
+            if False:
+                rho_projected[tsk.dirichlet_elements] = np.maximum(
+                    rho_projected[tsk.dirichlet_elements], rho_min_boundary
+                )
 
             dC_drho_sum[:] = 0.0
             strain_energy_sum = 0.0
@@ -339,6 +379,8 @@ class OC_Optimizer():
             compute_safe_dC(dC_drho_sum)
 
             rho_e = rho_projected[tsk.design_elements]
+            # bisection_with_projection
+            # bisection_with_projection_bi
             rho_candidate, lmid, vol_error = bisection_with_projection(
                 dC_drho_sum, rho_e, cfg.rho_min, cfg.rho_max, move_limit,
                 cfg.eta, eps, vol_frac,
@@ -355,8 +397,8 @@ class OC_Optimizer():
             # if iter_local < 120:
             #     rho[tsk.dirichlet_force_elements] = 1.0
             # else:
-            #     rho[tsk.fixed_elements_in_rho] = 1.0
-            # rho[tsk.fixed_elements_in_rho] = 1.0
+            #     rho[tsk.force_elements] = 1.0
+            # rho[tsk.force_elements] = 1.0
             rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
 
 
@@ -416,7 +458,7 @@ if __name__ == '__main__':
         '--max_iters', '-NI', type=int, default=200, help=''
     )
     parser.add_argument(
-        '--filter_radius', '-DR', type=float, default=0.05, help=''
+        '--filter_radius', '-DR', type=float, default=0.8, help=''
     )
     parser.add_argument(
         '--move_limit_init', '-MLI', type=float, default=0.8, help=''
@@ -477,6 +519,9 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--restart_from', '-RF', type=int, default=-1, help=''
+    )
+    parser.add_argument(
+        '--rho_min', '-RM', type=float, default=0.01, help=''
     )
     parser.add_argument(
         '--task', '-T', type=str, default="toy1", help=''

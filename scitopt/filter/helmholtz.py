@@ -155,12 +155,39 @@ def compute_filter_gradient_matrix(mesh: skfem.Mesh, radius: float):
     return filter_grad_vec, filter_jacobian_matrix
 
 
-def prepare_helmholtz_filter(mesh: skfem.Mesh, radius: float):
+def prepare_helmholtz_filter(
+    mesh: skfem.Mesh, radius: float,
+    design_elements_mask: Optional[np.ndarray] = None,
+    exclude_nonadjacent: bool = False,
+):
     """
     Precompute and return the matrices and solver for Helmholtz filter.
     """
     laplacian, volumes = element_to_element_laplacian_tet(mesh, radius)
-    volumes_normalized = volumes / np.mean(volumes)
+    
+    if exclude_nonadjacent and design_elements_mask is not None:
+        centroids = np.mean(mesh.p[:, mesh.t], axis=1).T
+        tree = scipy.spatial.cKDTree(centroids)
+        n_elements = mesh.t.shape[1]
+        valid_mask = np.zeros(n_elements, dtype=bool)
+
+        for i in range(n_elements):
+            idx = tree.query_ball_point(centroids[i], r=radius)
+            if np.any(design_elements_mask[idx]):
+                valid_mask[i] = True
+
+        laplacian = laplacian.tolil()
+        for i in range(n_elements):
+            if not valid_mask[i]:
+                laplacian.rows[i] = []
+                laplacian.data[i] = []
+        laplacian = laplacian.tocsc()
+
+        mean_volume = np.mean(volumes[valid_mask]) if np.any(valid_mask) else 1.0
+        volumes_normalized = volumes / mean_volume
+        volumes_normalized[~valid_mask] = 0.0
+    else:
+        volumes_normalized = volumes / np.mean(volumes)
     # V = csc_matrix(np.diag(volumes_normalized))
     V = scipy.sparse.diags(volumes_normalized, format="csc")
     A = V + radius**2 * laplacian
@@ -245,9 +272,15 @@ class HelmholtzFilter():
         cls,
         mesh: skfem.Mesh,
         radius: float,
-        dst_path: Optional[str]=None
+        dst_path: Optional[str]=None,
+        design_mask: Optional[np.ndarray]=None
     ):
-        A, V = prepare_helmholtz_filter(mesh, radius)
+        exclude_nonadjacent = False if design_mask is None else True
+        A, V = prepare_helmholtz_filter(
+            mesh, radius,
+            design_elements_mask=design_mask,
+            exclude_nonadjacent=exclude_nonadjacent
+        )
         if isinstance(dst_path, str):
             scipy.sparse.save_npz(f"{dst_path}/V.npz", V)
             scipy.sparse.save_npz(f"{dst_path}/A.npz", A)
