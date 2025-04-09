@@ -315,8 +315,6 @@ class OC_Optimizer():
         tmp_lower = np.empty_like(rho[tsk.design_elements])
         tmp_upper = np.empty_like(rho[tsk.design_elements])
         force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
-        rho_min_boundary = 0.2
-        
         if cfg.interpolation == "SIMP":
         # if False:
             density_interpolation = composer.simp_interpolation_numba
@@ -326,7 +324,6 @@ class OC_Optimizer():
             dC_drho_func = derivatives.dC_drho_ramp
         else:
             raise ValueError("should be SIMP or RAMP")
-
 
         for iter_local, iter in enumerate(range(iter_begin, cfg.max_iters + iter_begin)):
             print(f"iterations: {iter} / {cfg.max_iters}")
@@ -473,7 +470,7 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
-        '--interpolation', '-I', type=str, default="SIMP", help=''
+        '--interpolation', '-I', type=str, default="RAMP", help=''
     )
     parser.add_argument(
         '--max_iters', '-NI', type=int, default=200, help=''
