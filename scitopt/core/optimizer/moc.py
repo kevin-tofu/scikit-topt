@@ -194,7 +194,8 @@ class MOC_Optimizer():
         tsk = self.tsk
         cfg = self.cfg
         rho = np.ones(tsk.all_elements.shape)
-        rho = rho * cfg.vol_frac if cfg.vol_frac_rate < 0 else rho * cfg.vol_frac_init
+        # rho = rho * cfg.vol_frac if cfg.vol_frac_rate < 0 else rho * cfg.vol_frac_init
+        rho *= 0.5
         iter_begin = 1
         if cfg.restart:
             if cfg.restart_from > 0:
@@ -211,7 +212,7 @@ class MOC_Optimizer():
         else:
             pass
 
-        rho[tsk.dirichlet_force_elements] = 1.0
+        # rho[tsk.dirichlet_force_elements] = 1.0
         self.init_schedulers()
         
         if cfg.interpolation == "SIMP":
