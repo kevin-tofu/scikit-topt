@@ -129,7 +129,53 @@ class TaskConfig():
             fixed_elements_in_rho,
             dirichlet_force_elements
         )
+
         
+    def nodes_and_elements_stats(self, dst_path: str):
+        node_points = self.mesh.p.T  # shape = (n_points, 3)
+        tree_nodes = cKDTree(node_points)
+        dists_node, _ = tree_nodes.query(node_points, k=2)
+        node_nearest_dists = dists_node[:, 1]
+
+        element_centers = np.mean(self.mesh.p[:, self.mesh.t], axis=1).T
+        tree_elems = cKDTree(element_centers)
+        dists_elem, _ = tree_elems.query(element_centers, k=2)
+        element_nearest_dists = dists_elem[:, 1]
+
+        print("===Distance between nodes ===")
+        print(f"min:    {np.min(node_nearest_dists):.4f}")
+        print(f"max:    {np.max(node_nearest_dists):.4f}")
+        print(f"mean:   {np.mean(node_nearest_dists):.4f}")
+        print(f"median: {np.median(node_nearest_dists):.4f}")
+        print(f"std:    {np.std(node_nearest_dists):.4f}")
+
+        print("\n=== Distance between elements ===")
+        print(f"min:    {np.min(element_nearest_dists):.4f}")
+        print(f"max:    {np.max(element_nearest_dists):.4f}")
+        print(f"mean:   {np.mean(element_nearest_dists):.4f}")
+        print(f"median: {np.median(element_nearest_dists):.4f}")
+        print(f"std:    {np.std(element_nearest_dists):.4f}")
+
+        plt.clf()
+        fig, axs = plt.subplots(1, 2, figsize=(14, 6))
+
+        axs[0].hist(node_nearest_dists, bins=30, edgecolor='black')
+        axs[0].set_title("Nearest Neighbor Distance (Nodes)")
+        axs[0].set_xlabel("Distance")
+        axs[0].set_ylabel("Count")
+        axs[0].grid(True)
+
+        axs[1].hist(element_nearest_dists, bins=30, edgecolor='black')
+        axs[1].set_title("Nearest Neighbor Distance (Element Centers)")
+        axs[1].set_xlabel("Distance")
+        axs[1].set_ylabel("Count")
+        axs[1].grid(True)
+
+        fig.tight_layout()
+        fig.savefig(f"{dst_path}/node_and_element_distance_histogram.jpg")
+        plt.close("all")
+
+
     def nodes_stats(self, dst_path: str):
         points = self.mesh.p.T  # shape = (n_points, 3)
         tree = cKDTree(points)

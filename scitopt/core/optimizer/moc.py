@@ -103,7 +103,7 @@ class MOC_SIMP_Optimizer():
             os.makedirs(self.cfg.dst_path)
         # self.tsk.export(self.cfg.dst_path)
         self.cfg.export(self.cfg.dst_path)
-        self.tsk.nodes_stats(self.cfg.dst_path)
+        self.tsk.nodes_and_elements_stats(self.cfg.dst_path)
         
         if os.path.exists(f"{self.cfg.dst_path}/mesh_rho"):
             shutil.rmtree(f"{self.cfg.dst_path}/mesh_rho")
