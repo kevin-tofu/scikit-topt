@@ -1,5 +1,6 @@
 import os
 import math
+from typing import Literal
 import inspect
 import shutil
 import json
@@ -19,9 +20,11 @@ from scitopt.fea import composer
 from scitopt.core import misc
 
 
+
 @dataclass
-class MOC_SIMP_Config():
+class MOC_Config():
     dst_path: str = "./result"
+    interpolation: Literal["SIMP", "RAMP"] = "SIMP"
     record_times: int=20
     max_iters: int=200
     p_init: float = 1.0
@@ -30,6 +33,10 @@ class MOC_SIMP_Config():
     vol_frac_init: float = 0.8
     vol_frac: float = 0.4
     vol_frac_rate: float = 20.0
+    beta_init: float = 1.0
+    beta: float = 3
+    beta_rate: float = 12.
+    beta_eta: float = 0.50
     filter_radius: float = 0.5
     eta: float = 0.3
     mu_p: float = 10.0
@@ -91,10 +98,10 @@ def kkt_moc_log_update(rho, dL, move, eta, rho_min, rho_max):
     return rho_new
 
 
-class MOC_SIMP_Optimizer():
+class MOC_Optimizer():
     def __init__(
         self,
-        cfg: MOC_SIMP_Config,
+        cfg: MOC_Config,
         tsk: scitopt.mesh.TaskConfig,
     ):
         self.cfg = cfg
@@ -116,14 +123,13 @@ class MOC_SIMP_Optimizer():
 
         self.recorder = tools.HistoriesLogger(self.cfg.dst_path)
         self.recorder.add("rho")
-        self.recorder.add("rho_diff")
+        self.recorder.add("dC_drho_dirichlet")
         self.recorder.add("vol_error")
         self.recorder.add("compliance")
         self.recorder.add("dL")
-        self.recorder.add("dC_drho_sum")
-        self.recorder.add("lambda_v")
+        self.recorder.add("dC")
+        self.recorder.add("lambda_v", ylog=True)
         self.recorder.add("strain_energy")
-        
         self.schedulers = tools.Schedulers(self.cfg.dst_path)
     
     
@@ -133,6 +139,7 @@ class MOC_SIMP_Optimizer():
         p_init = cfg.p_init
         vol_frac_init = cfg.vol_frac_init
         move_limit_init = cfg.move_limit_init
+        beta_init = cfg.beta_init
         self.schedulers.add(
             "p",
             p_init,
@@ -154,6 +161,13 @@ class MOC_SIMP_Optimizer():
             move_limit_init,
             cfg.move_limit,
             cfg.move_limit_rate,
+            cfg.max_iters
+        )
+        self.schedulers.add(
+            "beta",
+            beta_init,
+            cfg.beta,
+            cfg.beta_rate,
             cfg.max_iters
         )
         self.schedulers.export()
@@ -178,10 +192,8 @@ class MOC_SIMP_Optimizer():
     def optimize(self):
         tsk = self.tsk
         cfg = self.cfg
-        
-        e_rho = skfem.ElementTetP1()
-        basis_rho = skfem.Basis(tsk.mesh, e_rho)
         rho = np.ones(tsk.all_elements.shape)
+        rho = rho * cfg.vol_frac if cfg.vol_frac_rate < 0 else rho * cfg.vol_frac_init
         iter_begin = 1
         if cfg.restart:
             if cfg.restart_from > 0:
@@ -196,55 +208,69 @@ class MOC_SIMP_Optimizer():
             rho[tsk.design_elements] = data["rho_design_elements"]
             del data
         else:
-            rho[tsk.design_elements] = np.minimum(
-                np.random.uniform(
-                    cfg.vol_frac_init - 0.2, cfg.vol_frac_init + 0.2, size=len(tsk.design_elements)
-                ),
-                1.0
-            )
+            pass
 
-            # rho[tsk.design_elements] -= np.average(rho[tsk.design_elements])
-            # rho[tsk.design_elements] += cfg.vol_frac_init
-        rho[tsk.fixed_elements_in_rho] = 1.0
-        print("np.average(rho[tsk.design_elements]):", np.average(rho[tsk.design_elements]))
+        rho[tsk.dirichlet_force_elements] = 1.0
         self.init_schedulers()
+        
+        if cfg.interpolation == "SIMP":
+        # if False:
+            density_interpolation = composer.simp_interpolation_numba
+            dC_drho_func = derivatives.dC_drho_simp
+        elif cfg.interpolation == "RAMP":
+            density_interpolation = composer.ramp_interpolation_numba
+            dC_drho_func = derivatives.dC_drho_ramp
+        else:
+            raise ValueError("should be SIMP or RAMP")
         
         rho_prev = np.zeros_like(rho)
         rho_filtered = np.zeros_like(rho)
-        dC_drho_filtered = np.empty_like(rho)
+        rho_projected = np.zeros_like(rho)
+        dH = np.empty_like(rho)
+        grad_filtered = np.empty_like(rho)
+        dC_drho_projected = np.empty_like(rho)
 
-        dC_drho_sum = np.zeros_like(rho[tsk.design_elements])
+        # dC_drho_ave = np.zeros_like(rho)
+        dC_drho_full = np.zeros_like(rho)
+        dC_drho_dirichlet = np.zeros_like(rho[tsk.dirichlet_elements])
+        dC_drho_ave = np.zeros_like(rho[tsk.design_elements])
+        rho_candidate = np.empty_like(rho[tsk.design_elements])
+        tmp_lower = np.empty_like(rho[tsk.design_elements])
+        tmp_upper = np.empty_like(rho[tsk.design_elements])
         force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
-        
+
         mu_p = cfg.mu_p
         # mu_d = cfg.mu_d
         # mu_i = cfg.mu_i
         lambda_v = cfg.lambda_v
         lambda_decay = cfg.lambda_decay
-        for iter in range(iter_begin, cfg.max_iters+iter_begin):
+        for iter_loop, iter in enumerate(range(iter_begin, cfg.max_iters+iter_begin)):
             print(f"iterations: {iter} / {cfg.max_iters}")
-            p, vol_frac, move_limit = (
-                self.schedulers.values(iter)[k] for k in ['p', 'vol_frac', 'move_limit']
+            p, vol_frac, beta, move_limit = (
+                self.schedulers.values(iter)[k] for k in ['p', 'vol_frac', 'beta', 'move_limit']
             )
+            print(f"p {p:.4f}, vol_frac {vol_frac:.4f}, beta {beta:.4f}, move_limit {move_limit:.4f}")
             rho_prev[:] = rho[:]
             rho_filtered[:] = self.helmholz_solver.filter(rho)
-            rho_filtered[tsk.fixed_elements_in_rho] = 1.0
-            dC_drho_sum[:] = 0.0
+            projection.heaviside_projection_inplace(
+                rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
+            )
+            dC_drho_ave[:] = 0.0
             strain_energy_sum = 0.0
             compliance_avg = 0.0
             for force in force_list:
                 compliance, u = solver.compute_compliance_basis_numba(
                     tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
                     tsk.E0, tsk.Emin, p, tsk.nu0,
-                    rho_filtered,
-                    elem_func=composer.simp_interpolation_numba
+                    rho_projected,
+                    elem_func=density_interpolation
                 )
                 compliance_avg += compliance
                 strain_energy = composer.compute_strain_energy_numba(
                     u,
                     tsk.basis.element_dofs,
                     tsk.mesh.p,
-                    rho_filtered,
+                    rho_projected,
                     tsk.E0,
                     tsk.Emin,
                     p,
@@ -253,24 +279,32 @@ class MOC_SIMP_Optimizer():
                 strain_energy_sum += strain_energy
                 
                 # rho_safe = np.clip(rho_filtered, 1e-3, 1.0)
-                dC_drho_filtered[:] = derivatives.dC_drho_simp(
-                    rho_filtered, strain_energy, tsk.E0, tsk.Emin, p
+                dC_drho_projected[:] = dC_drho_func(
+                    rho_projected, strain_energy, tsk.E0, tsk.Emin, p
                 )
-                dC_drho_sum += self.helmholz_solver.gradient(dC_drho_filtered)[tsk.design_elements]
-                # dC_drho_full = self.helmholz_solver.gradient(dC_drho_filtered)
+                projection.heaviside_projection_derivative_inplace(
+                    rho_filtered,
+                    beta=beta, eta=cfg.beta_eta, out=dH
+                )
+                np.multiply(dC_drho_projected, dH, out=grad_filtered)
+                dC_drho_full += self.helmholz_solver.gradient(grad_filtered)
+                dC_drho_ave[:] += dC_drho_full[tsk.design_elements]
+                dC_drho_dirichlet[:] += dC_drho_full[tsk.dirichlet_elements]
                 
-
-            dC_drho_sum /= len(force_list)
+            dC_drho_full /= len(force_list)
             strain_energy_sum /= len(force_list)
             compliance_avg /= len(force_list)
+            dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
+            dC_drho_dirichlet[:] = dC_drho_full[tsk.dirichlet_elements]
+
             
             rho_e = rho[tsk.design_elements]
             vol_error = np.mean(rho_e) - vol_frac
             lambda_v = cfg.lambda_decay * lambda_v + cfg.mu_p * vol_error
-            lambda_v = np.clip(lambda_v, 1e-3, 50.0)
+            lambda_v = np.clip(lambda_v, 1e-3, 1e3)
 
-            # dL = dC_drho_sum + lambda_v  # dv = 1
-            dL = dC_drho_sum + lambda_v * np.ones_like(dC_drho_sum)
+            # dL = dC_drho_ave + lambda_v  # dv = 1
+            dL = dC_drho_ave + lambda_v * np.ones_like(dC_drho_ave)
             # dL /= np.mean(np.abs(dL)) + 1e-8
             # dL -= np.mean(dL)
             dL_min, dL_max = dL.min(), dL.max()
@@ -290,7 +324,7 @@ class MOC_SIMP_Optimizer():
             # vol_error = np.mean(rho_e) - vol_frac
             # lambda_v = lambda_decay * lambda_v + mu_p * vol_error
             # lambda_v = np.clip(lambda_v, 1e-3, 50.0)
-            # dC = dC_drho_sum.copy()
+            # dC = dC_drho_ave.copy()
             # dC_centered = dC - np.mean(dC)
             # penalty = lambda_v * dC_centered / (np.mean(np.mean(dC_centered)) + 1e-8)
             # dC += penalty
@@ -300,21 +334,16 @@ class MOC_SIMP_Optimizer():
             #     rho_min=cfg.rho_min, rho_max=1.0
             # )
 
-            
-            rho[tsk.fixed_elements_in_rho] = 1.0
-            
-
             # 
-            # 
-            rho_diff = rho - rho_prev
-            rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
+            rho[tsk.force_elements] = 1.0
+            # rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
 
-            self.recorder.feed_data("rho", rho)
-            self.recorder.feed_data("rho_diff", rho_diff)
-            self.recorder.feed_data("compliance", compliance_avg)
-            self.recorder.feed_data("dC_drho_sum", dC_drho_sum)
-            self.recorder.feed_data("dL", dL)
+            self.recorder.feed_data("rho", rho_projected[tsk.design_elements])
+            self.recorder.feed_data("dC_drho_dirichlet", dC_drho_dirichlet)
             self.recorder.feed_data("lambda_v", lambda_v)
+            self.recorder.feed_data("compliance", compliance_avg)
+            self.recorder.feed_data("dC", dC_drho_ave)
+            self.recorder.feed_data("dL", dL)
             self.recorder.feed_data("vol_error", vol_error)
             self.recorder.feed_data("strain_energy", strain_energy)
             
@@ -339,8 +368,6 @@ class MOC_SIMP_Optimizer():
                     # compliance=compliance
                 )
 
-            # https://qiita.com/fujitagodai4/items/7cad31cc488bbb51f895
-
         visualization.rho_histo_plot(
             rho[tsk.design_elements],
             f"{self.cfg.dst_path}/rho-histo/last.jpg"
@@ -358,6 +385,9 @@ if __name__ == '__main__':
         description=''
     )
 
+    parser.add_argument(
+        '--interpolation', '-I', type=str, default="RAMP", help=''
+    )
     parser.add_argument(
         '--max_iters', '-NI', type=int, default=200, help=''
     )
@@ -401,6 +431,18 @@ if __name__ == '__main__':
         '--p_rate', '-PT', type=float, default=20.0, help=''
     )
     parser.add_argument(
+        '--beta_init', '-BI', type=float, default=0.1, help=''
+    )
+    parser.add_argument(
+        '--beta', '-B', type=float, default=5.0, help=''
+    )
+    parser.add_argument(
+        '--beta_rate', '-BR', type=float, default=20.0, help=''
+    )
+    parser.add_argument(
+        '--beta_eta', '-BE', type=float, default=0.5, help=''
+    )
+    parser.add_argument(
         '--mu_p', '-MUP', type=float, default=100.0, help=''
     )
     # parser.add_argument(
@@ -439,13 +481,13 @@ if __name__ == '__main__':
     tsk.Emin = 1e-2
     print("load toy problem")
     
-    print("generate MOC_SIMP_Config")
-    cfg = MOC_SIMP_Config.from_defaults(
+    print("generate MOC_Config")
+    cfg = MOC_Config.from_defaults(
         **vars(args)
     )
 
     print("optimizer")
-    optimizer = MOC_SIMP_Optimizer(cfg, tsk)
+    optimizer = MOC_Optimizer(cfg, tsk)
     print("parameterize")
     optimizer.parameterize(preprocess=True)
     # optimizer.parameterize(preprocess=False)
