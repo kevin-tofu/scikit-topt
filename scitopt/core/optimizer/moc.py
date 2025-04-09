@@ -1,15 +1,11 @@
 import os
-import math
 from typing import Literal
 import inspect
 import shutil
 import json
 from dataclasses import dataclass, asdict
 import numpy as np
-import scipy
-import scipy.sparse.linalg as spla
-import skfem
-import meshio
+from numba import njit
 import scitopt
 from scitopt import tools
 from scitopt.core import derivatives, projection
@@ -18,7 +14,6 @@ from scitopt.fea import solver
 from scitopt import filter
 from scitopt.fea import composer
 from scitopt.core import misc
-
 
 
 @dataclass
@@ -89,13 +84,19 @@ def oc_log_update(rho, dC, move, eta, rho_min, rho_max):
     return rho_new
 
 
-def kkt_moc_log_update(rho, dL, move, eta, rho_min, rho_max):
-    eps = 1e-8
-    log_rho = np.log(np.clip(rho, rho_min, 1.0))
-    rho_new = np.exp(log_rho - eta * dL)
-    rho_new = np.clip(rho_new, rho - move, rho + move)
-    rho_new = np.clip(rho_new, rho_min, rho_max)
-    return rho_new
+def kkt_moc_log_update(
+    rho, dL, eta, move_limit,
+    tmp_lower, tmp_upper,
+    rho_min, rho_max
+):
+    np.clip(rho, rho_min, 1.0, out=rho)
+    np.log(rho, out=rho)
+    rho -= eta * dL
+    np.exp(rho, out=rho)
+    np.maximum(rho - move_limit, rho_min, out=tmp_lower)
+    np.minimum(rho + move_limit, rho_max, out=tmp_upper)
+    np.clip(rho, tmp_lower, tmp_upper, out=rho)
+
 
 
 class MOC_Optimizer():
@@ -234,16 +235,12 @@ class MOC_Optimizer():
         dC_drho_full = np.zeros_like(rho)
         dC_drho_dirichlet = np.zeros_like(rho[tsk.dirichlet_elements])
         dC_drho_ave = np.zeros_like(rho[tsk.design_elements])
+        dL = np.zeros_like(rho[tsk.design_elements])
         rho_candidate = np.empty_like(rho[tsk.design_elements])
         tmp_lower = np.empty_like(rho[tsk.design_elements])
         tmp_upper = np.empty_like(rho[tsk.design_elements])
         force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
-
-        mu_p = cfg.mu_p
-        # mu_d = cfg.mu_d
-        # mu_i = cfg.mu_i
         lambda_v = cfg.lambda_v
-        lambda_decay = cfg.lambda_decay
         for iter_loop, iter in enumerate(range(iter_begin, cfg.max_iters+iter_begin)):
             print(f"iterations: {iter} / {cfg.max_iters}")
             p, vol_frac, beta, move_limit = (
@@ -256,6 +253,7 @@ class MOC_Optimizer():
                 rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
             )
             dC_drho_ave[:] = 0.0
+            dC_drho_full[:] = 0.0
             strain_energy_sum = 0.0
             compliance_avg = 0.0
             for force in force_list:
@@ -287,9 +285,9 @@ class MOC_Optimizer():
                     beta=beta, eta=cfg.beta_eta, out=dH
                 )
                 np.multiply(dC_drho_projected, dH, out=grad_filtered)
-                dC_drho_full += self.helmholz_solver.gradient(grad_filtered)
-                dC_drho_ave[:] += dC_drho_full[tsk.design_elements]
-                dC_drho_dirichlet[:] += dC_drho_full[tsk.dirichlet_elements]
+                dC_drho_full[:] += self.helmholz_solver.gradient(grad_filtered)
+                # dC_drho_ave[:] += dC_drho_full[tsk.design_elements]
+                # dC_drho_dirichlet[:] += dC_drho_full[tsk.dirichlet_elements]
                 
             dC_drho_full /= len(force_list)
             strain_energy_sum /= len(force_list)
@@ -298,44 +296,23 @@ class MOC_Optimizer():
             dC_drho_dirichlet[:] = dC_drho_full[tsk.dirichlet_elements]
 
             
-            rho_e = rho[tsk.design_elements]
-            vol_error = np.mean(rho_e) - vol_frac
+            rho_candidate[:] = rho[tsk.design_elements]
+            vol_error = np.mean(rho_candidate) - vol_frac
             lambda_v = cfg.lambda_decay * lambda_v + cfg.mu_p * vol_error
             lambda_v = np.clip(lambda_v, 1e-3, 1e3)
-
-            # dL = dC_drho_ave + lambda_v  # dv = 1
-            dL = dC_drho_ave + lambda_v * np.ones_like(dC_drho_ave)
-            # dL /= np.mean(np.abs(dL)) + 1e-8
-            # dL -= np.mean(dL)
-            dL_min, dL_max = dL.min(), dL.max()
-            dL = 2 * (dL - dL_min) / (dL_max - dL_min + 1e-8) - 1
-
-
-            rho[tsk.design_elements] = kkt_moc_log_update(
-                rho=rho[tsk.design_elements],
+            dL[:] = dC_drho_ave + lambda_v
+            kkt_moc_log_update(
+                rho=rho_candidate,
                 dL=dL,
-                move=move_limit,
+                move_limit=move_limit,
                 eta=cfg.eta,
-                rho_min=cfg.rho_min,
-                rho_max=1.0
+                tmp_lower=tmp_lower, tmp_upper=tmp_upper,
+                rho_min=cfg.rho_min, rho_max=1.0
             )
-
-            # rho_e = rho[tsk.design_elements]
-            # vol_error = np.mean(rho_e) - vol_frac
-            # lambda_v = lambda_decay * lambda_v + mu_p * vol_error
-            # lambda_v = np.clip(lambda_v, 1e-3, 50.0)
-            # dC = dC_drho_ave.copy()
-            # dC_centered = dC - np.mean(dC)
-            # penalty = lambda_v * dC_centered / (np.mean(np.mean(dC_centered)) + 1e-8)
-            # dC += penalty
-            # rho[tsk.design_elements] = oc_log_update(
-            #     rho[tsk.design_elements], dC,
-            #     move=move_limit, eta=cfg.eta,
-            #     rho_min=cfg.rho_min, rho_max=1.0
-            # )
-
             # 
+            rho[tsk.design_elements] = rho_candidate
             rho[tsk.force_elements] = 1.0
+
             # rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
 
             self.recorder.feed_data("rho", rho_projected[tsk.design_elements])

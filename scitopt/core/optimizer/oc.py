@@ -1,16 +1,11 @@
 import os
 from typing import Literal
 import inspect
-import math
 import shutil
 import json
 from dataclasses import dataclass, asdict
 import numpy as np
-import scipy
-import scipy.sparse.linalg as spla
 from numba import njit
-import skfem
-import meshio
 import scitopt
 from scitopt import tools
 from scitopt.core import derivatives, projection
