@@ -119,8 +119,6 @@ def bisection_with_projection(
     return rho_candidate, lmid, vol_error
 
 
-
-
 class OC_Optimizer():
     def __init__(
         self,
@@ -133,7 +131,7 @@ class OC_Optimizer():
             os.makedirs(self.cfg.dst_path)
         # self.tsk.export(self.cfg.dst_path)
         self.cfg.export(self.cfg.dst_path)
-        self.tsk.nodes_stats(self.cfg.dst_path)
+        self.tsk.nodes_and_elements_stats(self.cfg.dst_path)
         
         if os.path.exists(f"{self.cfg.dst_path}/mesh_rho"):
             shutil.rmtree(f"{self.cfg.dst_path}/mesh_rho")
@@ -339,23 +337,11 @@ class OC_Optimizer():
 
             rho_prev[:] = rho[:]
             rho_filtered[:] = self.helmholz_solver.filter(rho)
-            rho_filtered[tsk.force_elements] = 1.0
-            # rho_filtered[tsk.dirichlet_force_elements] = 1.0
-            # rho_filtered[tsk.dirichlet_force_elements] = 1.0
-            # if iter_local < 120:
-            #     rho_filtered[tsk.dirichlet_force_elements] = 1.0
-            # else:
-            #     rho_filtered[tsk.fixed_elements_in_rho] = 1.0
-
             projection.heaviside_projection_inplace(
                 rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
             )
-            # if True:
-            if False:
-                rho_projected[tsk.dirichlet_elements] = np.maximum(
-                    rho_projected[tsk.dirichlet_elements], rho_min_boundary
-                )
 
+            dC_drho_full[:] = 0.0
             dC_drho_ave[:] = 0.0
             dC_drho_dirichlet[:] = 0.0
             strain_energy_sum = 0.0
@@ -393,17 +379,18 @@ class OC_Optimizer():
                     beta=beta, eta=cfg.beta_eta, out=dH
                 )
                 np.multiply(dC_drho_projected, dH, out=grad_filtered)
-                dC_drho_full[:] = self.helmholz_solver.gradient(grad_filtered)
+                dC_drho_full += self.helmholz_solver.gradient(grad_filtered)
+                dC_drho_ave[:] += dC_drho_full[tsk.design_elements]
+                dC_drho_dirichlet[:] += dC_drho_full[tsk.dirichlet_elements]
                 # if dC_drho_dirichlet_scaling:
                 #     dC_drho_full[tsk.dirichlet_elements] *= 10.0
-                dC_drho_ave += dC_drho_full[tsk.design_elements]
-                # dC_drho_ave += self.helmholz_solver.gradient(grad_filtered)
-                dC_drho_dirichlet += dC_drho_full[tsk.dirichlet_elements]
+            
 
-            dC_drho_ave /= len(force_list)
-            dC_drho_dirichlet /= len(force_list)
+            dC_drho_full /= len(force_list)
             strain_energy_sum /= len(force_list)
             compliance_avg /= len(force_list)
+            dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
+            dC_drho_dirichlet[:] = dC_drho_full[tsk.dirichlet_elements]
 
             compute_safe_dC(dC_drho_ave)
             # dC_drho_ave[:] = self.helmholz_solver.filter(dC_drho_ave)
@@ -430,7 +417,7 @@ class OC_Optimizer():
             #     rho[tsk.dirichlet_force_elements] = 1.0
             # else:
             #     rho[tsk.force_elements] = 1.0
-            # rho[tsk.force_elements] = 1.0
+            rho[tsk.force_elements] = 1.0
             rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
 
 

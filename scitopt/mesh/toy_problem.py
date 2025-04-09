@@ -126,7 +126,7 @@ def toy_msh(
     import pathlib
     x_len = 8.0
     y_len = 6.0
-    z_len = 2.0
+    z_len = 1.0
     eps = 0.1
     mesh = skfem.MeshTet.load(pathlib.Path(msh_path))
     e = skfem.ElementVector(skfem.ElementTetP1())
@@ -136,18 +136,18 @@ def toy_msh(
     e = skfem.ElementVector(skfem.ElementTetP1())
     basis = skfem.Basis(mesh, e, intorder=3)
     dirichlet_points = utils.get_point_indices_in_range(
-        basis, (0.0, 0.3), (0.0, y_len), (0.0, z_len)
+        basis, (0.0, 0.01), (0.0, y_len), (0.0, z_len)
     )
     dirichlet_nodes = utils.get_dofs_in_range(
-        basis, (0.0, 0.3), (0.0, y_len), (0.0, z_len)
+        basis, (0.0, 0.01), (0.0, y_len), (0.0, z_len)
     ).all()
     # .nodal['u^1']
     # .all()
     F_points = utils.get_point_indices_in_range(
-        basis, (x_len-eps, x_len), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)
+        basis, (x_len, x_len), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)
     )
     F_nodes = utils.get_dofs_in_range(
-        basis, (x_len-eps, x_len), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)
+        basis, (x_len, x_len), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)
     ).nodal['u^1']
     design_elements = utils.get_elements_in_box(
         mesh,
