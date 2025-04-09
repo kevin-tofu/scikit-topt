@@ -15,11 +15,11 @@ def oc_ramp_optimize(tsk):
 
 def moc_ramp_optimize(tsk):
     
-    cfg = scitopt.core.MOC_RAMP_Config()
+    cfg = scitopt.core.MOC_Config()
     cfg.max_iters = 1
     cfg.record_times = 1
 
-    optimizer = scitopt.core.MOC_RAMP_Optimizer(cfg, tsk)
+    optimizer = scitopt.core.MOC_Optimizer(cfg, tsk)
 
     optimizer.parameterize(preprocess=True)
     optimizer.optimize()
