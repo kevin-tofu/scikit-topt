@@ -58,45 +58,57 @@ class MOC_Config():
             json.dump(asdict(self), f, indent=2)
 
 
-def oc_update_with_projection(rho, dC, move, eta, rho_min, rho_max):
-    
-    dC_c = dC - np.mean(dC)
-    scale = np.sign(-dC_c) * (np.abs(dC_c) / (np.mean(np.abs(dC_c)) + 1e-8)) ** eta
-    rho_new = rho * scale
-    rho_new = np.clip(rho_new, rho - move, rho + move)
-    rho_new = np.clip(rho_new, rho_min, rho_max)
-    return rho_new
 
+# log(x) = -0.4   →   x ≈ 0.670
+# log(x) = -0.3   →   x ≈ 0.741
+# log(x) = -0.2   →   x ≈ 0.819
+# log(x) = -0.1   →   x ≈ 0.905
+# log(x) =  0.0   →   x =  1.000
+# log(x) = +0.1   →   x ≈ 1.105
+# log(x) = +0.2   →   x ≈ 1.221
+# log(x) = +0.3   →   x ≈ 1.350
+# log(x) = +0.4   →   x ≈ 1.492
 
-def oc_log_update(rho, dC, move, eta, rho_min, rho_max):
-    eps = 1e-8
-    # dC = dC - np.mean(dC)
-    # dC_centered = dC - np.mean(dC)
-    # scaling = -dC_centered / (np.mean(np.abs(dC_centered)) + eps)
-    scaling = -dC / (np.mean(np.abs(dC)) + eps)
-    scaling = np.clip(scaling, 1e-3, 1e3)
-    # scaling = np.clip(scaling, 0.5, 1.5)
-    log_rho = np.log(np.clip(rho, rho_min, 1.0))
-
-    rho_new = np.exp(log_rho + eta * np.log(scaling))
-    rho_new = np.clip(rho_new, rho - move, rho + move)
-    rho_new = np.clip(rho_new, rho_min, rho_max)
-    return rho_new
-
-
-def kkt_moc_log_update(
-    rho, dL, eta, move_limit,
+def moc_log_update_logspace(
+    rho,
+    dC, lambda_v, scaling_rate,
+    eta, move_limit,
     tmp_lower, tmp_upper,
     rho_min, rho_max
 ):
+    eps = 1e-8
+
+
+    
+    print("dC:", dC.min(), dC.max())
+    # dC = -dC / (np.mean(np.abs(dC)) + eps)
+    # np.negative(dC, out=dC)
+    # mean_val = np.mean(dC)
+    # dC -= mean_val
+    # norm = np.percentile(np.abs(dC), 95) + 1e-8
+    # np.divide(dC, norm + eps, out=dC)
+    # np.divide(dC, np.mean(np.abs(dC)) + eps, out=dC)
+    # np.divide(scaling_rate, lambda_v + eps, out=scaling_rate)
+    np.negative(dC, out=scaling_rate)
+    scaling_rate /= (lambda_v + eps)
+    np.log(scaling_rate, out=scaling_rate)
+    scaling_rate -= np.mean(scaling_rate) # 
+    # np.clip(scaling_rate, -0.05, 0.05, out=scaling_rate)
+    # np.clip(scaling_rate, -0.10, 0.10, out=scaling_rate)
+    np.clip(scaling_rate, -0.20, 0.20, out=scaling_rate)
+    # np.clip(scaling_rate, -0.30, 0.30, out=scaling_rate)
+    
+
+    # updates in the log(rho) space
     np.clip(rho, rho_min, 1.0, out=rho)
-    np.log(rho, out=rho)
-    rho -= eta * dL
+    np.log(rho, out=rho) # rho_log
+    rho += eta * scaling_rate  # still log-space
     np.exp(rho, out=rho)
+    
     np.maximum(rho - move_limit, rho_min, out=tmp_lower)
     np.minimum(rho + move_limit, rho_max, out=tmp_upper)
     np.clip(rho, tmp_lower, tmp_upper, out=rho)
-
+    
 
 
 class MOC_Optimizer():
@@ -124,13 +136,14 @@ class MOC_Optimizer():
 
         self.recorder = tools.HistoriesLogger(self.cfg.dst_path)
         self.recorder.add("rho")
-        self.recorder.add("dC_drho_dirichlet")
+        self.recorder.add("rho_projected")
+        self.recorder.add("strain_energy")
         self.recorder.add("vol_error")
         self.recorder.add("compliance")
-        self.recorder.add("dL")
+        self.recorder.add("scaling_rate")
         self.recorder.add("dC")
         self.recorder.add("lambda_v", ylog=True)
-        self.recorder.add("strain_energy")
+        
         self.schedulers = tools.Schedulers(self.cfg.dst_path)
     
     
@@ -193,9 +206,16 @@ class MOC_Optimizer():
     def optimize(self):
         tsk = self.tsk
         cfg = self.cfg
+        
+        elements_volume = tsk.elements_volume[tsk.design_elements]
+        elements_volume_sum = np.sum(elements_volume)
+        # print("elements_volume-ave-std", np.mean(elements_volume), np.std(elements_volume))
+        
         rho = np.ones(tsk.all_elements.shape)
-        # rho = rho * cfg.vol_frac if cfg.vol_frac_rate < 0 else rho * cfg.vol_frac_init
-        rho *= 0.5
+        rho = rho * cfg.vol_frac if cfg.vol_frac_rate < 0 else rho * cfg.vol_frac_init
+        rho += 0.1
+        # rho *= 0.6
+        # rho[:] = 0.5 + 0.05 * (np.random.rand(len(rho)) - 0.5)
         iter_begin = 1
         if cfg.restart:
             if cfg.restart_from > 0:
@@ -212,7 +232,7 @@ class MOC_Optimizer():
         else:
             pass
 
-        # rho[tsk.dirichlet_force_elements] = 1.0
+        rho[tsk.dirichlet_force_elements] = 1.0
         self.init_schedulers()
         
         if cfg.interpolation == "SIMP":
@@ -236,7 +256,7 @@ class MOC_Optimizer():
         dC_drho_full = np.zeros_like(rho)
         dC_drho_dirichlet = np.zeros_like(rho[tsk.dirichlet_elements])
         dC_drho_ave = np.zeros_like(rho[tsk.design_elements])
-        dL = np.zeros_like(rho[tsk.design_elements])
+        scaling_rate = np.empty_like(rho[tsk.design_elements])
         rho_candidate = np.empty_like(rho[tsk.design_elements])
         tmp_lower = np.empty_like(rho[tsk.design_elements])
         tmp_upper = np.empty_like(rho[tsk.design_elements])
@@ -255,7 +275,7 @@ class MOC_Optimizer():
             )
             dC_drho_ave[:] = 0.0
             dC_drho_full[:] = 0.0
-            strain_energy_sum = 0.0
+            strain_energy_ave = 0.0
             compliance_avg = 0.0
             for force in force_list:
                 compliance, u = solver.compute_compliance_basis_numba(
@@ -275,7 +295,7 @@ class MOC_Optimizer():
                     p,
                     tsk.nu0,
                 )
-                strain_energy_sum += strain_energy
+                strain_energy_ave += strain_energy
                 
                 # rho_safe = np.clip(rho_filtered, 1e-3, 1.0)
                 dC_drho_projected[:] = dC_drho_func(
@@ -291,39 +311,64 @@ class MOC_Optimizer():
                 # dC_drho_dirichlet[:] += dC_drho_full[tsk.dirichlet_elements]
                 
             dC_drho_full /= len(force_list)
-            strain_energy_sum /= len(force_list)
+            strain_energy_ave /= len(force_list)
             compliance_avg /= len(force_list)
-            dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
-            dC_drho_dirichlet[:] = dC_drho_full[tsk.dirichlet_elements]
-
+            print(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
             
+            # 
+            # dC_drho_full[:] = self.helmholz_solver.filter(dC_drho_full)
+            dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
+            # dC_drho_dirichlet[:] = dC_drho_full[tsk.dirichlet_elements]
+            lambda_lower = 1e-4
+            lambda_upper = 1e+3
+            np.minimum(
+                dC_drho_ave,
+                -lambda_lower*10.0,
+                out=dC_drho_ave
+            )
+            
+            # 
             rho_candidate[:] = rho[tsk.design_elements]
-            vol_error = np.mean(rho_candidate) - vol_frac
+            # vol_error = np.mean(rho_projected[tsk.design_elements]) - vol_frac
+            vol_error = np.sum(
+                rho_projected[tsk.design_elements] * elements_volume
+            ) / elements_volume_sum - vol_frac
+            print(f"elements_volume_sum:{elements_volume_sum}")
+            
             lambda_v = cfg.lambda_decay * lambda_v + cfg.mu_p * vol_error
-            lambda_v = np.clip(lambda_v, 1e-3, 1e3)
-            dL[:] = dC_drho_ave + lambda_v
-            kkt_moc_log_update(
+            lambda_v = np.clip(lambda_v, lambda_lower, lambda_upper)
+            moc_log_update_logspace(
                 rho=rho_candidate,
-                dL=dL,
+                dC=dC_drho_ave,
+                lambda_v=lambda_v, scaling_rate=scaling_rate,
                 move_limit=move_limit,
                 eta=cfg.eta,
                 tmp_lower=tmp_lower, tmp_upper=tmp_upper,
                 rho_min=cfg.rho_min, rho_max=1.0
             )
+            # kkt_moc_log_update(
+            #     rho=rho_candidate,
+            #     dL=dL,
+            #     move_limit=move_limit,
+            #     eta=cfg.eta,
+            #     tmp_lower=tmp_lower, tmp_upper=tmp_upper,
+            #     rho_min=cfg.rho_min, rho_max=1.0
+            # )
+            
             # 
             rho[tsk.design_elements] = rho_candidate
             rho[tsk.force_elements] = 1.0
 
             # rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
 
-            self.recorder.feed_data("rho", rho_projected[tsk.design_elements])
-            self.recorder.feed_data("dC_drho_dirichlet", dC_drho_dirichlet)
+            self.recorder.feed_data("rho", rho[tsk.design_elements])
+            self.recorder.feed_data("rho_projected", rho_projected[tsk.design_elements])
+            self.recorder.feed_data("strain_energy", strain_energy_ave)
             self.recorder.feed_data("lambda_v", lambda_v)
             self.recorder.feed_data("compliance", compliance_avg)
             self.recorder.feed_data("dC", dC_drho_ave)
-            self.recorder.feed_data("dL", dL)
+            self.recorder.feed_data("scaling_rate", scaling_rate)
             self.recorder.feed_data("vol_error", vol_error)
-            self.recorder.feed_data("strain_energy", strain_energy)
             
             if iter % (cfg.max_iters // self.cfg.record_times) == 0 or iter == 1:
             # if True:

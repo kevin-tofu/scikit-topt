@@ -159,7 +159,8 @@ def toy_msh(
     E0 = 1.0
     # F = [0.3, -0.3]
     # F = 0.3
-    F = 1.0
+    # F = 0.4
+    F = 10.0
     print("F:", F)
     return task.TaskConfig.from_defaults(
         E0,

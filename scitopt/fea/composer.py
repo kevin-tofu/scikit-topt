@@ -104,6 +104,34 @@ def assemble_stiffness_matrix(
     return K
 
 
+
+@njit(parallel=True)
+def _get_elements_volume(
+    p_coords, t_conn
+) -> np.ndarray:
+    n_elements = t_conn.shape[1]
+    elements_volume = np.zeros(n_elements)
+    for e in prange(n_elements):
+        nodes = t_conn[:, e]
+        coords = p_coords[:, nodes]  # shape (3, 4)
+        M = np.ones((4, 4))
+        for i in range(4):
+            M[i, :3] = coords[:, i]
+        # Minv = np.linalg.inv(M)
+
+        # vol = abs(np.linalg.det(M)) / 6.0
+        elements_volume[e] = abs(np.linalg.det(M)) / 6.0
+
+
+    return elements_volume
+
+
+def get_elements_volume(
+    mesh: skfem.Mesh
+) -> np.ndarray:
+    return _get_elements_volume(mesh.p, mesh.t)
+
+
 @njit(parallel=True)
 def _assemble_stiffness_matrix_numba_tet(
     p_coords, t_conn, element_dofs, E0, Emin, nu, E_elem
