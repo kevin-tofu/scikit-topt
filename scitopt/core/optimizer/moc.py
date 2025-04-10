@@ -19,7 +19,7 @@ from scitopt.core import misc
 @dataclass
 class MOC_Config():
     dst_path: str = "./result"
-    interpolation: Literal["SIMP", "RAMP"] = "SIMP"
+    interpolation: Literal["SIMP"] = "SIMP"
     record_times: int=20
     max_iters: int=200
     p_init: float = 1.0
@@ -239,11 +239,8 @@ class MOC_Optimizer():
         # if False:
             density_interpolation = composer.simp_interpolation_numba
             dC_drho_func = derivatives.dC_drho_simp
-        elif cfg.interpolation == "RAMP":
-            density_interpolation = composer.ramp_interpolation_numba
-            dC_drho_func = derivatives.dC_drho_ramp
         else:
-            raise ValueError("should be SIMP or RAMP")
+            raise ValueError("should be SIMP")
         
         rho_prev = np.zeros_like(rho)
         rho_filtered = np.zeros_like(rho)
@@ -254,7 +251,6 @@ class MOC_Optimizer():
 
         # dC_drho_ave = np.zeros_like(rho)
         dC_drho_full = np.zeros_like(rho)
-        dC_drho_dirichlet = np.zeros_like(rho[tsk.dirichlet_elements])
         dC_drho_ave = np.zeros_like(rho[tsk.design_elements])
         scaling_rate = np.empty_like(rho[tsk.design_elements])
         rho_candidate = np.empty_like(rho[tsk.design_elements])
@@ -305,6 +301,9 @@ class MOC_Optimizer():
                     rho_filtered,
                     beta=beta, eta=cfg.beta_eta, out=dH
                 )
+                dH = projection.heaviside_projection_derivative(
+                    rho_filtered, beta=beta, eta=cfg.beta_eta
+                )
                 np.multiply(dC_drho_projected, dH, out=grad_filtered)
                 dC_drho_full[:] += self.helmholz_solver.gradient(grad_filtered)
                 # dC_drho_ave[:] += dC_drho_full[tsk.design_elements]
@@ -316,16 +315,17 @@ class MOC_Optimizer():
             print(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
             
             # 
-            # dC_drho_full[:] = self.helmholz_solver.filter(dC_drho_full)
-            dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
-            # dC_drho_dirichlet[:] = dC_drho_full[tsk.dirichlet_elements]
             lambda_lower = 1e-4
             lambda_upper = 1e+3
             np.minimum(
-                dC_drho_ave,
+                dC_drho_full - dC_drho_full.max(),
                 -lambda_lower*10.0,
-                out=dC_drho_ave
+                out=dC_drho_full
             )
+            # dC_drho_full[:] = self.helmholz_solver.filter(dC_drho_full)
+            dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
+            # dC_drho_dirichlet[:] = dC_drho_full[tsk.dirichlet_elements]
+            
             
             # 
             rho_candidate[:] = rho[tsk.design_elements]

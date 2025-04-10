@@ -5,7 +5,6 @@ import shutil
 import json
 from dataclasses import dataclass, asdict
 import numpy as np
-from numba import njit
 import scitopt
 from scitopt import tools
 from scitopt.core import derivatives, projection
@@ -19,7 +18,7 @@ from scitopt.core import misc
 @dataclass
 class OC_Config():
     dst_path: str = "./result"
-    interpolation: Literal["SIMP", "RAMP"] = "SIMP"
+    interpolation: Literal["SIMP"] = "SIMP"
     record_times: int=20
     max_iters: int=200
     p_init: float = 1.0
@@ -74,18 +73,6 @@ def bisection_with_projection(
     # while abs(l2 - l1) > tolerance * (l1 + l2) / 2.0:
     while abs(l2 - l1) > tolerance:
         lmid = 0.5 * (l1 + l2)
-        # print("lmid:", lmid)
-        # if abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
-        #     break
-        
-        # 0 < lmid 
-        # np.negative(dC, out=scaling_rate)
-        # scaling_rate /= (lmid + eps)
-        # sign = np.sign(scaling_rate)
-        # np.abs(scaling_rate, out=scaling_rate)
-        # np.power(scaling_rate, eta, out=scaling_rate)
-        # scaling_rate *= sign
-        
         np.negative(dC, out=scaling_rate)
         scaling_rate /= (lmid + eps)
         np.power(scaling_rate, eta, out=scaling_rate)
@@ -98,6 +85,9 @@ def bisection_with_projection(
         np.minimum(rho_e + move_limit, rho_max, out=tmp_upper)
         np.clip(rho_candidate, tmp_lower, tmp_upper, out=rho_candidate)
 
+        # 
+        # filter might be needed here
+        # 
         projection.heaviside_projection_inplace(
             rho_candidate, beta=beta, eta=beta_eta, out=rho_candidate
         )
@@ -113,10 +103,6 @@ def bisection_with_projection(
             l1 = lmid
         else:
             l2 = lmid
-        
-        # if abs(l2 - l1) < 1e-6:
-        #     l1 *= 0.9
-        #     l2 *= 1.1
             
     return rho_candidate, lmid, vol_error
 
@@ -153,12 +139,6 @@ class OC_Optimizer():
         self.recorder.add("dC")
         self.recorder.add("scaling_rate")
         self.recorder.add("strain_energy")
-        # self.recorder_params = self.history.HistoriesLogger(self.cfg.dst_path)
-        # self.recorder_params.add("p")
-        # self.recorder_params.add("vol_frac")
-        # self.recorder_params.add("beta")
-        # self.recorder_params.add("move_limit")
-        
         self.schedulers = tools.Schedulers(self.cfg.dst_path)
     
     
@@ -225,47 +205,6 @@ class OC_Optimizer():
         elements_volume = tsk.elements_volume[tsk.design_elements]
         elements_volume_sum = np.sum(elements_volume)
         
-        @njit
-        def compute_safe_dC(dC):
-            mean_val = np.mean(dC)
-            dC -= mean_val
-            norm = np.percentile(np.abs(dC), 95) + 1e-8
-            dC /= norm
-            
-        # @njit
-        # def compute_safe_dC(dC, min_threshold=0.05):
-        #     n = dC.size
-        #     mean_val = np.sum(dC) / n
-        #     for i in range(n):
-        #         dC[i] -= mean_val
-        #     max_abs = 0.0
-        #     for i in range(n):
-        #         abs_val = abs(dC[i])
-        #         if abs_val > max_abs:
-        #             max_abs = abs_val
-        #     norm = max_abs + 1e-8
-        #     for i in range(n):
-        #         dC[i] /= norm
-        #         if abs(dC[i]) < min_threshold:
-        #             dC[i] = min_threshold if dC[i] >= 0 else -min_threshold
-
-        #     return dC
-
-
-
-        # @njit
-        # def compute_safe_dC(dC):
-        #     norm = np.percentile(np.abs(dC), 95) + 1e-8
-        #     if norm > 0:
-        #         dC[:] /= norm
-
-        # @njit
-        # def compute_safe_dC(dC):
-        #     norm = np.max(np.abs(dC)) + 1e-8
-        #     dC[:] /= norm
-        #     dC[:] = np.maximum(dC, 1e-4)
-        
-
         rho = np.ones_like(tsk.all_elements)
         rho = rho * cfg.vol_frac if cfg.vol_frac_rate < 0 else rho * cfg.vol_frac_init
         rho += 0.1
@@ -284,14 +223,6 @@ class OC_Optimizer():
             rho[tsk.design_elements] = data["rho_design_elements"]
             del data
         else:
-            # rho[tsk.design_elements] = np.minimum(
-            #     np.random.uniform(
-            #         cfg.vol_frac_init - 0.2,
-            #         cfg.vol_frac_init + 0.2,
-            #         size=len(tsk.design_elements)
-            #     ),
-            #     1.0
-            # )
             pass
         rho[tsk.dirichlet_force_elements] = 1.0
         print("np.average(rho[tsk.design_elements]):", np.average(rho[tsk.design_elements]))
@@ -313,7 +244,6 @@ class OC_Optimizer():
 
         # dC_drho_ave = np.zeros_like(rho)
         dC_drho_full = np.zeros_like(rho)
-        dC_drho_dirichlet = np.zeros_like(rho[tsk.dirichlet_elements])
         dC_drho_ave = np.zeros_like(rho[tsk.design_elements])
         scaling_rate = np.empty_like(rho[tsk.design_elements])
         rho_candidate = np.empty_like(rho[tsk.design_elements])
@@ -324,11 +254,8 @@ class OC_Optimizer():
         # if False:
             density_interpolation = composer.simp_interpolation_numba
             dC_drho_func = derivatives.dC_drho_simp
-        elif cfg.interpolation == "RAMP":
-            density_interpolation = composer.ramp_interpolation_numba
-            dC_drho_func = derivatives.dC_drho_ramp
         else:
-            raise ValueError("should be SIMP or RAMP")
+            raise ValueError("should be SIMP")
 
         for iter_local, iter in enumerate(range(iter_begin, cfg.max_iters + iter_begin)):
             print(f"iterations: {iter} / {cfg.max_iters}")
@@ -345,10 +272,8 @@ class OC_Optimizer():
 
             dC_drho_full[:] = 0.0
             dC_drho_ave[:] = 0.0
-            dC_drho_dirichlet[:] = 0.0
             strain_energy_sum = 0.0
             compliance_avg = 0.0
-            # dC_drho_dirichlet_scaling = True if iter_local < 50 else False
             for force in force_list:
                 compliance, u = solver.compute_compliance_basis_numba(
                     tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
@@ -360,11 +285,9 @@ class OC_Optimizer():
                 compliance_avg += compliance
                 strain_energy = composer.compute_strain_energy_numba(
                     u,
-                    # tsk.basis.element_dofs[:, tsk.design_elements],
                     tsk.basis.element_dofs,
                     tsk.mesh.p,
                     rho_projected,
-                    # rho_filtered,
                     tsk.E0,
                     tsk.Emin,
                     p,
@@ -372,7 +295,6 @@ class OC_Optimizer():
                 )
                 strain_energy_sum += strain_energy
                 dC_drho_projected[:] = dC_drho_func(
-                    # rho_filtered,
                     rho_projected,
                     strain_energy, tsk.E0, tsk.Emin, p
                 )
@@ -382,28 +304,20 @@ class OC_Optimizer():
                 )
                 np.multiply(dC_drho_projected, dH, out=grad_filtered)
                 dC_drho_full += self.helmholz_solver.gradient(grad_filtered)
-                # dC_drho_ave[:] += dC_drho_full[tsk.design_elements]
-                # dC_drho_dirichlet[:] += dC_drho_full[tsk.dirichlet_elements]
-                # if dC_drho_dirichlet_scaling:
-                #     dC_drho_full[tsk.dirichlet_elements] *= 10.0
-            
-
+                
             dC_drho_full /= len(force_list)
             strain_energy_sum /= len(force_list)
             compliance_avg /= len(force_list)
             
             
             print(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
-            np.minimum(dC_drho_full, -cfg.bisec_lambda_lower*10.0, out=dC_drho_full)
+            if cfg.interpolation == "SIMP":
+                np.minimum(dC_drho_full - dC_drho_full.max(), -cfg.bisec_lambda_lower*10.0, out=dC_drho_full)
             # dC_drho_full[:] = self.helmholz_solver.filter(dC_drho_full)
             dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
-            dC_drho_dirichlet[:] = dC_drho_full[tsk.dirichlet_elements]
-            # compute_safe_dC(dC_drho_ave)
             np.minimum(dC_drho_ave, -cfg.bisec_lambda_lower*10.0, out=dC_drho_ave)
 
             rho_e = rho_projected[tsk.design_elements]
-            # bisection_with_projection
-            # bisection_with_projection_bi
             rho_candidate, lmid, vol_error = bisection_with_projection(
                 dC_drho_ave,
                 # dC_drho_ave[tsk.design_elements],
@@ -480,7 +394,7 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
-        '--interpolation', '-I', type=str, default="RAMP", help=''
+        '--interpolation', '-I', type=str, default="SIMP", help=''
     )
     parser.add_argument(
         '--max_iters', '-NI', type=int, default=200, help=''
