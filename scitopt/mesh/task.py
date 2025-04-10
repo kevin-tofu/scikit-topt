@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import meshio
 from scitopt import tools
 from scitopt.mesh import utils
+from scitopt.fea import composer
 
 
 def setdiff1d(a, b):
@@ -35,6 +36,7 @@ class TaskConfig():
     all_elements: np.ndarray
     fixed_elements_in_rho: np.ndarray
     dirichlet_force_elements: np.ndarray
+    elements_volume: np.ndarray
 
     @classmethod
     def from_defaults(
@@ -50,7 +52,6 @@ class TaskConfig():
         force_nodes: np.ndarray | list[np.ndarray],
         force_value: float | list[float],
         design_elements: np.ndarray,
-        
     ) -> 'TaskConfig':
         dirichlet_elements = utils.get_elements_with_points_fast(
             mesh, [dirichlet_points]
@@ -109,6 +110,7 @@ class TaskConfig():
                 force.append(f_temp)
             
 
+        elements_volume = composer.get_elements_volume(mesh)
         return cls(
             E0,
             nu0,
@@ -127,7 +129,8 @@ class TaskConfig():
             free_elements,
             all_elements,
             fixed_elements_in_rho,
-            dirichlet_force_elements
+            dirichlet_force_elements,
+            elements_volume
         )
 
         
@@ -157,7 +160,7 @@ class TaskConfig():
         print(f"std:    {np.std(element_nearest_dists):.4f}")
 
         plt.clf()
-        fig, axs = plt.subplots(1, 2, figsize=(14, 6))
+        fig, axs = plt.subplots(1, 3, figsize=(14, 6))
 
         axs[0].hist(node_nearest_dists, bins=30, edgecolor='black')
         axs[0].set_title("Nearest Neighbor Distance (Nodes)")
@@ -171,8 +174,18 @@ class TaskConfig():
         axs[1].set_ylabel("Count")
         axs[1].grid(True)
 
+        axs[2].hist(
+            self.elements_volume, bins=30, edgecolor='black'
+        )
+        axs[2].hist(
+            self.elements_volume[self.design_elements], bins=30, edgecolor='black'
+        )
+        axs[2].set_title("elements_volume")
+        axs[2].set_xlabel("Volume")
+        axs[2].set_ylabel("Count")
+        axs[2].grid(True)
         fig.tight_layout()
-        fig.savefig(f"{dst_path}/node_and_element_distance_histogram.jpg")
+        fig.savefig(f"{dst_path}/info-nodes-elements.jpg")
         plt.close("all")
 
 

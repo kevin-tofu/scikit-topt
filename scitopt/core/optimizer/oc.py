@@ -64,9 +64,10 @@ def bisection_with_projection(
     eta, eps, vol_frac,
     beta, beta_eta,
     scaling_rate, rho_candidate, tmp_lower, tmp_upper,
+    elements_volume, elements_volume_sum,
     max_iter=100, tolerance=1e-4,
-    l1 = 1.0,
-    l2 = 1000.0
+    l1 = 1e-3,
+    l2 = 1e+3
 ):
     # for _ in range(100):
     # while abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
@@ -78,18 +79,19 @@ def bisection_with_projection(
         #     break
         
         # 0 < lmid 
+        # np.negative(dC, out=scaling_rate)
+        # scaling_rate /= (lmid + eps)
+        # sign = np.sign(scaling_rate)
+        # np.abs(scaling_rate, out=scaling_rate)
+        # np.power(scaling_rate, eta, out=scaling_rate)
+        # scaling_rate *= sign
+        
         np.negative(dC, out=scaling_rate)
         scaling_rate /= (lmid + eps)
-        sign = np.sign(scaling_rate)
-        np.abs(scaling_rate, out=scaling_rate)
         np.power(scaling_rate, eta, out=scaling_rate)
-        scaling_rate *= sign
 
         # Clip
         np.clip(scaling_rate, 0.8, 1.2, out=scaling_rate)
-        # np.clip(scaling_rate, 0.5, 1.5, out=scaling_rate)
-        # np.clip(scaling_rate, 0.1, 3.0, out=scaling_rate)
-        # np.clip(scaling_rate, 0.1, 5.0, out=scaling_rate)
         
         np.multiply(rho_e, scaling_rate, out=rho_candidate)
         np.maximum(rho_e - move_limit, rho_min, out=tmp_lower)
@@ -99,7 +101,12 @@ def bisection_with_projection(
         projection.heaviside_projection_inplace(
             rho_candidate, beta=beta, eta=beta_eta, out=rho_candidate
         )
-        vol_error = np.mean(rho_candidate) - vol_frac
+        
+        # vol_error = np.mean(rho_candidate) - vol_frac
+        vol_error = np.sum(
+            rho_candidate * elements_volume
+        ) / elements_volume_sum - vol_frac
+        
         if abs(vol_error) < 1e-6:
             break
         if vol_error > 0:
@@ -139,7 +146,7 @@ class OC_Optimizer():
 
         self.recorder = tools.HistoriesLogger(self.cfg.dst_path)
         self.recorder.add("rho")
-        self.recorder.add("dC_drho_dirichlet")
+        self.recorder.add("rho_projected")
         self.recorder.add("lambda_v", ylog=True)
         self.recorder.add("vol_error")
         self.recorder.add("compliance")
@@ -215,6 +222,8 @@ class OC_Optimizer():
 
         cfg = self.cfg
         tsk = self.tsk
+        elements_volume = tsk.elements_volume[tsk.design_elements]
+        elements_volume_sum = np.sum(elements_volume)
         
         @njit
         def compute_safe_dC(dC):
@@ -259,6 +268,7 @@ class OC_Optimizer():
 
         rho = np.ones_like(tsk.all_elements)
         rho = rho * cfg.vol_frac if cfg.vol_frac_rate < 0 else rho * cfg.vol_frac_init
+        rho += 0.1
         # rho = np.ones(tsk.all_elements.shape) * 0.5
         iter_begin = 1
         if cfg.restart:
@@ -372,8 +382,8 @@ class OC_Optimizer():
                 )
                 np.multiply(dC_drho_projected, dH, out=grad_filtered)
                 dC_drho_full += self.helmholz_solver.gradient(grad_filtered)
-                dC_drho_ave[:] += dC_drho_full[tsk.design_elements]
-                dC_drho_dirichlet[:] += dC_drho_full[tsk.dirichlet_elements]
+                # dC_drho_ave[:] += dC_drho_full[tsk.design_elements]
+                # dC_drho_dirichlet[:] += dC_drho_full[tsk.dirichlet_elements]
                 # if dC_drho_dirichlet_scaling:
                 #     dC_drho_full[tsk.dirichlet_elements] *= 10.0
             
@@ -381,11 +391,15 @@ class OC_Optimizer():
             dC_drho_full /= len(force_list)
             strain_energy_sum /= len(force_list)
             compliance_avg /= len(force_list)
+            
+            
+            print(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
+            np.minimum(dC_drho_full, -cfg.bisec_lambda_lower*10.0, out=dC_drho_full)
+            # dC_drho_full[:] = self.helmholz_solver.filter(dC_drho_full)
             dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
             dC_drho_dirichlet[:] = dC_drho_full[tsk.dirichlet_elements]
-
-            compute_safe_dC(dC_drho_ave)
-            # dC_drho_ave[:] = self.helmholz_solver.filter(dC_drho_ave)
+            # compute_safe_dC(dC_drho_ave)
+            np.minimum(dC_drho_ave, -cfg.bisec_lambda_lower*10.0, out=dC_drho_ave)
 
             rho_e = rho_projected[tsk.design_elements]
             # bisection_with_projection
@@ -397,7 +411,8 @@ class OC_Optimizer():
                 cfg.eta, eps, vol_frac,
                 beta, cfg.beta_eta,
                 scaling_rate, rho_candidate, tmp_lower, tmp_upper,
-                max_iter=100, tolerance=1e-4,
+                elements_volume, elements_volume_sum,
+                max_iter=1000, tolerance=1e-5,
                 l1 = cfg.bisec_lambda_lower,
                 l2 = cfg.bisec_lambda_upper
             )
@@ -413,8 +428,8 @@ class OC_Optimizer():
             rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
 
 
-            self.recorder.feed_data("rho", rho_projected[tsk.design_elements])
-            self.recorder.feed_data("dC_drho_dirichlet", dC_drho_dirichlet)
+            self.recorder.feed_data("rho", rho)
+            self.recorder.feed_data("rho_projected", rho_projected[tsk.design_elements])
             self.recorder.feed_data("scaling_rate", scaling_rate)
             self.recorder.feed_data("compliance", compliance_avg)
             self.recorder.feed_data("dC", dC_drho_ave)
