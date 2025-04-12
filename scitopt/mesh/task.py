@@ -160,57 +160,55 @@ class TaskConfig():
         print(f"std:    {np.std(element_nearest_dists):.4f}")
 
         plt.clf()
-        fig, axs = plt.subplots(1, 3, figsize=(14, 6))
+        fig, axs = plt.subplots(2, 3, figsize=(14, 6))
 
-        axs[0].hist(node_nearest_dists, bins=30, edgecolor='black')
-        axs[0].set_title("Nearest Neighbor Distance (Nodes)")
-        axs[0].set_xlabel("Distance")
-        axs[0].set_ylabel("Count")
-        axs[0].grid(True)
+        axs[0, 0].hist(node_nearest_dists, bins=30, edgecolor='black')
+        axs[0, 0].set_title("Nearest Neighbor Distance (Nodes)")
+        axs[0, 0].set_xlabel("Distance")
+        axs[0, 0].set_ylabel("Count")
+        axs[0, 0].grid(True)
 
-        axs[1].hist(element_nearest_dists, bins=30, edgecolor='black')
-        axs[1].set_title("Nearest Neighbor Distance (Element Centers)")
-        axs[1].set_xlabel("Distance")
-        axs[1].set_ylabel("Count")
-        axs[1].grid(True)
+        axs[0, 1].hist(element_nearest_dists, bins=30, edgecolor='black')
+        axs[0, 1].set_title("Nearest Neighbor Distance (Element Centers)")
+        axs[0, 1].set_xlabel("Distance")
+        axs[0, 1].set_ylabel("Count")
+        axs[0, 1].grid(True)
 
-        axs[2].hist(
+        axs[1, 0].hist(
             self.elements_volume, bins=30, edgecolor='black'
         )
-        axs[2].hist(
+        axs[1, 0].set_title("elements_volume - all")
+        axs[1, 0].set_xlabel("Volume")
+        axs[1, 0].set_ylabel("Count")
+        axs[1, 0].grid(True)
+        
+        axs[1, 1].hist(
             self.elements_volume[self.design_elements], bins=30, edgecolor='black'
         )
-        axs[2].set_title("elements_volume")
-        axs[2].set_xlabel("Volume")
-        axs[2].set_ylabel("Count")
-        axs[2].grid(True)
+        axs[1, 1].set_title("elements_volume - design")
+        axs[1, 1].set_xlabel("Volume")
+        axs[1, 1].set_ylabel("Count")
+        axs[1, 1].grid(True)
+        items = [
+            "all", "dirichlet", "force", "design"
+        ]
+        values = [
+            np.sum(self.elements_volume),
+            np.sum(self.elements_volume[self.dirichlet_elements]),
+            np.sum(self.elements_volume[self.force_elements]),
+            np.sum(self.elements_volume[self.design_elements])
+        ]
+        bars = axs[1, 2].bar(items, values)
+        # axs[1, 0].bar_label(bars)
+        for bar in bars:
+            yval = bar.get_height()
+            axs[1, 2].text(bar.get_x() + bar.get_width()/2, yval + 0.5, f'{yval:.2g}', ha='center', va='bottom')
+
+        axs[1, 2].set_title("THe volume difference elements")
+        axs[1, 2].set_xlabel("Elements Attribute")
+        axs[1, 2].set_ylabel("Volume")
+
         fig.tight_layout()
         fig.savefig(f"{dst_path}/info-nodes-elements.jpg")
-        plt.close("all")
-
-
-    def nodes_stats(self, dst_path: str):
-        points = self.mesh.p.T  # shape = (n_points, 3)
-        tree = cKDTree(points)
-        dists, _ = tree.query(points, k=2)
-        nearest_dists = dists[:, 1]  # shape = (n_points,)
-
-        print(f"The minimum distance: {np.min(nearest_dists):.4f}")
-        print(f"The maximum distance: {np.max(nearest_dists):.4f}")
-        print(f"The average distance: {np.mean(nearest_dists):.4f}")
-        print(f"The median distance: {np.median(nearest_dists):.4f}")
-        print(f"The std distance: {np.std(nearest_dists):.4f}")
-
-        plt.clf()
-        fig, ax = plt.subplots(1, 1, figsize=(8, 8))
-
-        ax.hist(nearest_dists, bins=30, edgecolor='black')
-        ax.set_xlabel("Distance from nearest node")
-        ax.set_ylabel("Number of Nodes")
-        ax.set_title("The histogram of nearest neighbors")
-        ax.grid(True)
-
-        fig.tight_layout() 
-        fig.savefig(f"{dst_path}/nodes_stats.jpg")
         plt.close("all")
 

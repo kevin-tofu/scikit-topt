@@ -42,9 +42,12 @@ class MOC_Config():
     move_limit_init: float = 0.3
     move_limit: float = 0.14
     move_limit_rate: float = 20.0
+    lambda_lower: float=1e-2
+    lambda_upper: float=1e+2
     restart: bool = False
     restart_from: int = -1
-    
+    export_img: bool = False
+
     @classmethod
     def from_defaults(cls, **args):
         sig = inspect.signature(cls)
@@ -57,6 +60,16 @@ class MOC_Config():
         with open(f"{path}/cfg.json", "w") as f:
             json.dump(asdict(self), f, indent=2)
 
+    def vtu_path(self, iter: int):
+        return f"{self.dst_path}/mesh_rho/info_mesh-{iter:08d}.vtu"
+
+
+    def image_path(self, iter: int, prefix: str):
+        if self.export_img:
+            return f"{self.dst_path}/mesh_rho/info_{prefix}-{iter:08d}.jpg"
+        else:
+            return None
+                    
 
 
 # log(x) = -0.4   →   x ≈ 0.670
@@ -77,27 +90,16 @@ def moc_log_update_logspace(
     rho_min, rho_max
 ):
     eps = 1e-8
-
-
     
     print("dC:", dC.min(), dC.max())
-    # dC = -dC / (np.mean(np.abs(dC)) + eps)
-    # np.negative(dC, out=dC)
-    # mean_val = np.mean(dC)
-    # dC -= mean_val
-    # norm = np.percentile(np.abs(dC), 95) + 1e-8
-    # np.divide(dC, norm + eps, out=dC)
-    # np.divide(dC, np.mean(np.abs(dC)) + eps, out=dC)
-    # np.divide(scaling_rate, lambda_v + eps, out=scaling_rate)
     np.negative(dC, out=scaling_rate)
     scaling_rate /= (lambda_v + eps)
     np.log(scaling_rate, out=scaling_rate)
     scaling_rate -= np.mean(scaling_rate) # 
-    # np.clip(scaling_rate, -0.05, 0.05, out=scaling_rate)
+    np.clip(scaling_rate, -0.05, 0.05, out=scaling_rate)
     # np.clip(scaling_rate, -0.10, 0.10, out=scaling_rate)
-    np.clip(scaling_rate, -0.20, 0.20, out=scaling_rate)
+    # np.clip(scaling_rate, -0.20, 0.20, out=scaling_rate)
     # np.clip(scaling_rate, -0.30, 0.30, out=scaling_rate)
-    
 
     # updates in the log(rho) space
     np.clip(rho, rho_min, 1.0, out=rho)
@@ -141,7 +143,7 @@ class MOC_Optimizer():
         self.recorder.add("vol_error")
         self.recorder.add("compliance")
         self.recorder.add("scaling_rate")
-        self.recorder.add("dC")
+        self.recorder.add("- dC", ylog=True)
         self.recorder.add("lambda_v", ylog=True)
         
         self.schedulers = tools.Schedulers(self.cfg.dst_path)
@@ -192,8 +194,8 @@ class MOC_Optimizer():
         )
         if preprocess:
             print("preprocessing....")
-            # self.helmholz_solver.create_solver()
-            self.helmholz_solver.create_LinearOperator()
+            # self.helmholz_solver.preprocess(solver="cg")
+            self.helmholz_solver.preprocess(solver="pyamg")
             print("...end")
         else:
             self.helmholz_solver.create_solver()
@@ -258,6 +260,8 @@ class MOC_Optimizer():
         tmp_upper = np.empty_like(rho[tsk.design_elements])
         force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
         lambda_v = cfg.lambda_v
+        lambda_lower = cfg.lambda_lower
+        lambda_upper = cfg.lambda_upper
         for iter_loop, iter in enumerate(range(iter_begin, cfg.max_iters+iter_begin)):
             print(f"iterations: {iter} / {cfg.max_iters}")
             p, vol_frac, beta, move_limit = (
@@ -314,12 +318,14 @@ class MOC_Optimizer():
             compliance_avg /= len(force_list)
             print(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
             
-            # 
-            lambda_lower = 1e-4
-            lambda_upper = 1e+3
+            eps = 1e-8
+            scale = np.percentile(np.abs(dC_drho_full[tsk.design_elements]), 90)
+            running_scale = 0.9 * running_scale + (1 - 0.9) * scale if iter_loop > 0 else scale
+            print(f"running_scale: {running_scale}")
+            dC_drho_full = dC_drho_full / (running_scale + eps)
             np.minimum(
-                dC_drho_full - dC_drho_full.max(),
-                -lambda_lower*10.0,
+                dC_drho_full,
+                -lambda_lower*2.0,
                 out=dC_drho_full
             )
             # dC_drho_full[:] = self.helmholz_solver.filter(dC_drho_full)
@@ -328,12 +334,11 @@ class MOC_Optimizer():
             
             
             # 
-            rho_candidate[:] = rho[tsk.design_elements]
+            # rho_candidate[:] = rho[tsk.design_elements]
             # vol_error = np.mean(rho_projected[tsk.design_elements]) - vol_frac
             vol_error = np.sum(
                 rho_projected[tsk.design_elements] * elements_volume
             ) / elements_volume_sum - vol_frac
-            print(f"elements_volume_sum:{elements_volume_sum}")
             
             lambda_v = cfg.lambda_decay * lambda_v + cfg.mu_p * vol_error
             lambda_v = np.clip(lambda_v, lambda_lower, lambda_upper)
@@ -366,7 +371,7 @@ class MOC_Optimizer():
             self.recorder.feed_data("strain_energy", strain_energy_ave)
             self.recorder.feed_data("lambda_v", lambda_v)
             self.recorder.feed_data("compliance", compliance_avg)
-            self.recorder.feed_data("dC", dC_drho_ave)
+            self.recorder.feed_data("- dC", - dC_drho_ave)
             self.recorder.feed_data("scaling_rate", scaling_rate)
             self.recorder.feed_data("vol_error", vol_error)
             
@@ -379,8 +384,12 @@ class MOC_Optimizer():
                 
                 visualization.save_info_on_mesh(
                     tsk,
-                    rho, rho_prev,
-                    f"{cfg.dst_path}/mesh_rho/info_mesh-{iter}.vtu"
+                    rho_projected, rho_prev, dC_drho_full,
+                    cfg.vtu_path(iter),
+                    cfg.image_path(iter, "rho"),
+                    f"Iteration : {iter}",
+                    cfg.image_path(iter, "dC"),
+                    f"Iteration : {iter}"
                 )
                 visualization.export_submesh(
                     tsk, rho, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
@@ -481,6 +490,12 @@ if __name__ == '__main__':
         '--lambda_decay', '-LD', type=float, default=0.95, help=''
     )
     parser.add_argument(
+        '--lambda_lower', '-BSL', type=float, default=1e-2, help=''
+    )
+    parser.add_argument(
+        '--lambda_upper', '-BSH', type=float, default=1e+2, help=''
+    )
+    parser.add_argument(
         '--restart', '-RS', type=misc.str2bool, default=False, help=''
     )
     parser.add_argument(
@@ -488,6 +503,9 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--task', '-T', type=str, default="toy1", help=''
+    )
+    parser.add_argument(
+        '--export_img', '-EI', type=misc.str2bool, default=False, help=''
     )
     args = parser.parse_args()
     

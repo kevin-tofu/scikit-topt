@@ -38,10 +38,11 @@ class OC_Config():
     move_limit_init: float = 0.20
     move_limit: float = 0.15
     move_limit_rate: float = 5.0
-    bisec_lambda_lower: float=1e-5
-    bisec_lambda_upper: float=500
+    lambda_lower: float=1e-2
+    lambda_upper: float=1e+2
     restart: bool = False
     restart_from: int = -1
+    export_img: bool = False
     
 
     @classmethod
@@ -56,7 +57,17 @@ class OC_Config():
         with open(f"{path}/cfg.json", "w") as f:
             json.dump(asdict(self), f, indent=2)
 
+    def vtu_path(self, iter: int):
+        return f"{self.dst_path}/mesh_rho/info_mesh-{iter:08d}.vtu"
 
+
+    def image_path(self, iter: int, prefix: str):
+        if self.export_img:
+            return f"{self.dst_path}/mesh_rho/info_{prefix}-{iter:08d}.jpg"
+        else:
+            return None
+                    
+    
 
 def bisection_with_projection(
     dC, rho_e, rho_min, rho_max, move_limit,
@@ -121,25 +132,27 @@ class OC_Optimizer():
         self.cfg.export(self.cfg.dst_path)
         self.tsk.nodes_and_elements_stats(self.cfg.dst_path)
         
-        if os.path.exists(f"{self.cfg.dst_path}/mesh_rho"):
-            shutil.rmtree(f"{self.cfg.dst_path}/mesh_rho")
-        os.makedirs(f"{self.cfg.dst_path}/mesh_rho")
-        if os.path.exists(f"{self.cfg.dst_path}/rho-histo"):
-            shutil.rmtree(f"{self.cfg.dst_path}/rho-histo")
-        os.makedirs(f"{self.cfg.dst_path}/rho-histo")
-        if not os.path.exists(f"{self.cfg.dst_path}/data"):
-            os.makedirs(f"{self.cfg.dst_path}/data")
-
         self.recorder = tools.HistoriesLogger(self.cfg.dst_path)
+        self.schedulers = tools.Schedulers(self.cfg.dst_path)
+        if cfg.restart is False:
+            if os.path.exists(f"{self.cfg.dst_path}/mesh_rho"):
+                shutil.rmtree(f"{self.cfg.dst_path}/mesh_rho")
+            os.makedirs(f"{self.cfg.dst_path}/mesh_rho")
+            if os.path.exists(f"{self.cfg.dst_path}/rho-histo"):
+                shutil.rmtree(f"{self.cfg.dst_path}/rho-histo")
+            os.makedirs(f"{self.cfg.dst_path}/rho-histo")
+            if not os.path.exists(f"{self.cfg.dst_path}/data"):
+                os.makedirs(f"{self.cfg.dst_path}/data")
+
         self.recorder.add("rho")
         self.recorder.add("rho_projected")
         self.recorder.add("lambda_v", ylog=True)
         self.recorder.add("vol_error")
         self.recorder.add("compliance")
-        self.recorder.add("dC")
+        self.recorder.add("- dC", ylog=True)
         self.recorder.add("scaling_rate")
         self.recorder.add("strain_energy")
-        self.schedulers = tools.Schedulers(self.cfg.dst_path)
+            
     
     
     def init_schedulers(self):
@@ -187,8 +200,8 @@ class OC_Optimizer():
         )
         if preprocess:
             print("preprocessing....")
-            # self.helmholz_solver.create_solver()
-            self.helmholz_solver.create_LinearOperator()
+            # self.helmholz_solver.preprocess(solver="cg")
+            self.helmholz_solver.preprocess(solver="pyamg")
             print("...end")
         else:
             self.helmholz_solver.create_solver()
@@ -205,12 +218,9 @@ class OC_Optimizer():
         elements_volume = tsk.elements_volume[tsk.design_elements]
         elements_volume_sum = np.sum(elements_volume)
         
-        rho = np.ones_like(tsk.all_elements)
-        rho = rho * cfg.vol_frac if cfg.vol_frac_rate < 0 else rho * cfg.vol_frac_init
-        rho += 0.1
-        # rho = np.ones(tsk.all_elements.shape) * 0.5
+        rho = np.zeros_like(tsk.all_elements, dtype=np.float64)
         iter_begin = 1
-        if cfg.restart:
+        if cfg.restart is True:
             if cfg.restart_from > 0:
                 data = np.load(
                     f"{cfg.dst_path}/data/{str(cfg.restart_from).zfill(6)}-rho.npz"
@@ -223,7 +233,9 @@ class OC_Optimizer():
             rho[tsk.design_elements] = data["rho_design_elements"]
             del data
         else:
-            pass
+            _vol_frac = cfg.vol_frac if cfg.vol_frac_rate < 0 else cfg.vol_frac_init
+            rho += _vol_frac + 0.1 * (np.random.rand(len(tsk.all_elements)) - 0.5)
+            np.clip(rho, cfg.rho_min, cfg.rho_max, out=rho)
         rho[tsk.dirichlet_force_elements] = 1.0
         print("np.average(rho[tsk.design_elements]):", np.average(rho[tsk.design_elements]))
         
@@ -257,7 +269,7 @@ class OC_Optimizer():
         else:
             raise ValueError("should be SIMP")
 
-        for iter_local, iter in enumerate(range(iter_begin, cfg.max_iters + iter_begin)):
+        for iter_loop, iter in enumerate(range(iter_begin, cfg.max_iters + iter_begin)):
             print(f"iterations: {iter} / {cfg.max_iters}")
             p, vol_frac, beta, move_limit = (
                 self.schedulers.values(iter)[k] for k in ['p', 'vol_frac', 'beta', 'move_limit']
@@ -310,12 +322,21 @@ class OC_Optimizer():
             compliance_avg /= len(force_list)
             
             
-            print(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
-            if cfg.interpolation == "SIMP":
-                np.minimum(dC_drho_full - dC_drho_full.max(), -cfg.bisec_lambda_lower*10.0, out=dC_drho_full)
+            # print(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
+            scale = np.percentile(np.abs(dC_drho_full[tsk.design_elements]), 95)
+            running_scale = 0.6 * running_scale + (1 - 0.6) * scale if iter_loop > 0 else scale
+            print(f"running_scale: {running_scale}")
+            dC_drho_full = dC_drho_full / (running_scale + eps)
+            # if cfg.interpolation == "SIMP":
+            #     np.minimum(dC_drho_full - dC_drho_full.max(), -cfg.lambda_lower*10.0, out=dC_drho_full)
             # dC_drho_full[:] = self.helmholz_solver.filter(dC_drho_full)
+            np.minimum(dC_drho_full, -cfg.lambda_lower*10.0, out=dC_drho_full)
             dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
-            np.minimum(dC_drho_ave, -cfg.bisec_lambda_lower*10.0, out=dC_drho_ave)
+            print(f"dC_drho_ave-scaled min:{dC_drho_ave.min()} max:{dC_drho_ave.max()}")
+            print(f"dC_drho_ave-scaled ave:{np.mean(dC_drho_ave)} sdv:{np.std(dC_drho_ave)}")
+            
+            
+            # np.minimum(dC_drho_ave, -cfg.lambda_lower*10.0, out=dC_drho_ave)
 
             rho_e = rho_projected[tsk.design_elements]
             rho_candidate, lmid, vol_error = bisection_with_projection(
@@ -327,14 +348,14 @@ class OC_Optimizer():
                 scaling_rate, rho_candidate, tmp_lower, tmp_upper,
                 elements_volume, elements_volume_sum,
                 max_iter=1000, tolerance=1e-5,
-                l1 = cfg.bisec_lambda_lower,
-                l2 = cfg.bisec_lambda_upper
+                l1 = cfg.lambda_lower,
+                l2 = cfg.lambda_upper
             )
             print(
                 f"λ: {lmid:.4e}, vol_error: {vol_error:.4f}, mean(rho): {np.mean(rho_candidate):.4f}"
             )
             rho[tsk.design_elements] = rho_candidate
-            # if iter_local < 120:
+            # if iter_loop < 120:
             #     rho[tsk.dirichlet_force_elements] = 1.0
             # else:
             #     rho[tsk.force_elements] = 1.0
@@ -346,7 +367,7 @@ class OC_Optimizer():
             self.recorder.feed_data("rho_projected", rho_projected[tsk.design_elements])
             self.recorder.feed_data("scaling_rate", scaling_rate)
             self.recorder.feed_data("compliance", compliance_avg)
-            self.recorder.feed_data("dC", dC_drho_ave)
+            self.recorder.feed_data("- dC", -dC_drho_ave)
             self.recorder.feed_data("lambda_v", lmid)
             self.recorder.feed_data("vol_error", vol_error)
             self.recorder.feed_data("strain_energy", strain_energy)
@@ -360,8 +381,12 @@ class OC_Optimizer():
                 self.recorder.export_progress()
                 visualization.save_info_on_mesh(
                     tsk,
-                    rho_projected, rho_prev,
-                    f"{cfg.dst_path}/mesh_rho/info_mesh-{iter}.vtu"
+                    rho_projected, rho_prev, dC_drho_full,
+                    cfg.vtu_path(iter),
+                    cfg.image_path(iter, "rho"),
+                    f"Iteration : {iter}",
+                    cfg.image_path(iter, "dC"),
+                    f"Iteration : {iter}"
                 )
                 visualization.export_submesh(
                     tsk, rho_projected, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
@@ -451,10 +476,10 @@ if __name__ == '__main__':
         '--beta_eta', '-BE', type=float, default=0.5, help=''
     )
     parser.add_argument(
-        '--bisec_lambda_lower', '-BSL', type=float, default=-20.0, help=''
+        '--lambda_lower', '-BSL', type=float, default=1e-4, help=''
     )
     parser.add_argument(
-        '--bisec_lambda_upper', '-BSH', type=float, default=20.0, help=''
+        '--lambda_upper', '-BSH', type=float, default=1e+2, help=''
     )
     parser.add_argument(
         '--restart', '-RS', type=misc.str2bool, default=False, help=''
@@ -467,6 +492,9 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--task', '-T', type=str, default="toy1", help=''
+    )
+    parser.add_argument(
+        '--export_img', '-EI', type=misc.str2bool, default=False, help=''
     )
     args = parser.parse_args()
     
