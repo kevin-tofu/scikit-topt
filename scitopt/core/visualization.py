@@ -1,15 +1,27 @@
+import os
+import glob
+
+from typing import Optional
+import imageio.v2 as imageio
+    
 import numpy as np
 import meshio
+import pyvista as pv
 import matplotlib.pyplot as plt
 import scitopt
 from scitopt.mesh import utils
 
 
 def save_info_on_mesh(
-    tsk,
+    tsk, 
     rho: np.ndarray,
     rho_prev: np.ndarray,
-    file_path='levelset.vtk'
+    dC: Optional[np.ndarray]=None,
+    mesh_path: str='mesh.vtu',
+    rho_image_path: Optional[str]=None,
+    rho_image_title: Optional[str]=None,
+    dC_image_path: Optional[str]=None,
+    dC_image_title: Optional[str]=None
 ):
     
     mesh = tsk.mesh
@@ -28,6 +40,9 @@ def save_info_on_mesh(
     cell_outputs = dict()
     cell_outputs["rho"] = [rho]
     cell_outputs["rho-diff"] = [rho - rho_prev]
+    if dC is not None:
+        dC[tsk.fixed_elements_in_rho] = 0.0
+        cell_outputs["dC"] = [dC]
     # cell_outputs["rho_projected"] = [rho_projected]
     cell_outputs["desing-fixed"] = [element_colors_df1]
     cell_outputs["condition"] = [element_colors_df2]
@@ -39,7 +54,84 @@ def save_info_on_mesh(
         cells=[("tetra", mesh.t.T)],
         cell_data=cell_outputs
     )
-    meshio.write(file_path, meshio_mesh)
+    meshio.write(mesh_path, meshio_mesh)
+    
+    # 
+    if isinstance(rho_image_path, str):
+        pv.start_xvfb()
+        mesh = pv.read(mesh_path)
+        # scalar_names = list(mesh.cell_data.keys())
+        scalar_name = "rho"
+        plotter = pv.Plotter(off_screen=True)
+        plotter.add_mesh(
+            mesh,
+            scalars=scalar_name,
+            cmap="turbo",
+            clim=(0, 1),
+            opacity=0.3,
+            show_edges=False,
+            scalar_bar_args={"title": scalar_name}
+        )
+        plotter.add_text(rho_image_title, position="upper_left", font_size=12, color="black")
+        plotter.screenshot(rho_image_path)
+
+    if isinstance(dC_image_path, str):
+        pv.start_xvfb()
+        mesh = pv.read(mesh_path)
+        # scalar_names = list(mesh.cell_data.keys())
+        scalar_name = "rho"
+        plotter = pv.Plotter(off_screen=True)
+        plotter.add_mesh(
+            mesh,
+            scalars=scalar_name,
+            cmap="turbo",
+            clim=(-50, 0),
+            opacity=0.3,
+            show_edges=False,
+            scalar_bar_args={"title": scalar_name}
+        )
+        plotter.add_text(dC_image_title, position="upper_left", font_size=12, color="black")
+        plotter.screenshot(dC_image_path)
+
+    
+# def save_info_on_mesh_as_image(
+#     tsk, 
+#     info: list[np.ndarray],
+#     info_name: str,
+#     mesh_path: str,
+#     image_path :str,
+#     image_title: str
+# ):
+    
+#     mesh = tsk.mesh
+#     element_colors_df1 = np.zeros_like(info[0])
+#     element_colors_df1[tsk.design_elements] = 1
+#     element_colors_df1[tsk.fixed_elements_in_rho] = 0.0
+    
+#     cell_outputs = dict()
+#     cell_outputs[info_name] = info
+#     meshio_mesh = meshio.Mesh(
+#         points=mesh.p.T,
+#         cells=[("tetra", mesh.t.T)],
+#         cell_data=cell_outputs
+#     )
+#     meshio.write(mesh_path, meshio_mesh)
+    
+#     pv.start_xvfb()
+#     mesh = pv.read(mesh_path)
+#     scalar_name = "rho"
+#     plotter = pv.Plotter(off_screen=True)
+#     plotter.add_mesh(
+#         mesh,
+#         scalars=scalar_name,
+#         cmap="turbo",
+#         clim=(0, 1),
+#         opacity=0.3,
+#         show_edges=False,
+#         scalar_bar_args={"title": scalar_name}
+#     )
+#     plotter.add_text(image_title, position="upper_left", font_size=12, color="black")
+#     plotter.screenshot(image_path)
 
 
 def export_submesh(
@@ -75,3 +167,33 @@ def rho_histo_plot(
     ax.grid(True)
     fig.savefig(dst_path)
     plt.close("all")
+
+
+def images2gif(
+    dir_path: str,
+    prefix: str="rho"
+):
+    file_pattern = f"{dir_path}/mesh_rho/info_{prefix}-*.jpg"
+    image_files = sorted(glob.glob(file_pattern))
+    output_gif = os.path.join(dir_path, f"animation-{prefix}.gif")
+    
+    if len(image_files) > 0:
+        with imageio.get_writer(output_gif, mode='I', duration=0.2) as writer:
+            for filename in image_files:
+                image = imageio.imread(filename)
+                writer.append_data(image)
+
+
+if __name__ == '__main__':
+    import argparse
+    
+    parser = argparse.ArgumentParser(
+        description=''
+    )
+    parser.add_argument(
+        '--images_path', '-IP', type=str, default="./result/test1_oc2", help=''
+    )
+    args = parser.parse_args()
+    images2gif(f"{args.images_path}", "rho")
+    images2gif(f"{args.images_path}", "dC")
+    

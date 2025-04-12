@@ -1,12 +1,14 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Optional
+from typing import Literal
 import numpy as np
 import scipy
 from scipy.sparse import coo_matrix, csc_matrix
 from scipy.sparse.linalg import splu, spsolve
 from scipy.sparse.linalg import cg
 from scipy.sparse.linalg import LinearOperator, spilu
+import pyamg
 import skfem
 
 
@@ -239,6 +241,40 @@ def apply_helmholtz_filter_cg(
     return rho_filtered
 
 
+def apply_helmholtz_filter_amg(
+    rho_element: np.ndarray,
+    V: scipy.sparse.csc_matrix,
+    ml: pyamg.multilevel.MultilevelSolver,
+    tol: float = 1e-8
+) -> np.ndarray:
+    """
+    Apply the Helmholtz filter using AMG (PyAMG) directly.
+
+    Parameters
+    ----------
+    rho_element : ndarray
+        Raw element-wise density values.
+    A : sparse.csc_matrix
+        Helmholtz system matrix: A = V + r^2 * L.
+    V : sparse.csc_matrix
+        Diagonal volume weight matrix.
+    ml : pyamg.MultilevelSolver
+        AMG solver preconstructed from A.
+    tol : float
+        Solver tolerance (default 1e-8).
+
+    Returns
+    -------
+    rho_filtered : ndarray
+        Filtered density.
+    """
+    rhs = V @ rho_element
+    # rho_filtered = ml.solve(rhs, tol=tol)
+    rho_filtered = ml.solve(rhs, tol=tol)
+
+    return rho_filtered
+
+
 def apply_filter_gradient_cg(
     vec: np.ndarray,
     A: scipy.sparse._csc.csc_matrix,
@@ -260,12 +296,46 @@ def apply_filter_gradient_cg(
     return ret
 
 
+def apply_filter_gradient_amg(
+    vec: np.ndarray,
+    V: scipy.sparse.csc_matrix,
+    ml: pyamg.multilevel.MultilevelSolver,
+    tol: float = 1e-8
+) -> np.ndarray:
+    """
+    Apply the Jacobian of the Helmholtz filter to a vector using AMG (i.e., solve A x = V @ vec).
+    
+    Parameters
+    ----------
+    vec : ndarray
+        The input vector to which the Jacobian is applied.
+    A : sparse.csc_matrix
+        Helmholtz system matrix: A = V + r^2 * L.
+    V : sparse.csc_matrix
+        Diagonal volume weight matrix.
+    ml : pyamg.MultilevelSolver
+        Precomputed AMG multilevel solver.
+    tol : float
+        Solver tolerance.
+    
+    Returns
+    -------
+    x : ndarray
+        Result of applying the Helmholtz filter's Jacobian to `vec`.
+    """
+    rhs = V @ vec
+    result = ml.solve(rhs, tol=tol)
+    return result
+
+
 @dataclass
 class HelmholtzFilter():
     A: csc_matrix
     V: csc_matrix
+    solver_type: Literal["spsolve", "cg", "pyamg"] = "cg"
     A_solver: Optional[scipy.sparse.linalg.SuperLU]=None
     M: Optional[LinearOperator]=None
+    pyamg_solver: Optional[pyamg.multilevel.MultilevelSolver]=None
     rtol: float=1e-5
     maxiter: int=1000
 
@@ -302,30 +372,53 @@ class HelmholtzFilter():
 
 
     def filter(self, rho_element: np.ndarray):
-        if self.A_solver is not None:
+        if self.solver_type == "spsolve":
             return apply_helmholtz_filter_lu(rho_element, self.A_solver, self.V)
-        else:
+        elif self.solver_type == "cg":
             return apply_helmholtz_filter_cg(
                 rho_element, self.A, self.V, M=self.M,
                 rtol=self.rtol,
                 maxiter=self.maxiter
             )
+        elif self.solver_type == "pyamg":
+            return apply_helmholtz_filter_amg(
+                rho_element, self.V, self.pyamg_solver,
+                tol=self.rtol
+            )
 
         
     def gradient(self, v: np.ndarray):
-        if self.A_solver is not None:
+        if self.solver_type == "spsolve":
             return apply_filter_gradient_lu(v, self.A_solver, self.V)
-        else:
+        elif self.solver_type == "cg":
             return apply_filter_gradient_cg(
                 v, self.A, self.V,
                 M=self.M,
                 rtol=self.rtol,
                 maxiter=self.maxiter
             )
+        elif self.solver_type == "pyamg":
+            return apply_filter_gradient_amg(
+                v, self.V,
+                self.pyamg_solver,
+                tol=self.rtol,
+            )
 
+    def preprocess(
+        self, solver="pyamg"
+    ):
+        self.solver_type = solver
+        if solver == "pyamg":
+            self.create_amgsolver()
+        elif solver == "cg":
+            self.create_LinearOperator()
+        elif solver == "spsplve":
+            self.create_solver()
+                
     def create_solver(self):
         self.A_solver = splu(self.A)
     
+
     def create_LinearOperator(
         self,
         rtol: float=1e-5,
@@ -345,6 +438,9 @@ class HelmholtzFilter():
         self.M = LinearOperator(
             self.A.shape, matvec=apply_M
         )
+    
+    def create_amgsolver(self):
+        self.pyamg_solver = pyamg.smoothed_aggregation_solver(self.A)
         
         # or
         # Algebraic Multigrid
