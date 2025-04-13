@@ -26,6 +26,7 @@ class TaskConfig():
     dirichlet_points: np.ndarray
     dirichlet_nodes: np.ndarray
     dirichlet_elements: np.ndarray
+    dirichlet_adj_elements: np.ndarray
     force_points: np.ndarray | list[np.ndarray]
     force_nodes: np.ndarray | list[np.ndarray]
     force_elements: np.ndarray
@@ -58,7 +59,7 @@ class TaskConfig():
         )
         adjacency = utils.build_element_adjacency_matrix_fast(mesh)
         # Elements that are next to boundary condition
-        # bc_elements_adj = utils.get_adjacent_elements_fast(adjacency, dirichlet_elements)
+        dirichlet_adj_elements = utils.get_adjacent_elements_fast(adjacency, dirichlet_elements)
         if isinstance(force_points, np.ndarray):
             force_elements = utils.get_elements_with_points_fast(
                 mesh, [force_points]
@@ -68,7 +69,7 @@ class TaskConfig():
                 mesh, force_points
             )
             
-        # elements_related_with_bc = np.concatenate([bc_elements, dirichlet_elements_adj, force_elements])
+        # elements_related_with_bc = np.concatenate([bc_elements, dirichlet_adj_elements, force_elements])
         
         # design_elements = np.setdiff1d(design_elements, elements_related_with_bc)
         design_elements = setdiff1d(design_elements, force_elements)
@@ -120,6 +121,7 @@ class TaskConfig():
             dirichlet_points,
             dirichlet_nodes,
             dirichlet_elements,
+            dirichlet_adj_elements,
             force_points,
             force_nodes,
             force_elements,
@@ -133,6 +135,12 @@ class TaskConfig():
             elements_volume
         )
 
+
+    @property
+    def dirichlet_and_adj_elements(self):
+        return np.concatenate(
+            [self.dirichlet_elements, self.dirichlet_adj_elements]
+        )
         
     def nodes_and_elements_stats(self, dst_path: str):
         node_points = self.mesh.p.T  # shape = (n_points, 3)

@@ -124,11 +124,27 @@ def toy_msh(
     msh_path: str = 'plate.msh'
 ):
     import pathlib
-    x_len = 8.0
-    y_len = 6.0
-    z_len = 1.0
+    import meshio
+    from scitopt.fea import composer
+    x_len = 4.0
+    y_len = 3.0
+    # z_len = 1.0
+    z_len = 0.5
     eps = 0.1
     mesh = skfem.MeshTet.load(pathlib.Path(msh_path))
+    print("fix_tetrahedron_orientation... ")
+
+    # mesh_fixed = MeshTet(mesh.p, t_fixed)
+    print("Before mesh.t fix:", mesh.t[:, 0])
+    t_fixed = utils.fix_tetrahedron_orientation(mesh.t, mesh.p)
+    print("After fix        :", t_fixed[:, 0])
+
+    mesh_fixed = MeshTet(mesh.p, t_fixed)
+    print("Mesh fixed .t    :", mesh_fixed.t[:, 0])  # ← これが t_fixed と一致してなければ原因確定
+
+    composer._get_elements_volume(mesh_fixed.t, mesh_fixed.p)
+    
+    # mesh = skfem.MeshTet.from_mesh(meshio.read(msh_path))
     e = skfem.ElementVector(skfem.ElementTetP1())
     basis = skfem.Basis(mesh, e, intorder=3)
     
@@ -161,7 +177,8 @@ def toy_msh(
     # F = 0.3
     F = 1.2
     # F = 0.4
-    # F = 10.0
+    # F = 1.0
+    # F = 150.0
     print("F:", F)
     return task.TaskConfig.from_defaults(
         E0,
