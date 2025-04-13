@@ -134,15 +134,13 @@ def toy_msh(
     mesh = skfem.MeshTet.load(pathlib.Path(msh_path))
     print("fix_tetrahedron_orientation... ")
 
+    # Check Index Order.
+    # print("Before mesh.t fix:", mesh.t[:, 0])
+    # t_fixed = utils.fix_tetrahedron_orientation(mesh.t, mesh.p)
+    # print("After fix        :", t_fixed[:, 0])
     # mesh_fixed = MeshTet(mesh.p, t_fixed)
-    print("Before mesh.t fix:", mesh.t[:, 0])
-    t_fixed = utils.fix_tetrahedron_orientation(mesh.t, mesh.p)
-    print("After fix        :", t_fixed[:, 0])
-
-    mesh_fixed = MeshTet(mesh.p, t_fixed)
-    print("Mesh fixed .t    :", mesh_fixed.t[:, 0])  # ← これが t_fixed と一致してなければ原因確定
-
-    composer._get_elements_volume(mesh_fixed.t, mesh_fixed.p)
+    # print("Mesh fixed .t    :", mesh_fixed.t[:, 0])
+    # composer._get_elements_volume(mesh_fixed.t, mesh_fixed.p)
     
     # mesh = skfem.MeshTet.from_mesh(meshio.read(msh_path))
     e = skfem.ElementVector(skfem.ElementTetP1())

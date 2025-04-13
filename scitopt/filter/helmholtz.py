@@ -440,6 +440,7 @@ class HelmholtzFilter():
         )
     
     def create_amgsolver(self):
+        self.A = self.A.tocsr()
         self.pyamg_solver = pyamg.smoothed_aggregation_solver(self.A)
         
         # or

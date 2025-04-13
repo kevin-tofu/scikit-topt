@@ -32,8 +32,11 @@ class MOC_Config():
     beta: float = 3
     beta_rate: float = 12.
     beta_eta: float = 0.50
+    eta: float = 0.5
+    percentile_init: float = 60
+    percentile: float = 90
+    percentile_rate: float = 2.
     filter_radius: float = 0.5
-    eta: float = 0.7
     mu_p: float = 2.0
     lambda_v: float = 0.1
     lambda_decay: float = 0.95
@@ -47,6 +50,8 @@ class MOC_Config():
     restart: bool = False
     restart_from: int = -1
     export_img: bool = False
+    design_dirichlet: bool=False
+
 
     @classmethod
     def from_defaults(cls, **args):
@@ -83,33 +88,6 @@ class MOC_Config():
 # log(x) = +0.4   →   x ≈ 1.492
 
 
-def moc_log_update_logspace0(
-    rho,
-    dC, lambda_v, scaling_rate,
-    eta, move_limit,
-    tmp_lower, tmp_upper,
-    rho_min, rho_max
-):
-    eps = 1e-8
-    
-    print("dC:", dC.min(), dC.max())
-    np.negative(dC, out=scaling_rate)
-    scaling_rate /= (lambda_v + eps)
-    np.log(scaling_rate, out=scaling_rate)
-    scaling_rate -= np.mean(scaling_rate) # 
-    np.clip(scaling_rate, -0.05, 0.05, out=scaling_rate)
-    
-    np.clip(rho, rho_min, 1.0, out=rho)
-    np.log(rho, out=tmp_lower) # rho_log
-    np.exp(tmp_lower, out=tmp_lower)
-    np.maximum(rho - move_limit, rho_min, out=tmp_lower)
-    np.minimum(rho + move_limit, rho_max, out=tmp_upper)
-    
-    rho += eta * scaling_rate  # still log-space
-    np.clip(rho, tmp_lower, tmp_upper, out=rho)
-    np.exp(rho, out=rho)
-    
-    
 def moc_log_update_logspace(
     rho,
     dC, lambda_v, scaling_rate,
@@ -124,27 +102,18 @@ def moc_log_update_logspace(
     scaling_rate /= (lambda_v + eps)
     np.log(scaling_rate, out=scaling_rate)
     scaling_rate -= np.mean(scaling_rate) # 
-    np.clip(scaling_rate, -0.05, 0.05, out=scaling_rate)
+    # np.clip(scaling_rate, -0.05, 0.05, out=scaling_rate)
     # np.clip(scaling_rate, -0.10, 0.10, out=scaling_rate)
     # np.clip(scaling_rate, -0.20, 0.20, out=scaling_rate)
-    # np.clip(scaling_rate, -0.30, 0.30, out=scaling_rate)
-
-    # updates in the log(rho) space
-    # np.clip(rho, rho_min, 1.0, out=rho)
-    # np.log(rho, out=rho) # rho_log
-    # np.maximum(rho - move_limit, rho_min, out=tmp_lower)
-    # np.minimum(rho + move_limit, rho_max, out=tmp_upper)
-    # rho += eta * scaling_rate  # still log-space
-    # np.clip(rho, tmp_lower, tmp_upper, out=rho)
-    # np.exp(rho, out=rho)
-    
-    
+    np.clip(scaling_rate, -0.30, 0.30, out=scaling_rate)
     np.clip(rho, rho_min, 1.0, out=rho)
     np.log(rho, out=tmp_lower)
+    # 
 
+    # 
+    # 
     # tmp_upper = exp(tmp_lower) = rho (real space)
     np.exp(tmp_lower, out=tmp_upper)
-
     # tmp_upper = log(1 + move_limit / rho)
     np.divide(move_limit, tmp_upper, out=tmp_upper)
     np.add(tmp_upper, 1.0, out=tmp_upper)
@@ -170,6 +139,87 @@ def moc_log_update_logspace(
     np.clip(rho, rho_min, rho_max, out=rho)
 
 
+# log(x) = -0.4   →   x ≈ 0.670
+# log(x) = -0.3   →   x ≈ 0.741
+# log(x) = -0.2   →   x ≈ 0.819
+# log(x) = -0.1   →   x ≈ 0.905
+# log(x) =  0.0   →   x =  1.000
+# log(x) = +0.1   →   x ≈ 1.105
+# log(x) = +0.2   →   x ≈ 1.221
+# log(x) = +0.3   →   x ≈ 1.350
+# log(x) = +0.4   →   x ≈ 1.492
+
+
+def kkt_moc_log_update(
+    rho,
+    dC, lambda_v, scaling_rate,
+    eta, move_limit,
+    tmp_lower, tmp_upper,
+    rho_min, rho_max
+):
+    """
+    In-place version of the modified OC update (log-space),
+    computing dL = dC + lambda_v inside the function.
+
+    Parameters:
+    - rho: np.ndarray, design variables (will be updated in-place)
+    - dC: np.ndarray, compliance sensitivity (usually negative)
+    - lambda_v: float, Lagrange multiplier for volume constraint
+    - move: float, maximum allowed change per iteration
+    - eta: float, learning rate
+    - rho_min: float, minimum density
+    - rho_max: float, maximum density
+    - tmp_lower, tmp_upper, scaling_rate: work arrays (same shape as rho)
+    """
+
+    eps = 1e-8
+
+    # Compute dL = dC + lambda_v
+    np.copyto(scaling_rate, dC)
+    scaling_rate += lambda_v
+
+    # Normalize: subtract mean
+    scaling_rate -= np.mean(scaling_rate)
+
+    # Optional clipping of scaled gradient
+    # np.clip(scaling_rate, -0.3, 0.3, out=scaling_rate)
+    np.clip(scaling_rate, -0.5, 0.5, out=scaling_rate)
+
+    # Ensure rho is in [rho_min, 1.0] before log
+    np.clip(rho, rho_min, 1.0, out=rho)
+
+    # tmp_lower = log(rho)
+    np.log(rho, out=tmp_lower)
+
+    # tmp_upper = exp(log(rho)) = rho
+    np.exp(tmp_lower, out=tmp_upper)
+
+    # tmp_upper = log(1 + move / rho)
+    np.divide(move_limit, tmp_upper, out=tmp_upper)
+    np.add(tmp_upper, 1.0, out=tmp_upper)
+    np.log(tmp_upper, out=tmp_upper)
+
+    # tmp_lower = lower bound in log-space
+    np.subtract(tmp_lower, tmp_upper, out=tmp_lower)
+
+    # tmp_upper = upper bound in log-space
+    np.add(tmp_lower, 2.0 * tmp_upper, out=tmp_upper)
+
+    # rho = log(rho)
+    np.log(rho, out=rho)
+
+    # Update in log-space
+    rho -= eta * scaling_rate
+
+    # Apply move limits
+    np.clip(rho, tmp_lower, tmp_upper, out=rho)
+
+    # Convert back to real space
+    np.exp(rho, out=rho)
+
+    # Final clipping
+    np.clip(rho, rho_min, rho_max, out=rho)
+
 
 
 class MOC_Optimizer():
@@ -186,6 +236,9 @@ class MOC_Optimizer():
         self.cfg.export(self.cfg.dst_path)
         self.tsk.nodes_and_elements_stats(self.cfg.dst_path)
         
+        if cfg.design_dirichlet is False:
+            self.tsk.exlude_dirichlet_from_design()
+        
         if os.path.exists(f"{self.cfg.dst_path}/mesh_rho"):
             shutil.rmtree(f"{self.cfg.dst_path}/mesh_rho")
         os.makedirs(f"{self.cfg.dst_path}/mesh_rho")
@@ -198,7 +251,7 @@ class MOC_Optimizer():
         self.recorder = tools.HistoriesLogger(self.cfg.dst_path)
         self.recorder.add("rho", plot_type="min-max-mean-std")
         self.recorder.add("rho_projected", plot_type="min-max-mean-std")
-        self.recorder.add("strain_energy")
+        self.recorder.add("strain_energy", plot_type="min-max-mean-std")
         self.recorder.add("vol_error")
         self.recorder.add("compliance")
         self.recorder.add("scaling_rate", plot_type="min-max-mean-std")
@@ -243,6 +296,13 @@ class MOC_Optimizer():
             beta_init,
             cfg.beta,
             cfg.beta_rate,
+            cfg.max_iters
+        )
+        self.schedulers.add(
+            "percentile",
+            cfg.percentile_init,
+            cfg.percentile,
+            cfg.percentile_rate,
             cfg.max_iters
         )
         self.schedulers.export()
@@ -291,8 +351,11 @@ class MOC_Optimizer():
             rho += _vol_frac + 0.1 * (np.random.rand(len(tsk.all_elements)) - 0.5)
             np.clip(rho, cfg.rho_min, cfg.rho_max, out=rho)
 
-        # rho[tsk.dirichlet_force_elements] = 1.0
-        rho[tsk.force_elements] = 1.0
+        if cfg.design_dirichlet is True:
+            rho[tsk.force_elements] = 1.0
+        else:
+            rho[tsk.dirichlet_force_elements] = 1.0
+        
         self.init_schedulers()
         
         if cfg.interpolation == "SIMP":
@@ -320,12 +383,15 @@ class MOC_Optimizer():
         lambda_v = cfg.lambda_v
         lambda_lower = cfg.lambda_lower
         lambda_upper = cfg.lambda_upper
+        eta = cfg.eta
         for iter_loop, iter in enumerate(range(iter_begin, cfg.max_iters+iter_begin)):
             print(f"iterations: {iter} / {cfg.max_iters}")
-            p, vol_frac, beta, move_limit = (
-                self.schedulers.values(iter)[k] for k in ['p', 'vol_frac', 'beta', 'move_limit']
+            p, vol_frac, beta, move_limit, percentile = (
+                self.schedulers.values(iter)[k] for k in ['p', 'vol_frac', 'beta', 'move_limit', 'percentile']
             )
+            
             print(f"p {p:.4f}, vol_frac {vol_frac:.4f}, beta {beta:.4f}, move_limit {move_limit:.4f}")
+            print(f"eta {eta:.4f}, percentile {percentile:.4f}")
             rho_prev[:] = rho[:]
             rho_filtered[:] = self.helmholz_solver.filter(rho)
             projection.heaviside_projection_inplace(
@@ -378,8 +444,8 @@ class MOC_Optimizer():
             
             
             eps = 1e-8
-            # scale = np.percentile(np.abs(dC_drho_full[tsk.design_elements]), 90)
-            scale = np.median(np.abs(dC_drho_full[tsk.design_elements]))
+            scale = np.percentile(np.abs(dC_drho_full[tsk.design_elements]), percentile)
+            # scale = np.median(np.abs(dC_drho_full[tsk.design_elements]))
             running_scale = 0.9 * running_scale + (1 - 0.9) * scale if iter_loop > 0 else scale
             dC_drho_full = dC_drho_full / (running_scale + eps)
             # dC_drho_full[tsk.dirichlet_elements] += -3.0e-2
@@ -399,8 +465,6 @@ class MOC_Optimizer():
             # dC_drho_dirichlet[:] = dC_drho_full[tsk.dirichlet_elements]
             
             
-            # 
-            
             # vol_error = np.mean(rho_projected[tsk.design_elements]) - vol_frac
             vol_error = np.sum(
                 rho_projected[tsk.design_elements] * elements_volume
@@ -409,18 +473,25 @@ class MOC_Optimizer():
             lambda_v = cfg.lambda_decay * lambda_v + cfg.mu_p * vol_error
             lambda_v = np.clip(lambda_v, lambda_lower, lambda_upper)
             rho_candidate[:] = rho[tsk.design_elements] # Dont forget. inplace
-            moc_log_update_logspace(
+            
+            # 
+            # update_func = moc_log_update_logspace
+            update_func = kkt_moc_log_update
+            update_func(
                 rho=rho_candidate,
                 dC=dC_drho_ave,
                 lambda_v=lambda_v, scaling_rate=scaling_rate,
                 move_limit=move_limit,
-                eta=cfg.eta,
+                eta=eta,
                 tmp_lower=tmp_lower, tmp_upper=tmp_upper,
                 rho_min=cfg.rho_min, rho_max=1.0
             )
             # 
             rho[tsk.design_elements] = rho_candidate
-            rho[tsk.force_elements] = 1.0
+            if cfg.design_dirichlet is True:
+                rho[tsk.force_elements] = 1.0
+            else:
+                rho[tsk.dirichlet_force_elements] = 1.0
 
             # rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
 
@@ -442,11 +513,11 @@ class MOC_Optimizer():
                 
                 visualization.save_info_on_mesh(
                     tsk,
-                    rho_projected, rho_prev, dC_drho_full,
+                    rho_projected, rho_prev, strain_energy,
                     cfg.vtu_path(iter),
                     cfg.image_path(iter, "rho"),
                     f"Iteration : {iter}",
-                    cfg.image_path(iter, "dC"),
+                    cfg.image_path(iter, "strain_energy"),
                     f"Iteration : {iter}"
                 )
                 visualization.export_submesh(
@@ -494,6 +565,15 @@ if __name__ == '__main__':
         '--move_limit_rate', '-MLR', type=float, default=5, help=''
     )
     parser.add_argument(
+        '--percentile_init', '-PTI', type=float, default=60, help=''
+    )
+    parser.add_argument(
+        '--percentile_rate', '-PTR', type=float, default=2.0, help=''
+    )
+    parser.add_argument(
+        '--percentile', '-PT', type=float, default=90, help=''
+    )
+    parser.add_argument(
         '--eta', '-ET', type=float, default=0.3, help=''
     )
     parser.add_argument(
@@ -518,7 +598,7 @@ if __name__ == '__main__':
         '--p', '-P', type=float, default=3.0, help=''
     )
     parser.add_argument(
-        '--p_rate', '-PT', type=float, default=20.0, help=''
+        '--p_rate', '-PRT', type=float, default=20.0, help=''
     )
     parser.add_argument(
         '--beta_init', '-BI', type=float, default=0.1, help=''
@@ -565,6 +645,10 @@ if __name__ == '__main__':
     parser.add_argument(
         '--export_img', '-EI', type=misc.str2bool, default=False, help=''
     )
+    parser.add_argument(
+        '--design_dirichlet', '-DD', type=misc.str2bool, default=True, help=''
+    )
+    
     args = parser.parse_args()
     
 

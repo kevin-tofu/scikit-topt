@@ -142,6 +142,12 @@ class TaskConfig():
             [self.dirichlet_elements, self.dirichlet_adj_elements]
         )
         
+    
+    def exlude_dirichlet_from_design(self):
+        self.design_elements = setdiff1d(
+            self.design_elements, self.dirichlet_elements
+        )
+        
     def nodes_and_elements_stats(self, dst_path: str):
         node_points = self.mesh.p.T  # shape = (n_points, 3)
         tree_nodes = cKDTree(node_points)
