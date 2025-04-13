@@ -12,7 +12,14 @@ def create_box(x_len, y_len, z_len, mesh_size):
     scale = np.array([x_len, y_len, z_len])
     mesh = mesh.scaled(scale)
 
-    return mesh
+    from scitopt.fea import composer
+    print("Before mesh.t fix:", mesh.t[:, 0])
+    t_fixed = utils.fix_tetrahedron_orientation(mesh.t, mesh.p)
+    print("After fix        :", t_fixed[:, 0])
+    mesh_fixed = MeshTet(mesh.p, t_fixed)
+    print("Mesh fixed .t    :", mesh_fixed.t[:, 0])
+    composer._get_elements_volume(mesh_fixed.t, mesh_fixed.p)
+    return mesh_fixed
 
 
 
@@ -21,6 +28,7 @@ def toy_base(mesh_size: float):
     y_len = 6.0
     z_len = 4.0
     mesh = create_box(x_len, y_len, z_len, mesh_size)
+    
 
     # 
     e = skfem.ElementVector(skfem.ElementTetP1())
