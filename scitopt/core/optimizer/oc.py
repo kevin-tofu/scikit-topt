@@ -32,7 +32,12 @@ class OC_Config():
     beta_rate: float = 12.
     beta_eta: float = 0.50
     filter_radius: float = 0.40
+    eta_init: float = 0.01
     eta: float = 0.5
+    eta_rate: float = -2.
+    percentile_init: float = 60
+    percentile: float = 90
+    percentile_rate: float = 2.
     rho_min: float = 0.05
     rho_max: float = 1.0
     move_limit_init: float = 0.20
@@ -43,6 +48,7 @@ class OC_Config():
     restart: bool = False
     restart_from: int = -1
     export_img: bool = False
+    design_dirichlet: bool=False
     
 
     @classmethod
@@ -132,6 +138,9 @@ class OC_Optimizer():
         self.cfg.export(self.cfg.dst_path)
         self.tsk.nodes_and_elements_stats(self.cfg.dst_path)
         
+        if cfg.design_dirichlet is False:
+            self.tsk.exlude_dirichlet_from_design()
+        
         self.recorder = tools.HistoriesLogger(self.cfg.dst_path)
         self.schedulers = tools.Schedulers(self.cfg.dst_path)
         if cfg.restart is False:
@@ -190,6 +199,20 @@ class OC_Optimizer():
             beta_init,
             cfg.beta,
             cfg.beta_rate,
+            cfg.max_iters
+        )
+        self.schedulers.add(
+            "eta",
+            cfg.eta_init,
+            cfg.eta,
+            cfg.eta_rate,
+            cfg.max_iters
+        )
+        self.schedulers.add(
+            "percentile",
+            cfg.percentile_init,
+            cfg.percentile,
+            cfg.percentile_rate,
             cfg.max_iters
         )
         self.schedulers.export()
@@ -272,10 +295,11 @@ class OC_Optimizer():
 
         for iter_loop, iter in enumerate(range(iter_begin, cfg.max_iters + iter_begin)):
             print(f"iterations: {iter} / {cfg.max_iters}")
-            p, vol_frac, beta, move_limit = (
-                self.schedulers.values(iter)[k] for k in ['p', 'vol_frac', 'beta', 'move_limit']
+            p, vol_frac, beta, move_limit, eta, percentile = (
+                self.schedulers.values(iter)[k] for k in ['p', 'vol_frac', 'beta', 'move_limit', 'eta', 'percentile']
             )
             print(f"p {p:.4f}, vol_frac {vol_frac:.4f}, beta {beta:.4f}, move_limit {move_limit:.4f}")
+            print(f"eta {eta:.4f}, percentile {percentile:.4f}")
 
             rho_prev[:] = rho[:]
             rho_filtered[:] = self.helmholz_solver.filter(rho)
@@ -324,7 +348,7 @@ class OC_Optimizer():
             
             
             # print(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
-            scale = np.percentile(np.abs(dC_drho_full[tsk.design_elements]), 95)
+            scale = np.percentile(np.abs(dC_drho_full[tsk.design_elements]), percentile)
             running_scale = 0.6 * running_scale + (1 - 0.6) * scale if iter_loop > 0 else scale
             dC_drho_full = dC_drho_full / (running_scale + eps)
             # if cfg.interpolation == "SIMP":
@@ -345,7 +369,7 @@ class OC_Optimizer():
                 dC_drho_ave,
                 # dC_drho_ave[tsk.design_elements],
                 rho_e, cfg.rho_min, cfg.rho_max, move_limit,
-                cfg.eta, eps, vol_frac,
+                eta, eps, vol_frac,
                 beta, cfg.beta_eta,
                 scaling_rate, rho_candidate, tmp_lower, tmp_upper,
                 elements_volume, elements_volume_sum,
@@ -357,10 +381,10 @@ class OC_Optimizer():
                 f"λ: {lmid:.4e}, vol_error: {vol_error:.4f}, mean(rho): {np.mean(rho_candidate):.4f}"
             )
             rho[tsk.design_elements] = rho_candidate
-            # if iter_loop < 120:
-            #     rho[tsk.dirichlet_force_elements] = 1.0
-            # else:
-            #     rho[tsk.force_elements] = 1.0
+            if cfg.design_dirichlet is True:
+                rho[tsk.force_elements] = 1.0
+            else:
+                rho[tsk.dirichlet_force_elements] = 1.0
             rho[tsk.force_elements] = 1.0
             rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
 
@@ -383,11 +407,11 @@ class OC_Optimizer():
                 self.recorder.export_progress()
                 visualization.save_info_on_mesh(
                     tsk,
-                    rho_projected, rho_prev, dC_drho_full,
+                    rho_projected, rho_prev, strain_energy,
                     cfg.vtu_path(iter),
                     cfg.image_path(iter, "rho"),
                     f"Iteration : {iter}",
-                    cfg.image_path(iter, "dC"),
+                    cfg.image_path(iter, "strain_energy"),
                     f"Iteration : {iter}"
                 )
                 visualization.export_submesh(
@@ -439,9 +463,6 @@ if __name__ == '__main__':
         '--move_limit_rate', '-MLR', type=float, default=5, help=''
     )
     parser.add_argument(
-        '--eta', '-ET', type=float, default=1.0, help=''
-    )
-    parser.add_argument(
         '--record_times', '-RT', type=int, default=20, help=''
     )
     parser.add_argument(
@@ -463,7 +484,7 @@ if __name__ == '__main__':
         '--p', '-P', type=float, default=3.0, help=''
     )
     parser.add_argument(
-        '--p_rate', '-PT', type=float, default=20.0, help=''
+        '--p_rate', '-PRT', type=float, default=20.0, help=''
     )
     parser.add_argument(
         '--beta_init', '-BI', type=float, default=0.1, help=''
@@ -473,6 +494,24 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--beta_rate', '-BR', type=float, default=20.0, help=''
+    )
+    parser.add_argument(
+        '--percentile_init', '-PTI', type=float, default=60, help=''
+    )
+    parser.add_argument(
+        '--percentile_rate', '-PTR', type=float, default=2.0, help=''
+    )
+    parser.add_argument(
+        '--percentile', '-PT', type=float, default=90, help=''
+    )
+    parser.add_argument(
+        '--eta_init', '-ETI', type=float, default=0.01, help=''
+    )
+    parser.add_argument(
+        '--eta_rate', '-ETR', type=float, default=-1.0, help=''
+    )
+    parser.add_argument(
+        '--eta', '-ET', type=float, default=0.3, help=''
     )
     parser.add_argument(
         '--beta_eta', '-BE', type=float, default=0.5, help=''
@@ -497,6 +536,9 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--export_img', '-EI', type=misc.str2bool, default=False, help=''
+    )
+    parser.add_argument(
+        '--design_dirichlet', '-DD', type=misc.str2bool, default=True, help=''
     )
     args = parser.parse_args()
     

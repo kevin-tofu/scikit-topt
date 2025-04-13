@@ -104,12 +104,30 @@ def assemble_stiffness_matrix(
     return K
 
 
+
 @njit(parallel=True)
+def _get_elements_volume_numba(t_conn, p_coords) -> np.ndarray:
+    n_elements = t_conn.shape[1]
+    elements_volume = np.zeros(n_elements)
+    for e in prange(n_elements):
+        n0, n1, n2, n3 = t_conn[:, e]
+        
+        v1 = p_coords[:, n1] - p_coords[:, n0]
+        v2 = p_coords[:, n2] - p_coords[:, n0]
+        v3 = p_coords[:, n3] - p_coords[:, n0]
+        vol = np.dot(np.cross(v1, v2), v3) / 6.0
+        elements_volume[e] = vol
+
+    return elements_volume
+
+
+# @njit(parallel=True)
 def _get_elements_volume(t_conn, p_coords) -> np.ndarray:
     n_elements = t_conn.shape[1]
     elements_volume = np.zeros(n_elements)
     
-    for e in prange(n_elements):
+    # for e in prange(n_elements):
+    for e in range(n_elements):
         n0, n1, n2, n3 = t_conn[:, e]
         
         v1 = p_coords[:, n1] - p_coords[:, n0]
@@ -130,6 +148,7 @@ def get_elements_volume(
     mesh: skfem.Mesh
 ) -> np.ndarray:
     return _get_elements_volume(mesh.t, mesh.p)
+    # return _get_elements_volume_numba(mesh.t, mesh.p)/
 
 
 @njit(parallel=True)
