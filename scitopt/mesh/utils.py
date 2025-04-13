@@ -4,6 +4,46 @@ from scipy.sparse import csr_matrix
 import skfem
 
 
+import numpy as np
+
+def fix_tetrahedron_orientation(t, p):
+    """
+    Returns a corrected version of `t` where all tetrahedral elements 
+    follow a right-handed (positive volume) orientation.
+
+    Parameters
+    ----------
+    t : (4, n_elem) int
+        Tetrahedral element connectivity array (e.g., mesh.t in scikit-fem),
+        where each column contains indices of 4 nodes forming one element.
+    p : (3, n_nodes) float
+        Coordinates of the mesh nodes (e.g., mesh.p in scikit-fem), where
+        each column represents a node in 3D space.
+
+    Returns
+    -------
+    t_fixed : (4, n_elem) int
+        A corrected connectivity array where the node ordering of each
+        tetrahedron is adjusted (if needed) to ensure positive volume.
+    """
+
+    t_fixed = np.array(t, copy=True) 
+    n_elem = t.shape[1]
+
+    for e in range(n_elem):
+        n0, n1, n2, n3 = t_fixed[:, e]
+        v1 = p[:, n1] - p[:, n0]
+        v2 = p[:, n2] - p[:, n0]
+        v3 = p[:, n3] - p[:, n0]
+        vol = np.dot(np.cross(v1, v2), v3) / 6.0
+
+        if vol < 0:
+            t_fixed[1, e], t_fixed[2, e] = t_fixed[2, e], t_fixed[1, e]
+
+    return t_fixed
+
+
+
 def get_elements_with_points(mesh: skfem.mesh, target_nodes_list: list[np.ndarray]) -> np.ndarray:
     """
     """

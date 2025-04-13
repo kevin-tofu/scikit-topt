@@ -104,24 +104,24 @@ def assemble_stiffness_matrix(
     return K
 
 
-
 @njit(parallel=True)
-def _get_elements_volume(
-    p_coords, t_conn
-) -> np.ndarray:
+def _get_elements_volume(t_conn, p_coords) -> np.ndarray:
     n_elements = t_conn.shape[1]
     elements_volume = np.zeros(n_elements)
+    
     for e in prange(n_elements):
-        nodes = t_conn[:, e]
-        coords = p_coords[:, nodes]  # shape (3, 4)
-        M = np.ones((4, 4))
-        for i in range(4):
-            M[i, :3] = coords[:, i]
-        # Minv = np.linalg.inv(M)
+        n0, n1, n2, n3 = t_conn[:, e]
+        
+        v1 = p_coords[:, n1] - p_coords[:, n0]
+        v2 = p_coords[:, n2] - p_coords[:, n0]
+        v3 = p_coords[:, n3] - p_coords[:, n0]
+        vol = np.dot(np.cross(v1, v2), v3) / 6.0
 
-        # vol = abs(np.linalg.det(M)) / 6.0
-        elements_volume[e] = abs(np.linalg.det(M)) / 6.0
-
+        if vol < -1e-12:
+            print("Element", e, "has negative volume:", vol)
+            raise ValueError("!!!")
+        
+        elements_volume[e] = vol
 
     return elements_volume
 
@@ -129,12 +129,13 @@ def _get_elements_volume(
 def get_elements_volume(
     mesh: skfem.Mesh
 ) -> np.ndarray:
-    return _get_elements_volume(mesh.p, mesh.t)
+    return _get_elements_volume(mesh.t, mesh.p)
 
 
 @njit(parallel=True)
 def _assemble_stiffness_matrix_numba_tet(
-    p_coords, t_conn, element_dofs, E0, Emin, nu, E_elem
+    p_coords, t_conn,
+    element_dofs, E0, Emin, nu, E_elem
 ):
     n_elements = t_conn.shape[1]
     data = np.zeros(n_elements * 144)  # 12x12 per element
@@ -157,9 +158,17 @@ def _assemble_stiffness_matrix_numba_tet(
         nodes = t_conn[:, e]
         coords = p_coords[:, nodes]  # shape (3, 4)
 
+        n0, n1, n2, n3 = t_conn[:, e]
+        v1 = p_coords[:, n1] - p_coords[:, n0]
+        v2 = p_coords[:, n2] - p_coords[:, n0]
+        v3 = p_coords[:, n3] - p_coords[:, n0]
+        vol = np.dot(np.cross(v1, v2), v3) / 6.0
+
         M = np.ones((4, 4))
         for i in range(4):
             M[i, :3] = coords[:, i]
+        
+        # vol = abs(np.linalg.det(M)) / 6.0
         Minv = np.linalg.inv(M)
         grads = Minv[:3, :]  # shape (3, 4)
 
@@ -176,7 +185,6 @@ def _assemble_stiffness_matrix_numba_tet(
             B[5, 3*j + 2] = dNdx
             B[5, 3*j    ] = dNdz
 
-        vol = abs(np.linalg.det(M)) / 6.0
         E_eff = E_elem[e]
         C_e = C0 * (E_eff / E0)
         ke = B.T @ C_e @ B * vol
@@ -294,9 +302,10 @@ def assemble_stiffness_matrix_numba(
             p_coords, t_conn, element_dofs, E0, Emin, nu, E_elem
         )
     elif isinstance(basis.mesh, skfem.MeshHex):
-        data, rowcol = _assemble_stiffness_matrix_hex8_gauss(
-            p_coords, t_conn, element_dofs, E0, Emin, nu, E_elem
-        )
+        raise NotImplementedError("use tet instead")
+        # data, rowcol = _assemble_stiffness_matrix_hex8_gauss(
+        #     p_coords, t_conn, element_dofs, E0, Emin, nu, E_elem
+        # )
     else:
         raise ValueError("mesh is not tet nor hex")
     
@@ -391,7 +400,9 @@ def compute_strain_energy(
         # Build matrix M for shape function coefficient solve
         # Each row: [x_i, y_i, z_i, 1] for node i
         M = np.column_stack((coords.T, np.ones(4)))
-        Minv = np.linalg.inv(M)
+        # Minv = np.linalg.inv(M)
+        # Minv = np.linalg.solve(M, np.eye(3))
+        Minv = np.linalg.pinv(M)
         # Gradients of shape functions (each column i gives grad(N_i) = [dN_i/dx, dN_i/dy, dN_i/dz])
         grads = Minv[:3, :]  # 3x4 matrix of gradients
         # Construct B matrix (6x12) for this element
@@ -425,9 +436,9 @@ def compute_strain_energy(
 
 
 @njit
-def compute_strain_energy_numba(
+def compute_strain_energy_numba0(
     u,
-    element_dofs,
+    element_dofs, # basis.element_dofs
     node_coords,  # mesh.p
     rho,
     E0,
@@ -436,7 +447,7 @@ def compute_strain_energy_numba(
     nu0
 ):
     lam_factor = lambda E: E / ((1.0 + nu0) * (1.0 - 2.0 * nu0))
-    mu_factor  = lambda E: E / (2.0 * (1.0 + nu0))
+    # mu_factor  = lambda E: E / (2.0 * (1.0 + nu0))
 
     n_elems = element_dofs.shape[1]
     energies = np.zeros(n_elems)
@@ -453,6 +464,12 @@ def compute_strain_energy_numba(
 
     for idx in range(n_elems):
         edofs = element_dofs[:, idx]
+        
+        n0, n1, n2, n3 = t_conn[:, e]
+        v1 = p_coords[:, n1] - p_coords[:, n0]
+        v2 = p_coords[:, n2] - p_coords[:, n0]
+        v3 = p_coords[:, n3] - p_coords[:, n0]
+        vol = np.dot(np.cross(v1, v2), v3) / 6.0
 
         node_ids = np.empty(4, dtype=np.int32)
         for j in range(4):
@@ -467,6 +484,10 @@ def compute_strain_energy_numba(
             M[i, :3] = coords[:, i]
 
         Minv = np.linalg.inv(M)
+        # Minv = np.linalg.solve(M, np.eye(4))
+        # Minv = np.linalg.pinv(M)
+        
+
         grads = Minv[:3, :]
 
         B = np.zeros((6, 12))
@@ -482,12 +503,94 @@ def compute_strain_energy_numba(
             B[5, 3*j + 2] = dNdx
             B[5, 3*j    ] = dNdz
 
-        vol = abs(np.linalg.det(M)) / 6.0
+        vol = np.linalg.det(M) / 6.0
+        # print("vol = %.4f" % float(vol))
+        # if vol <= 0.0:
+        #     raise ValueError("Invalid element: volume is non-positive.")
+        vol = abs(vol)
         E_eff = Emin + (rho[idx] ** penal) * (E0 - Emin)
         C_e = C0 * (E_eff / E0)
         u_e = u[edofs]
         strain = B.dot(u_e)
         Ue = 0.5 * strain.dot(C_e.dot(strain)) * vol
+        energies[idx] = Ue
+
+    return energies
+
+
+
+@njit
+def compute_strain_energy_numba(
+    u,
+    element_dofs,
+    node_coords,  # mesh.p
+    rho,
+    E0,
+    Emin,
+    penal,
+    nu0
+):
+    lam_factor = lambda E: E / ((1.0 + nu0) * (1.0 - 2.0 * nu0))
+
+    n_elems = element_dofs.shape[1]
+    energies = np.zeros(n_elems)
+
+    # Precompute elasticity matrix C0
+    C0 = lam_factor(E0) * np.array([
+        [1 - nu0,    nu0,       nu0,       0,                   0,                   0                  ],
+        [nu0,        1 - nu0,   nu0,       0,                   0,                   0                  ],
+        [nu0,        nu0,       1 - nu0,   0,                   0,                   0                  ],
+        [0,          0,         0,         (1 - 2*nu0) / 2.0,   0,                   0                  ],
+        [0,          0,         0,         0,                   (1 - 2*nu0) / 2.0,   0                  ],
+        [0,          0,         0,         0,                   0,                   (1 - 2*nu0) / 2.0 ]
+    ])
+
+    for idx in range(n_elems):
+        edofs = element_dofs[:, idx]
+        node_ids = np.empty(4, dtype=np.int32)
+        coords = np.empty((3, 4))
+        
+        for j in range(4):
+            node_id = int(edofs[3 * j] // 3)
+            node_ids[j] = node_id
+            for d in range(3):
+                coords[d, j] = node_coords[d, node_id]
+
+        # Compute shape function gradients using geometric method
+        v1 = coords[:, 1] - coords[:, 0]
+        v2 = coords[:, 2] - coords[:, 0]
+        v3 = coords[:, 3] - coords[:, 0]
+        vol = np.dot(np.cross(v1, v2), v3) / 6.0
+
+        if vol <= 0.0:
+            raise ValueError(f"Negative or zero volume at element {idx}: {vol}")
+
+        M = np.ones((4, 4))
+        for i in range(4):
+            for d in range(3):
+                M[i, d] = coords[d, i]
+        Minv = np.linalg.inv(M)
+        grads = Minv[:3, :]  # ∇ϕ
+
+        B = np.zeros((6, 12))
+        for j in range(4):
+            dNdx, dNdy, dNdz = grads[0, j], grads[1, j], grads[2, j]
+            B[0, 3*j    ] = dNdx
+            B[1, 3*j + 1] = dNdy
+            B[2, 3*j + 2] = dNdz
+            B[3, 3*j    ] = dNdy
+            B[3, 3*j + 1] = dNdx
+            B[4, 3*j + 1] = dNdz
+            B[4, 3*j + 2] = dNdy
+            B[5, 3*j + 2] = dNdx
+            B[5, 3*j    ] = dNdz
+
+        E_eff = Emin + (rho[idx] ** penal) * (E0 - Emin)
+        C_e = C0 * (E_eff / E0)
+
+        u_e = u[edofs]
+        strain = B @ u_e
+        Ue = 0.5 * strain @ (C_e @ strain) * abs(vol)
         energies[idx] = Ue
 
     return energies
@@ -634,7 +737,7 @@ if __name__ == '__main__':
             tsk.E0, tsk.Emin, p, tsk.nu0
         )
         t1 = time.time()
-        print("numba - 1st", t1 - t0)
+        print("numba - 1st", t1 - t0, "sec")
         t0 = time.time()
         K0 = assemble_stiffness_matrix_numba(
             tsk.basis,
@@ -642,7 +745,7 @@ if __name__ == '__main__':
             tsk.E0, tsk.Emin, p, tsk.nu0
         )
         t1 = time.time()
-        print("numba - 2nd", t1 - t0)
+        print("numba - 2nd (firster than 1st time)", t1 - t0, "sec")
 
         K1 = assemble_stiffness_matrix(
             tsk.basis,
@@ -653,4 +756,4 @@ if __name__ == '__main__':
         print("err:", np.sum(K0 - K1))
 
     test_1()
-    test_2()
+    # test_2()

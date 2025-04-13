@@ -144,13 +144,13 @@ class OC_Optimizer():
             if not os.path.exists(f"{self.cfg.dst_path}/data"):
                 os.makedirs(f"{self.cfg.dst_path}/data")
 
-        self.recorder.add("rho")
-        self.recorder.add("rho_projected")
+        self.recorder.add("rho", plot_type="min-max-mean-std")
+        self.recorder.add("rho_projected", plot_type="min-max-mean-std")
         self.recorder.add("lambda_v", ylog=True)
         self.recorder.add("vol_error")
         self.recorder.add("compliance")
-        self.recorder.add("- dC", ylog=True)
-        self.recorder.add("scaling_rate")
+        self.recorder.add("- dC", plot_type="min-max-mean-std", ylog=True)
+        self.recorder.add("scaling_rate", plot_type="min-max-mean-std")
         self.recorder.add("strain_energy")
             
     
@@ -236,7 +236,8 @@ class OC_Optimizer():
             _vol_frac = cfg.vol_frac if cfg.vol_frac_rate < 0 else cfg.vol_frac_init
             rho += _vol_frac + 0.1 * (np.random.rand(len(tsk.all_elements)) - 0.5)
             np.clip(rho, cfg.rho_min, cfg.rho_max, out=rho)
-        rho[tsk.dirichlet_force_elements] = 1.0
+        # rho[tsk.dirichlet_force_elements] = 1.0
+        rho[tsk.force_elements] = 1.0
         print("np.average(rho[tsk.design_elements]):", np.average(rho[tsk.design_elements]))
         
         self.init_schedulers()
@@ -325,12 +326,13 @@ class OC_Optimizer():
             # print(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
             scale = np.percentile(np.abs(dC_drho_full[tsk.design_elements]), 95)
             running_scale = 0.6 * running_scale + (1 - 0.6) * scale if iter_loop > 0 else scale
-            print(f"running_scale: {running_scale}")
             dC_drho_full = dC_drho_full / (running_scale + eps)
             # if cfg.interpolation == "SIMP":
             #     np.minimum(dC_drho_full - dC_drho_full.max(), -cfg.lambda_lower*10.0, out=dC_drho_full)
             # dC_drho_full[:] = self.helmholz_solver.filter(dC_drho_full)
-            np.minimum(dC_drho_full, -cfg.lambda_lower*10.0, out=dC_drho_full)
+            # np.minimum(dC_drho_full, -cfg.lambda_lower*0.1, out=dC_drho_full)
+            np.clip(dC_drho_full, -cfg.lambda_upper * 10, -cfg.lambda_lower * 0.1, out=dC_drho_full)
+            print(f"running_scale: {running_scale}")
             dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
             print(f"dC_drho_ave-scaled min:{dC_drho_ave.min()} max:{dC_drho_ave.max()}")
             print(f"dC_drho_ave-scaled ave:{np.mean(dC_drho_ave)} sdv:{np.std(dC_drho_ave)}")

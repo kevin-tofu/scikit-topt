@@ -12,6 +12,30 @@ import scitopt
 from scitopt.mesh import utils
 
 
+def rank_scale_dc_0_1(dc: np.ndarray) -> np.ndarray:
+    """
+    Scale dC to range [0.0, 1.0] based on rank (by absolute value).
+
+    Parameters
+    ----------
+    dc : np.ndarray
+        Sensitivity array (1D)
+
+    Returns
+    -------
+    scaled : np.ndarray
+        Ranked and scaled array with values in [0.0, 1.0]
+    """
+    abs_dc = np.abs(dc)
+    ranks = np.argsort(np.argsort(abs_dc))  # rank: 0 (min) → n-1 (max)
+    
+    n = len(dc)
+    scaled = ranks / (n - 1 + 1e-8)  # avoid divide-by-zero
+
+    return scaled
+
+
+
 def save_info_on_mesh(
     tsk, 
     rho: np.ndarray,
@@ -42,7 +66,8 @@ def save_info_on_mesh(
     cell_outputs["rho-diff"] = [rho - rho_prev]
     if dC is not None:
         dC[tsk.fixed_elements_in_rho] = 0.0
-        cell_outputs["dC"] = [dC]
+        dC_ranked = rank_scale_dc_0_1(dC)
+        cell_outputs["dC_ranked"] = [dC_ranked]
     # cell_outputs["rho_projected"] = [rho_projected]
     cell_outputs["desing-fixed"] = [element_colors_df1]
     cell_outputs["condition"] = [element_colors_df2]
@@ -74,24 +99,26 @@ def save_info_on_mesh(
         )
         plotter.add_text(rho_image_title, position="upper_left", font_size=12, color="black")
         plotter.screenshot(rho_image_path)
+        plotter.close()
 
     if isinstance(dC_image_path, str):
         pv.start_xvfb()
         mesh = pv.read(mesh_path)
         # scalar_names = list(mesh.cell_data.keys())
-        scalar_name = "rho"
+        scalar_name = "dC_ranked"
         plotter = pv.Plotter(off_screen=True)
         plotter.add_mesh(
             mesh,
             scalars=scalar_name,
             cmap="turbo",
-            clim=(-50, 0),
+            clim=(0, 1),
             opacity=0.3,
             show_edges=False,
             scalar_bar_args={"title": scalar_name}
         )
         plotter.add_text(dC_image_title, position="upper_left", font_size=12, color="black")
         plotter.screenshot(dC_image_path)
+        plotter.close()
 
     
 # def save_info_on_mesh_as_image(

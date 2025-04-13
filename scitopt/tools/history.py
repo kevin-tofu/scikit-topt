@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Literal
 import math
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,12 +10,14 @@ class HistoryLogger():
         name: str,
         constants: Optional[list[float]]=None,
         constant_names: Optional[list[str]]=None,
+        plot_type: Literal["min-max-mean", "min-max-mean-std"] = "min-max-mean",
         ylog: bool=False
     ):
         self.data = list()
         self.name = name
         self.constants = constants
         self.constant_names = constant_names
+        self.plot_type = plot_type
         self.ylog = ylog
     
     def exists(self):
@@ -24,9 +26,11 @@ class HistoryLogger():
     
     def add(self, data: np.ndarray | float):
         if isinstance(data, np.ndarray):
-            self.data.append(
-                [np.min(data), np.mean(data), np.max(data)]
-            )
+            _temp = [np.min(data), np.mean(data), np.max(data)]
+            if self.plot_type == "min-max-mean-std":
+                _temp.append(np.std(data))
+            self.data.append(_temp)
+            
         else:
             self.data.append(float(data))
         
@@ -54,12 +58,14 @@ class HistoriesLogger():
         name: str,
         constants: Optional[list[float]] = None,
         constant_names: Optional[list[str]] = None,
+        plot_type: Literal["min-max-mean", "min-max-mean-std"] = "min-max-mean",
         ylog: bool = False
     ):
         hist = HistoryLogger(
             name,
             constants=constants,
             constant_names=constant_names,
+            plot_type=plot_type,
             ylog=ylog
         )
         self.histories[name] = hist
@@ -104,10 +110,18 @@ class HistoriesLogger():
                     d = np.array(h.data)
 
                     if d.ndim > 1:
-                        ax[p, q].plot(d[:, 0], marker='o', linestyle='-', label="min")
-                        ax[p, q].plot(d[:, 1], marker='o', linestyle='-', label="mean")
-                        ax[p, q].plot(d[:, 2], marker='o', linestyle='-', label="max")
-                        ax[p, q].legend()
+                        x_array = np.array(range(d[:, 0].shape[0]))
+                        ax[p, q].plot(x_array, d[:, 0], marker='o', linestyle='-', label="min")
+                        ax[p, q].plot(x_array, d[:, 1], marker='o', linestyle='-', label="mean")
+                        ax[p, q].plot(x_array, d[:, 2], marker='o', linestyle='-', label="max")
+                        if h.plot_type == "min-max-mean-std":
+                            ax[p, q].fill_between(
+                                x_array,
+                                d[:, 1] - d[:, 3],
+                                d[:, 1] + d[:, 3],
+                                color="blue", alpha=0.4, label="mean ± 1σ"
+                            )
+                        ax[p, q].legend(["min", "mean", "max"])
                     else:
                         ax[p, q].plot(d, marker='o', linestyle='-')
 
