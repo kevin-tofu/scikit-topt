@@ -160,7 +160,7 @@ class OC_Optimizer():
         self.recorder.add("compliance")
         self.recorder.add("- dC", plot_type="min-max-mean-std", ylog=True)
         self.recorder.add("scaling_rate", plot_type="min-max-mean-std")
-        self.recorder.add("strain_energy")
+        self.recorder.add("strain_energy", plot_type="min-max-mean-std")
             
     
     
@@ -288,7 +288,8 @@ class OC_Optimizer():
         force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
         if cfg.interpolation == "SIMP":
         # if False:
-            density_interpolation = composer.simp_interpolation_numba
+            density_interpolation = composer.simp_interpolation
+            # density_interpolation = composer.simp_interpolation_numba
             dC_drho_func = derivatives.dC_drho_simp
         else:
             raise ValueError("should be SIMP")
@@ -312,7 +313,8 @@ class OC_Optimizer():
             strain_energy_sum = 0.0
             compliance_avg = 0.0
             for force in force_list:
-                compliance, u = solver.compute_compliance_basis_numba(
+                compliance, u = solver.compute_compliance_basis(
+                # compliance, u = solver.compute_compliance_basis_numba(
                     tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
                     tsk.E0, tsk.Emin, p, tsk.nu0,
                     rho_projected,
@@ -320,15 +322,9 @@ class OC_Optimizer():
                     density_interpolation
                 )
                 compliance_avg += compliance
-                strain_energy = composer.compute_strain_energy_numba(
-                    u,
-                    tsk.basis.element_dofs,
-                    tsk.mesh.p,
-                    rho_projected,
-                    tsk.E0,
-                    tsk.Emin,
-                    p,
-                    tsk.nu0,
+                strain_energy = composer.strain_energy_skfem(
+                    tsk.basis, rho_projected, u,
+                    tsk.E0, tsk.Emin, p, tsk.nu0,
                 )
                 strain_energy_sum += strain_energy
                 dC_drho_projected[:] = dC_drho_func(
@@ -349,13 +345,15 @@ class OC_Optimizer():
             
             # print(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
             scale = np.percentile(np.abs(dC_drho_full[tsk.design_elements]), percentile)
+            scale = max(scale, np.mean(np.abs(dC_drho_full[tsk.design_elements])), 1e-4)
+            # scale = np.median(np.abs(dC_drho_full[tsk.design_elements]))
             running_scale = 0.6 * running_scale + (1 - 0.6) * scale if iter_loop > 0 else scale
             dC_drho_full = dC_drho_full / (running_scale + eps)
             # if cfg.interpolation == "SIMP":
             #     np.minimum(dC_drho_full - dC_drho_full.max(), -cfg.lambda_lower*10.0, out=dC_drho_full)
             # dC_drho_full[:] = self.helmholz_solver.filter(dC_drho_full)
             # np.minimum(dC_drho_full, -cfg.lambda_lower*0.1, out=dC_drho_full)
-            np.clip(dC_drho_full, -cfg.lambda_upper * 10, -cfg.lambda_lower * 0.1, out=dC_drho_full)
+            # np.clip(dC_drho_full, -cfg.lambda_upper * 10, -cfg.lambda_lower * 0.1, out=dC_drho_full)
             print(f"running_scale: {running_scale}")
             dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
             print(f"dC_drho_ave-scaled min:{dC_drho_ave.min()} max:{dC_drho_ave.max()}")

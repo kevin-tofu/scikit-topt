@@ -13,7 +13,7 @@ def oc_ramp_optimize(tsk):
     optimizer.optimize()
 
 
-def moc_moc_optimize(tsk):
+def moc_optimize(tsk):
     
     cfg = scitopt.core.optimizer.MOC_Config()
     cfg.max_iters = 1
@@ -25,7 +25,19 @@ def moc_moc_optimize(tsk):
     optimizer.optimize()
 
 
+def kkt_optimize(tsk):
+    
+    cfg = scitopt.core.optimizer.KKT_Config()
+    cfg.max_iters = 1
+    cfg.record_times = 1
+
+    optimizer = scitopt.core.KKT_Optimizer(cfg, tsk)
+
+    optimizer.parameterize(preprocess=True)
+    optimizer.optimize()
+
+
 def test_main():
     tsk = scitopt.mesh.toy_problem.toy_test()
     oc_ramp_optimize(tsk)
-    moc_moc_optimize(tsk)
+    moc_optimize(tsk)
