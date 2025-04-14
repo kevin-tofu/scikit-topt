@@ -151,6 +151,8 @@ def toy_msh(
     # composer._get_elements_volume(mesh_fixed.t, mesh_fixed.p)
     
     # mesh = skfem.MeshTet.from_mesh(meshio.read(msh_path))
+    e = skfem.ElementVector(skfem.ElementTetP1())
+    basis = skfem.Basis(mesh, e, intorder=3)
     
     # 
     e = skfem.ElementVector(skfem.ElementTetP1())
@@ -178,8 +180,8 @@ def toy_msh(
     print("generate config")
     E0 = 1.0
     # F = [0.3, -0.3]
-    # F = 0.002
-    F = 0.02
+    F = 0.002
+    
     # F = 0.3
     # F = 1.2
     # F = 0.4
