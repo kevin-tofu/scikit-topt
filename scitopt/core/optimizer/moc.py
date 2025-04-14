@@ -139,89 +139,6 @@ def moc_log_update_logspace(
     np.clip(rho, rho_min, rho_max, out=rho)
 
 
-# log(x) = -0.4   →   x ≈ 0.670
-# log(x) = -0.3   →   x ≈ 0.741
-# log(x) = -0.2   →   x ≈ 0.819
-# log(x) = -0.1   →   x ≈ 0.905
-# log(x) =  0.0   →   x =  1.000
-# log(x) = +0.1   →   x ≈ 1.105
-# log(x) = +0.2   →   x ≈ 1.221
-# log(x) = +0.3   →   x ≈ 1.350
-# log(x) = +0.4   →   x ≈ 1.492
-
-
-def kkt_moc_log_update(
-    rho,
-    dC, lambda_v, scaling_rate,
-    eta, move_limit,
-    tmp_lower, tmp_upper,
-    rho_min, rho_max
-):
-    """
-    In-place version of the modified OC update (log-space),
-    computing dL = dC + lambda_v inside the function.
-
-    Parameters:
-    - rho: np.ndarray, design variables (will be updated in-place)
-    - dC: np.ndarray, compliance sensitivity (usually negative)
-    - lambda_v: float, Lagrange multiplier for volume constraint
-    - move: float, maximum allowed change per iteration
-    - eta: float, learning rate
-    - rho_min: float, minimum density
-    - rho_max: float, maximum density
-    - tmp_lower, tmp_upper, scaling_rate: work arrays (same shape as rho)
-    """
-
-    eps = 1e-8
-
-    # Compute dL = dC + lambda_v
-    np.copyto(scaling_rate, dC)
-    scaling_rate += lambda_v
-
-    # Normalize: subtract mean
-    scaling_rate -= np.mean(scaling_rate)
-
-    # Optional clipping of scaled gradient
-    # np.clip(scaling_rate, -0.3, 0.3, out=scaling_rate)
-    np.clip(scaling_rate, -0.5, 0.5, out=scaling_rate)
-
-    # Ensure rho is in [rho_min, 1.0] before log
-    np.clip(rho, rho_min, 1.0, out=rho)
-
-    # tmp_lower = log(rho)
-    np.log(rho, out=tmp_lower)
-
-    # tmp_upper = exp(log(rho)) = rho
-    np.exp(tmp_lower, out=tmp_upper)
-
-    # tmp_upper = log(1 + move / rho)
-    np.divide(move_limit, tmp_upper, out=tmp_upper)
-    np.add(tmp_upper, 1.0, out=tmp_upper)
-    np.log(tmp_upper, out=tmp_upper)
-
-    # tmp_lower = lower bound in log-space
-    np.subtract(tmp_lower, tmp_upper, out=tmp_lower)
-
-    # tmp_upper = upper bound in log-space
-    np.add(tmp_lower, 2.0 * tmp_upper, out=tmp_upper)
-
-    # rho = log(rho)
-    np.log(rho, out=rho)
-
-    # Update in log-space
-    rho -= eta * scaling_rate
-
-    # Apply move limits
-    np.clip(rho, tmp_lower, tmp_upper, out=rho)
-
-    # Convert back to real space
-    np.exp(rho, out=rho)
-
-    # Final clipping
-    np.clip(rho, rho_min, rho_max, out=rho)
-
-
-
 class MOC_Optimizer():
     def __init__(
         self,
@@ -256,7 +173,7 @@ class MOC_Optimizer():
         self.recorder.add("compliance")
         self.recorder.add("scaling_rate", plot_type="min-max-mean-std")
         self.recorder.add("- dC", plot_type="min-max-mean-std", ylog=True)
-        self.recorder.add("lambda_v", ylog=True)
+        self.recorder.add("lambda_v", ylog=True) # True
         
         self.schedulers = tools.Schedulers(self.cfg.dst_path)
     
@@ -402,23 +319,27 @@ class MOC_Optimizer():
             strain_energy_ave = 0.0
             compliance_avg = 0.0
             for force in force_list:
-                compliance, u = solver.compute_compliance_basis_numba(
+                compliance, u = solver.compute_compliance_basis(
                     tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
                     tsk.E0, tsk.Emin, p, tsk.nu0,
                     rho_projected,
                     elem_func=density_interpolation
                 )
                 compliance_avg += compliance
-                strain_energy = composer.compute_strain_energy_numba(
-                    u,
-                    tsk.basis.element_dofs,
-                    tsk.mesh.p,
-                    rho_projected,
-                    tsk.E0,
-                    tsk.Emin,
-                    p,
-                    tsk.nu0,
+                strain_energy = composer.strain_energy_skfem(
+                    tsk.basis, rho_projected, u,
+                    tsk.E0, tsk.Emin, p, tsk.nu0,
                 )
+                # strain_energy = composer.compute_strain_energy_numba(
+                #     u,
+                #     tsk.basis.element_dofs,
+                #     tsk.mesh.p,
+                #     rho_projected,
+                #     tsk.E0,
+                #     tsk.Emin,
+                #     p,
+                #     tsk.nu0,
+                # )
                 strain_energy_ave += strain_energy
                 
                 # rho_safe = np.clip(rho_filtered, 1e-3, 1.0)
@@ -441,7 +362,6 @@ class MOC_Optimizer():
             strain_energy_ave /= len(force_list)
             compliance_avg /= len(force_list)
             print(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
-            
             
             eps = 1e-8
             scale = np.percentile(np.abs(dC_drho_full[tsk.design_elements]), percentile)
@@ -475,9 +395,7 @@ class MOC_Optimizer():
             rho_candidate[:] = rho[tsk.design_elements] # Dont forget. inplace
             
             # 
-            # update_func = moc_log_update_logspace
-            update_func = kkt_moc_log_update
-            update_func(
+            moc_log_update_logspace(
                 rho=rho_candidate,
                 dC=dC_drho_ave,
                 lambda_v=lambda_v, scaling_rate=scaling_rate,
