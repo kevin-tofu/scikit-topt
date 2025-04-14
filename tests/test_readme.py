@@ -37,7 +37,8 @@ def kkt_optimize(tsk):
     optimizer.optimize()
 
 
-def test_main():
+def test_optimizers():
     tsk = scitopt.mesh.toy_problem.toy_test()
     oc_ramp_optimize(tsk)
     moc_optimize(tsk)
+    kkt_optimize(tsk)
