@@ -50,6 +50,59 @@ def adjacency_matrix_volume(mesh):
     return (adjacency, volumes)
 
 
+
+def tetra_volume(p):
+    # p: shape (3, 4)
+    a = p[:, 1] - p[:, 0]
+    b = p[:, 2] - p[:, 0]
+    c = p[:, 3] - p[:, 0]
+    return abs(np.dot(a, np.cross(b, c))) / 6.0
+
+
+def adjacency_matrix_volume_hex(mesh):
+    n_elements = mesh.t.shape[1]
+    volumes = np.zeros(n_elements)
+    face_to_elements = defaultdict(list)
+
+    hex_faces = [
+        [0, 1, 2, 3],  # bottom
+        [4, 5, 6, 7],  # top
+        [0, 1, 5, 4],  # front
+        [2, 3, 7, 6],  # back
+        [0, 3, 7, 4],  # left
+        [1, 2, 6, 5],  # right
+    ]
+
+    for i in range(n_elements):
+        hex_elem = mesh.t[:, i]
+        for face in hex_faces:
+            face_nodes = tuple(sorted(hex_elem[f] for f in face))
+            face_to_elements[face_nodes].append(i)
+
+        coords = mesh.p[:, hex_elem]  # shape (3, 8)
+
+        # 体積を8個のTetrahedraに分割して近似
+        v = 0.0
+        v += tetra_volume(coords[:, [0,1,3,4]])
+        v += tetra_volume(coords[:, [1,2,3,6]])
+        v += tetra_volume(coords[:, [1,5,6,4]])
+        v += tetra_volume(coords[:, [3,6,7,4]])
+        v += tetra_volume(coords[:, [1,3,6,4]])
+        v += tetra_volume(coords[:, [1,6,5,4]])
+        volumes[i] = v
+
+    adjacency = defaultdict(list)
+    for face, elems in face_to_elements.items():
+        if len(elems) == 2:
+            i, j = elems
+            adjacency[i].append(j)
+            adjacency[j].append(i)
+
+    return adjacency, volumes
+
+
+
+
 def adjacency_matrix_volume_fast(mesh):
     n_elements = mesh.t.shape[1]
 
