@@ -110,7 +110,7 @@ def assemble_stiffness_matrix(
 
 
 @njit(parallel=True)
-def _get_elements_volume_numba(t_conn, p_coords) -> np.ndarray:
+def _get_elements_volume_tet_numba(t_conn, p_coords) -> np.ndarray:
     n_elements = t_conn.shape[1]
     elements_volume = np.zeros(n_elements)
     for e in prange(n_elements):
@@ -125,8 +125,7 @@ def _get_elements_volume_numba(t_conn, p_coords) -> np.ndarray:
     return elements_volume
 
 
-# @njit(parallel=True)
-def _get_elements_volume(t_conn, p_coords) -> np.ndarray:
+def _get_elements_volume_tet(t_conn, p_coords) -> np.ndarray:
     n_elements = t_conn.shape[1]
     elements_volume = np.zeros(n_elements)
     
@@ -148,11 +147,113 @@ def _get_elements_volume(t_conn, p_coords) -> np.ndarray:
     return elements_volume
 
 
+@njit
+def _tet_volume_numba(p0, p1, p2, p3):
+    v1 = p1 - p0
+    v2 = p2 - p0
+    v3 = p3 - p0
+    return abs(np.dot(np.cross(v1, v2), v3)) / 6.0
+
+
+def _get_elements_volume_hex(t_conn, p_coords) -> np.ndarray:
+    """
+    Compute volume of Hex elements by decomposing into 6 tetrahedra.
+
+    Parameters
+    ----------
+    t_conn : (8, n_elem) int
+        Hexahedral element connectivity
+    p_coords : (3, n_nodes) float
+        Node coordinates
+
+    Returns
+    -------
+    elements_volume : (n_elem,) float
+        Approximate volumes
+    """
+    n_elements = t_conn.shape[1]
+    elements_volume = np.zeros(n_elements)
+
+    for e in prange(n_elements):
+        n = t_conn[:, e]
+
+        #   7--------6
+        #  /|       /|
+        # 4--------5 |
+        # | |      | |
+        # | 3------|-2
+        # |/       |/
+        # 0--------1
+        vol = 0.0
+        vol += _tet_volume_numba(p_coords[:, n[0]], p_coords[:, n[1]], p_coords[:, n[3]], p_coords[:, n[4]])
+        vol += _tet_volume_numba(p_coords[:, n[1]], p_coords[:, n[2]], p_coords[:, n[3]], p_coords[:, n[6]])
+        vol += _tet_volume_numba(p_coords[:, n[1]], p_coords[:, n[5]], p_coords[:, n[6]], p_coords[:, n[4]])
+        vol += _tet_volume_numba(p_coords[:, n[3]], p_coords[:, n[6]], p_coords[:, n[7]], p_coords[:, n[4]])
+        vol += _tet_volume_numba(p_coords[:, n[1]], p_coords[:, n[3]], p_coords[:, n[6]], p_coords[:, n[4]])
+        vol += _tet_volume_numba(p_coords[:, n[1]], p_coords[:, n[6]], p_coords[:, n[5]], p_coords[:, n[4]])
+
+        elements_volume[e] = vol
+
+    return elements_volume
+
+
+@njit(parallel=True)
+def _get_elements_volume_hex_numba(t_conn, p_coords) -> np.ndarray:
+    """
+    Compute volume of Hex elements by decomposing into 6 tetrahedra.
+
+    Parameters
+    ----------
+    t_conn : (8, n_elem) int
+        Hexahedral element connectivity
+    p_coords : (3, n_nodes) float
+        Node coordinates
+
+    Returns
+    -------
+    elements_volume : (n_elem,) float
+        Approximate volumes
+    """
+    n_elements = t_conn.shape[1]
+    elements_volume = np.zeros(n_elements)
+
+    for e in prange(n_elements):
+        n = t_conn[:, e]
+
+        # Tetra 6分割 (番号は Gmsh の Hex8 想定：0-7)
+        #   7--------6
+        #  /|       /|
+        # 4--------5 |
+        # | |      | |
+        # | 3------|-2
+        # |/       |/
+        # 0--------1
+
+        vol = 0.0
+        vol += _tet_volume_numba(p_coords[:, n[0]], p_coords[:, n[1]], p_coords[:, n[3]], p_coords[:, n[4]])
+        vol += _tet_volume_numba(p_coords[:, n[1]], p_coords[:, n[2]], p_coords[:, n[3]], p_coords[:, n[6]])
+        vol += _tet_volume_numba(p_coords[:, n[1]], p_coords[:, n[5]], p_coords[:, n[6]], p_coords[:, n[4]])
+        vol += _tet_volume_numba(p_coords[:, n[3]], p_coords[:, n[6]], p_coords[:, n[7]], p_coords[:, n[4]])
+        vol += _tet_volume_numba(p_coords[:, n[1]], p_coords[:, n[3]], p_coords[:, n[6]], p_coords[:, n[4]])
+        vol += _tet_volume_numba(p_coords[:, n[1]], p_coords[:, n[6]], p_coords[:, n[5]], p_coords[:, n[4]])
+
+        elements_volume[e] = vol
+
+    return elements_volume
+
+
+
+
 def get_elements_volume(
     mesh: skfem.Mesh
 ) -> np.ndarray:
-    return _get_elements_volume(mesh.t, mesh.p)
-    # return _get_elements_volume_numba(mesh.t, mesh.p)/
+    if isinstance(mesh, skfem.MeshTet):
+        return _get_elements_volume_tet(mesh.t, mesh.p)
+    elif isinstance(mesh, skfem.MeshHex):
+        return _get_elements_volume_hex(mesh.t, mesh.p)
+    else:
+        raise NotImplementedError("skfem.MeshTet or skfem.MeshHex")
+    
 
 
 @njit(parallel=True)
@@ -812,7 +913,7 @@ if __name__ == '__main__':
         print("numpy", time.time() - t1)
         print("err:", np.sum(K0 - K1))
 
-    @profile
+    # @profile
     def test_3():
         import scitopt
         from scitopt.mesh import toy_problem
@@ -823,9 +924,9 @@ if __name__ == '__main__':
         K0 = assemble_stiffness_matrix(
             tsk.basis, rho, tsk.E0, 0.0, 1.0, tsk.nu0
         )
-        K1 = assemble_stiffness_matrix_numba(
-            tsk.basis, rho, tsk.E0, 0.0, 1.0, tsk.nu0
-        )
+        # K1 = assemble_stiffness_matrix_numba(
+        #     tsk.basis, rho, tsk.E0, 0.0, 1.0, tsk.nu0
+        # )
         
         lam, mu = lame_parameters(tsk.E0, tsk.nu0)
         def C(T):
@@ -840,47 +941,49 @@ if __name__ == '__main__':
         
         # print("tsk.dirichlet_nodes", tsk.dirichlet_nodes)
         K0_e, F0_e = skfem.enforce(K0, _F, D=tsk.dirichlet_nodes)
-        K1_e, F1_e = skfem.enforce(K1, _F, D=tsk.dirichlet_nodes)
+        # K1_e, F1_e = skfem.enforce(K1, _F, D=tsk.dirichlet_nodes)
         K2_e, F2_e = skfem.enforce(K2, _F, D=tsk.dirichlet_nodes)
 
         # U1_e = scipy.sparse.linalg.spsolve(K1_e, F1_e)
         # U2_e = scipy.sparse.linalg.spsolve(K2_e, F2_e)
         U0_e = scitopt.fea.solver.solve_u(K0_e, F0_e, chosen_solver="pyamg")
-        U1_e = scitopt.fea.solver.solve_u(K1_e, F1_e, chosen_solver="pyamg")
+        # U1_e = scitopt.fea.solver.solve_u(K1_e, F1_e, chosen_solver="pyamg")
         U2_e = scitopt.fea.solver.solve_u(K2_e, F2_e, chosen_solver="pyamg")
 
         print("U0_e ave :", np.average(U0_e))
-        print("U1_e ave :", np.average(U1_e))
+        # print("U1_e ave :", np.average(U1_e))
         print("U2_e ave:", np.average(U2_e))
         print("U0_e max :", np.max(U0_e))
-        print("U1_e max :", np.max(U1_e))
+        # print("U1_e max :", np.max(U1_e))
         print("U2_e max:", np.max(U2_e))
         print("U0_e min :", np.min(U0_e))
-        print("U1_e min :", np.min(U1_e))
+        # print("U1_e min :", np.min(U1_e))
         print("U2_e min:", np.min(U2_e))
         
+        if isinstance(tsk.mesh, skfem.MeshTet):
+            mesh_type = "tetra" 
+        elif isinstance(tsk.mesh, skfem.MeshHex):
+            mesh_type = "hexahedron" 
+        else:
+            raise ValueError("")
+        
         sf = 1.0
-        m1 = tsk.mesh.translated(sf * U1_e[tsk.basis.nodal_dofs])
-        m1.save('K1.vtk')
+        # m1 = tsk.mesh.translated(sf * U1_e[tsk.basis.nodal_dofs])
+        # m1.save('K1.vtk')
         m2 = tsk.mesh.translated(sf * U2_e[tsk.basis.nodal_dofs])
         m2.save('K2.vtk')
 
         # 
-        K1_e, F1_e = skfem.enforce(K1, _F, D=tsk.dirichlet_nodes)
-        U1_e = scipy.sparse.linalg.spsolve(K1_e, F1_e)
-        u = U1_e
+        # K1_e, F1_e = skfem.enforce(K1, _F, D=tsk.dirichlet_nodes)
+        # U1_e = scipy.sparse.linalg.spsolve(K1_e, F1_e)
+        # u = U1_e
+        u = U0_e
 
         rho_design = rho[tsk.design_elements]
-        strain = strain_energy_hdcode(
+        strain = strain_energy_skfem(
         # strain = strain_energy_hdcode_numba(
-            u,
-            tsk.basis.element_dofs,
-            tsk.mesh.p,
-            rho_design,
-            tsk.E0,
-            tsk.Emin,
-            1.0,
-            tsk.nu0,
+            tsk.basis, np.ones(tsk.mesh.nelements), u,
+            1.0, 0.0, 1.0, 0.3
         )
         strain_min_max = (strain.min(), strain.max())
         print(f"strain_min_max: {strain_min_max}")
@@ -889,7 +992,7 @@ if __name__ == '__main__':
         cell_outputs["strain"] = [strain]
         meshio_mesh = meshio.Mesh(
             points=tsk.mesh.p.T,
-            cells=[("tetra", tsk.mesh.t.T)],
+            cells=[(mesh_type, tsk.mesh.t.T)],
             cell_data=cell_outputs
         )
         meshio.write(mesh_path, meshio_mesh)
@@ -967,6 +1070,6 @@ if __name__ == '__main__':
         print("von_mises:", von_mises.shape)
     # test_1()
     # test_2()
-    # test_3()
+    test_3()
     test_4()
 

@@ -5,6 +5,7 @@ from typing import Optional
 import imageio.v2 as imageio
     
 import numpy as np
+import skfem
 import meshio
 import pyvista as pv
 import matplotlib.pyplot as plt
@@ -47,7 +48,12 @@ def save_info_on_mesh(
     dC_image_path: Optional[str]=None,
     dC_image_title: Optional[str]=None
 ):
-    
+    if isinstance(tsk.mesh, skfem.MeshTet):
+        mesh_type = "tetra" 
+    elif isinstance(tsk.mesh, skfem.MeshHex):
+        mesh_type = "hexahedron" 
+    else:
+        raise ValueError("")
     mesh = tsk.mesh
     dirichlet_ele = utils.get_elements_with_points(mesh, [tsk.dirichlet_points])
     F_ele = utils.get_elements_with_points(mesh, [tsk.force_points])
@@ -76,7 +82,7 @@ def save_info_on_mesh(
     
     meshio_mesh = meshio.Mesh(
         points=mesh.p.T,
-        cells=[("tetra", mesh.t.T)],
+        cells=[(mesh_type, mesh.t.T)],
         cell_data=cell_outputs
     )
     meshio.write(mesh_path, meshio_mesh)
@@ -95,6 +101,7 @@ def save_info_on_mesh(
             clim=(0, 1),
             opacity=0.3,
             show_edges=False,
+            lighting=False,
             scalar_bar_args={"title": scalar_name}
         )
         plotter.add_text(rho_image_title, position="upper_left", font_size=12, color="black")
@@ -114,6 +121,7 @@ def save_info_on_mesh(
             clim=(0, 1),
             opacity=0.3,
             show_edges=False,
+            lighting=False,
             scalar_bar_args={"title": scalar_name}
         )
         plotter.add_text(dC_image_title, position="upper_left", font_size=12, color="black")

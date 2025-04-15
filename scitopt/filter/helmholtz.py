@@ -20,7 +20,7 @@ def compute_tet_volumes(mesh):
     return np.abs(np.einsum('ij,ij->j', a, np.cross(b, c, axis=0))) / 6.0
 
 
-def adjacency_matrix_volume(mesh):
+def adjacency_matrix_volume_tet(mesh):
     n_elements = mesh.t.shape[1]
     volumes = np.zeros(n_elements)
     face_to_elements = defaultdict(list)
@@ -101,38 +101,52 @@ def adjacency_matrix_volume_hex(mesh):
     return adjacency, volumes
 
 
+def adjacency_matrix_volume_hex_fast(mesh):
+    t = mesh.t  # shape (8, n_elements)
+    n_elements = t.shape[1]
 
+    # ----------------------------------
+    # 1. Hex体積をTetra6個に分解して高速計算
+    # ----------------------------------
+    coords = mesh.p[:, t]  # shape: (3, 8, n_elements)
 
-def adjacency_matrix_volume_fast(mesh):
-    n_elements = mesh.t.shape[1]
+    def tet_volume_vectorized(p0, p1, p2, p3):
+        a = p1 - p0
+        b = p2 - p0
+        c = p3 - p0
+        return np.abs(np.einsum('ij,ij->j', a, np.cross(b, c, axis=0))) / 6.0
 
-    # -------------------------
-    # 1. ベクトル化された体積計算
-    # -------------------------
-    coords = mesh.p[:, mesh.t]  # shape: (3, 4, n_elements)
-    a = coords[:, 1, :] - coords[:, 0, :]
-    b = coords[:, 2, :] - coords[:, 0, :]
-    c = coords[:, 3, :] - coords[:, 0, :]
-    volumes = np.abs(np.einsum('ij,ij->j', a, np.cross(b, c, axis=0))) / 6.0
+    v0 = tet_volume_vectorized(coords[:, 0, :], coords[:, 1, :], coords[:, 3, :], coords[:, 4, :])
+    v1 = tet_volume_vectorized(coords[:, 1, :], coords[:, 2, :], coords[:, 3, :], coords[:, 6, :])
+    v2 = tet_volume_vectorized(coords[:, 1, :], coords[:, 5, :], coords[:, 6, :], coords[:, 4, :])
+    v3 = tet_volume_vectorized(coords[:, 3, :], coords[:, 6, :], coords[:, 7, :], coords[:, 4, :])
+    v4 = tet_volume_vectorized(coords[:, 1, :], coords[:, 3, :], coords[:, 6, :], coords[:, 4, :])
+    v5 = tet_volume_vectorized(coords[:, 1, :], coords[:, 6, :], coords[:, 5, :], coords[:, 4, :])
 
-    # -------------------------
-    # 2. 高速face→要素マップ構築（sorted排除は安全のため残す）
-    # -------------------------
+    volumes = v0 + v1 + v2 + v3 + v4 + v5  # shape: (n_elements,)
+
+    # ----------------------------------
+    # 2. 面（4節点）を辞書に格納して adjacency を構築
+    # ----------------------------------
     face_to_elements = defaultdict(list)
 
-    t = mesh.t.T  # shape: (n_elements, 4)
-    # 全要素に対して面を列挙
-    for i in range(n_elements):
-        tet = t[i]
-        # 各面を小さい順にtuple化（一意なキー）
-        face_to_elements[tuple(sorted((tet[0], tet[1], tet[2])))] += [i]
-        face_to_elements[tuple(sorted((tet[0], tet[1], tet[3])))] += [i]
-        face_to_elements[tuple(sorted((tet[0], tet[2], tet[3])))] += [i]
-        face_to_elements[tuple(sorted((tet[1], tet[2], tet[3])))] += [i]
+    hex_faces = [
+        [0, 1, 2, 3],  # bottom
+        [4, 5, 6, 7],  # top
+        [0, 1, 5, 4],  # front
+        [2, 3, 7, 6],  # back
+        [0, 3, 7, 4],  # left
+        [1, 2, 6, 5],  # right
+    ]
 
-    # -------------------------
-    # 3. 面共有から隣接情報作成
-    # -------------------------
+    t_T = t.T  # shape: (n_elements, 8)
+
+    for i in range(n_elements):
+        hex_nodes = t_T[i]
+        for face in hex_faces:
+            face_nodes = tuple(sorted(hex_nodes[j] for j in face))
+            face_to_elements[face_nodes].append(i)
+
     adjacency = defaultdict(list)
     for face, elems in face_to_elements.items():
         if len(elems) == 2:
@@ -143,8 +157,45 @@ def adjacency_matrix_volume_fast(mesh):
     return adjacency, volumes
 
 
-def element_to_element_laplacian_tet(mesh, radius):
-    adjacency, volumes = adjacency_matrix_volume_fast(mesh)
+
+def adjacency_matrix_volume_tet_fast(mesh):
+
+    n_elements = mesh.t.shape[1]
+    coords = mesh.p[:, mesh.t]  # shape: (3, 4, n_elements)
+    a = coords[:, 1, :] - coords[:, 0, :]
+    b = coords[:, 2, :] - coords[:, 0, :]
+    c = coords[:, 3, :] - coords[:, 0, :]
+    volumes = np.abs(np.einsum('ij,ij->j', a, np.cross(b, c, axis=0))) / 6.0
+    face_to_elements = defaultdict(list)
+
+    t = mesh.t.T  # shape: (n_elements, 4)
+    for i in range(n_elements):
+        tet = t[i]
+        face_to_elements[tuple(sorted((tet[0], tet[1], tet[2])))] += [i]
+        face_to_elements[tuple(sorted((tet[0], tet[1], tet[3])))] += [i]
+        face_to_elements[tuple(sorted((tet[0], tet[2], tet[3])))] += [i]
+        face_to_elements[tuple(sorted((tet[1], tet[2], tet[3])))] += [i]
+
+    adjacency = defaultdict(list)
+    for face, elems in face_to_elements.items():
+        if len(elems) == 2:
+            i, j = elems
+            adjacency[i].append(j)
+            adjacency[j].append(i)
+
+    return adjacency, volumes
+
+
+def element_to_element_laplacian(
+    mesh, radius
+):
+    if isinstance(mesh, skfem.MeshTet):
+        adjacency, volumes = adjacency_matrix_volume_tet_fast(mesh)
+    elif isinstance(mesh, skfem.MeshHex):
+        adjacency, volumes = adjacency_matrix_volume_hex_fast(mesh)
+    else:
+        raise NotImplementedError("skfem.MeshTet or skfem.MeshHex")
+    
     n_elements = mesh.t.shape[1]
     element_centers = np.mean(mesh.p[:, mesh.t], axis=1).T
     rows = []
@@ -174,7 +225,7 @@ def helmholtz_filter_element_based_tet(
 ) -> np.ndarray:
     """
     """
-    laplacian, volumes = element_to_element_laplacian_tet(mesh, radius)
+    laplacian, volumes = element_to_element_laplacian(mesh, radius)
     volumes_normalized = volumes / np.mean(volumes)
 
     M = csc_matrix(np.diag(volumes_normalized))
@@ -189,7 +240,7 @@ def compute_filter_gradient_matrix(mesh: skfem.Mesh, radius: float):
     """
     Compute the Jacobian of the Helmholtz filter: d(rho_filtered)/d(rho)
     """
-    laplacian, volumes = element_to_element_laplacian_tet(mesh, radius)
+    laplacian, volumes = element_to_element_laplacian(mesh, radius)
     volumes_normalized = volumes / np.mean(volumes)
 
     M = csc_matrix(np.diag(volumes_normalized))
@@ -220,7 +271,7 @@ def prepare_helmholtz_filter(
     """
     Precompute and return the matrices and solver for Helmholtz filter.
     """
-    laplacian, volumes = element_to_element_laplacian_tet(mesh, radius)
+    laplacian, volumes = element_to_element_laplacian(mesh, radius)
     
     if False:
     # if exclude_nonadjacent and design_elements_mask is not None:

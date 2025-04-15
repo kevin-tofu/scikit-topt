@@ -1,18 +1,57 @@
+import pathlib
 import numpy as np
 import skfem
 from skfem import MeshTet
+import meshio
 from scitopt.mesh import task
 from scitopt.mesh import utils
+from scitopt.fea import composer
 
 
-def create_box(x_len, y_len, z_len, mesh_size):
+def create_box_hex(x_len, y_len, z_len, mesh_size):
+    """
+    Create a hexahedral mesh box with given dimensions and element size.
+
+    Parameters
+    ----------
+    x_len, y_len, z_len : float
+        Dimensions of the box in x, y, z directions.
+    mesh_size : float
+        Desired approximate size of each hex element.
+
+    Returns
+    -------
+    mesh : MeshHex
+        A scaled MeshHex object with the specified dimensions.
+    """
+    nx = int(np.ceil(x_len / mesh_size))
+    ny = int(np.ceil(y_len / mesh_size))
+    nz = int(np.ceil(z_len / mesh_size))
+
+    x = np.linspace(0, x_len, nx + 1)
+    y = np.linspace(0, y_len, ny + 1)
+    z = np.linspace(0, z_len, nz + 1)
+
+    mesh = skfem.MeshHex.init_tensor(x, y, z)
+
+    print("Before mesh.t fix:", mesh.t[:, 0])
+    t_fixed = utils.fix_hexahedron_orientation(mesh.t, mesh.p)
+    
+    print("After fix        :", t_fixed[:, 0])
+    mesh_fixed = skfem.MeshHex(mesh.p, t_fixed)
+    print("Mesh fixed .t    :", mesh_fixed.t[:, 0])
+
+    return mesh
+
+
+def create_box_tet(x_len, y_len, z_len, mesh_size):
     max_len = max(x_len, y_len, z_len)
     n_refine = int(np.ceil(np.log2(max_len / mesh_size)))
     mesh = MeshTet().refined(n_refine)
     scale = np.array([x_len, y_len, z_len])
     mesh = mesh.scaled(scale)
 
-    from scitopt.fea import composer
+    
     print("Before mesh.t fix:", mesh.t[:, 0])
     t_fixed = utils.fix_tetrahedron_orientation(mesh.t, mesh.p)
     # t_fixed = utils.fix_tetrahedron_orientation_numba(mesh.t, mesh.p)
@@ -20,7 +59,7 @@ def create_box(x_len, y_len, z_len, mesh_size):
     print("After fix        :", t_fixed[:, 0])
     mesh_fixed = MeshTet(mesh.p, t_fixed)
     print("Mesh fixed .t    :", mesh_fixed.t[:, 0])
-    composer._get_elements_volume(mesh_fixed.t, mesh_fixed.p)
+    # composer._get_elements_volume(mesh_fixed.t, mesh_fixed.p)
     return mesh_fixed
 
 
@@ -28,10 +67,14 @@ def toy_base(mesh_size: float):
     x_len = 8.0
     y_len = 6.0
     z_len = 4.0
-    mesh = create_box(x_len, y_len, z_len, mesh_size)
-
-    # 
-    e = skfem.ElementVector(skfem.ElementTetP1())
+    
+    # if True:
+    if False:
+        mesh = create_box_tet(x_len, y_len, z_len, mesh_size)
+        e = skfem.ElementVector(skfem.ElementTetP1())
+    else:
+        mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
+        e = skfem.ElementVector(skfem.ElementHexP1())
     basis = skfem.Basis(mesh, e, intorder=3)
     dirichlet_points = utils.get_point_indices_in_range(
         basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
@@ -86,7 +129,7 @@ def toy2():
     # mesh_size = 0.5
     # mesh_size = 0.3
     mesh_size = 0.1
-    mesh = create_box(x_len, y_len, z_len, mesh_size)
+    mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
     
     # 
     e = skfem.ElementVector(skfem.ElementTetP1())
@@ -128,19 +171,27 @@ def toy2():
     )
 
 
+def load_mesh_auto(msh_path: str):
+    msh = meshio.read(msh_path)
+    cell_types = [cell.type for cell in msh.cells]
+    if "tetra" in cell_types:
+        return skfem.MeshTet.load(pathlib.Path(msh_path))
+    elif "hexahedron" in cell_types:
+        return skfem.MeshHex.load(pathlib.Path(msh_path))
+    else:
+        raise ValueError("")
+
+
 def toy_msh(
     msh_path: str = 'plate.msh'
 ):
-    import pathlib
-    import meshio
     from scitopt.fea import composer
     x_len = 4.0
     y_len = 3.0
     # z_len = 1.0
     z_len = 0.5
-    eps = 0.1
-    mesh = skfem.MeshTet.load(pathlib.Path(msh_path))
-    print("fix_tetrahedron_orientation... ")
+    eps = 0.10
+    mesh = load_mesh_auto(msh_path)
 
     # Check Index Order.
     # print("Before mesh.t fix:", mesh.t[:, 0])
@@ -151,12 +202,16 @@ def toy_msh(
     # composer._get_elements_volume(mesh_fixed.t, mesh_fixed.p)
     
     # mesh = skfem.MeshTet.from_mesh(meshio.read(msh_path))
-    e = skfem.ElementVector(skfem.ElementTetP1())
+    if isinstance(mesh, skfem.MeshTet):
+        e = skfem.ElementVector(skfem.ElementTetP1())
+    elif isinstance(mesh, skfem.MeshHex):
+        e = skfem.ElementVector(skfem.ElementHex1())
+    else:
+        raise ValueError("")
     basis = skfem.Basis(mesh, e, intorder=3)
     
     # 
-    e = skfem.ElementVector(skfem.ElementTetP1())
-    basis = skfem.Basis(mesh, e, intorder=3)
+    
     dirichlet_points = utils.get_point_indices_in_range(
         basis, (0.0, 0.01), (0.0, y_len), (0.0, z_len)
     )
@@ -166,10 +221,10 @@ def toy_msh(
     # .nodal['u^1']
     # .all()
     F_points = utils.get_point_indices_in_range(
-        basis, (x_len, x_len), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)
+        basis, (x_len-eps, x_len), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)
     )
     F_nodes = utils.get_dofs_in_range(
-        basis, (x_len, x_len), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)
+        basis, (x_len-eps, x_len), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)
     ).nodal['u^1']
     design_elements = utils.get_elements_in_box(
         mesh,

@@ -5,8 +5,6 @@ from numba import njit, prange
 import skfem
 
 
-
-
 def fix_hexahedron_orientation(t, p):
     """
     Ensures that each hexahedral element in the mesh has positive volume
@@ -121,6 +119,14 @@ def fix_tetrahedron_orientation_numba(t, p):
 
     return t_fixed
 
+
+def fix_elements_orientation(mesh):
+    if isinstance(mesh, skfem.MeshTet):
+        return fix_tetrahedron_orientation(mesh.t, mesh.p)
+    elif isinstance(mesh, skfem.MeshHex):
+        return fix_hexahedron_orientation(mesh.t, mesh.p)
+    else:
+        raise ValueError("")
 
 def get_elements_with_points(mesh: skfem.mesh, target_nodes_list: list[np.ndarray]) -> np.ndarray:
     """
