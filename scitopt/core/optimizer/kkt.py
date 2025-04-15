@@ -189,7 +189,7 @@ class KKT_Optimizer():
             os.makedirs(self.cfg.dst_path)
         # self.tsk.export(self.cfg.dst_path)
         self.cfg.export(self.cfg.dst_path)
-        self.tsk.nodes_and_elements_stats(self.cfg.dst_path)
+        # self.tsk.nodes_and_elements_stats(self.cfg.dst_path)
         
         if cfg.design_dirichlet is False:
             self.tsk.exlude_dirichlet_from_design()
