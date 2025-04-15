@@ -571,7 +571,7 @@ def strain_energy_skfem(
     elem_func: Callable=simp_interpolation
 ) -> np.ndarray:
 
-    uh = basis.interpolate(u)
+    # uh = basis.interpolate(u)
     E_elem = elem_func(rho, E0, Emin, p) 
     lam_elem, mu_elem = lame_parameters(E_elem, nu)  # shape: (nelements,)
     n_qp = basis.X.shape[1]
@@ -583,6 +583,72 @@ def strain_energy_skfem(
         basis, uh=u, lam_elem=lam_elem, mu_elem=mu_elem
     )
     return elem_energy
+
+
+@Functional
+def compute_element_stress_tensor(w):
+    """
+    Return stress tensor per element per quadrature point.
+    Output shape: (3, 3, n_elem, n_qp)
+    """
+    grad = w['uh'].grad                          # shape: (3, 3, nelems, nqp)
+    symgrad = 0.5 * (grad + transpose(grad))     # shape: same
+    tr = trace(symgrad)                          # shape: (nelems, nqp)
+    I = eye(tr, symgrad.shape[0])                # shape: (3, 3, nelems, nqp)
+
+    mu = w['mu_elem'].T[None, None, :, :]        # shape: (1, 1, nelems, nqp)
+    lam = w['lam_elem'].T[None, None, :, :]      # shape: same
+
+    stress = 2. * mu * symgrad + lam * I         # shape: (3, 3, nelems, nqp)
+    return stress
+
+
+def stress_skfem(
+    basis: skfem.Basis,
+    rho: np.ndarray, u, 
+    E0: float, Emin: float, p: float, nu: float,
+    elem_func: Callable=simp_interpolation
+):
+    # uh = basis.interpolate(u)
+    E_elem = elem_func(rho, E0, Emin, p) 
+    lam_elem, mu_elem = lame_parameters(E_elem, nu)  # shape: (nelements,)
+    n_qp = basis.X.shape[1]
+
+    lam_elem = np.tile(lam_elem, (n_qp, 1))  # shape: (n_qp, n_elements)
+    mu_elem = np.tile(mu_elem, (n_qp, 1))
+
+    stress_tensor = compute_element_stress_tensor.elemental(
+        basis, uh=u, lam_elem=lam_elem, mu_elem=mu_elem
+    )
+    return stress_tensor  # shape: (n_elem, n_qp, 3, 3)
+
+
+def von_mises_from_stress_tensor(stress_tensor: np.ndarray) -> np.ndarray:
+    """
+    Compute Von Mises stress from full stress tensor.
+    
+    Parameters:
+        stress_tensor: ndarray of shape (3, 3, n_elem, n_qp)
+
+    Returns:
+        von_mises: ndarray of shape (n_elem, n_qp)
+    """
+    s = stress_tensor
+    s_xx = s[0, 0]
+    s_yy = s[1, 1]
+    s_zz = s[2, 2]
+    s_xy = s[0, 1]
+    s_yz = s[1, 2]
+    s_zx = s[2, 0]
+    
+    return np.sqrt(
+        0.5 * (
+            (s_xx - s_yy)**2 +
+            (s_yy - s_zz)**2 +
+            (s_zz - s_xx)**2 +
+            6 * (s_xy**2 + s_yz**2 + s_zx**2)
+        )
+    )
 
 
 if __name__ == '__main__':
@@ -892,7 +958,13 @@ if __name__ == '__main__':
         print("The Strain Energy Each =", elem_energy_simp)
         print("Difference =", np.sum((elem_energy_simp - element_U)**2))
 
-
+        stress = stress_skfem(
+            tsk.basis, np.ones(tsk.mesh.nelements), u,
+            1.0, 0.0, 1.0, 0.3
+        )
+        print("stress:", stress.shape)
+        von_mises = von_mises_from_stress_tensor(stress)
+        print("von_mises:", von_mises.shape)
     # test_1()
     # test_2()
     # test_3()

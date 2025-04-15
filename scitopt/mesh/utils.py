@@ -5,7 +5,46 @@ from numba import njit, prange
 import skfem
 
 
-import numpy as np
+
+
+def fix_hexahedron_orientation(t, p):
+    """
+    Ensures that each hexahedral element in the mesh has positive volume
+    (i.e., right-handed orientation). Adjusts the order of nodes if needed.
+
+    Parameters
+    ----------
+    t : (8, n_elem) int
+        Hexahedral element connectivity (e.g., mesh.t)
+    p : (3, n_nodes) float
+        Node coordinates (e.g., mesh.p)
+
+    Returns
+    -------
+    t_fixed : (8, n_elem) int
+        Corrected node ordering for each element.
+    """
+
+    t_fixed = np.array(t, copy=True)
+    n_elem = t.shape[1]
+
+    for e in range(n_elem):
+        hex_nodes = t_fixed[:, e]
+        coords = p[:, hex_nodes]  # shape (3, 8)
+
+        # Compute Jacobian determinant at natural coordinate center
+        # Ref: Hex element master nodes index: [0,1,2,3,4,5,6,7]
+        v1 = coords[:, 1] - coords[:, 0]  # x-direction
+        v2 = coords[:, 3] - coords[:, 0]  # y-direction
+        v3 = coords[:, 4] - coords[:, 0]  # z-direction
+        jac_det = np.dot(np.cross(v1, v2), v3)
+
+        if jac_det < 0:
+            # Swap two nodes to flip orientation (commonly swap node 1 and 3)
+            t_fixed[1, e], t_fixed[3, e] = t_fixed[3, e], t_fixed[1, e]
+
+    return t_fixed
+
 
 
 def fix_tetrahedron_orientation(t, p):
