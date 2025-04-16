@@ -25,29 +25,26 @@ def compute_compliance_simp_basis(
 
 
 def solve_u(
-    K_e: scipy.sparse.csc_matrix,
-    F_e: np.ndarray,
+    K_cond: scipy.sparse.csc_matrix,
+    F_cond: np.ndarray,
     chosen_solver: Literal['cg', 'spsolve', 'pyamg'] = 'auto',
     rtol: float = 1e-8,
     maxiter: int = None,
 ) -> np.ndarray:
     try:
         if chosen_solver == 'cg':
-            M_diag = K_e.diagonal()
+            M_diag = K_cond.diagonal()
             M_inv = 1.0 / M_diag
-            M = LinearOperator(K_e.shape, matvec=lambda x: M_inv * x)
-            u, info = cg(A=K_e, b=F_e, M=M, rtol=rtol, maxiter=maxiter)
+            M = LinearOperator(K_cond.shape, matvec=lambda x: M_inv * x)
+            u_c, info = cg(A=K_cond, b=F_cond, M=M, rtol=rtol, maxiter=maxiter)
             print("CG (diag preconditioner) solver info:", info)
 
         elif chosen_solver == 'pyamg':
-            # ml = pyamg.ruge_stuben_solver(K_e)
-            # u = ml.solve(F_e, tol=rtol)
-            _K_e = K_e.tocsr()
-            pyamg_solver = pyamg.smoothed_aggregation_solver(_K_e)
-            u = pyamg_solver.solve(F_e, tol=rtol)
+            pyamg_solver = pyamg.smoothed_aggregation_solver(K_cond)
+            u_c = pyamg_solver.solve(F_cond, tol=rtol)
 
         elif chosen_solver == 'spsolve':
-            u = scipy.sparse.linalg.spsolve(K_e, F_e)
+            u_c = scipy.sparse.linalg.spsolve(K_cond, F_cond)
             info = 0
             print("Direct solver used: spsolve")
 
@@ -56,8 +53,8 @@ def solve_u(
 
     except Exception as e:
         print(f"Solver exception - {e}, falling back to spsolve.")
-        u = scipy.sparse.linalg.spsolve(K_e, F_e)
-    return u
+        u_c = scipy.sparse.linalg.spsolve(K_cond, F_cond)
+    return u_c
 
 
 
@@ -70,15 +67,14 @@ def compute_compliance_basis(
     rtol: float = 1e-8,
     maxiter: int = None,
 ) -> tuple:
+    
     K = composer.assemble_stiffness_matrix(
         basis, rho, E0, Emin, p, nu0, elem_func
     )
-    K_e, F_e = skfem.enforce(K, force, D=dirichlet_nodes)
     n_dof = K.shape[0]
-
     # Solver auto-selection
     if solver == 'auto':
-        if n_dof < 5000:
+        if n_dof < 1000:
             chosen_solver = 'spsolve'
         elif n_dof < 30000:
             # chosen_solver = 'cg'
@@ -86,17 +82,26 @@ def compute_compliance_basis(
         else:
             chosen_solver = 'pyamg'
             # chosen_solver = 'cg'
-            
     else:
         chosen_solver = solver
 
     _maxiter = min(1000, max(300, n_dof // 5)) if maxiter is None else maxiter
-
-    u = solve_u(
-        K_e, F_e, chosen_solver=chosen_solver,
+    
+    
+    # K_e, F_e = skfem.enforce(K, force, D=dirichlet_nodes)
+    K_csr = K.tocsr()
+    # K_cond, F_cond, x_bc = skfem.condense(K_csr, force, D=dirichlet_nodes)
+    K_c, F_c, U_c, I = skfem.condense(K_csr, force, D=dirichlet_nodes)
+    # u = np.zeros(K.shape[0])
+    U_c[I] = solve_u(
+        K_c, F_c, chosen_solver=chosen_solver,
         rtol=rtol, maxiter=_maxiter
     )
-
+    # print("K.shape:", K.shape)
+    # print("dirichlet_nodes:", dirichlet_nodes.shape)
+    # print("U_c:", U_c.shape)
+    U_c[dirichlet_nodes] = 0.0
+    u = U_c
     f_free = force[free_nodes]
     compliance = f_free @ u[free_nodes]
     return (compliance, u)

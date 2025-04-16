@@ -191,6 +191,7 @@ def toy_msh(
     # z_len = 1.0
     z_len = 0.5
     eps = 0.10
+    # eps = 0.5
     mesh = load_mesh_auto(msh_path)
 
     # Check Index Order.
@@ -213,11 +214,12 @@ def toy_msh(
     # 
     
     dirichlet_points = utils.get_point_indices_in_range(
-        basis, (0.0, 0.01), (0.0, y_len), (0.0, z_len)
+        basis, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
     dirichlet_nodes = utils.get_dofs_in_range(
-        basis, (0.0, 0.01), (0.0, y_len), (0.0, z_len)
+        basis, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     ).all()
+    # print("dirichlet_nodes:", dirichlet_nodes.shape, dirichlet_nodes.dtype)
     # .nodal['u^1']
     # .all()
     F_points = utils.get_point_indices_in_range(
@@ -236,6 +238,7 @@ def toy_msh(
     E0 = 1.0
     # F = [0.3, -0.3]
     F = 0.002
+    # F = 0.3
     
     # F = 0.3
     # F = 1.2
@@ -243,6 +246,9 @@ def toy_msh(
     # F = 1.0
     # F = 150.0
     print("F:", F)
+    print("F_points:", F_points.shape)
+    print("F_nodes:", F_nodes.shape)
+    
     return task.TaskConfig.from_defaults(
         E0,
         0.30,

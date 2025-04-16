@@ -71,9 +71,9 @@ def save_info_on_mesh(
     cell_outputs["rho"] = [rho]
     cell_outputs["rho-diff"] = [rho - rho_prev]
     if dC is not None:
-        dC[tsk.fixed_elements_in_rho] = 0.0
-        dC_ranked = rank_scale_0_1(dC)
-        cell_outputs["strain_energy_ranked"] = [dC_ranked]
+        # dC[tsk.fixed_elements_in_rho] = 0.0
+        # dC_ranked = rank_scale_0_1(dC)
+        cell_outputs["strain_energy"] = [dC]
     # cell_outputs["rho_projected"] = [rho_projected]
     cell_outputs["desing-fixed"] = [element_colors_df1]
     cell_outputs["condition"] = [element_colors_df2]
@@ -112,13 +112,13 @@ def save_info_on_mesh(
         pv.start_xvfb()
         mesh = pv.read(mesh_path)
         # scalar_names = list(mesh.cell_data.keys())
-        scalar_name = "strain_energy_ranked"
+        scalar_name = "strain_energy"
         plotter = pv.Plotter(off_screen=True)
         plotter.add_mesh(
             mesh,
             scalars=scalar_name,
             cmap="turbo",
-            clim=(0, 1),
+            clim=(0, np.max(dC)),
             opacity=0.3,
             show_edges=False,
             lighting=False,
