@@ -74,7 +74,6 @@ class KKT_Config():
             return f"{self.dst_path}/mesh_rho/info_{prefix}-{iter:08d}.jpg"
         else:
             return None
-                    
 
 
 # log(x) = -0.4   →   x ≈ 0.670
@@ -304,6 +303,7 @@ class KKT_Optimizer():
         else:
             _vol_frac = cfg.vol_frac if cfg.vol_frac_rate < 0 else cfg.vol_frac_init
             rho += _vol_frac + 0.1 * (np.random.rand(len(tsk.all_elements)) - 0.5)
+            # rho += _vol_frac + 0.15
             np.clip(rho, cfg.rho_min, cfg.rho_max, out=rho)
 
         if cfg.design_dirichlet is True:
@@ -330,6 +330,9 @@ class KKT_Optimizer():
         dH = np.empty_like(rho)
         grad_filtered = np.empty_like(rho)
         dC_drho_projected = np.empty_like(rho)
+        strain_energy_ave = np.zeros_like(rho)
+        compliance_avg = np.zeros_like(rho)
+        dH = np.zeros_like(rho)
 
         # dC_drho_ave = np.zeros_like(rho)
         dC_drho_full = np.zeros_like(rho)
@@ -358,9 +361,10 @@ class KKT_Optimizer():
             )
             dC_drho_ave[:] = 0.0
             dC_drho_full[:] = 0.0
-            strain_energy_ave = 0.0
-            compliance_avg = 0.0
+            strain_energy_ave[:] = 0.0
+            compliance_avg[:] = 0.0
             for force in force_list:
+                dH[:] = 0.0
                 compliance, u = solver.compute_compliance_basis(
                     tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
                     tsk.E0, tsk.Emin, p, tsk.nu0,
@@ -376,16 +380,20 @@ class KKT_Optimizer():
                 strain_energy_ave += strain_energy
                 
                 # rho_safe = np.clip(rho_filtered, 1e-3, 1.0)
-                dC_drho_projected[:] = dC_drho_func(
-                    rho_projected, strain_energy, tsk.E0, tsk.Emin, p
+                np.copyto(
+                    dC_drho_projected,
+                    dC_drho_func(
+                        rho_projected,
+                        strain_energy, tsk.E0, tsk.Emin, p
+                    )
                 )
                 projection.heaviside_projection_derivative_inplace(
                     rho_filtered,
                     beta=beta, eta=cfg.beta_eta, out=dH
                 )
-                dH = projection.heaviside_projection_derivative(
-                    rho_filtered, beta=beta, eta=cfg.beta_eta
-                )
+                # dH[:] = projection.heaviside_projection_derivative(
+                #     rho_filtered, beta=beta, eta=cfg.beta_eta
+                # )
                 np.multiply(dC_drho_projected, dH, out=grad_filtered)
                 dC_drho_full[:] += self.helmholz_solver.gradient(grad_filtered)
                 # dC_drho_ave[:] += dC_drho_full[tsk.design_elements]
@@ -396,7 +404,10 @@ class KKT_Optimizer():
             compliance_avg /= len(force_list)
             print(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
             
+            filtered = self.helmholz_solver.filter(dC_drho_full)
+            np.copyto(dC_drho_full, filtered)
             
+            dC_drho_full[:] = self.helmholz_solver.filter(dC_drho_full)
             dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
             # vol_error = np.mean(rho_projected[tsk.design_elements]) - vol_frac
             vol_error = np.sum(
@@ -448,7 +459,7 @@ class KKT_Optimizer():
                 
                 visualization.save_info_on_mesh(
                     tsk,
-                    rho_projected, rho_prev, strain_energy,
+                    rho_projected, rho_prev, strain_energy_ave,
                     cfg.vtu_path(iter),
                     cfg.image_path(iter, "rho"),
                     f"Iteration : {iter}",

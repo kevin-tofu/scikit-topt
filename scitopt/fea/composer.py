@@ -913,7 +913,7 @@ if __name__ == '__main__':
         print("numpy", time.time() - t1)
         print("err:", np.sum(K0 - K1))
 
-    # @profile
+    @profile
     def test_3():
         import scitopt
         from scitopt.mesh import toy_problem
@@ -922,10 +922,10 @@ if __name__ == '__main__':
         rho = np.ones(tsk.all_elements.shape)
 
         K0 = assemble_stiffness_matrix(
-            tsk.basis, rho, tsk.E0, 0.0, 1.0, tsk.nu0
+            tsk.basis, rho, tsk.E0, tsk.Emin, 1.0, tsk.nu0
         )
         # K1 = assemble_stiffness_matrix_numba(
-        #     tsk.basis, rho, tsk.E0, 0.0, 1.0, tsk.nu0
+        #     tsk.basis, rho, tsk.E0, tsk.Emin, 1.0, tsk.nu0
         # )
         
         lam, mu = lame_parameters(tsk.E0, tsk.nu0)
@@ -977,18 +977,28 @@ if __name__ == '__main__':
         # K1_e, F1_e = skfem.enforce(K1, _F, D=tsk.dirichlet_nodes)
         # U1_e = scipy.sparse.linalg.spsolve(K1_e, F1_e)
         # u = U1_e
-        u = U0_e
-
-        rho_design = rho[tsk.design_elements]
-        strain = strain_energy_skfem(
-        # strain = strain_energy_hdcode_numba(
-            tsk.basis, np.ones(tsk.mesh.nelements), u,
-            1.0, 0.0, 1.0, 0.3
+        # u = tsk.basis.interpolate(U0_e)
+        compliance, u_compliance = scitopt.fea.solver.compute_compliance_basis(
+            tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, _F,
+            tsk.E0, tsk.Emin, 1.0, tsk.nu0,
+            rho,
+            elem_func=simp_interpolation,
+            # solver="spsolve"
         )
-        strain_min_max = (strain.min(), strain.max())
+        strain = strain_energy_skfem(
+            tsk.basis, rho, u_compliance,
+            tsk.E0, tsk.Emin, 1.0, tsk.nu0,
+            elem_func=simp_interpolation
+        )
+        
+        print(np.average(np.abs(U0_e)))
+        print(np.average(np.abs(u_compliance)))
+        print("u diff :", np.sum((U0_e - u_compliance)**2))
+        strain_min_max = (strain.max()/2, strain.max())
         print(f"strain_min_max: {strain_min_max}")
         mesh_path = "strain.vtu"
         cell_outputs = dict()
+        # cell_outputs["strain"] = [np.linalg.norm(u, axis=0)]
         cell_outputs["strain"] = [strain]
         meshio_mesh = meshio.Mesh(
             points=tsk.mesh.p.T,
@@ -1007,8 +1017,8 @@ if __name__ == '__main__':
             mesh,
             scalars=scalar_name,
             cmap="turbo",
-            clim=(strain.min(), strain.max()),
-            opacstrain_min_maxity=0.3,
+            clim=(cell_outputs["strain"][0].min(), cell_outputs["strain"][0].max()),
+            opacity=0.3,
             show_edges=False,
             scalar_bar_args={"title": scalar_name}
         )
@@ -1034,6 +1044,7 @@ if __name__ == '__main__':
         _F = tsk.force
         K_e, F_e = skfem.enforce(K0, _F, D=tsk.dirichlet_nodes)
         u = scitopt.fea.solver.solve_u(K_e, F_e, chosen_solver="pyamg")
+        print("np.sum(u[tsk.dirichlet_nodes]):", np.sum(u[tsk.dirichlet_nodes]))
         
         lam, mu = lame_parameters(tsk.E0, tsk.nu0)
 
@@ -1050,7 +1061,7 @@ if __name__ == '__main__':
         total_U = strain_energy_density.assemble(tsk.basis, uh=uh)
         element_U = strain_energy_density.elemental(tsk.basis, uh=uh)
         print(f"Total Strain Energy = {total_U}")
-        print("The Strain Energy Each =", element_U)
+        # print("The Strain Energy Each =", element_U)
 
         
         elem_energy_simp = strain_energy_skfem(
@@ -1058,7 +1069,7 @@ if __name__ == '__main__':
             1.0, 0.0, 1.0, 0.3
         )
         
-        print("The Strain Energy Each =", elem_energy_simp)
+        # print("The Strain Energy Each =", elem_energy_simp)
         print("Difference =", np.sum((elem_energy_simp - element_U)**2))
 
         stress = stress_skfem(
@@ -1068,6 +1079,8 @@ if __name__ == '__main__':
         print("stress:", stress.shape)
         von_mises = von_mises_from_stress_tensor(stress)
         print("von_mises:", von_mises.shape)
+
+
     # test_1()
     # test_2()
     test_3()

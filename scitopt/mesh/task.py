@@ -68,7 +68,9 @@ class TaskConfig():
             force_elements = utils.get_elements_with_points_fast(
                 mesh, force_points
             )
-            
+        
+        if force_elements.shape[0] == 0:
+            raise ValueError("force_elements has not been set.")
         # elements_related_with_bc = np.concatenate([bc_elements, dirichlet_adj_elements, force_elements])
         
         # design_elements = np.setdiff1d(design_elements, elements_related_with_bc)
@@ -87,7 +89,8 @@ class TaskConfig():
             f"all_elements: {all_elements.shape}",
             f"design_elements: {design_elements.shape}",
             f"fixed_elements_in_rho: {fixed_elements_in_rho.shape}",
-            f"dirichlet_force_elements: {dirichlet_force_elements.shape}"
+            f"dirichlet_force_elements: {dirichlet_force_elements.shape}",
+            f"force_elements: {force_elements}"
         )
         # free_nodes = np.setdiff1d(np.arange(basis.N), dirichlet_nodes)
         free_nodes = setdiff1d(np.arange(basis.N), dirichlet_nodes)

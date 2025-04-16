@@ -134,9 +134,8 @@ class OC_Optimizer():
         self.tsk = tsk
         if not os.path.exists(self.cfg.dst_path):
             os.makedirs(self.cfg.dst_path)
-        # self.tsk.export(self.cfg.dst_path)
         self.cfg.export(self.cfg.dst_path)
-        self.tsk.nodes_and_elements_stats(self.cfg.dst_path)
+        # self.tsk.nodes_and_elements_stats(self.cfg.dst_path)
         
         if cfg.design_dirichlet is False:
             self.tsk.exlude_dirichlet_from_design()
@@ -147,9 +146,9 @@ class OC_Optimizer():
             if os.path.exists(f"{self.cfg.dst_path}/mesh_rho"):
                 shutil.rmtree(f"{self.cfg.dst_path}/mesh_rho")
             os.makedirs(f"{self.cfg.dst_path}/mesh_rho")
-            if os.path.exists(f"{self.cfg.dst_path}/rho-histo"):
-                shutil.rmtree(f"{self.cfg.dst_path}/rho-histo")
-            os.makedirs(f"{self.cfg.dst_path}/rho-histo")
+            # if os.path.exists(f"{self.cfg.dst_path}/rho-histo"):
+            #     shutil.rmtree(f"{self.cfg.dst_path}/rho-histo")
+            # os.makedirs(f"{self.cfg.dst_path}/rho-histo")
             if not os.path.exists(f"{self.cfg.dst_path}/data"):
                 os.makedirs(f"{self.cfg.dst_path}/data")
 
@@ -277,6 +276,10 @@ class OC_Optimizer():
         dH = np.empty_like(rho)
         grad_filtered = np.empty_like(rho)
         dC_drho_projected = np.empty_like(rho)
+        strain_energy = np.zeros_like(rho)
+        strain_energy_ave = np.zeros_like(rho)
+        compliance_avg = np.zeros_like(rho)
+        dH = np.zeros_like(rho)
 
         # dC_drho_ave = np.zeros_like(rho)
         dC_drho_full = np.zeros_like(rho)
@@ -310,9 +313,11 @@ class OC_Optimizer():
 
             dC_drho_full[:] = 0.0
             dC_drho_ave[:] = 0.0
-            strain_energy_sum = 0.0
-            compliance_avg = 0.0
+            strain_energy[:] = 0.0
+            strain_energy_ave[:] = 0.0
+            compliance_avg[:] = 0.0
             for force in force_list:
+                dH[:] = 0.0
                 compliance, u = solver.compute_compliance_basis(
                 # compliance, u = solver.compute_compliance_basis_numba(
                     tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
@@ -326,32 +331,40 @@ class OC_Optimizer():
                     tsk.basis, rho_projected, u,
                     tsk.E0, tsk.Emin, p, tsk.nu0,
                 )
-                strain_energy_sum += strain_energy
-                dC_drho_projected[:] = dC_drho_func(
-                    rho_projected,
-                    strain_energy, tsk.E0, tsk.Emin, p
+                strain_energy_ave += strain_energy
+                np.copyto(
+                    dC_drho_projected,
+                    dC_drho_func(
+                        rho_projected,
+                        strain_energy, tsk.E0, tsk.Emin, p
+                    )
                 )
                 projection.heaviside_projection_derivative_inplace(
                     rho_filtered,
                     beta=beta, eta=cfg.beta_eta, out=dH
                 )
                 np.multiply(dC_drho_projected, dH, out=grad_filtered)
-                dC_drho_full += self.helmholz_solver.gradient(grad_filtered)
+                # dC_drho_full += self.helmholz_solver.gradient(grad_filtered)
+                np.add(dC_drho_full, self.helmholz_solver.gradient(grad_filtered), out=dC_drho_full)
                 
             dC_drho_full /= len(force_list)
-            strain_energy_sum /= len(force_list)
+            strain_energy_ave /= len(force_list)
             compliance_avg /= len(force_list)
             
+            
+            filtered = self.helmholz_solver.filter(dC_drho_full)
+            np.copyto(dC_drho_full, filtered)
             
             # print(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
             scale = np.percentile(np.abs(dC_drho_full[tsk.design_elements]), percentile)
             scale = max(scale, np.mean(np.abs(dC_drho_full[tsk.design_elements])), 1e-4)
             # scale = np.median(np.abs(dC_drho_full[tsk.design_elements]))
             running_scale = 0.6 * running_scale + (1 - 0.6) * scale if iter_loop > 0 else scale
-            dC_drho_full = dC_drho_full / (running_scale + eps)
+            dC_drho_full /= (running_scale + eps)
             # if cfg.interpolation == "SIMP":
             #     np.minimum(dC_drho_full - dC_drho_full.max(), -cfg.lambda_lower*10.0, out=dC_drho_full)
-            # dC_drho_full[:] = self.helmholz_solver.filter(dC_drho_full)
+            
+
             # np.minimum(dC_drho_full, -cfg.lambda_lower*0.1, out=dC_drho_full)
             # np.clip(dC_drho_full, -cfg.lambda_upper * 10, -cfg.lambda_lower * 0.1, out=dC_drho_full)
             print(f"running_scale: {running_scale}")
@@ -405,7 +418,7 @@ class OC_Optimizer():
                 self.recorder.export_progress()
                 visualization.save_info_on_mesh(
                     tsk,
-                    rho_projected, rho_prev, strain_energy,
+                    rho_projected, rho_prev, strain_energy_ave,
                     cfg.vtu_path(iter),
                     cfg.image_path(iter, "rho"),
                     f"Iteration : {iter}",
