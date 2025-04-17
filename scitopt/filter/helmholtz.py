@@ -432,40 +432,74 @@ def apply_filter_gradient_amg(
     return result
 
 
+def _update_radius(
+    mesh: skfem.Mesh,
+    radius: float,
+    dst_path: Optional[str]=None,
+    design_mask: Optional[np.ndarray]=None
+):
+    exclude_nonadjacent = False if design_mask is None else True
+    A, V = prepare_helmholtz_filter(
+        mesh, radius,
+        design_elements_mask=design_mask,
+        exclude_nonadjacent=exclude_nonadjacent
+    )
+    if isinstance(dst_path, str):
+        scipy.sparse.save_npz(f"{dst_path}/V.npz", V)
+        scipy.sparse.save_npz(f"{dst_path}/A.npz", A)
+
+    return A, V
+
+
 @dataclass
 class HelmholtzFilter():
     A: csc_matrix
     V: csc_matrix
+    dst_path: Optional[str]=None
     solver_type: Literal["spsolve", "cg", "pyamg"] = "cg"
     A_solver: Optional[scipy.sparse.linalg.SuperLU]=None
     M: Optional[LinearOperator]=None
     pyamg_solver: Optional[pyamg.multilevel.MultilevelSolver]=None
     rtol: float=1e-5
     maxiter: int=1000
+    
 
+    def update_radius(
+        self,
+        mesh: skfem.Mesh,
+        radius: float,
+        design_mask: Optional[np.ndarray]=None,
+        # solver="pyamg"
+    ):
+        self.A, self.V = _update_radius(
+            mesh=mesh,
+            radius=radius,
+            dst_path=self.dst_path,
+            design_mask=design_mask
+        )
+        self.preprocess()
+        
 
     @classmethod
     def from_defaults(
         cls,
         mesh: skfem.Mesh,
         radius: float,
+        solver_type: Literal["spsolve", "cg", "pyamg"] = "pyamg",
         dst_path: Optional[str]=None,
-        design_mask: Optional[np.ndarray]=None
+        design_mask: Optional[np.ndarray]=None,
     ):
-        exclude_nonadjacent = False if design_mask is None else True
-        A, V = prepare_helmholtz_filter(
-            mesh, radius,
-            design_elements_mask=design_mask,
-            exclude_nonadjacent=exclude_nonadjacent
+        A, V = _update_radius(
+            mesh=mesh,
+            radius=radius,
+            dst_path=dst_path,
+            design_mask=design_mask
         )
-        if isinstance(dst_path, str):
-            scipy.sparse.save_npz(f"{dst_path}/V.npz", V)
-            scipy.sparse.save_npz(f"{dst_path}/A.npz", A)
-
-        # A_solver = splu(A)
         return cls(
-            A, V, None
+            A=A, V=V, dst_path=dst_path,
+            solver_type=solver_type
         )
+
     
     @classmethod
     def from_file(cls, dst_path: str):
@@ -507,16 +541,19 @@ class HelmholtzFilter():
                 self.pyamg_solver,
                 tol=self.rtol,
             )
+        else:
+            raise ValueError("solver_type is not set")
 
     def preprocess(
-        self, solver="pyamg"
+        self,
+        # solver="pyamg"
     ):
-        self.solver_type = solver
-        if solver == "pyamg":
+        # self.solver_type = solver_type
+        if self.solver_type == "pyamg":
             self.create_amgsolver()
-        elif solver == "cg":
+        elif self.solver_type == "cg":
             self.create_LinearOperator()
-        elif solver == "spsplve":
+        elif self.solver_type == "spsplve":
             self.create_solver()
                 
     def create_solver(self):

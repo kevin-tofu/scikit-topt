@@ -26,11 +26,13 @@ class HistoryLogger():
     
     def add(self, data: np.ndarray | float):
         if isinstance(data, np.ndarray):
-            _temp = [np.min(data), np.mean(data), np.max(data)]
-            if self.plot_type == "min-max-mean-std":
-                _temp.append(np.std(data))
-            self.data.append(_temp)
-            
+            if data.shape == ():
+                self.data.append(float(data))
+            else:
+                _temp = [np.min(data), np.mean(data), np.max(data)]
+                if self.plot_type == "min-max-mean-std":
+                    _temp.append(np.std(data))
+                self.data.append(_temp)
         else:
             self.data.append(float(data))
         
@@ -129,6 +131,8 @@ class HistoriesLogger():
                     ax[p, q].set_ylabel(h.name)
                     if h.ylog is True:
                         ax[p, q].set_yscale('log')
+                    else:
+                        ax[p, q].set_yscale('linear')
                     ax[p, q].set_title(f"{h.name} Progress")
                     ax[p, q].grid(True)
 

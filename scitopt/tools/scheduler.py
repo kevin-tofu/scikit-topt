@@ -29,6 +29,47 @@ def schedule_exp_accelerate(
         return target - (target - start) * (1 - np.exp(rate * (t - 1)))
 
 
+def schedule_step(
+    it: int, total: int, start: float=1.0, target: float=0.4, num_steps: int=10
+):
+    """
+    Step-function scheduler where each step value is used for (approximately) equal number of iterations.
+
+    Parameters
+    ----------
+    it : int
+        Current iteration index.
+    total : int
+        Total number of iterations.
+    start : float
+        Starting value.
+    target : float
+        Final target value.
+    num_steps : int
+        Number of discrete step values (including start and target).
+
+    Returns
+    -------
+    float
+        Scheduled value for the given iteration.
+    """
+    if total <= 0:
+        raise ValueError("total must be positive")
+    if num_steps <= 1:
+        return target
+
+    # Determine which step this iteration belongs to
+    step_length = total / num_steps
+    step_index = min(int(it // step_length), num_steps - 1)
+
+    # Linearly divide values between start and target
+    alpha = step_index / (num_steps - 1)
+    value = (1 - alpha) * start + alpha * target
+    return value
+
+
+
+
 class Scheduler():
     
     def __init__(
@@ -38,7 +79,7 @@ class Scheduler():
         target_value: float,
         rate: float,
         iters_max: int,
-        func: Callable = schedule_exp_slowdown
+        func: Callable = schedule_step
     ):
         self.name = name
         self.init_value = init_value
@@ -76,12 +117,12 @@ class Schedulers():
         name: str,
         init_value: float,
         target_value: float,
-        rate: float,
+        step: float,
         iters_max: int,
-        func: Callable = schedule_exp_slowdown
+        func: Callable = schedule_step
     ):
         s = Scheduler(
-            name, init_value, target_value, rate, iters_max, func
+            name, init_value, target_value, step, iters_max, func
         )
         # print(s.name)
         self.scheduler_list.append(s)
