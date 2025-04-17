@@ -9,7 +9,7 @@ def oc_ramp_optimize(tsk):
 
     optimizer = scitopt.core.OC_Optimizer(cfg, tsk)
 
-    optimizer.parameterize(preprocess=True)
+    optimizer.parameterize()
     optimizer.optimize()
 
 
@@ -21,7 +21,7 @@ def moc_optimize(tsk):
 
     optimizer = scitopt.core.MOC_Optimizer(cfg, tsk)
 
-    optimizer.parameterize(preprocess=True)
+    optimizer.parameterize()
     optimizer.optimize()
 
 
@@ -33,7 +33,7 @@ def kkt_optimize(tsk):
 
     optimizer = scitopt.core.KKT_Optimizer(cfg, tsk)
 
-    optimizer.parameterize(preprocess=True)
+    optimizer.parameterize()
     optimizer.optimize()
 
 
