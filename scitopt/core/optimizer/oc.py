@@ -448,7 +448,7 @@ class OC_Optimizer():
 
         visualization.rho_histo_plot(
             rho_projected[tsk.design_elements],
-            f"{self.cfg.dst_path}/rho-histo/last.jpg"
+            f"{self.cfg.dst_path}/mesh_rho/last.jpg"
         )
         visualization.export_submesh(
             tsk, rho_projected, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
