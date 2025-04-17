@@ -94,14 +94,19 @@ def save_info_on_mesh(
         # scalar_names = list(mesh.cell_data.keys())
         scalar_name = "rho"
         plotter = pv.Plotter(off_screen=True)
+        opacity_mask = (rho > 1e-1).astype(float)
         plotter.add_mesh(
             mesh,
             scalars=scalar_name,
-            cmap="turbo",
+            cmap="cividis",
             clim=(0, 1),
-            opacity=0.3,
-            show_edges=False,
-            lighting=False,
+            opacity=opacity_mask,
+            # opacity=0.9,
+            show_edges=True,
+            # lighting=True,
+            # opacity=0.3,
+            # show_edges=False,
+            # lighting=False,
             scalar_bar_args={"title": scalar_name}
         )
         plotter.add_text(rho_image_title, position="upper_left", font_size=12, color="black")
@@ -206,8 +211,11 @@ def rho_histo_plot(
 
 def images2gif(
     dir_path: str,
-    prefix: str="rho"
+    prefix: str="rho",
+    scale: float=0.7
 ):
+    from scipy.ndimage import zoom
+
     file_pattern = f"{dir_path}/mesh_rho/info_{prefix}-*.jpg"
     image_files = sorted(glob.glob(file_pattern))
     output_gif = os.path.join(dir_path, f"animation-{prefix}.gif")
@@ -216,7 +224,10 @@ def images2gif(
         with imageio.get_writer(output_gif, mode='I', duration=0.2) as writer:
             for filename in image_files:
                 image = imageio.imread(filename)
-                writer.append_data(image)
+                image_small = zoom(image, (scale, scale, 1))  # (H, W, C)
+                image_small = image_small.astype("uint8")
+                writer.append_data(image_small)
+                # writer.append_data(image)
 
 
 if __name__ == '__main__':

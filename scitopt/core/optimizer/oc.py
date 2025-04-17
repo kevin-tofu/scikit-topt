@@ -23,26 +23,28 @@ class OC_Config():
     max_iters: int=200
     p_init: float = 1.0
     p: float = 5.0
-    p_rate: float = 20.0
+    p_step: int = 2
     vol_frac_init: float = 0.8
     vol_frac: float = 0.4  # the maximum valume ratio
-    vol_frac_rate: float = 20.0
+    vol_frac_step: float = 5
     beta_init: float = 1.0
     beta: float = 3
-    beta_rate: float = 12.
+    beta_step: float = 12.
     beta_eta: float = 0.50
-    filter_radius: float = 0.40
+    filter_radius_init: float = 0.5
+    filter_radius: float = 0.02
+    filter_radius_step: int = 3
     eta_init: float = 0.01
     eta: float = 0.5
-    eta_rate: float = -2.
+    eta_step: float = -2.
     percentile_init: float = 60
     percentile: float = 90
-    percentile_rate: float = 2.
+    percentile_step: int = 2
     rho_min: float = 0.05
     rho_max: float = 1.0
     move_limit_init: float = 0.20
     move_limit: float = 0.15
-    move_limit_rate: float = 5.0
+    move_limit_step: int = 5
     lambda_lower: float=1e-2
     lambda_upper: float=1e+2
     restart: bool = False
@@ -146,9 +148,6 @@ class OC_Optimizer():
             if os.path.exists(f"{self.cfg.dst_path}/mesh_rho"):
                 shutil.rmtree(f"{self.cfg.dst_path}/mesh_rho")
             os.makedirs(f"{self.cfg.dst_path}/mesh_rho")
-            # if os.path.exists(f"{self.cfg.dst_path}/rho-histo"):
-            #     shutil.rmtree(f"{self.cfg.dst_path}/rho-histo")
-            # os.makedirs(f"{self.cfg.dst_path}/rho-histo")
             if not os.path.exists(f"{self.cfg.dst_path}/data"):
                 os.makedirs(f"{self.cfg.dst_path}/data")
 
@@ -156,7 +155,7 @@ class OC_Optimizer():
         self.recorder.add("rho_projected", plot_type="min-max-mean-std")
         self.recorder.add("lambda_v", ylog=True)
         self.recorder.add("vol_error")
-        self.recorder.add("compliance")
+        self.recorder.add("compliance", ylog=True)
         self.recorder.add("- dC", plot_type="min-max-mean-std", ylog=True)
         self.recorder.add("scaling_rate", plot_type="min-max-mean-std")
         self.recorder.add("strain_energy", plot_type="min-max-mean-std")
@@ -174,59 +173,63 @@ class OC_Optimizer():
             "p",
             p_init,
             cfg.p,
-            cfg.p_rate,
+            cfg.p_step,
             cfg.max_iters
         )
         self.schedulers.add(
             "vol_frac",
             vol_frac_init,
             cfg.vol_frac,
-            cfg.vol_frac_rate,
+            cfg.vol_frac_step,
             cfg.max_iters
         )
         # print(move_init)
-        # print(cfg.move_limit, cfg.move_limit_rate)
+        # print(cfg.move_limit, cfg.move_limit_step)
         self.schedulers.add(
             "move_limit",
             move_limit_init,
             cfg.move_limit,
-            cfg.move_limit_rate,
+            cfg.move_limit_step,
             cfg.max_iters
         )
         self.schedulers.add(
             "beta",
             beta_init,
             cfg.beta,
-            cfg.beta_rate,
+            cfg.beta_step,
             cfg.max_iters
         )
         self.schedulers.add(
             "eta",
             cfg.eta_init,
             cfg.eta,
-            cfg.eta_rate,
+            cfg.eta_step,
             cfg.max_iters
         )
         self.schedulers.add(
             "percentile",
             cfg.percentile_init,
             cfg.percentile,
-            cfg.percentile_rate,
+            cfg.percentile_step,
+            cfg.max_iters
+        )
+        self.schedulers.add(
+            "filter_radius",
+            cfg.filter_radius_init,
+            cfg.filter_radius,
+            cfg.filter_radius_step,
             cfg.max_iters
         )
         self.schedulers.export()
     
-    def parameterize(self, preprocess=True):
+    def parameterize(self):
         self.helmholz_solver = filter.HelmholtzFilter.from_defaults(
-            self.tsk.mesh, self.cfg.filter_radius, f"{self.cfg.dst_path}/data"
+            self.tsk.mesh,
+            self.cfg.filter_radius,
+            solver_type="pyamg",
+            dst_path=f"{self.cfg.dst_path}/data",
+            
         )
-        if preprocess:
-            print("preprocessing....")
-            # self.helmholz_solver.preprocess(solver="cg")
-            self.helmholz_solver.preprocess(solver="pyamg")
-            print("...end")
-        else:
-            self.helmholz_solver.create_solver()
 
     def load_parameters(self):
         self.helmholz_solver = filter.HelmholtzFilter.from_file(
@@ -255,8 +258,9 @@ class OC_Optimizer():
             rho[tsk.design_elements] = data["rho_design_elements"]
             del data
         else:
-            _vol_frac = cfg.vol_frac if cfg.vol_frac_rate < 0 else cfg.vol_frac_init
-            rho += _vol_frac + 0.1 * (np.random.rand(len(tsk.all_elements)) - 0.5)
+            _vol_frac = cfg.vol_frac if cfg.vol_frac_step < 0 else cfg.vol_frac_init
+            # rho += _vol_frac + 0.1 * (np.random.rand(len(tsk.all_elements)) - 0.5)
+            rho += _vol_frac
             np.clip(rho, cfg.rho_min, cfg.rho_max, out=rho)
         # rho[tsk.dirichlet_force_elements] = 1.0
         rho[tsk.force_elements] = 1.0
@@ -297,13 +301,18 @@ class OC_Optimizer():
         else:
             raise ValueError("should be SIMP")
 
+        filter_radius_prev = cfg.filter_radius_init if cfg.filter_radius_step > 0 else cfg.filter_radius
+        self.helmholz_solver.update_radius(tsk.mesh, filter_radius_prev)
+        self.recorder.feed_data("rho", rho)
         for iter_loop, iter in enumerate(range(iter_begin, cfg.max_iters + iter_begin)):
             print(f"iterations: {iter} / {cfg.max_iters}")
-            p, vol_frac, beta, move_limit, eta, percentile = (
-                self.schedulers.values(iter)[k] for k in ['p', 'vol_frac', 'beta', 'move_limit', 'eta', 'percentile']
+            p, vol_frac, beta, move_limit, eta, percentile, filter_radius = (
+                self.schedulers.values(iter)[k] for k in ['p', 'vol_frac', 'beta', 'move_limit', 'eta', 'percentile', 'filter_radius']
             )
+            if filter_radius_prev != filter_radius:
+                self.helmholz_solver.update_radius(tsk.mesh, filter_radius)
             print(f"p {p:.4f}, vol_frac {vol_frac:.4f}, beta {beta:.4f}, move_limit {move_limit:.4f}")
-            print(f"eta {eta:.4f}, percentile {percentile:.4f}")
+            print(f"eta {eta:.4f}, percentile {percentile:.4f} filter_radius {filter_radius:.4f}")
 
             rho_prev[:] = rho[:]
             rho_filtered[:] = self.helmholz_solver.filter(rho)
@@ -324,12 +333,13 @@ class OC_Optimizer():
                     tsk.E0, tsk.Emin, p, tsk.nu0,
                     rho_projected,
                     # rho_filtered,
-                    density_interpolation
+                    elem_func=density_interpolation
                 )
                 compliance_avg += compliance
                 strain_energy = composer.strain_energy_skfem(
                     tsk.basis, rho_projected, u,
                     tsk.E0, tsk.Emin, p, tsk.nu0,
+                    elem_func=density_interpolation
                 )
                 strain_energy_ave += strain_energy
                 np.copyto(
@@ -462,7 +472,13 @@ if __name__ == '__main__':
         '--max_iters', '-NI', type=int, default=200, help=''
     )
     parser.add_argument(
-        '--filter_radius', '-DR', type=float, default=0.8, help=''
+        '--filter_radius_init', '-FRI', type=float, default=0.2, help=''
+    )
+    parser.add_argument(
+        '--filter_radius', '-FR', type=float, default=0.05, help=''
+    )
+    parser.add_argument(
+        '--filter_radius_step', '-FRS', type=int, default=3, help=''
     )
     parser.add_argument(
         '--move_limit_init', '-MLI', type=float, default=0.8, help=''
@@ -471,7 +487,7 @@ if __name__ == '__main__':
         '--move_limit', '-ML', type=float, default=0.2, help=''
     )
     parser.add_argument(
-        '--move_limit_rate', '-MLR', type=float, default=5, help=''
+        '--move_limit_step', '-MLR', type=int, default=5, help=''
     )
     parser.add_argument(
         '--record_times', '-RT', type=int, default=20, help=''
@@ -486,7 +502,7 @@ if __name__ == '__main__':
         '--vol_frac', '-V', type=float, default=0.4, help=''
     )
     parser.add_argument(
-        '--vol_frac_rate', '-VFT', type=float, default=20.0, help=''
+        '--vol_frac_step', '-VFT', type=int, default=2, help=''
     )
     parser.add_argument(
         '--p_init', '-PI', type=float, default=1.0, help=''
@@ -495,7 +511,7 @@ if __name__ == '__main__':
         '--p', '-P', type=float, default=3.0, help=''
     )
     parser.add_argument(
-        '--p_rate', '-PRT', type=float, default=20.0, help=''
+        '--p_step', '-PRT', type=int, default=2, help=''
     )
     parser.add_argument(
         '--beta_init', '-BI', type=float, default=0.1, help=''
@@ -504,13 +520,13 @@ if __name__ == '__main__':
         '--beta', '-B', type=float, default=5.0, help=''
     )
     parser.add_argument(
-        '--beta_rate', '-BR', type=float, default=20.0, help=''
+        '--beta_step', '-BR', type=float, default=20.0, help=''
     )
     parser.add_argument(
         '--percentile_init', '-PTI', type=float, default=60, help=''
     )
     parser.add_argument(
-        '--percentile_rate', '-PTR', type=float, default=2.0, help=''
+        '--percentile_step', '-PTR', type=int, default=2, help=''
     )
     parser.add_argument(
         '--percentile', '-PT', type=float, default=90, help=''
@@ -519,7 +535,7 @@ if __name__ == '__main__':
         '--eta_init', '-ETI', type=float, default=0.01, help=''
     )
     parser.add_argument(
-        '--eta_rate', '-ETR', type=float, default=-1.0, help=''
+        '--eta_step', '-ETR', type=float, default=-1.0, help=''
     )
     parser.add_argument(
         '--eta', '-ET', type=float, default=0.3, help=''
@@ -573,7 +589,7 @@ if __name__ == '__main__':
     print("optimizer")
     optimizer = OC_Optimizer(cfg, tsk)
     print("parameterize")
-    optimizer.parameterize(preprocess=True)
+    optimizer.parameterize()
     # optimizer.parameterize(preprocess=False)
     # optimizer.load_parameters()
     print("optimize")
