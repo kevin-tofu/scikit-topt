@@ -1,13 +1,6 @@
-import os
-from typing import Literal
-import inspect
-import shutil
-import json
 from dataclasses import dataclass, asdict
 import numpy as np
-from numba import njit
 import scitopt
-from scitopt import tools
 from scitopt.core import derivatives, projection
 from scitopt.core import visualization
 from scitopt.fea import solver

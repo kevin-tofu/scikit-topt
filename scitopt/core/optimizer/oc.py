@@ -1,12 +1,7 @@
-import os
 from typing import Literal
-import inspect
-import shutil
-import json
 from dataclasses import dataclass, asdict
 import numpy as np
 import scitopt
-from scitopt import tools
 from scitopt.core import derivatives, projection
 from scitopt.core import visualization
 from scitopt.fea import solver
@@ -18,6 +13,7 @@ from scitopt.core.optimizer import common
 
 @dataclass
 class OC_Config(common.Sensitivity_Config):
+    interpolation: Literal["SIMP"] = "SIMP"
     eta_init: float = 0.1
     eta: float = 0.5
     eta_step: int = 3
