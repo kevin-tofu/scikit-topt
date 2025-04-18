@@ -83,10 +83,10 @@ class OC_Optimizer(common.Sensitivity_Analysis):
         super().init_schedulers(False)
         self.schedulers.add(
             "eta",
-            cfg.eta_init,
-            cfg.eta,
-            cfg.eta_step,
-            cfg.max_iters
+            self.cfg.eta_init,
+            self.cfg.eta,
+            self.cfg.eta_step,
+            self.cfg.max_iters
         )
         if export:
             self.schedulers.export()
@@ -279,7 +279,7 @@ class OC_Optimizer(common.Sensitivity_Analysis):
             else:
                 rho[tsk.dirichlet_force_elements] = 1.0
             rho[tsk.force_elements] = 1.0
-            rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
+            # rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
 
 
             self.recorder.feed_data("rho", rho)
@@ -325,6 +325,58 @@ class OC_Optimizer(common.Sensitivity_Analysis):
         visualization.export_submesh(
             tsk, rho_projected, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
         )
+    
+    # def rho_update(
+    #     self,
+    #     rho,
+    #     dC,
+    #     lambda_v,
+    #     scaling_rate,
+    #     move_limit,
+    #     eta,
+    #     tmp_lower,
+    #     tmp_upper,
+    #     rho_min,
+    #     rho_max,
+    #     percentile,
+    #     interploation
+    # ):
+    #     scale = np.percentile(np.abs(dC_drho_full[tsk.design_elements]), percentile)
+    #     # scale = max(scale, np.mean(np.abs(dC_drho_full[tsk.design_elements])), 1e-4)
+    #     # scale = np.median(np.abs(dC_drho_full[tsk.design_elements]))
+    #     running_scale = 0.6 * running_scale + (1 - 0.6) * scale if iter_loop > 0 else scale
+    #     dC_drho_full /= (running_scale + eps)
+    #     # if cfg.interpolation == "SIMP":
+    #     #     np.minimum(dC_drho_full - dC_drho_full.max(), -cfg.lambda_lower*10.0, out=dC_drho_full)
+        
+
+    #     # np.minimum(dC_drho_full, -cfg.lambda_lower*0.1, out=dC_drho_full)
+    #     # np.clip(dC_drho_full, -cfg.lambda_upper * 10, -cfg.lambda_lower * 0.1, out=dC_drho_full)
+    #     print(f"running_scale: {running_scale}")
+    #     dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
+    #     print(f"dC_drho_ave-scaled min:{dC_drho_ave.min()} max:{dC_drho_ave.max()}")
+    #     print(f"dC_drho_ave-scaled ave:{np.mean(dC_drho_ave)} sdv:{np.std(dC_drho_ave)}")
+        
+        
+    #     # np.minimum(dC_drho_ave, -cfg.lambda_lower*10.0, out=dC_drho_ave)
+
+    #     rho_e = rho_projected[tsk.design_elements]
+    #     rho_candidate, lmid, vol_error = bisection_with_projection(
+    #         dC_drho_ave,
+    #         # dC_drho_ave[tsk.design_elements],
+    #         rho_e, cfg.rho_min, cfg.rho_max, move_limit,
+    #         eta, eps, vol_frac,
+    #         beta, cfg.beta_eta,
+    #         scaling_rate, rho_candidate, tmp_lower, tmp_upper,
+    #         elements_volume, elements_volume_sum,
+    #         max_iter=1000, tolerance=1e-5,
+    #         l1 = cfg.lambda_lower,
+    #         l2 = cfg.lambda_upper
+    #     )
+    #     print(
+    #         f"λ: {lmid:.4e}, vol_error: {vol_error:.4f}, mean(rho): {np.mean(rho_candidate):.4f}"
+    #     )
+    
 
 
 if __name__ == '__main__':

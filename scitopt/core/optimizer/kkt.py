@@ -342,7 +342,47 @@ class KKT_Optimizer(common.Sensitivity_Analysis):
         visualization.export_submesh(
             tsk, rho, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
         )
+        
     
+    def rho_update(
+        self,
+        rho,
+        dC,
+        lambda_v,
+        scaling_rate,
+        move_limit,
+        eta,
+        tmp_lower,
+        tmp_upper,
+        rho_min,
+        rho_max,
+        percentile,
+        interploation
+    ):
+        dC_drho_full[:] = self.helmholz_solver.filter(dC_drho_full)
+        dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
+        # vol_error = np.mean(rho_projected[tsk.design_elements]) - vol_frac
+        vol_error = np.sum(
+            rho_projected[tsk.design_elements] * elements_volume_design
+        ) / elements_volume_design_sum - vol_frac
+        
+        lambda_v = cfg.lambda_decay * lambda_v + cfg.mu_p * vol_error
+        lambda_v = np.clip(lambda_v, lambda_lower, lambda_upper)
+        rho_candidate[:] = rho[tsk.design_elements] # Dont forget. inplace
+        
+        # 
+        kkt_moc_log_update(
+            rho=rho_candidate,
+            dC=dC_drho_ave,
+            lambda_v=lambda_v, scaling_rate=scaling_rate,
+            move_limit=move_limit,
+            eta=eta,
+            tmp_lower=tmp_lower, tmp_upper=tmp_upper,
+            rho_min=cfg.rho_min, rho_max=1.0,
+            percentile=percentile,
+            interploation=cfg.interpolation
+        )
+
     
 if __name__ == '__main__':
     import argparse
