@@ -1,13 +1,7 @@
-import os
 from typing import Literal
-import inspect
-import shutil
-import json
 from dataclasses import dataclass, asdict
 import numpy as np
-from numba import njit
 import scitopt
-from scitopt import tools
 from scitopt.core import derivatives, projection
 from scitopt.core import visualization
 from scitopt.fea import solver
@@ -19,6 +13,7 @@ from scitopt.core.optimizer import common
 
 @dataclass
 class MOC_Config(common.Sensitivity_Config):
+    interpolation: Literal["SIMP"] = "SIMP"
     mu_p: float = 2.0
     lambda_v: float = 0.1
     lambda_decay: float = 0.95
