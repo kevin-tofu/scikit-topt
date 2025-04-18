@@ -230,15 +230,19 @@ def toy_msh(
     # .nodal['u^1']
     # .all()
     F_points = utils.get_point_indices_in_range(
-        basis, (x_len-eps, x_len+0.05), (0, y_len),
+        basis, (x_len-eps, x_len+0.05),
+        (0, y_len),
         (0.0, eps)
+        # (y_len*2/5, y_len*3/5),
         # (z_len*2/5, z_len*3/5)
     )
     F_nodes = utils.get_dofs_in_range(
-        basis, (x_len-eps, x_len+0.05), (0, y_len),
+        basis, (x_len-eps, x_len+0.05),
+        (0, y_len),
         (0.0, eps)
+        # (y_len*2/5, y_len*3/5),
         # (z_len*2/5, z_len*3/5)
-    ).nodal['u^3']
+    ).nodal['u^1']
     design_elements = utils.get_elements_in_box(
         mesh,
         # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
@@ -250,8 +254,8 @@ def toy_msh(
     print("generate config")
     E0 = 1.0
     # F = [0.3, -0.3]
-    F = -0.2
-    # F = 0.002
+    # F = -0.2
+    F = 0.002
     # F = 0.3
     
     # F = 0.3

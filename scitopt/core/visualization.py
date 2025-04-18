@@ -239,7 +239,10 @@ if __name__ == '__main__':
     parser.add_argument(
         '--images_path', '-IP', type=str, default="./result/test1_oc2", help=''
     )
+    parser.add_argument(
+        '--scale', '-SL', type=float, default=0.5, help=''
+    )
     args = parser.parse_args()
-    images2gif(f"{args.images_path}", "rho")
-    images2gif(f"{args.images_path}", "dC")
+    images2gif(f"{args.images_path}", "rho", scale=args.scale)
+    images2gif(f"{args.images_path}", "dC", scale=args.scale)
     

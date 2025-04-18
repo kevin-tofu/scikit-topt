@@ -13,68 +13,14 @@ from scitopt.fea import solver
 from scitopt import filter
 from scitopt.fea import composer
 from scitopt.core import misc
+from scitopt.core.optimizer import common
 
 
 @dataclass
-class OC_Config():
-    dst_path: str = "./result"
-    interpolation: Literal["SIMP"] = "SIMP"
-    record_times: int=20
-    max_iters: int=200
-    p_init: float = 1.0
-    p: float = 5.0
-    p_step: int = 2
-    vol_frac_init: float = 0.8
-    vol_frac: float = 0.4  # the maximum valume ratio
-    vol_frac_step: float = 5
-    beta_init: float = 1.0
-    beta: float = 3
-    beta_step: float = 12.
-    beta_eta: float = 0.50
-    filter_radius_init: float = 0.5
-    filter_radius: float = 0.02
-    filter_radius_step: int = 3
-    eta_init: float = 0.01
+class OC_Config(common.Sensitivity_Config):
+    eta_init: float = 0.1
     eta: float = 0.5
-    eta_step: float = -2.
-    percentile_init: float = 60
-    percentile: float = 90
-    percentile_step: int = 2
-    rho_min: float = 0.05
-    rho_max: float = 1.0
-    move_limit_init: float = 0.20
-    move_limit: float = 0.15
-    move_limit_step: int = 5
-    lambda_lower: float=1e-2
-    lambda_upper: float=1e+2
-    restart: bool = False
-    restart_from: int = -1
-    export_img: bool = False
-    design_dirichlet: bool=False
-    
-
-    @classmethod
-    def from_defaults(cls, **args):
-        sig = inspect.signature(cls)
-        valid_keys = sig.parameters.keys()
-        filtered_args = {k: v for k, v in args.items() if k in valid_keys}
-        return cls(**filtered_args)
-
-
-    def export(self, path: str):
-        with open(f"{path}/cfg.json", "w") as f:
-            json.dump(asdict(self), f, indent=2)
-
-    def vtu_path(self, iter: int):
-        return f"{self.dst_path}/mesh_rho/info_mesh-{iter:08d}.vtu"
-
-
-    def image_path(self, iter: int, prefix: str):
-        if self.export_img:
-            return f"{self.dst_path}/mesh_rho/info_{prefix}-{iter:08d}.jpg"
-        else:
-            return None
-                    
+    eta_step: int = 3
     
 
 def bisection_with_projection(
@@ -126,79 +72,19 @@ def bisection_with_projection(
     return rho_candidate, lmid, vol_error
 
 
-class OC_Optimizer():
+class OC_Optimizer(common.Sensitivity_Analysis):
     def __init__(
         self,
         cfg: OC_Config,
         tsk: scitopt.mesh.TaskConfig,
     ):
-        self.cfg = cfg
-        self.tsk = tsk
-        if not os.path.exists(self.cfg.dst_path):
-            os.makedirs(self.cfg.dst_path)
-        self.cfg.export(self.cfg.dst_path)
-        # self.tsk.nodes_and_elements_stats(self.cfg.dst_path)
-        
-        if cfg.design_dirichlet is False:
-            self.tsk.exlude_dirichlet_from_design()
-        
-        self.recorder = tools.HistoriesLogger(self.cfg.dst_path)
-        self.schedulers = tools.Schedulers(self.cfg.dst_path)
-        if cfg.restart is False:
-            if os.path.exists(f"{self.cfg.dst_path}/mesh_rho"):
-                shutil.rmtree(f"{self.cfg.dst_path}/mesh_rho")
-            os.makedirs(f"{self.cfg.dst_path}/mesh_rho")
-            if not os.path.exists(f"{self.cfg.dst_path}/data"):
-                os.makedirs(f"{self.cfg.dst_path}/data")
-
-        self.recorder.add("rho", plot_type="min-max-mean-std")
-        self.recorder.add("rho_projected", plot_type="min-max-mean-std")
-        self.recorder.add("lambda_v", ylog=True)
-        self.recorder.add("vol_error")
-        self.recorder.add("compliance", ylog=True)
+        super().__init__(cfg, tsk)
         self.recorder.add("- dC", plot_type="min-max-mean-std", ylog=True)
-        self.recorder.add("scaling_rate", plot_type="min-max-mean-std")
-        self.recorder.add("strain_energy", plot_type="min-max-mean-std")
+        self.recorder.add("lmid", ylog=False) # True
             
     
-    
-    def init_schedulers(self):
-
-        cfg = self.cfg
-        p_init = cfg.p_init
-        vol_frac_init = cfg.vol_frac_init
-        move_limit_init = cfg.move_limit_init
-        beta_init = cfg.beta_init
-        self.schedulers.add(
-            "p",
-            p_init,
-            cfg.p,
-            cfg.p_step,
-            cfg.max_iters
-        )
-        self.schedulers.add(
-            "vol_frac",
-            vol_frac_init,
-            cfg.vol_frac,
-            cfg.vol_frac_step,
-            cfg.max_iters
-        )
-        # print(move_init)
-        # print(cfg.move_limit, cfg.move_limit_step)
-        self.schedulers.add(
-            "move_limit",
-            move_limit_init,
-            cfg.move_limit,
-            cfg.move_limit_step,
-            cfg.max_iters
-        )
-        self.schedulers.add(
-            "beta",
-            beta_init,
-            cfg.beta,
-            cfg.beta_step,
-            cfg.max_iters
-        )
+    def init_schedulers(self, export: bool=True):
+        super().init_schedulers(False)
         self.schedulers.add(
             "eta",
             cfg.eta_init,
@@ -206,22 +92,9 @@ class OC_Optimizer():
             cfg.eta_step,
             cfg.max_iters
         )
-        self.schedulers.add(
-            "percentile",
-            cfg.percentile_init,
-            cfg.percentile,
-            cfg.percentile_step,
-            cfg.max_iters
-        )
-        self.schedulers.add(
-            "filter_radius",
-            cfg.filter_radius_init,
-            cfg.filter_radius,
-            cfg.filter_radius_step,
-            cfg.max_iters
-        )
-        self.schedulers.export()
-    
+        if export:
+            self.schedulers.export()
+
     def parameterize(self):
         self.helmholz_solver = filter.HelmholtzFilter.from_defaults(
             self.tsk.mesh,
@@ -263,7 +136,8 @@ class OC_Optimizer():
             rho += _vol_frac
             np.clip(rho, cfg.rho_min, cfg.rho_max, out=rho)
         # rho[tsk.dirichlet_force_elements] = 1.0
-        rho[tsk.force_elements] = 1.0
+        # rho[tsk.force_elements] = 1.0
+        rho[tsk.fixed_elements_in_rho] = 1.0
         print("np.average(rho[tsk.design_elements]):", np.average(rho[tsk.design_elements]))
         
         self.init_schedulers()
@@ -307,7 +181,9 @@ class OC_Optimizer():
         for iter_loop, iter in enumerate(range(iter_begin, cfg.max_iters + iter_begin)):
             print(f"iterations: {iter} / {cfg.max_iters}")
             p, vol_frac, beta, move_limit, eta, percentile, filter_radius = (
-                self.schedulers.values(iter)[k] for k in ['p', 'vol_frac', 'beta', 'move_limit', 'eta', 'percentile', 'filter_radius']
+                self.schedulers.values(iter)[k] for k in [
+                    'p', 'vol_frac', 'beta', 'move_limit', 'eta', 'percentile', 'filter_radius'
+                ]
             )
             if filter_radius_prev != filter_radius:
                 self.helmholz_solver.update_radius(tsk.mesh, filter_radius)
@@ -415,7 +291,7 @@ class OC_Optimizer():
             self.recorder.feed_data("scaling_rate", scaling_rate)
             self.recorder.feed_data("compliance", compliance_avg)
             self.recorder.feed_data("- dC", -dC_drho_ave)
-            self.recorder.feed_data("lambda_v", lmid)
+            self.recorder.feed_data("lmid", lmid)
             self.recorder.feed_data("vol_error", vol_error)
             self.recorder.feed_data("strain_energy", strain_energy)
             
