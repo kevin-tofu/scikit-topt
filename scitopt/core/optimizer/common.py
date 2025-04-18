@@ -34,7 +34,7 @@ class Sensitivity_Config():
     vol_frac_step: int = 3
     beta_init: float = 1.0
     beta: float = 3
-    beta_step: float = 12.
+    beta_step: int = 12
     beta_eta: float = 0.50
     eta: float = 0.5
     percentile_init: float = 60

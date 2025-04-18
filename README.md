@@ -8,22 +8,23 @@
  
   The currently supported features are as follows:
 - Coding with Python  
-- Tetrahedral 1st order elements  
-- Topology optimization using the density method and the OC (Optimality Criteria) method  
+- Implement FEA on structured mesh using scikit-fem
+- Topology optimization using the density method and its optimization algorithm
+  - Optimality Criteria (OC) Method  
+  - Modified OC Method
+  - Lagrange Method
 - Multiple objective functions (forces)  
-- High-performance computation using sparse matrices and Numba  
+- High-performance computation using sparse matrices with Scipy and Numba  
 - easy installation with pip/poetry
 
 
 
 ## ToDo
 - density interpolation
-- density visualization
 - coarse to fine optimization
 - stabilize
 - set break point from the optimization loop
 - Add LevelSet
-- Add Optimization ALgorithms such as MMA
 
 ### Install Package
 ```bash
@@ -34,32 +35,34 @@ poetry add scitopt
 ### Optimize Toy Problem with command line.
 ```bash
 OMP_NUM_THREADS=3 OPENBLAS_NUM_THREADS=3  MKL_NUM_THREADS=3 PYTHONPATH=./ python ./scitopt/core/optimizer/kkt.py \
- --dst_path ./result/test1_kkt1 \
- --interpolation RAMP \
- --p_init 2.0 \
- --p 5.0 \
- --p_rate 8.0 \
+ --dst_path ./result/test2_kkt1 \
+ --interpolation SIMP \
+ --p_init 1.2 \
+ --p 3.0 \
+ --p_step 3 \
+ --filter_radius_init 1.50 \
  --filter_radius 0.05 \
- --move_limit_init 0.20 \
+ --filter_radius_step 3 \
+ --move_limit_init 0.40 \
  --move_limit 0.10 \
- --move_limit_rate 1.0 \
- --vol_frac_init 0.60 \
- --vol_frac 0.30 \
- --vol_frac_rate 6.0 \
- --beta_init 3.0 \
- --beta 8.0 \
- --beta_rate 5.0 \
+ --move_limit_step 50 \
+ --vol_frac_init 0.80 \
+ --vol_frac 0.40 \
+ --vol_frac_step 3 \
+ --beta_init 0.1 \
+ --beta 4.0 \
+ --beta_step -5 \
  --percentile_init 70 \
  --percentile 90 \
- --percentile_rate -5.0 \
- --eta 10.0 \
+ --percentile_step -5 \
+ --eta 0.3 \
  --record_times 120 \
  --max_iters 300 \
  --lambda_v 0.01 \
- --lambda_decay  0.9 \
+ --lambda_decay  0.8 \
  --lambda_lower -100.0 \
  --lambda_upper 100.0 \
- --mu_p 0.001 \
+ --mu_p 2.5 \
  --export_img true \
  --task plate-0.2.msh \
  --design_dirichlet true
@@ -75,7 +78,7 @@ cfg = scitopt.core.KKT_Config()
 
 optimizer = scitopt.core.KKT_Optimizer(cfg, tsk)
 
-optimizer.parameterize(preprocess=True)
+optimizer.parameterize()
 optimizer.optimize()
 ```
 
@@ -136,7 +139,6 @@ E(ρ) = ρ^p * E₀
 - ρ: element density (range: 0 to 1)
 - p: penalization factor (typically p ≥ 3)
 - E0: Young’s modulus of solid material
-
 
 
 
