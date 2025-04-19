@@ -1,14 +1,11 @@
 import os
+from typing import Callable
 from typing import Literal
 import inspect
 import shutil
 import json
 from dataclasses import dataclass, asdict
 import numpy as np
-import scipy
-import scipy.sparse.linalg as spla
-import skfem
-import meshio
 import scitopt
 from scitopt import tools
 from scitopt.core import derivatives, projection
@@ -188,23 +185,6 @@ class Sensitivity_Analysis():
         self.helmholz_solver = filter.HelmholtzFilter.from_file(
             f"{self.cfg.dst_path}/data"
         )
-    
-    def rho_update(
-        self,
-        rho,
-        dC,
-        lambda_v,
-        scaling_rate,
-        move_limit,
-        eta,
-        tmp_lower,
-        tmp_upper,
-        rho_min,
-        rho_max,
-        percentile,
-        interploation
-    ):
-        raise NotImplementedError("")
 
     
     def optimize(self):
@@ -270,7 +250,6 @@ class Sensitivity_Analysis():
         tmp_lower = np.empty_like(rho[tsk.design_elements])
         tmp_upper = np.empty_like(rho[tsk.design_elements])
         force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
-        lambda_v = cfg.lambda_v
         lambda_lower = cfg.lambda_lower
         lambda_upper = cfg.lambda_upper
         eta = cfg.eta
@@ -343,28 +322,29 @@ class Sensitivity_Analysis():
             filtered = self.helmholz_solver.filter(dC_drho_full)
             np.copyto(dC_drho_full, filtered)
             
-            dC_drho_full[:] = self.helmholz_solver.filter(dC_drho_full)
             dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
-            # vol_error = np.mean(rho_projected[tsk.design_elements]) - vol_frac
-            vol_error = np.sum(
-                rho_projected[tsk.design_elements] * elements_volume_design
-            ) / elements_volume_design_sum - vol_frac
-            
-            lambda_v = cfg.lambda_decay * lambda_v + cfg.mu_p * vol_error
-            lambda_v = np.clip(lambda_v, lambda_lower, lambda_upper)
             rho_candidate[:] = rho[tsk.design_elements] # Dont forget. inplace
             
             # 
             self.rho_update(
-                rho=rho_candidate,
-                dC=dC_drho_ave,
-                lambda_v=lambda_v, scaling_rate=scaling_rate,
-                move_limit=move_limit,
-                eta=eta,
-                tmp_lower=tmp_lower, tmp_upper=tmp_upper,
-                rho_min=cfg.rho_min, rho_max=1.0,
-                percentile=percentile,
-                interploation=cfg.interpolation
+                # iter_loop,
+                iter,
+                rho_candidate,
+                rho_projected,
+                dC_drho_ave,
+                strain_energy_ave,
+                scaling_rate,
+                move_limit,
+                eta,
+                tmp_lower,
+                tmp_upper,
+                lambda_lower,
+                lambda_upper,
+                percentile,
+                density_interpolation,
+                elements_volume_design,
+                elements_volume_design_sum,
+                vol_frac
             )
             # 
             rho[tsk.design_elements] = rho_candidate
@@ -381,11 +361,10 @@ class Sensitivity_Analysis():
             self.recorder.feed_data("rho", rho[tsk.design_elements])
             self.recorder.feed_data("rho_projected", rho_projected[tsk.design_elements])
             self.recorder.feed_data("strain_energy", strain_energy_ave)
-            self.recorder.feed_data("lambda_v", lambda_v)
             self.recorder.feed_data("compliance", compliance_avg)
-            self.recorder.feed_data("dC", dC_drho_ave)
+            # self.recorder.feed_data("dC", dC_drho_ave)
             self.recorder.feed_data("scaling_rate", scaling_rate)
-            self.recorder.feed_data("vol_error", vol_error)
+            
             
             
             if iter % (cfg.max_iters // self.cfg.record_times) == 0 or iter == 1:
@@ -421,6 +400,25 @@ class Sensitivity_Analysis():
             tsk, rho, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
         )
 
-    def optimize(self):
-        raise NotImplementedError("")
 
+    def rho_update(
+        self,
+        iter_loop: int,
+        rho_candidate: np.ndarray,
+        rho_projected: np.ndarray,
+        dC_drho_ave: np.ndarray,
+        strain_energy_ave: np.ndarray,
+        scaling_rate: np.ndarray,
+        move_limit: float,
+        eta: float,
+        tmp_lower: np.ndarray,
+        tmp_upper: np.ndarray,
+        lambda_lower: float,
+        lambda_upper: float,
+        percentile: float,
+        interploation: Callable,
+        elements_volume_design: np.ndarray,
+        elements_volume_design_sum: float,
+        vol_frac: float
+    ):
+        raise NotImplementedError("")
