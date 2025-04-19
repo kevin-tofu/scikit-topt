@@ -207,12 +207,18 @@ def element_to_element_laplacian(
             dist = np.linalg.norm(element_centers[i] - element_centers[j])
             if dist < 1e-12:
                 continue
+
             # w = 1.0 / (dist + 1e-5)
-            w = np.exp(-dist**2 / (2 * radius**2)) 
+            w = np.exp(-dist**2 / (2 * radius**2))
             rows.append(i)
             cols.append(j)
-            data.append(-w)
-            diag += w
+            data.append(-radius**2 * w)
+            diag += radius**2 * w
+
+            # rows.append(i)
+            # cols.append(j)
+            # data.append(-w)
+            # diag += w
         rows.append(i)
         cols.append(i)
         data.append(diag)
@@ -308,7 +314,21 @@ def apply_helmholtz_filter_lu(
     V: scipy.sparse._csc.csc_matrix
 ) -> np.ndarray:
     """
-    Apply the Helmholtz filter using precomputed solver and M.
+    Apply the Helmholtz filter using a precomputed SuperLU solver and mass matrix V.
+
+    Parameters
+    ----------
+    rho_element : np.ndarray
+        Raw (unfiltered) density values per element.
+    solver : SuperLU
+        Precomputed LU decomposition of (V + r^2 L).
+    V : csc_matrix
+        Mass matrix (typically diagonal, from normalized element volumes).
+
+    Returns
+    -------
+    np.ndarray
+        Filtered density values.
     """
     rhs = V @ rho_element
     rho_filtered = solver.solve(rhs)
