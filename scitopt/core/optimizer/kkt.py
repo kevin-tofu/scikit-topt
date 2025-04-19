@@ -127,7 +127,8 @@ class KKT_Optimizer(common.Sensitivity_Analysis):
         super().__init__(cfg, tsk)
         self.recorder.add("dC", plot_type="min-max-mean-std")
         self.recorder.add("lambda_v", ylog=False) # True
-    
+
+
     def rho_update(
         self,
         iter_loop: int,
@@ -138,10 +139,9 @@ class KKT_Optimizer(common.Sensitivity_Analysis):
         scaling_rate: np.ndarray,
         move_limit: float,
         eta: float,
+        beta: float,
         tmp_lower: np.ndarray,
         tmp_upper: np.ndarray,
-        lambda_lower: float,
-        lambda_upper: float,
         percentile: float,
         interploation: Callable,
         elements_volume_design: np.ndarray,
@@ -156,7 +156,7 @@ class KKT_Optimizer(common.Sensitivity_Analysis):
         ) / elements_volume_design_sum - vol_frac
         penalty = cfg.mu_p * vol_error
         self.lambda_v = cfg.lambda_decay * self.lambda_v + penalty if iter_loop > 1 else penalty
-        self.lambda_v = np.clip(self.lambda_v, lambda_lower, lambda_upper)
+        self.lambda_v = np.clip(self.lambda_v, cfg.lambda_lower, cfg.lambda_upper)
         self.recorder.feed_data("lambda_v", self.lambda_v)
         self.recorder.feed_data("vol_error", vol_error)
         self.recorder.feed_data("dC", dC_drho_ave)
