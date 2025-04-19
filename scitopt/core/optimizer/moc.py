@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Callable
 from dataclasses import dataclass, asdict
 import numpy as np
 import scitopt
@@ -98,23 +98,22 @@ class MOC_Optimizer(common.Sensitivity_Analysis):
     
     def rho_update(
         self,
-        iter_loop,
-        rho_candidate,
-        rho_projected,
-        dC_drho_ave,
-        strain_energy_ave,
-        scaling_rate,
-        move_limit,
-        eta,
-        tmp_lower,
-        tmp_upper,
-        lambda_lower,
-        lambda_upper,
-        percentile,
-        interploation,
-        elements_volume_design,
-        elements_volume_design_sum,
-        vol_frac
+        iter_loop: int,
+        rho_candidate: np.ndarray,
+        rho_projected: np.ndarray,
+        dC_drho_ave: np.ndarray,
+        strain_energy_ave: np.ndarray,
+        scaling_rate: np.ndarray,
+        move_limit: float,
+        eta: float,
+        beta: float,
+        tmp_lower: np.ndarray,
+        tmp_upper: np.ndarray,
+        percentile: float,
+        interploation: Callable,
+        elements_volume_design: np.ndarray,
+        elements_volume_design_sum: float,
+        vol_frac: float
     ):
         cfg = self.cfg
         tsk = self.tsk
@@ -142,9 +141,10 @@ class MOC_Optimizer(common.Sensitivity_Analysis):
         
         penalty = cfg.mu_p * vol_error
         self.lambda_v = cfg.lambda_decay * self.lambda_v + penalty if iter_loop > 1 else penalty
-        self.lambda_v = np.clip(self.lambda_v, lambda_lower, lambda_upper)
+        self.lambda_v = np.clip(self.lambda_v, cfg.lambda_lower, cfg.lambda_upper)
         self.recorder.feed_data("lambda_v", self.lambda_v)
         self.recorder.feed_data("vol_error", vol_error)
+        self.recorder.feed_data("-dC", -dC_drho_ave)
         
         # 
         moc_log_update_logspace(

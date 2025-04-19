@@ -168,6 +168,22 @@ class Sensitivity_Analysis():
             cfg.filter_radius_step,
             cfg.max_iters
         )
+        if "eta_init" in cfg.__dataclass_fields__:
+            self.schedulers.add(
+                "eta",
+                self.cfg.eta_init,
+                self.cfg.eta,
+                self.cfg.eta_step,
+                self.cfg.max_iters
+            )
+        else:
+            self.schedulers.add(
+                "eta",
+                self.cfg.eta,
+                self.cfg.eta,
+                -1,
+                self.cfg.max_iters
+            )
         if export:
             self.schedulers.export()
 
@@ -209,9 +225,10 @@ class Sensitivity_Analysis():
             rho[tsk.design_elements] = data["rho_design_elements"]
             del data
         else:
-            _vol_frac = cfg.vol_frac if cfg.vol_frac_step < 0 else cfg.vol_frac_init
-            rho += _vol_frac + 0.1 * (np.random.rand(len(tsk.all_elements)) - 0.5)
+            # _vol_frac = cfg.vol_frac if cfg.vol_frac_step < 0 else cfg.vol_frac_init
+            # rho += _vol_frac + 0.1 * (np.random.rand(len(tsk.all_elements)) - 0.5)
             # rho += _vol_frac + 0.15
+            rho += 0.8 if cfg.vol_frac_step < 0 else cfg.vol_frac_init
             np.clip(rho, cfg.rho_min, cfg.rho_max, out=rho)
 
         if cfg.design_dirichlet is True:
@@ -250,23 +267,19 @@ class Sensitivity_Analysis():
         tmp_lower = np.empty_like(rho[tsk.design_elements])
         tmp_upper = np.empty_like(rho[tsk.design_elements])
         force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
-        lambda_lower = cfg.lambda_lower
-        lambda_upper = cfg.lambda_upper
-        eta = cfg.eta
-        
         filter_radius_prev = cfg.filter_radius_init if cfg.filter_radius_step > 0 else cfg.filter_radius
         self.helmholz_solver.update_radius(tsk.mesh, filter_radius_prev)
         for iter_loop, iter in enumerate(range(iter_begin, cfg.max_iters+iter_begin)):
             print(f"iterations: {iter} / {cfg.max_iters}")
-            p, vol_frac, beta, move_limit, percentile, filter_radius = (
+            p, vol_frac, beta, move_limit, eta, percentile, filter_radius = (
                 self.schedulers.values(iter)[k] for k in [
-                    'p', 'vol_frac', 'beta', 'move_limit', 'percentile', 'filter_radius'
+                    'p', 'vol_frac', 'beta', 'move_limit', 'eta', 'percentile', 'filter_radius'
                 ]
             )
             if filter_radius_prev != filter_radius:
                 print("Filter Update")
                 self.helmholz_solver.update_radius(tsk.mesh, filter_radius)
-
+            
             print(f"p {p:.4f}, vol_frac {vol_frac:.4f}, beta {beta:.4f}, move_limit {move_limit:.4f}")
             print(f"eta {eta:.4f}, percentile {percentile:.4f} filter_radius {filter_radius:.4f}")
             rho_prev[:] = rho[:]
@@ -336,10 +349,9 @@ class Sensitivity_Analysis():
                 scaling_rate,
                 move_limit,
                 eta,
+                beta,
                 tmp_lower,
                 tmp_upper,
-                lambda_lower,
-                lambda_upper,
                 percentile,
                 density_interpolation,
                 elements_volume_design,
@@ -362,7 +374,6 @@ class Sensitivity_Analysis():
             self.recorder.feed_data("rho_projected", rho_projected[tsk.design_elements])
             self.recorder.feed_data("strain_energy", strain_energy_ave)
             self.recorder.feed_data("compliance", compliance_avg)
-            # self.recorder.feed_data("dC", dC_drho_ave)
             self.recorder.feed_data("scaling_rate", scaling_rate)
             
             
