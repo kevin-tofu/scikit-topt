@@ -1,3 +1,4 @@
+from typing import Callable
 from dataclasses import dataclass, asdict
 import numpy as np
 import scitopt
@@ -127,254 +128,44 @@ class KKT_Optimizer(common.Sensitivity_Analysis):
         self.recorder.add("dC", plot_type="min-max-mean-std")
         self.recorder.add("lambda_v", ylog=False) # True
     
-    
-    def optimize(self):
-        tsk = self.tsk
-        cfg = self.cfg
-        
-        elements_volume_design = tsk.elements_volume[tsk.design_elements]
-        elements_volume_design_sum = np.sum(elements_volume_design)
-        # print("elements_volume-ave-std", np.mean(elements_volume), np.std(elements_volume))
-        
-        rho = np.zeros_like(tsk.all_elements, dtype=np.float64)
-        iter_begin = 1
-        if cfg.restart is True:
-            if cfg.restart_from > 0:
-                data = np.load(
-                    f"{cfg.dst_path}/data/{str(cfg.restart_from).zfill(6)}-rho.npz"
-                )
-            else:
-                iter, data_path = misc.find_latest_iter_file(f"{cfg.dst_path}/data")
-                data = np.load(data_path)
-                iter_begin = iter
-
-            rho[tsk.design_elements] = data["rho_design_elements"]
-            del data
-        else:
-            _vol_frac = cfg.vol_frac if cfg.vol_frac_step < 0 else cfg.vol_frac_init
-            rho += _vol_frac + 0.1 * (np.random.rand(len(tsk.all_elements)) - 0.5)
-            # rho += _vol_frac + 0.15
-            np.clip(rho, cfg.rho_min, cfg.rho_max, out=rho)
-
-        if cfg.design_dirichlet is True:
-            rho[tsk.force_elements] = 1.0
-        else:
-            rho[tsk.dirichlet_force_elements] = 1.0
-        rho[tsk.fixed_elements_in_rho] = 1.0
-        self.init_schedulers()
-        
-        if cfg.interpolation == "SIMP":
-        # if False:
-            # density_interpolation = composer.simp_interpolation_numba
-            density_interpolation = composer.simp_interpolation
-            dC_drho_func = derivatives.dC_drho_simp
-        elif cfg.interpolation == "RAMP":
-            density_interpolation = composer.ramp_interpolation
-            dC_drho_func = derivatives.dC_drho_ramp
-        else:
-            raise ValueError("should be SIMP/RAMP")
-        
-        rho_prev = np.zeros_like(rho)
-        rho_filtered = np.zeros_like(rho)
-        rho_projected = np.zeros_like(rho)
-        dH = np.empty_like(rho)
-        grad_filtered = np.empty_like(rho)
-        dC_drho_projected = np.empty_like(rho)
-        strain_energy_ave = np.zeros_like(rho)
-        compliance_avg = np.zeros_like(rho)
-        dH = np.zeros_like(rho)
-
-        # dC_drho_ave = np.zeros_like(rho)
-        dC_drho_full = np.zeros_like(rho)
-        dC_drho_ave = np.zeros_like(rho[tsk.design_elements])
-        scaling_rate = np.empty_like(rho[tsk.design_elements])
-        rho_candidate = np.empty_like(rho[tsk.design_elements])
-        tmp_lower = np.empty_like(rho[tsk.design_elements])
-        tmp_upper = np.empty_like(rho[tsk.design_elements])
-        force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
-        lambda_v = cfg.lambda_v
-        lambda_lower = cfg.lambda_lower
-        lambda_upper = cfg.lambda_upper
-        eta = cfg.eta
-        
-        filter_radius_prev = cfg.filter_radius_init if cfg.filter_radius_step > 0 else cfg.filter_radius
-        self.helmholz_solver.update_radius(tsk.mesh, filter_radius_prev)
-        for iter_loop, iter in enumerate(range(iter_begin, cfg.max_iters+iter_begin)):
-            print(f"iterations: {iter} / {cfg.max_iters}")
-            p, vol_frac, beta, move_limit, percentile, filter_radius = (
-                self.schedulers.values(iter)[k] for k in [
-                    'p', 'vol_frac', 'beta', 'move_limit', 'percentile', 'filter_radius'
-                ]
-            )
-            if filter_radius_prev != filter_radius:
-                print("Filter Update")
-                self.helmholz_solver.update_radius(tsk.mesh, filter_radius)
-
-            print(f"p {p:.4f}, vol_frac {vol_frac:.4f}, beta {beta:.4f}, move_limit {move_limit:.4f}")
-            print(f"eta {eta:.4f}, percentile {percentile:.4f} filter_radius {filter_radius:.4f}")
-            rho_prev[:] = rho[:]
-            rho_filtered[:] = self.helmholz_solver.filter(rho)
-            projection.heaviside_projection_inplace(
-                rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
-            )
-            dC_drho_ave[:] = 0.0
-            dC_drho_full[:] = 0.0
-            strain_energy_ave[:] = 0.0
-            compliance_avg[:] = 0.0
-            for force in force_list:
-                dH[:] = 0.0
-                compliance, u = solver.compute_compliance_basis(
-                    tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
-                    tsk.E0, tsk.Emin, p, tsk.nu0,
-                    rho_projected,
-                    elem_func=density_interpolation
-                )
-                compliance_avg += compliance
-                strain_energy = composer.strain_energy_skfem(
-                    tsk.basis, rho_projected, u,
-                    tsk.E0, tsk.Emin, p, tsk.nu0,
-                    elem_func=density_interpolation
-                )
-                strain_energy_ave += strain_energy
-                
-                # rho_safe = np.clip(rho_filtered, 1e-3, 1.0)
-                np.copyto(
-                    dC_drho_projected,
-                    dC_drho_func(
-                        rho_projected,
-                        strain_energy, tsk.E0, tsk.Emin, p
-                    )
-                )
-                projection.heaviside_projection_derivative_inplace(
-                    rho_filtered,
-                    beta=beta, eta=cfg.beta_eta, out=dH
-                )
-                # dH[:] = projection.heaviside_projection_derivative(
-                #     rho_filtered, beta=beta, eta=cfg.beta_eta
-                # )
-                np.multiply(dC_drho_projected, dH, out=grad_filtered)
-                dC_drho_full[:] += self.helmholz_solver.gradient(grad_filtered)
-                # dC_drho_ave[:] += dC_drho_full[tsk.design_elements]
-                # dC_drho_dirichlet[:] += dC_drho_full[tsk.dirichlet_elements]
-                
-            dC_drho_full /= len(force_list)
-            strain_energy_ave /= len(force_list)
-            compliance_avg /= len(force_list)
-            print(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
-            
-            filtered = self.helmholz_solver.filter(dC_drho_full)
-            np.copyto(dC_drho_full, filtered)
-            
-            dC_drho_full[:] = self.helmholz_solver.filter(dC_drho_full)
-            dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
-            # vol_error = np.mean(rho_projected[tsk.design_elements]) - vol_frac
-            vol_error = np.sum(
-                rho_projected[tsk.design_elements] * elements_volume_design
-            ) / elements_volume_design_sum - vol_frac
-            
-            lambda_v = cfg.lambda_decay * lambda_v + cfg.mu_p * vol_error
-            lambda_v = np.clip(lambda_v, lambda_lower, lambda_upper)
-            rho_candidate[:] = rho[tsk.design_elements] # Dont forget. inplace
-            
-            # 
-            kkt_moc_log_update(
-                rho=rho_candidate,
-                dC=dC_drho_ave,
-                lambda_v=lambda_v, scaling_rate=scaling_rate,
-                move_limit=move_limit,
-                eta=eta,
-                tmp_lower=tmp_lower, tmp_upper=tmp_upper,
-                rho_min=cfg.rho_min, rho_max=1.0,
-                percentile=percentile,
-                interploation=cfg.interpolation
-            )
-            # 
-            rho[tsk.design_elements] = rho_candidate
-            if cfg.design_dirichlet is True:
-                rho[tsk.force_elements] = 1.0
-            else:
-                rho[tsk.dirichlet_force_elements] = 1.0
-
-            filter_radius_prev = filter_radius
-            # rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
-            print(
-                f"scaling_rate min/mean/max {scaling_rate.min()} {scaling_rate.mean()} {scaling_rate.max()}"
-            )
-            self.recorder.feed_data("rho", rho[tsk.design_elements])
-            self.recorder.feed_data("rho_projected", rho_projected[tsk.design_elements])
-            self.recorder.feed_data("strain_energy", strain_energy_ave)
-            self.recorder.feed_data("lambda_v", lambda_v)
-            self.recorder.feed_data("compliance", compliance_avg)
-            self.recorder.feed_data("dC", dC_drho_ave)
-            self.recorder.feed_data("scaling_rate", scaling_rate)
-            self.recorder.feed_data("vol_error", vol_error)
-            
-            
-            if iter % (cfg.max_iters // self.cfg.record_times) == 0 or iter == 1:
-            # if True:
-                print(f"Saving at iteration {iter}")
-                self.recorder.print()
-                # self.recorder_params.print()
-                self.recorder.export_progress()
-                
-                visualization.save_info_on_mesh(
-                    tsk,
-                    rho_projected, rho_prev, strain_energy_ave,
-                    cfg.vtu_path(iter),
-                    cfg.image_path(iter, "rho"),
-                    f"Iteration : {iter}",
-                    cfg.image_path(iter, "strain_energy"),
-                    f"Iteration : {iter}"
-                )
-                visualization.export_submesh(
-                    tsk, rho, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
-                )
-                np.savez_compressed(
-                    f"{cfg.dst_path}/data/{str(iter).zfill(6)}-rho.npz",
-                    rho_design_elements=rho[tsk.design_elements],
-                    # compliance=compliance
-                )
-
-        visualization.rho_histo_plot(
-            rho[tsk.design_elements],
-            f"{self.cfg.dst_path}/mesh_rho/last.jpg"
-        )
-        visualization.export_submesh(
-            tsk, rho, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
-        )
-        
-    
     def rho_update(
         self,
-        rho,
-        dC,
-        lambda_v,
-        scaling_rate,
-        move_limit,
-        eta,
-        tmp_lower,
-        tmp_upper,
-        rho_min,
-        rho_max,
-        percentile,
-        interploation
+        iter_loop: int,
+        rho_candidate: np.ndarray,
+        rho_projected: np.ndarray,
+        dC_drho_ave: np.ndarray,
+        strain_energy_ave: np.ndarray,
+        scaling_rate: np.ndarray,
+        move_limit: float,
+        eta: float,
+        tmp_lower: np.ndarray,
+        tmp_upper: np.ndarray,
+        lambda_lower: float,
+        lambda_upper: float,
+        percentile: float,
+        interploation: Callable,
+        elements_volume_design: np.ndarray,
+        elements_volume_design_sum: float,
+        vol_frac: float
     ):
-        dC_drho_full[:] = self.helmholz_solver.filter(dC_drho_full)
-        dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
-        # vol_error = np.mean(rho_projected[tsk.design_elements]) - vol_frac
+        cfg = self.cfg
+        tsk = self.tsk
+        
         vol_error = np.sum(
             rho_projected[tsk.design_elements] * elements_volume_design
         ) / elements_volume_design_sum - vol_frac
-        
-        lambda_v = cfg.lambda_decay * lambda_v + cfg.mu_p * vol_error
-        lambda_v = np.clip(lambda_v, lambda_lower, lambda_upper)
-        rho_candidate[:] = rho[tsk.design_elements] # Dont forget. inplace
+        penalty = cfg.mu_p * vol_error
+        self.lambda_v = cfg.lambda_decay * self.lambda_v + penalty if iter_loop > 1 else penalty
+        self.lambda_v = np.clip(self.lambda_v, lambda_lower, lambda_upper)
+        self.recorder.feed_data("lambda_v", self.lambda_v)
+        self.recorder.feed_data("vol_error", vol_error)
+        self.recorder.feed_data("dC", dC_drho_ave)
         
         # 
         kkt_moc_log_update(
             rho=rho_candidate,
             dC=dC_drho_ave,
-            lambda_v=lambda_v, scaling_rate=scaling_rate,
+            lambda_v=self.lambda_v, scaling_rate=scaling_rate,
             move_limit=move_limit,
             eta=eta,
             tmp_lower=tmp_lower, tmp_upper=tmp_upper,
