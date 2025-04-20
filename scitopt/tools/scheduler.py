@@ -68,6 +68,56 @@ def schedule_step(
     return value
 
 
+def schedule_step_accelerating(
+    it: int,
+    total: int,
+    start: float = 1.0,
+    target: float = 0.4,
+    num_steps: int = 10,
+    curvature: float = 3.0,
+):
+    """
+    Step-function scheduler with increasing step size.
+
+    The steps get gradually larger (nonlinear interpolation), 
+    controlled by 'curvature'.
+
+    Parameters
+    ----------
+    it : int
+        Current iteration index.
+    total : int
+        Total number of iterations.
+    start : float
+        Starting value.
+    target : float
+        Final target value.
+    num_steps : int
+        Number of steps (including start and target).
+    curvature : float
+        Controls how quickly the steps accelerate (larger → more aggressive).
+
+    Returns
+    -------
+    float
+        Scheduled value for the given iteration.
+    """
+    if total <= 0:
+        raise ValueError("total must be positive")
+    if num_steps <= 1:
+        return target
+
+    # Determine current step index
+    step_length = total / num_steps
+    step_index = min(int(it // step_length), num_steps - 1)
+
+    # Use exponential-like interpolation for step values
+    alpha = step_index / (num_steps - 1)
+    nonlinear_alpha = alpha ** curvature
+
+    value = (1 - nonlinear_alpha) * start + nonlinear_alpha * target
+    return value
+
 
 
 class Scheduler():
@@ -77,26 +127,86 @@ class Scheduler():
         name: str,
         init_value: float,
         target_value: float,
-        rate: float,
+        num_steps: float,
         iters_max: int,
+        curvature: Optional[float]=None,
         func: Callable = schedule_step
     ):
         self.name = name
         self.init_value = init_value
         self.target_value = target_value
         self.iters_max = iters_max
-        self.rate = rate
+        self.num_steps = num_steps
+        self.curvature = curvature
         self.func = func
-        
         
 
     def value(self, iter: int | np.ndarray):
-        if self.rate < 0:
+        if self.num_steps < 0:
             return self.target_value
-        ret = self.func(
-            iter, self.iters_max, self.init_value, self.target_value, self.rate
-        )
+        
+        if isinstance(self.func, schedule_step):  
+            ret = self.func(
+                iter, self.iters_max,
+                self.init_value,
+                self.target_value,
+                self.num_steps
+            )
+        elif isinstance(self.func, schedule_step_accelerating):
+            ret = self.func(
+                iter, self.iters_max,
+                self.init_value,
+                self.target_value,
+                self.num_steps,
+                self.curvature
+            )
+        else:
+            raise ValueError("")
+            
         return ret
+
+
+class SchedulerStep(Scheduler):
+    
+    def __init__(
+        self,
+        name: str,
+        init_value: float,
+        target_value: float,
+        num_steps: float,
+        iters_max: int
+    ):
+        super().__init__(
+            name,
+            init_value,
+            target_value,
+            num_steps,
+            iters_max,
+            None,
+            schedule_step
+        )
+
+
+class SchedulerStepAccelerating(Scheduler):
+    
+    def __init__(
+        self,
+        name: str,
+        init_value: float,
+        target_value: float,
+        num_steps: float,
+        iters_max: int,
+        curvature: float
+    ):
+        super().__init__(
+            name,
+            init_value,
+            target_value,
+            num_steps,
+            iters_max,
+            curvature,
+            schedule_step_accelerating
+        )
 
 
 class Schedulers():
@@ -111,18 +221,25 @@ class Schedulers():
            ret[sche.name] = sche.value(iter)
         return ret
 
-    
+
+    def add_object(
+        self, s: Scheduler
+    ):
+        self.scheduler_list.append(s)
+
+
     def add(
         self,
         name: str,
         init_value: float,
         target_value: float,
-        step: float,
+        num_steps: float,
         iters_max: int,
+        curvature: Optional[float]=None,
         func: Callable = schedule_step
     ):
         s = Scheduler(
-            name, init_value, target_value, step, iters_max, func
+            name, init_value, target_value, num_steps, iters_max, curvature, func
         )
         # print(s.name)
         self.scheduler_list.append(s)

@@ -62,8 +62,11 @@ def kkt_moc_log_update(
         norm = np.percentile(np.abs(dC), percentile) + 1e-8
     elif interpolation == "RAMP":
         scaling_rate -= np.mean(dC)
-        norm = max(np.percentile(np.abs(scaling_rate), percentile), 1e-4)
+        percentile_value = np.percentile(np.abs(scaling_rate), percentile)
+        # norm = max(percentile_value, 1e-4)
+        norm = percentile_value
         # norm = max(np.abs(scaling_rate), 1e-4)
+        # print(f"percentile_value: {percentile_value}, norm: {norm}")
     else:
         raise ValueError("should be SIMP/RAMP")
     np.divide(scaling_rate, norm, out=scaling_rate)
@@ -281,6 +284,9 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--design_dirichlet', '-DD', type=misc.str2bool, default=True, help=''
+    )
+    parser.add_argument(
+        '--sensitivity_filter', '-SF', type=misc.str2bool, default=True, help=''
     )
     
     args = parser.parse_args()
