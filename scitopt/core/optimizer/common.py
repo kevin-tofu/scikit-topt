@@ -31,6 +31,7 @@ class Sensitivity_Config():
     beta_init: float = 1.0
     beta: float = 3
     beta_step: int = 12
+    beta_curvature: float = 3.0
     beta_eta: float = 0.50
     eta: float = 0.5
     percentile_init: float = 60
@@ -154,7 +155,8 @@ class Sensitivity_Analysis():
                 cfg.beta,
                 cfg.beta_step,
                 cfg.max_iters,
-                5.0
+                cfg.beta_curvature,
+                # 5.0
             )
         )
         self.schedulers.add(

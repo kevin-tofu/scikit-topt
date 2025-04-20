@@ -228,6 +228,9 @@ if __name__ == '__main__':
         '--beta', '-B', type=float, default=5.0, help=''
     )
     parser.add_argument(
+        '--beta_curvature', '-BC', type=float, default=5.0, help=''
+    )
+    parser.add_argument(
         '--beta_step', '-BR', type=int, default=3, help=''
     )
     parser.add_argument(

@@ -30,7 +30,8 @@ def schedule_exp_accelerate(
 
 
 def schedule_step(
-    it: int, total: int, start: float=1.0, target: float=0.4, num_steps: int=10
+    it: int, total: int, start: float=1.0, target: float=0.4, num_steps: int=10,
+    **args
 ):
     """
     Step-function scheduler where each step value is used for (approximately) equal number of iterations.
@@ -75,6 +76,7 @@ def schedule_step_accelerating(
     target: float = 0.4,
     num_steps: int = 10,
     curvature: float = 3.0,
+    **args
 ):
     """
     Step-function scheduler with increasing step size.
@@ -145,23 +147,14 @@ class Scheduler():
         if self.num_steps < 0:
             return self.target_value
         
-        if isinstance(self.func, schedule_step):  
-            ret = self.func(
-                iter, self.iters_max,
-                self.init_value,
-                self.target_value,
-                self.num_steps
-            )
-        elif isinstance(self.func, schedule_step_accelerating):
-            ret = self.func(
-                iter, self.iters_max,
-                self.init_value,
-                self.target_value,
-                self.num_steps,
-                self.curvature
-            )
-        else:
-            raise ValueError("")
+        ret = self.func(
+            it=iter,
+            total=self.iters_max,
+            start=self.init_value,
+            target=self.target_value,
+            num_steps=self.num_steps,
+            curvature=self.curvature,
+        )
             
         return ret
 
