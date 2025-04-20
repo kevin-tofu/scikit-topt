@@ -141,12 +141,21 @@ class Sensitivity_Analysis():
         )
         # print(move_init)
         # print(cfg.move_limit, cfg.move_limit_step)
-        self.schedulers.add(
-            "move_limit",
-            move_limit_init,
-            cfg.move_limit,
-            cfg.move_limit_step,
-            cfg.max_iters
+        # self.schedulers.add(
+        #     "move_limit",
+        #     move_limit_init,
+        #     cfg.move_limit,
+        #     cfg.move_limit_step,
+        #     cfg.max_iters
+        # )
+        self.schedulers.add_object(
+            tools.SchedulerSawtoothDecay(
+                "move_limit",
+                move_limit_init,
+                cfg.move_limit,
+                cfg.move_limit_step,
+                cfg.max_iters
+            )
         )
         self.schedulers.add_object(
             tools.SchedulerStepAccelerating(
