@@ -260,7 +260,8 @@ class SchedulerSawtoothDecay(Scheduler):
             target_value,
             num_steps,
             iters_max,
-            schedule_sawtooth_decay
+            None,
+            func=schedule_sawtooth_decay
         )
         
 
