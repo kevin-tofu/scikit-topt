@@ -269,7 +269,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '--design_dirichlet', '-DD', type=misc.str2bool, default=True, help=''
     )
-    
+    parser.add_argument(
+        '--sensitivity_filter', '-SF', type=misc.str2bool, default=True, help=''
+    )
     args = parser.parse_args()
     
 

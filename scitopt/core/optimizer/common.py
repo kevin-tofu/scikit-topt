@@ -51,6 +51,7 @@ class Sensitivity_Config():
     design_dirichlet: bool=False
     lambda_lower: float=1e-2
     lambda_upper: float=1e+2
+    sensitivity_filter: bool = True
 
 
     @classmethod
@@ -146,12 +147,15 @@ class Sensitivity_Analysis():
             cfg.move_limit_step,
             cfg.max_iters
         )
-        self.schedulers.add(
-            "beta",
-            beta_init,
-            cfg.beta,
-            cfg.beta_step,
-            cfg.max_iters
+        self.schedulers.add_object(
+            tools.SchedulerStepAccelerating(
+                "beta",
+                beta_init,
+                cfg.beta,
+                cfg.beta_step,
+                cfg.max_iters,
+                5.0
+            )
         )
         self.schedulers.add(
             "percentile",
@@ -205,6 +209,18 @@ class Sensitivity_Analysis():
     def optimize(self):
         tsk = self.tsk
         cfg = self.cfg
+        if cfg.interpolation == "SIMP":
+        # if False:
+            # density_interpolation = composer.simp_interpolation_numba
+            density_interpolation = composer.simp_interpolation
+            dC_drho_func = derivatives.dC_drho_simp
+            val_init = 0.8
+        elif cfg.interpolation == "RAMP":
+            density_interpolation = composer.ramp_interpolation
+            dC_drho_func = derivatives.dC_drho_ramp
+            val_init = 0.4
+        else:
+            raise ValueError("should be SIMP/RAMP")
         
         elements_volume_design = tsk.elements_volume[tsk.design_elements]
         elements_volume_design_sum = np.sum(elements_volume_design)
@@ -227,7 +243,7 @@ class Sensitivity_Analysis():
             # _vol_frac = cfg.vol_frac if cfg.vol_frac_step < 0 else cfg.vol_frac_init
             # rho += _vol_frac + 0.1 * (np.random.rand(len(tsk.all_elements)) - 0.5)
             # rho += _vol_frac + 0.15
-            rho += 0.8 if cfg.vol_frac_step < 0 else cfg.vol_frac_init
+            rho += val_init if cfg.vol_frac_step < 0 else cfg.vol_frac_init
             np.clip(rho, cfg.rho_min, cfg.rho_max, out=rho)
 
         if cfg.design_dirichlet is True:
@@ -237,16 +253,6 @@ class Sensitivity_Analysis():
         rho[tsk.fixed_elements_in_rho] = 1.0
         self.init_schedulers()
         
-        if cfg.interpolation == "SIMP":
-        # if False:
-            # density_interpolation = composer.simp_interpolation_numba
-            density_interpolation = composer.simp_interpolation
-            dC_drho_func = derivatives.dC_drho_simp
-        elif cfg.interpolation == "RAMP":
-            density_interpolation = composer.ramp_interpolation
-            dC_drho_func = derivatives.dC_drho_ramp
-        else:
-            raise ValueError("should be SIMP/RAMP")
         
         rho_prev = np.zeros_like(rho)
         rho_filtered = np.zeros_like(rho)
@@ -331,8 +337,9 @@ class Sensitivity_Analysis():
             compliance_avg /= len(force_list)
             print(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
             
-            filtered = self.helmholz_solver.filter(dC_drho_full)
-            np.copyto(dC_drho_full, filtered)
+            if cfg.sensitivity_filter:
+                filtered = self.helmholz_solver.filter(dC_drho_full)
+                np.copyto(dC_drho_full, filtered)
             
             dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
             rho_candidate[:] = rho[tsk.design_elements] # Dont forget. inplace
