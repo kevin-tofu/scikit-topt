@@ -121,6 +121,48 @@ def schedule_step_accelerating(
     return value
 
 
+def schedule_sawtooth_decay(
+    it: int,
+    total: int,
+    start: float = 0.1,
+    target: float = 0.05,
+    num_steps: int = 6,
+    **args
+) -> float:
+    """
+    Sawtooth-style scheduler: value decays linearly from `start` to `target` 
+    in each step, and resets at each new step.
+
+    Parameters
+    ----------
+    it : int
+        Current iteration index.
+    total : int
+        Total number of iterations.
+    start : float
+        Value at the beginning of each sawtooth step (e.g., high move_limit).
+    target : float
+        Value at the end of each sawtooth step (e.g., low move_limit).
+    num_steps : int
+        Number of sawtooth cycles (typically same as vol_frac steps).
+    **args : dict
+        Extra arguments (ignored).
+
+    Returns
+    -------
+    float
+        Scheduled value for the current iteration.
+    """
+    if total <= 0 or num_steps <= 0:
+        raise ValueError("total and num_steps must be positive")
+
+    step_size = total / num_steps
+    step_index = int(it // step_size)
+    local_index = it - step_index * step_size
+    alpha = min(local_index / step_size, 1.0)
+
+    return (1 - alpha) * start + alpha * target
+
 
 class Scheduler():
     
@@ -201,6 +243,26 @@ class SchedulerStepAccelerating(Scheduler):
             schedule_step_accelerating
         )
 
+
+class SchedulerSawtoothDecay(Scheduler):
+    
+    def __init__(
+        self,
+        name: str,
+        init_value: float,
+        target_value: float,
+        num_steps: float,
+        iters_max: int,
+    ):
+        super().__init__(
+            name,
+            init_value,
+            target_value,
+            num_steps,
+            iters_max,
+            schedule_sawtooth_decay
+        )
+        
 
 class Schedulers():
     def __init__(self, dst_path: str):
