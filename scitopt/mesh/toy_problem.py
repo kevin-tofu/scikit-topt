@@ -186,7 +186,8 @@ def load_mesh_auto(msh_path: str):
 
 
 def toy_msh(
-    msh_path: str = 'plate.msh'
+    task_name: str="down",
+    msh_path: str = 'plate.msh',
 ):
     from scitopt.fea import composer
     x_len = 4.0
@@ -195,9 +196,14 @@ def toy_msh(
     z_len = 2.0
     # eps = 0.10
     # eps = 0.20
-    eps = 0.1
+    eps = 0.03
     # eps = 0.5
     mesh = load_mesh_auto(msh_path)
+    coords = mesh.p.T  # (n_nodes, dim)
+    a_point = mesh.p.T[0]
+    dists = np.linalg.norm(coords[1::] - a_point, axis=1)
+    eps = np.min(dists) * 2
+    print(f"eps: {eps}")
 
     # Check Index Order.
     # print("Before mesh.t fix:", mesh.t[:, 0])
@@ -226,23 +232,40 @@ def toy_msh(
     dirichlet_nodes = utils.get_dofs_in_range(
         basis, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     ).all()
-    # print("dirichlet_nodes:", dirichlet_nodes.shape, dirichlet_nodes.dtype)
-    # .nodal['u^1']
-    # .all()
-    F_points = utils.get_point_indices_in_range(
-        basis, (x_len-eps, x_len+0.05),
-        (0, y_len),
-        (0.0, eps)
-        # (y_len*2/5, y_len*3/5),
-        # (z_len*2/5, z_len*3/5)
-    )
-    F_nodes = utils.get_dofs_in_range(
-        basis, (x_len-eps, x_len+0.05),
-        (0, y_len),
-        (0.0, eps)
-        # (y_len*2/5, y_len*3/5),
-        # (z_len*2/5, z_len*3/5)
-    ).nodal['u^1']
+    
+    if task_name == "down":
+        F_points = utils.get_point_indices_in_range(
+            basis, (x_len-eps, x_len+0.05),
+            (0, y_len),
+            (0.0, eps)
+            # (y_len*2/5, y_len*3/5),
+            # (z_len*2/5, z_len*3/5)
+        )
+        F_nodes = utils.get_dofs_in_range(
+            basis, (x_len-eps, x_len+0.05),
+            (0, y_len),
+            (0.0, eps)
+            # (y_len*2/5, y_len*3/5),
+            # (z_len*2/5, z_len*3/5)
+        ).nodal['u^3']
+        F = -0.002
+    elif task_name == "pull":
+        F_points = utils.get_point_indices_in_range(
+            basis, (x_len-eps, x_len+0.05),
+            # (0, y_len),
+            # (0.0, eps)
+            (y_len*2/5, y_len*3/5),
+            (z_len*2/5, z_len*3/5)
+        )
+        F_nodes = utils.get_dofs_in_range(
+            basis, (x_len-eps, x_len+0.05),
+            # (0, y_len),
+            # (0.0, eps)
+            (y_len*2/5, y_len*3/5),
+            (z_len*2/5, z_len*3/5)
+        ).nodal['u^1']
+        F = 0.002
+    
     design_elements = utils.get_elements_in_box(
         mesh,
         # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
@@ -250,19 +273,8 @@ def toy_msh(
     )
     
     p = basis.mesh.p
-    xmax_mask = np.isclose(p[0], 4.0)
     print("generate config")
     E0 = 1.0
-    # F = [0.3, -0.3]
-    # F = -0.2
-    F = 0.002
-    # F = 0.3
-    
-    # F = 0.3
-    # F = 1.2
-    # F = 0.4
-    # F = 1.0
-    # F = 150.0
     print("F:", F)
     print("F_points:", F_points.shape)
     print("F_nodes:", F_nodes.shape)

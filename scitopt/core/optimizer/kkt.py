@@ -279,9 +279,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--restart_from', '-RF', type=int, default=-1, help=''
     )
-    parser.add_argument(
-        '--task', '-T', type=str, default="toy1", help=''
-    )
+    
     parser.add_argument(
         '--export_img', '-EI', type=misc.str2bool, default=False, help=''
     )
@@ -291,18 +289,26 @@ if __name__ == '__main__':
     parser.add_argument(
         '--sensitivity_filter', '-SF', type=misc.str2bool, default=True, help=''
     )
+    # 
+    parser.add_argument(
+        '--task_name', '-T', type=str, default="toy1", help=''
+    )
+    parser.add_argument(
+        '--mesh_path', '-MP', type=str, default="plate.msh", help=''
+    )
+    
     
     args = parser.parse_args()
     
 
-    if args.task == "toy1":
+    if args.task_name == "toy1":
         tsk = toy_problem.toy1()
-    elif args.task == "toy1_fine":
+    elif args.task_name == "toy1_fine":
         tsk = toy_problem.toy1_fine()
-    elif args.task == "toy2":
+    elif args.task_name == "toy2":
         tsk = toy_problem.toy2()
     else:
-        tsk = toy_problem.toy_msh(args.task)
+        tsk = toy_problem.toy_msh(args.task_name, args.mesh_path)
     
     tsk.Emin = 1e-2
     print("load toy problem")
