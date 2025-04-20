@@ -156,9 +156,11 @@ def schedule_sawtooth_decay(
     if total <= 0 or num_steps <= 0:
         raise ValueError("total and num_steps must be positive")
 
-    step_size = total / num_steps
-    step_index = int(it // step_size)
-    local_index = it - step_index * step_size
+    it0 = it - 1
+    total0 = total
+    step_size = total0 / num_steps
+    step_index = int(it0 // step_size)
+    local_index = it0 - step_index * step_size
     alpha = min(local_index / step_size, 1.0)
 
     return (1 - alpha) * start + alpha * target
