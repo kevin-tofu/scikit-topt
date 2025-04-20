@@ -313,7 +313,7 @@ if __name__ == '__main__':
     tsk.Emin = 1e-2
     print("load toy problem")
     
-    print("generate MOC_Config")
+    print("generate KKT_Config")
     cfg = KKT_Config.from_defaults(
         **vars(args)
     )
@@ -326,4 +326,4 @@ if __name__ == '__main__':
     # optimizer.load_parameters()
     print("optimize")
     optimizer.optimize()
-    # optimizer.optimize_org()
+    # optimizer.optimize_fosm()

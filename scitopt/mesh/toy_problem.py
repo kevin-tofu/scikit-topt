@@ -202,7 +202,7 @@ def toy_msh(
     coords = mesh.p.T  # (n_nodes, dim)
     a_point = mesh.p.T[0]
     dists = np.linalg.norm(coords[1::] - a_point, axis=1)
-    eps = np.min(dists) * 2
+    eps = np.min(dists) * 0.8
     print(f"eps: {eps}")
 
     # Check Index Order.
@@ -248,7 +248,7 @@ def toy_msh(
             # (y_len*2/5, y_len*3/5),
             # (z_len*2/5, z_len*3/5)
         ).nodal['u^3']
-        F = -0.002
+        F = -0.02
     elif task_name == "pull":
         F_points = utils.get_point_indices_in_range(
             basis, (x_len-eps, x_len+0.05),
