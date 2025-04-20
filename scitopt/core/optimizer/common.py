@@ -294,17 +294,37 @@ class Sensitivity_Analysis():
             projection.heaviside_projection_inplace(
                 rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
             )
+            # if iter_loop == 1:
+            #     rho_filtered[:] = rho
+            #     rho_projected[:] = rho
             dC_drho_ave[:] = 0.0
             dC_drho_full[:] = 0.0
             strain_energy_ave[:] = 0.0
             compliance_avg[:] = 0.0
+            # if iter_loop == 0:
+            #     solver_option = dict(
+            #         solver="spsolve"
+            #     )
+            # else:
+            #     solver_option = dict(
+            #         solver="pyamg"
+            #     )
+            
+            # solver_option = dict(
+            #     solver="spsolve"
+            # )
+            solver_option = dict(
+                solver="pyamg"
+            )
+                
             for force in force_list:
                 dH[:] = 0.0
                 compliance, u = solver.compute_compliance_basis(
                     tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
                     tsk.E0, tsk.Emin, p, tsk.nu0,
                     rho_projected,
-                    elem_func=density_interpolation
+                    elem_func=density_interpolation,
+                    **solver_option
                 )
                 compliance_avg += compliance
                 strain_energy = composer.strain_energy_skfem(
@@ -395,6 +415,239 @@ class Sensitivity_Analysis():
                 visualization.save_info_on_mesh(
                     tsk,
                     rho_projected, rho_prev, strain_energy_ave,
+                    cfg.vtu_path(iter),
+                    cfg.image_path(iter, "rho"),
+                    f"Iteration : {iter}",
+                    cfg.image_path(iter, "strain_energy"),
+                    f"Iteration : {iter}"
+                )
+                visualization.export_submesh(
+                    tsk, rho, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
+                )
+                np.savez_compressed(
+                    f"{cfg.dst_path}/data/{str(iter).zfill(6)}-rho.npz",
+                    rho_design_elements=rho[tsk.design_elements],
+                    # compliance=compliance
+                )
+
+        visualization.rho_histo_plot(
+            rho[tsk.design_elements],
+            f"{self.cfg.dst_path}/mesh_rho/last.jpg"
+        )
+        visualization.export_submesh(
+            tsk, rho, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
+        )
+
+
+    def optimize_fosm(self):
+        tsk = self.tsk
+        cfg = self.cfg
+        if cfg.interpolation == "SIMP":
+        # if False:
+            # density_interpolation = composer.simp_interpolation_numba
+            density_interpolation = composer.simp_interpolation
+            dC_drho_func = derivatives.dC_drho_simp
+            val_init = 0.8
+        elif cfg.interpolation == "RAMP":
+            density_interpolation = composer.ramp_interpolation
+            dC_drho_func = derivatives.dC_drho_ramp
+            val_init = 0.4
+        else:
+            raise ValueError("should be SIMP/RAMP")
+        
+        elements_volume_design = tsk.elements_volume[tsk.design_elements]
+        elements_volume_design_sum = np.sum(elements_volume_design)
+
+        rho = np.zeros_like(tsk.all_elements, dtype=np.float64)
+        iter_begin = 1
+        if cfg.restart is True:
+            if cfg.restart_from > 0:
+                data = np.load(
+                    f"{cfg.dst_path}/data/{str(cfg.restart_from).zfill(6)}-rho.npz"
+                )
+            else:
+                iter, data_path = misc.find_latest_iter_file(f"{cfg.dst_path}/data")
+                data = np.load(data_path)
+                iter_begin = iter
+
+            rho[tsk.design_elements] = data["rho_design_elements"]
+            del data
+        else:
+            # _vol_frac = cfg.vol_frac if cfg.vol_frac_step < 0 else cfg.vol_frac_init
+            # rho += _vol_frac + 0.1 * (np.random.rand(len(tsk.all_elements)) - 0.5)
+            # rho += _vol_frac + 0.15
+            rho += val_init if cfg.vol_frac_step < 0 else cfg.vol_frac_init
+            np.clip(rho, cfg.rho_min, cfg.rho_max, out=rho)
+
+        if cfg.design_dirichlet is True:
+            rho[tsk.force_elements] = 1.0
+        else:
+            rho[tsk.dirichlet_force_elements] = 1.0
+        rho[tsk.fixed_elements_in_rho] = 1.0
+        self.init_schedulers()
+        
+        
+        rho_prev = np.zeros_like(rho)
+        rho_filtered = np.zeros_like(rho)
+        rho_projected = np.zeros_like(rho)
+        dH = np.empty_like(rho)
+        grad_filtered = np.empty_like(rho)
+        dC_drho_projected = np.empty_like(rho)
+        strain_energy_total = np.zeros_like(rho)
+        compliance_total = np.zeros_like(rho)
+        dH = np.zeros_like(rho)
+
+        # dC_drho_ave = np.zeros_like(rho)
+        dC_accum = np.zeros_like(rho)
+        dC_drho_ave = np.zeros_like(rho[tsk.design_elements])
+        scaling_rate = np.empty_like(rho[tsk.design_elements])
+        rho_candidate = np.empty_like(rho[tsk.design_elements])
+        tmp_lower = np.empty_like(rho[tsk.design_elements])
+        tmp_upper = np.empty_like(rho[tsk.design_elements])
+        force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
+        filter_radius_prev = cfg.filter_radius_init if cfg.filter_radius_step > 0 else cfg.filter_radius
+        self.helmholz_solver.update_radius(tsk.mesh, filter_radius_prev)
+        for iter_loop, iter in enumerate(range(iter_begin, cfg.max_iters+iter_begin)):
+            print(f"iterations: {iter} / {cfg.max_iters}")
+            p, vol_frac, beta, move_limit, eta, percentile, filter_radius = (
+                self.schedulers.values(iter)[k] for k in [
+                    'p', 'vol_frac', 'beta', 'move_limit', 'eta', 'percentile', 'filter_radius'
+                ]
+            )
+            if filter_radius_prev != filter_radius:
+                print("Filter Update")
+                self.helmholz_solver.update_radius(tsk.mesh, filter_radius)
+            
+            print(f"p {p:.4f}, vol_frac {vol_frac:.4f}, beta {beta:.4f}, move_limit {move_limit:.4f}")
+            print(f"eta {eta:.4f}, percentile {percentile:.4f} filter_radius {filter_radius:.4f}")
+            rho_prev[:] = rho[:]
+            rho_filtered[:] = self.helmholz_solver.filter(rho)
+            projection.heaviside_projection_inplace(
+                rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
+            )
+            dC_drho_ave[:] = 0.0
+            solver_option = dict(
+                solver="pyamg"
+            )
+            E0_nominal = tsk.E0
+            E_std_ratio = 0.1
+            E_list = [E0_nominal * (1 - E_std_ratio), E0_nominal, E0_nominal * (1 + E_std_ratio)]
+            # kappa = 1.0
+            kappa = 1.0e2
+
+            compliance_samples = []
+            strain_energy_samples = []
+            dC_drho_samples = []
+            for E_loop in E_list:
+                print(f"E_loop : {E_loop}")
+                compliance_total = 0.0
+                strain_energy_total[:] = 0.0
+                dC_accum[:] = 0.0
+
+                for force in force_list:
+                    dH[:] = 0.0
+                    compliance, u = solver.compute_compliance_basis(
+                        tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
+                        E_loop, tsk.Emin, p, tsk.nu0,
+                        rho_projected,
+                        elem_func=density_interpolation,
+                        **solver_option
+                    )
+                    compliance_total += compliance
+                    strain_energy = composer.strain_energy_skfem(
+                        tsk.basis, rho_projected, u,
+                        E_loop, tsk.Emin, p, tsk.nu0,
+                        elem_func=density_interpolation
+                    )
+                    strain_energy_total += strain_energy
+                    
+                    np.copyto(
+                        dC_drho_projected,
+                        dC_drho_func(
+                            rho_projected,
+                            strain_energy, E_loop, tsk.Emin, p
+                        )
+                    )
+                    projection.heaviside_projection_derivative_inplace(
+                        rho_filtered,
+                        beta=beta, eta=cfg.beta_eta, out=dH
+                    )
+                    np.multiply(dC_drho_projected, dH, out=grad_filtered)
+                    dC_accum[:] += self.helmholz_solver.gradient(grad_filtered)
+                    
+                compliance_samples.append(compliance_total / len(force_list))
+                strain_energy_samples.append(strain_energy_total / len(force_list))
+                dC_drho_samples.append(dC_accum / len(force_list))
+
+
+            
+            compliance_avg = np.mean(compliance_samples)
+            compliance_std = np.std(compliance_samples)
+            robust_compliance = compliance_avg + kappa * compliance_std
+            print("Robust Compliance:", robust_compliance)
+
+            dC_drho_mean = np.mean(dC_drho_samples, axis=0)
+            dC_drho_std = np.std(dC_drho_samples, axis=0)
+            dC_accum[:] = dC_drho_mean + kappa * dC_drho_std
+
+            strain_energy_total[:] = np.mean(strain_energy_samples, axis=0)
+
+            if cfg.sensitivity_filter:
+                filtered = self.helmholz_solver.filter(dC_accum)
+                np.copyto(dC_accum, filtered)
+            
+            dC_drho_ave[:] = dC_accum[tsk.design_elements]
+            rho_candidate[:] = rho[tsk.design_elements] # Dont forget. inplace
+            
+            # 
+            self.rho_update(
+                # iter_loop,
+                iter,
+                rho_candidate,
+                rho_projected,
+                dC_drho_ave,
+                strain_energy_total,
+                scaling_rate,
+                move_limit,
+                eta,
+                beta,
+                tmp_lower,
+                tmp_upper,
+                percentile,
+                elements_volume_design,
+                elements_volume_design_sum,
+                vol_frac
+            )
+            # 
+            rho[tsk.design_elements] = rho_candidate
+            if cfg.design_dirichlet is True:
+                rho[tsk.force_elements] = 1.0
+            else:
+                rho[tsk.dirichlet_force_elements] = 1.0
+
+            filter_radius_prev = filter_radius
+            # rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
+            print(
+                f"scaling_rate min/mean/max {scaling_rate.min()} {scaling_rate.mean()} {scaling_rate.max()}"
+            )
+            self.recorder.feed_data("rho", rho[tsk.design_elements])
+            self.recorder.feed_data("rho_projected", rho_projected[tsk.design_elements])
+            self.recorder.feed_data("strain_energy", strain_energy_total)
+            self.recorder.feed_data("compliance", robust_compliance)
+            self.recorder.feed_data("scaling_rate", scaling_rate)
+            
+            
+            
+            if iter % (cfg.max_iters // self.cfg.record_times) == 0 or iter == 1:
+            # if True:
+                print(f"Saving at iteration {iter}")
+                self.recorder.print()
+                # self.recorder_params.print()
+                self.recorder.export_progress()
+                
+                visualization.save_info_on_mesh(
+                    tsk,
+                    rho_projected, rho_prev, strain_energy_total,
                     cfg.vtu_path(iter),
                     cfg.image_path(iter, "rho"),
                     f"Iteration : {iter}",
