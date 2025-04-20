@@ -1,5 +1,4 @@
 import os
-from typing import Callable
 from typing import Literal
 import inspect
 import shutil
@@ -353,7 +352,6 @@ class Sensitivity_Analysis():
                 tmp_lower,
                 tmp_upper,
                 percentile,
-                density_interpolation,
                 elements_volume_design,
                 elements_volume_design_sum,
                 vol_frac
@@ -427,7 +425,6 @@ class Sensitivity_Analysis():
         lambda_lower: float,
         lambda_upper: float,
         percentile: float,
-        interploation: Callable,
         elements_volume_design: np.ndarray,
         elements_volume_design_sum: float,
         vol_frac: float

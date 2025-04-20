@@ -1,12 +1,6 @@
-from typing import Callable
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 import numpy as np
 import scitopt
-from scitopt.core import derivatives, projection
-from scitopt.core import visualization
-from scitopt.fea import solver
-from scitopt import filter
-from scitopt.fea import composer
 from scitopt.core import misc
 from scitopt.core.optimizer import common
 
@@ -36,7 +30,7 @@ def kkt_moc_log_update(
     tmp_lower, tmp_upper,
     rho_min: float, rho_max: float,
     percentile: float,
-    interploation: str
+    interpolation: str
 ):
     """
     In-place version of the modified OC update (log-space),
@@ -62,21 +56,19 @@ def kkt_moc_log_update(
     # scaling_rate /= norm
 
     # Normalize: subtract mean
-    if interploation == "SIMP":
+    # print(f"interpolation: {interpolation}")
+    np.copyto(scaling_rate, dC)
+    if interpolation == "SIMP":
         norm = np.percentile(np.abs(dC), percentile) + 1e-8
-        np.copyto(scaling_rate, dC)
-        np.divide(scaling_rate, norm, out=scaling_rate)
-        scaling_rate += lambda_v
-    elif interploation == "RAMP":
-        np.copyto(scaling_rate, dC)
+    elif interpolation == "RAMP":
         scaling_rate -= np.mean(dC)
         norm = max(np.percentile(np.abs(scaling_rate), percentile), 1e-4)
         # norm = max(np.abs(scaling_rate), 1e-4)
-        scaling_rate /= norm
-        scaling_rate += lambda_v
     else:
         raise ValueError("should be SIMP/RAMP")
-
+    np.divide(scaling_rate, norm, out=scaling_rate)
+    # scaling_rate /= norm
+    scaling_rate += lambda_v
     # Optional clipping of scaled gradient
     # np.clip(scaling_rate, -0.3, 0.3, out=scaling_rate)
     # np.clip(scaling_rate, -0.5, 0.5, out=scaling_rate)
@@ -143,7 +135,6 @@ class KKT_Optimizer(common.Sensitivity_Analysis):
         tmp_lower: np.ndarray,
         tmp_upper: np.ndarray,
         percentile: float,
-        interploation: Callable,
         elements_volume_design: np.ndarray,
         elements_volume_design_sum: float,
         vol_frac: float
@@ -171,7 +162,7 @@ class KKT_Optimizer(common.Sensitivity_Analysis):
             tmp_lower=tmp_lower, tmp_upper=tmp_upper,
             rho_min=cfg.rho_min, rho_max=1.0,
             percentile=percentile,
-            interploation=cfg.interpolation
+            interpolation=cfg.interpolation
         )
 
     

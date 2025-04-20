@@ -1,4 +1,4 @@
-from typing import Literal, Callable
+from typing import Literal
 from dataclasses import dataclass
 import numpy as np
 import scitopt
@@ -118,7 +118,6 @@ class OC_Optimizer(common.Sensitivity_Analysis):
         tmp_lower: np.ndarray,
         tmp_upper: np.ndarray,
         percentile: float,
-        interploation: Callable,
         elements_volume_design: np.ndarray,
         elements_volume_design_sum: float,
         vol_frac: float
