@@ -1,6 +1,6 @@
 from scitopt.tools.history import HistoriesLogger
 from scitopt.tools.scheduler import Schedulers
-from scitopt.tools.scheduler import SchedulerStepAcceleratin, SchedulerStep
+from scitopt.tools.scheduler import SchedulerStepAccelerating, SchedulerStep
 
 __all__ = []
 __all__.append("HistoriesLogger")
