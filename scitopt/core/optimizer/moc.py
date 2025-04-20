@@ -1,12 +1,7 @@
-from typing import Literal, Callable
-from dataclasses import dataclass, asdict
+from typing import Literal
+from dataclasses import dataclass
 import numpy as np
 import scitopt
-from scitopt.core import derivatives, projection
-from scitopt.core import visualization
-from scitopt.fea import solver
-from scitopt import filter
-from scitopt.fea import composer
 from scitopt.core import misc
 from scitopt.core.optimizer import common
 
@@ -110,7 +105,6 @@ class MOC_Optimizer(common.Sensitivity_Analysis):
         tmp_lower: np.ndarray,
         tmp_upper: np.ndarray,
         percentile: float,
-        interploation: Callable,
         elements_volume_design: np.ndarray,
         elements_volume_design_sum: float,
         vol_frac: float
