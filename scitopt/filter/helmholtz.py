@@ -516,10 +516,14 @@ class HelmholtzFilter():
             dst_path=dst_path,
             design_mask=design_mask
         )
-        return cls(
+        ret = cls(
             A=A, V=V, dst_path=dst_path,
             solver_option=solver_option
         )
+        print(f"preprocess : {solver_option}")
+        ret.preprocess(solver_option)
+        print(ret.solver_option)
+        return ret
 
     
     @classmethod
@@ -579,7 +583,7 @@ class HelmholtzFilter():
             self.create_amgsolver()
         elif self.solver_option == "cg":
             self.create_LinearOperator()
-        elif self.solver_option == "spsplve":
+        elif self.solver_option == "spsolve":
             self.create_solver()
                 
     def create_solver(self):

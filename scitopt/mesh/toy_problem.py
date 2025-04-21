@@ -234,7 +234,7 @@ def toy_msh(
         basis, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
     dirichlet_nodes = utils.get_dofs_in_range(
-        basis, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
+        basis, (0.0, 0.0), (0.0, y_len), (0.0, z_len)
     ).all()
     
     if task_name == "down":
