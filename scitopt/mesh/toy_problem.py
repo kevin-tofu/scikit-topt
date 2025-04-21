@@ -246,7 +246,9 @@ def toy_msh(
             # (z_len*2/5, z_len*3/5)
         )
         F_nodes = utils.get_dofs_in_range(
-            basis, (x_len-eps, x_len+0.05),
+            basis,
+            (x_len, x_len+0.0),
+            # (x_len-eps, x_len+0.05),
             (0, y_len),
             (0.0, eps)
             # (y_len*2/5, y_len*3/5),
