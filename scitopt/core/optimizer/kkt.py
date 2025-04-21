@@ -296,7 +296,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '--mesh_path', '-MP', type=str, default="plate.msh", help=''
     )
-    
+    parser.add_argument(
+        '--solver_option', '-SO', type=str, default="pyamg", help=''
+    )
     
     args = parser.parse_args()
     

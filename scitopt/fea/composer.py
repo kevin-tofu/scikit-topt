@@ -569,8 +569,6 @@ def strain_energy_hdcode(
     return energies
 
 
-
-
 @njit
 def strain_energy_hdcode_numba(
     u,

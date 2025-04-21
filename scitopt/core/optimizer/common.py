@@ -208,7 +208,7 @@ class Sensitivity_Analysis():
         self.helmholz_solver = filter.HelmholtzFilter.from_defaults(
             self.tsk.mesh,
             self.cfg.filter_radius,
-            solver_option="pyamg",
+            solver_option=self.cfg.solver_option,
             dst_path=f"{self.cfg.dst_path}/data",
             
         )
