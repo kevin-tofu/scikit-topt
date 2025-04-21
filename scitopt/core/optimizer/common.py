@@ -106,7 +106,7 @@ class Sensitivity_Analysis():
             if not os.path.exists(f"{self.cfg.dst_path}/data"):
                 os.makedirs(f"{self.cfg.dst_path}/data")
             
-            self.parameterize()
+            # self.parameterize(cfg.solver_option)
 
         self.recorder = tools.HistoriesLogger(self.cfg.dst_path)
         self.recorder.add("rho", plot_type="min-max-mean-std")
