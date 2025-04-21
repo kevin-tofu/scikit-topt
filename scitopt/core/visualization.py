@@ -46,7 +46,8 @@ def save_info_on_mesh(
     rho_image_path: Optional[str]=None,
     rho_image_title: Optional[str]=None,
     dC_image_path: Optional[str]=None,
-    dC_image_title: Optional[str]=None
+    dC_image_title: Optional[str]=None,
+    opaque: bool = True
 ):
     if isinstance(tsk.mesh, skfem.MeshTet):
         mesh_type = "tetra" 
@@ -94,20 +95,18 @@ def save_info_on_mesh(
         # scalar_names = list(mesh.cell_data.keys())
         scalar_name = "rho"
         plotter = pv.Plotter(off_screen=True)
-        opacity_mask = (rho > 1e-1).astype(float)
-        plotter.add_mesh(
-            mesh,
+        add_mesh_params = dict(
             scalars=scalar_name,
             cmap="cividis",
             clim=(0, 1),
-            opacity=opacity_mask,
-            # opacity=0.9,
             show_edges=True,
-            # lighting=True,
-            # opacity=0.3,
-            # show_edges=False,
-            # lighting=False,
             scalar_bar_args={"title": scalar_name}
+        )
+        if opaque is True:
+            add_mesh_params["opacity"] = (rho > 1e-1).astype(float)
+        plotter.add_mesh(
+            mesh, **add_mesh_params
+            
         )
         plotter.add_text(rho_image_title, position="upper_left", font_size=12, color="black")
         plotter.screenshot(rho_image_path)

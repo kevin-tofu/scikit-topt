@@ -672,7 +672,7 @@ def strain_energy_skfem(
     elem_func: Callable=simp_interpolation
 ) -> np.ndarray:
 
-    # uh = basis.interpolate(u)
+    uh = basis.interpolate(u)
     E_elem = elem_func(rho, E0, Emin, p) 
     lam_elem, mu_elem = lame_parameters(E_elem, nu)  # shape: (nelements,)
     n_qp = basis.X.shape[1]
@@ -681,7 +681,7 @@ def strain_energy_skfem(
     mu_elem = np.tile(mu_elem, (n_qp, 1))
 
     elem_energy = _strain_energy_density_.elemental(
-        basis, uh=u, lam_elem=lam_elem, mu_elem=mu_elem
+        basis, uh=uh, lam_elem=lam_elem, mu_elem=mu_elem
     )
     return elem_energy
 
@@ -710,7 +710,7 @@ def stress_skfem(
     E0: float, Emin: float, p: float, nu: float,
     elem_func: Callable=simp_interpolation
 ):
-    # uh = basis.interpolate(u)
+    uh = basis.interpolate(u)
     E_elem = elem_func(rho, E0, Emin, p) 
     lam_elem, mu_elem = lame_parameters(E_elem, nu)  # shape: (nelements,)
     n_qp = basis.X.shape[1]
@@ -719,7 +719,10 @@ def stress_skfem(
     mu_elem = np.tile(mu_elem, (n_qp, 1))
 
     stress_tensor = compute_element_stress_tensor.elemental(
-        basis, uh=u, lam_elem=lam_elem, mu_elem=mu_elem
+        basis,
+        uh=uh,
+        # uh=u,
+        lam_elem=lam_elem, mu_elem=mu_elem
     )
     return stress_tensor  # shape: (n_elem, n_qp, 3, 3)
 

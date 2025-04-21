@@ -476,7 +476,7 @@ class HelmholtzFilter():
     A: csc_matrix
     V: csc_matrix
     dst_path: Optional[str]=None
-    solver_type: Literal["spsolve", "cg", "pyamg"] = "cg"
+    solver_option: Literal["spsolve", "cg", "pyamg"] = "cg"
     A_solver: Optional[scipy.sparse.linalg.SuperLU]=None
     M: Optional[LinearOperator]=None
     pyamg_solver: Optional[pyamg.multilevel.MultilevelSolver]=None
@@ -489,7 +489,7 @@ class HelmholtzFilter():
         mesh: skfem.Mesh,
         radius: float,
         design_mask: Optional[np.ndarray]=None,
-        # solver="pyamg"
+        solver_option="pyamg"
     ):
         self.A, self.V = _update_radius(
             mesh=mesh,
@@ -497,7 +497,7 @@ class HelmholtzFilter():
             dst_path=self.dst_path,
             design_mask=design_mask
         )
-        self.preprocess()
+        self.preprocess(solver_option)
         
 
     @classmethod
@@ -505,7 +505,7 @@ class HelmholtzFilter():
         cls,
         mesh: skfem.Mesh,
         radius: float,
-        solver_type: Literal["spsolve", "cg", "pyamg"] = "pyamg",
+        solver_option: Literal["spsolve", "cg", "pyamg"] = "pyamg",
         dst_path: Optional[str]=None,
         design_mask: Optional[np.ndarray]=None,
     ):
@@ -517,7 +517,7 @@ class HelmholtzFilter():
         )
         return cls(
             A=A, V=V, dst_path=dst_path,
-            solver_type=solver_type
+            solver_option=solver_option
         )
 
     
@@ -530,15 +530,15 @@ class HelmholtzFilter():
 
 
     def filter(self, rho_element: np.ndarray):
-        if self.solver_type == "spsolve":
+        if self.solver_option == "spsolve":
             return apply_helmholtz_filter_lu(rho_element, self.A_solver, self.V)
-        elif self.solver_type == "cg":
+        elif self.solver_option == "cg":
             return apply_helmholtz_filter_cg(
                 rho_element, self.A, self.V, M=self.M,
                 rtol=self.rtol,
                 maxiter=self.maxiter
             )
-        elif self.solver_type == "pyamg":
+        elif self.solver_option == "pyamg":
             return apply_helmholtz_filter_amg(
                 rho_element, self.V, self.pyamg_solver,
                 tol=self.rtol
@@ -546,34 +546,39 @@ class HelmholtzFilter():
 
         
     def gradient(self, v: np.ndarray):
-        if self.solver_type == "spsolve":
+        if self.solver_option == "spsolve":
             return apply_filter_gradient_lu(v, self.A_solver, self.V)
-        elif self.solver_type == "cg":
+        elif self.solver_option == "cg":
             return apply_filter_gradient_cg(
                 v, self.A, self.V,
                 M=self.M,
                 rtol=self.rtol,
                 maxiter=self.maxiter
             )
-        elif self.solver_type == "pyamg":
+        elif self.solver_option == "pyamg":
             return apply_filter_gradient_amg(
                 v, self.V,
                 self.pyamg_solver,
                 tol=self.rtol,
             )
         else:
-            raise ValueError("solver_type is not set")
+            raise ValueError("solver_option is not set")
 
     def preprocess(
         self,
-        # solver="pyamg"
+        solver_option: Optional[str]=None
     ):
-        # self.solver_type = solver_type
-        if self.solver_type == "pyamg":
+        if isinstance(solver_option, str):
+            if solver_option in ["cg", "pyamg", "spsolve"]:
+                self.solver_option = solver_option
+            else:
+                raise ValueError("should be cg/pyamg/spsolve")
+
+        if self.solver_option == "pyamg":
             self.create_amgsolver()
-        elif self.solver_type == "cg":
+        elif self.solver_option == "cg":
             self.create_LinearOperator()
-        elif self.solver_type == "spsplve":
+        elif self.solver_option == "spsplve":
             self.create_solver()
                 
     def create_solver(self):
