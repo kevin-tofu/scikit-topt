@@ -230,8 +230,6 @@ def toy_msh(
     # basis = skfem.Basis(mesh, e, intorder=4)
     # basis = skfem.Basis(mesh, e, intorder=5)
     
-    # 
-    
     dirichlet_points = utils.get_point_indices_in_range(
         basis, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )

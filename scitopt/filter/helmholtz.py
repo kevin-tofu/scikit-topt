@@ -310,7 +310,8 @@ def prepare_helmholtz_filter(
 
 
 def apply_helmholtz_filter_lu(
-    rho_element: np.ndarray, solver: scipy.sparse.linalg.SuperLU,
+    rho_element: np.ndarray,
+    solver: scipy.sparse.linalg.SuperLU,
     V: scipy.sparse._csc.csc_matrix
 ) -> np.ndarray:
     """

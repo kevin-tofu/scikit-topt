@@ -276,7 +276,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '--sensitivity_filter', '-SF', type=misc.str2bool, default=True, help=''
     )
-    
+    parser.add_argument(
+        '--solver_option', '-SO', type=str, default="pyamg", help=''
+    )
     args = parser.parse_args()
     
 
