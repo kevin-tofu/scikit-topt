@@ -190,10 +190,16 @@ def toy_msh(
     msh_path: str = 'plate.msh',
 ):
     from scitopt.fea import composer
-    x_len = 4.0
-    y_len = 3.0
-    # z_len = 1.0
-    z_len = 2.0
+    if task_name == "down":
+        x_len = 4.0
+        y_len = 3.0
+        # z_len = 1.0
+        z_len = 2.0
+    elif task_name == "pull":
+        x_len = 4.0
+        y_len = 3.0
+        z_len = 0.5
+    
     # eps = 0.10
     # eps = 0.20
     eps = 0.03

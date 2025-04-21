@@ -49,10 +49,12 @@ class Sensitivity_Config():
     restart: bool = False
     restart_from: int = -1
     export_img: bool = False
+    export_img_opaque: bool = False
     design_dirichlet: bool=False
     lambda_lower: float=1e-2
     lambda_upper: float=1e+2
     sensitivity_filter: bool = True
+    solver_option: str = "pyamg"
 
 
     @classmethod
@@ -206,7 +208,7 @@ class Sensitivity_Analysis():
         self.helmholz_solver = filter.HelmholtzFilter.from_defaults(
             self.tsk.mesh,
             self.cfg.filter_radius,
-            solver_type="pyamg",
+            solver_option="pyamg",
             dst_path=f"{self.cfg.dst_path}/data",
             
         )
@@ -284,7 +286,7 @@ class Sensitivity_Analysis():
         tmp_upper = np.empty_like(rho[tsk.design_elements])
         force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
         filter_radius_prev = cfg.filter_radius_init if cfg.filter_radius_step > 0 else cfg.filter_radius
-        self.helmholz_solver.update_radius(tsk.mesh, filter_radius_prev)
+        self.helmholz_solver.update_radius(tsk.mesh, filter_radius_prev, solver_option=cfg.solver_option)
         for iter_loop, iter in enumerate(range(iter_begin, cfg.max_iters+iter_begin)):
             print(f"iterations: {iter} / {cfg.max_iters}")
             p, vol_frac, beta, move_limit, eta, percentile, filter_radius = (
@@ -292,24 +294,6 @@ class Sensitivity_Analysis():
                     'p', 'vol_frac', 'beta', 'move_limit', 'eta', 'percentile', 'filter_radius'
                 ]
             )
-            if filter_radius_prev != filter_radius:
-                print("Filter Update")
-                self.helmholz_solver.update_radius(tsk.mesh, filter_radius)
-            
-            print(f"p {p:.4f}, vol_frac {vol_frac:.4f}, beta {beta:.4f}, move_limit {move_limit:.4f}")
-            print(f"eta {eta:.4f}, percentile {percentile:.4f} filter_radius {filter_radius:.4f}")
-            rho_prev[:] = rho[:]
-            rho_filtered[:] = self.helmholz_solver.filter(rho)
-            projection.heaviside_projection_inplace(
-                rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
-            )
-            # if iter_loop == 1:
-            #     rho_filtered[:] = rho
-            #     rho_projected[:] = rho
-            dC_drho_ave[:] = 0.0
-            dC_drho_full[:] = 0.0
-            strain_energy_ave[:] = 0.0
-            compliance_avg[:] = 0.0
             # if iter_loop == 0:
             #     solver_option = dict(
             #         solver="spsolve"
@@ -322,10 +306,26 @@ class Sensitivity_Analysis():
             # solver_option = dict(
             #     solver="spsolve"
             # )
-            solver_option = dict(
-                solver="pyamg"
+            # solver_option = dict(
+            #     solver="pyamg"
+            # )
+            solver_option = cfg.solver_option
+
+            if filter_radius_prev != filter_radius:
+                print("Filter Update")
+                self.helmholz_solver.update_radius(tsk.mesh, filter_radius, cfg.solver_option)
+            
+            print(f"p {p:.4f}, vol_frac {vol_frac:.4f}, beta {beta:.4f}, move_limit {move_limit:.4f}")
+            print(f"eta {eta:.4f}, percentile {percentile:.4f} filter_radius {filter_radius:.4f}")
+            rho_prev[:] = rho[:]
+            rho_filtered[:] = self.helmholz_solver.filter(rho)
+            projection.heaviside_projection_inplace(
+                rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
             )
-                
+            dC_drho_ave[:] = 0.0
+            dC_drho_full[:] = 0.0
+            strain_energy_ave[:] = 0.0
+            compliance_avg[:] = 0.0
             for force in force_list:
                 dH[:] = 0.0
                 compliance, u = solver.compute_compliance_basis(
@@ -333,7 +333,7 @@ class Sensitivity_Analysis():
                     tsk.E0, tsk.Emin, p, tsk.nu0,
                     rho_projected,
                     elem_func=density_interpolation,
-                    **solver_option
+                    solver=solver_option
                 )
                 compliance_avg += compliance
                 strain_energy = composer.strain_energy_skfem(
@@ -411,9 +411,7 @@ class Sensitivity_Analysis():
             self.recorder.feed_data("strain_energy", strain_energy_ave)
             self.recorder.feed_data("compliance", compliance_avg)
             self.recorder.feed_data("scaling_rate", scaling_rate)
-            
-            
-            
+
             if iter % (cfg.max_iters // self.cfg.record_times) == 0 or iter == 1:
             # if True:
                 print(f"Saving at iteration {iter}")
@@ -428,7 +426,8 @@ class Sensitivity_Analysis():
                     cfg.image_path(iter, "rho"),
                     f"Iteration : {iter}",
                     cfg.image_path(iter, "strain_energy"),
-                    f"Iteration : {iter}"
+                    f"Iteration : {iter}",
+                    cfg.export_img_opaque
                 )
                 visualization.export_submesh(
                     tsk, rho, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
@@ -535,9 +534,7 @@ class Sensitivity_Analysis():
                 rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
             )
             dC_drho_ave[:] = 0.0
-            solver_option = dict(
-                solver="pyamg"
-            )
+            # solver_option = dict(solver="pyamg")
             E0_nominal = tsk.E0
             E_std_ratio = 0.1
             E_list = [E0_nominal * (1 - E_std_ratio), E0_nominal, E0_nominal * (1 + E_std_ratio)]
@@ -560,7 +557,7 @@ class Sensitivity_Analysis():
                         E_loop, tsk.Emin, p, tsk.nu0,
                         rho_projected,
                         elem_func=density_interpolation,
-                        **solver_option
+                        solver_option=cfg.solver_option
                     )
                     compliance_total += compliance
                     strain_energy = composer.strain_energy_skfem(

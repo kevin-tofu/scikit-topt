@@ -90,18 +90,18 @@ def compute_compliance_basis(
     
     # K_e, F_e = skfem.enforce(K, force, D=dirichlet_nodes)
     K_csr = K.tocsr()
-    # K_cond, F_cond, x_bc = skfem.condense(K_csr, force, D=dirichlet_nodes)
     K_c, F_c, U_c, I = skfem.condense(K_csr, force, D=dirichlet_nodes)
-    # u = np.zeros(K.shape[0])
     U_c[I] = solve_u(
         K_c, F_c, chosen_solver=chosen_solver,
         rtol=rtol, maxiter=_maxiter
     )
-    # print("K.shape:", K.shape)
-    # print("dirichlet_nodes:", dirichlet_nodes.shape)
-    # print("U_c:", U_c.shape)
     U_c[dirichlet_nodes] = 0.0
     u = U_c
+    # K_e, F_e = skfem.enforce(K_csr, force, D=dirichlet_nodes)
+    # u = solve_u(
+    #     K_e, F_e , chosen_solver=chosen_solver,
+    #     rtol=rtol, maxiter=_maxiter
+    # )
     f_free = force[free_nodes]
     compliance = f_free @ u[free_nodes]
     return (compliance, u)
