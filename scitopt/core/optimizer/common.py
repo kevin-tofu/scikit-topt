@@ -245,10 +245,12 @@ class Sensitivity_Analysis():
                 data = np.load(
                     f"{cfg.dst_path}/data/{str(cfg.restart_from).zfill(6)}-rho.npz"
                 )
+                iter_begin = cfg.restart_from + 1
             else:
                 iter, data_path = misc.find_latest_iter_file(f"{cfg.dst_path}/data")
                 data = np.load(data_path)
-                iter_begin = iter
+                iter_begin = iter + 1
+            iter_end = cfg.max_iters + 1
 
             rho[tsk.design_elements] = data["rho_design_elements"]
             del data
@@ -258,6 +260,7 @@ class Sensitivity_Analysis():
             # rho += _vol_frac + 0.15
             rho += val_init if cfg.vol_frac_step < 0 else cfg.vol_frac_init
             np.clip(rho, cfg.rho_min, cfg.rho_max, out=rho)
+            iter_end = cfg.max_iters + 1
 
         if cfg.design_dirichlet is True:
             rho[tsk.force_elements] = 1.0
@@ -287,8 +290,8 @@ class Sensitivity_Analysis():
         force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
         filter_radius_prev = cfg.filter_radius_init if cfg.filter_radius_step > 0 else cfg.filter_radius
         self.helmholz_solver.update_radius(tsk.mesh, filter_radius_prev, solver_option=cfg.solver_option)
-        for iter_loop, iter in enumerate(range(iter_begin, cfg.max_iters+iter_begin)):
-            print(f"iterations: {iter} / {cfg.max_iters}")
+        for iter_loop, iter in enumerate(range(iter_begin, iter_end)):
+            print(f"iterations: {iter} / {iter_end - 1}")
             p, vol_frac, beta, move_limit, eta, percentile, filter_radius = (
                 self.schedulers.values(iter)[k] for k in [
                     'p', 'vol_frac', 'beta', 'move_limit', 'eta', 'percentile', 'filter_radius'

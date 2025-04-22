@@ -122,6 +122,7 @@ class KKT_Optimizer(common.Sensitivity_Analysis):
         super().__init__(cfg, tsk)
         self.recorder.add("dC", plot_type="min-max-mean-std")
         self.recorder.add("lambda_v", ylog=False) # True
+        self.lambda_v = cfg.lambda_v
 
 
     def rho_update(

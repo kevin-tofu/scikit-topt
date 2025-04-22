@@ -283,16 +283,14 @@ def toy_msh(
         F_points = utils.get_point_indices_in_range(
             basis,
             (x_len-eps, x_len+0.05),
-            # (x_len-eps, x_len+0.05),
-            (0, y_len),
-            (0.0, eps)
+            (y_len*2/5, y_len*3/5),
+            (z_len*2/5, z_len*3/5)
         )
         F_nodes = utils.get_dofs_in_range(
             basis,
             (x_len-eps, x_len+0.05),
-            # (x_len-eps, x_len+0.05),
-            (0, y_len),
-            (0.0, eps)
+            (y_len*2/5, y_len*3/5),
+            (z_len*2/5, z_len*3/5)
         ).nodal['u^1']
         F = 0.0002
         F = 10.0 * F
