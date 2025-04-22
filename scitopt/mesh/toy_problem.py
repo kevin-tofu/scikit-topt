@@ -196,10 +196,15 @@ def toy_msh(
         # z_len = 1.0
         z_len = 2.0
     elif task_name == "pull":
+        x_len = 8.0
+        # x_len = 4.0
+        y_len = 3.0
+        z_len = 0.5
+    elif task_name == "pull_2":
+        # x_len = 8.0
         x_len = 4.0
         y_len = 3.0
         z_len = 0.5
-    
     # eps = 0.10
     # eps = 0.20
     eps = 0.03
@@ -209,6 +214,8 @@ def toy_msh(
     a_point = mesh.p.T[0]
     dists = np.linalg.norm(coords[1::] - a_point, axis=1)
     eps = np.min(dists) * 0.8
+    # eps = np.min(dists) * 1.2
+    # eps = np.min(dists) * 5.0
     print(f"eps: {eps}")
 
     # Check Index Order.
@@ -254,23 +261,41 @@ def toy_msh(
             # (y_len*2/5, y_len*3/5),
             # (z_len*2/5, z_len*3/5)
         ).nodal['u^3']
-        F = -0.02
+        F = -0.002
     elif task_name == "pull":
         F_points = utils.get_point_indices_in_range(
-            basis, (x_len-eps, x_len+0.05),
-            # (0, y_len),
-            # (0.0, eps)
+            basis,
+            (x_len-eps, x_len+0.05),
             (y_len*2/5, y_len*3/5),
             (z_len*2/5, z_len*3/5)
         )
         F_nodes = utils.get_dofs_in_range(
-            basis, (x_len-eps, x_len+0.05),
-            # (0, y_len),
-            # (0.0, eps)
+            basis,
+            (x_len-eps, x_len+0.05),
             (y_len*2/5, y_len*3/5),
             (z_len*2/5, z_len*3/5)
         ).nodal['u^1']
-        F = 0.002
+        F = 0.0002
+        
+        print("F_points:", F_points)
+        print("F_nodes:", F_nodes)
+    elif task_name == "pull_2":
+        F_points = utils.get_point_indices_in_range(
+            basis,
+            (x_len-eps, x_len+0.05),
+            # (x_len-eps, x_len+0.05),
+            (0, y_len),
+            (0.0, eps)
+        )
+        F_nodes = utils.get_dofs_in_range(
+            basis,
+            (x_len-eps, x_len+0.05),
+            # (x_len-eps, x_len+0.05),
+            (0, y_len),
+            (0.0, eps)
+        ).nodal['u^1']
+        F = 0.0002
+        F = 10.0 * F
     
     design_elements = utils.get_elements_in_box(
         mesh,
