@@ -89,20 +89,6 @@ class OC_Optimizer(common.Sensitivity_Analysis):
         if export:
             self.schedulers.export()
 
-    def parameterize(self):
-        self.helmholz_solver = filter.HelmholtzFilter.from_defaults(
-            self.tsk.mesh,
-            self.cfg.filter_radius,
-            solver_type="pyamg",
-            dst_path=f"{self.cfg.dst_path}/data",
-            
-        )
-
-    def load_parameters(self):
-        self.helmholz_solver = filter.HelmholtzFilter.from_file(
-            f"{self.cfg.dst_path}/data"
-        )
-
 
     def rho_update(
         self,
