@@ -293,7 +293,6 @@ if __name__ == '__main__':
     else:
         tsk = toy_problem.toy_msh(args.task_name, args.mesh_path)
     
-    tsk.Emin = 1e-2
     print("load toy problem")
     
     print("generate MOC_Config")

@@ -18,9 +18,8 @@ def setdiff1d(a, b):
 
 @dataclass
 class TaskConfig():
-    E0: float
-    nu0: float
-    Emin: float
+    E: float
+    nu: float
     mesh: skfem.Mesh
     basis: skfem.Basis
     dirichlet_points: np.ndarray
@@ -42,9 +41,8 @@ class TaskConfig():
     @classmethod
     def from_defaults(
         cls,
-        E0: float,
-        nu0: float,
-        Emin: float,
+        E: float,
+        nu: float,
         mesh: skfem.Mesh,
         basis: skfem.Basis,
         dirichlet_points: np.ndarray,
@@ -116,9 +114,8 @@ class TaskConfig():
 
         elements_volume = composer.get_elements_volume(mesh)
         return cls(
-            E0,
-            nu0,
-            Emin,
+            E,
+            nu,
             mesh,
             basis,
             dirichlet_points,
