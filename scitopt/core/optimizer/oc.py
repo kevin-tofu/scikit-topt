@@ -44,12 +44,9 @@ def bisection_with_projection(
         np.minimum(rho_e + move_limit, rho_max, out=tmp_upper)
         np.clip(rho_candidate, tmp_lower, tmp_upper, out=rho_candidate)
 
-        # 
-        # filter might be needed here
-        # 
-        projection.heaviside_projection_inplace(
-            rho_candidate, beta=beta, eta=beta_eta, out=rho_candidate
-        )
+        # projection.heaviside_projection_inplace(
+        #     rho_candidate, beta=beta, eta=beta_eta, out=rho_candidate
+        # )
         
         # vol_error = np.mean(rho_candidate) - vol_frac
         vol_error = np.sum(
