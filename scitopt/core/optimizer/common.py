@@ -42,7 +42,7 @@ class Sensitivity_Config():
     filter_radius_step: int = 3
     mu_p: float = 2.0
     E0: float = 1.0
-    Emin: float = 1e-9
+    E_min: float = 1e-9
     rho_min: float = 1e-1
     rho_max: float = 1.0
     move_limit_init: float = 0.3
@@ -335,7 +335,7 @@ class Sensitivity_Analysis():
                 dH[:] = 0.0
                 compliance, u = solver.compute_compliance_basis(
                     tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
-                    cfg.E0, cfg.Emin, p, tsk.nu,
+                    cfg.E0, cfg.E_min, p, tsk.nu,
                     rho_projected,
                     elem_func=density_interpolation,
                     solver=solver_option
@@ -343,7 +343,7 @@ class Sensitivity_Analysis():
                 compliance_avg += compliance
                 strain_energy = composer.strain_energy_skfem(
                     tsk.basis, rho_projected, u,
-                    cfg.E0, cfg.Emin, p, tsk.nu,
+                    cfg.E0, cfg.E_min, p, tsk.nu,
                     elem_func=density_interpolation
                 )
                 strain_energy_ave += strain_energy
@@ -353,7 +353,7 @@ class Sensitivity_Analysis():
                     dC_drho_projected,
                     dC_drho_func(
                         rho_projected,
-                        strain_energy, cfg.E0, cfg.Emin, p
+                        strain_energy, cfg.E0, cfg.E_min, p
                     )
                 )
                 projection.heaviside_projection_derivative_inplace(
@@ -559,7 +559,7 @@ class Sensitivity_Analysis():
                     dH[:] = 0.0
                     compliance, u = solver.compute_compliance_basis(
                         tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, force,
-                        E_loop, cfg.Emin, p, tsk.nu,
+                        E_loop, cfg.E_min, p, tsk.nu,
                         rho_projected,
                         elem_func=density_interpolation,
                         solver_option=cfg.solver_option
@@ -567,7 +567,7 @@ class Sensitivity_Analysis():
                     compliance_total += compliance
                     strain_energy = composer.strain_energy_skfem(
                         tsk.basis, rho_projected, u,
-                        E_loop, cfg.Emin, p, tsk.nu,
+                        E_loop, cfg.E_min, p, tsk.nu,
                         elem_func=density_interpolation
                     )
                     strain_energy_total += strain_energy
@@ -576,7 +576,7 @@ class Sensitivity_Analysis():
                         dC_drho_projected,
                         dC_drho_func(
                             rho_projected,
-                            strain_energy, E_loop, cfg.Emin, p
+                            strain_energy, E_loop, cfg.E_min, p
                         )
                     )
                     projection.heaviside_projection_derivative_inplace(
