@@ -44,9 +44,9 @@ def bisection_with_projection(
         np.minimum(rho_e + move_limit, rho_max, out=tmp_upper)
         np.clip(rho_candidate, tmp_lower, tmp_upper, out=rho_candidate)
 
-        # projection.heaviside_projection_inplace(
-        #     rho_candidate, beta=beta, eta=beta_eta, out=rho_candidate
-        # )
+        projection.heaviside_projection_inplace(
+            rho_candidate, beta=beta, eta=beta_eta, out=rho_candidate
+        )
         
         # vol_error = np.mean(rho_candidate) - vol_frac
         vol_error = np.sum(
@@ -116,7 +116,9 @@ class OC_Optimizer(common.Sensitivity_Analysis):
         dC_drho_ave /= (self.running_scale + eps)
         print(f"dC_drho_ave-scaled min:{dC_drho_ave.min()} max:{dC_drho_ave.max()}")
         print(f"dC_drho_ave-scaled ave:{np.mean(dC_drho_ave)} sdv:{np.std(dC_drho_ave)}")
-        rho_e = rho_projected[tsk.design_elements]
+        # rho_e = rho_projected[tsk.design_elements]
+        # rho_e = rho[tsk.design_elements]
+        rho_e = rho_candidate.copy()
 
         lmid, vol_error = bisection_with_projection(
             dC_drho_ave,
