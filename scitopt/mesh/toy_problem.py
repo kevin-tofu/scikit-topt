@@ -103,7 +103,6 @@ def toy_base(
     return task.TaskConfig.from_defaults(
         E0,
         0.30,
-        1e-3 * E0,
         mesh,
         basis,
         dirichlet_points,
