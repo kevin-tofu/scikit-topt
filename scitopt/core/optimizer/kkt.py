@@ -205,6 +205,12 @@ if __name__ == '__main__':
     parser.add_argument(
         '--rho_min', '-RhM', type=float, default=1e-1, help=''
     )
+    parser.add_argument(
+        '--E0', '-E', type=float, default=1.0, help=''
+    )
+    parser.add_argument(
+        '--E_min', '-EM', type=float, default=1e-6, help=''
+    )
     
     parser.add_argument(
         '--eta', '-ET', type=float, default=0.3, help=''

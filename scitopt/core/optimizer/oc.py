@@ -221,6 +221,15 @@ if __name__ == '__main__':
         '--percentile', '-PT', type=float, default=90, help=''
     )
     parser.add_argument(
+        '--rho_min', '-RhM', type=float, default=1e-1, help=''
+    )
+    parser.add_argument(
+        '--E0', '-E', type=float, default=1.0, help=''
+    )
+    parser.add_argument(
+        '--E_min', '-EM', type=float, default=1e-6, help=''
+    )
+    parser.add_argument(
         '--eta_init', '-ETI', type=float, default=0.01, help=''
     )
     parser.add_argument(
@@ -243,9 +252,6 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--restart_from', '-RF', type=int, default=-1, help=''
-    )
-    parser.add_argument(
-        '--rho_min', '-RM', type=float, default=0.01, help=''
     )
     parser.add_argument(
         '--task_name', '-T', type=str, default="toy1", help=''
