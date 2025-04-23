@@ -203,6 +203,10 @@ if __name__ == '__main__':
         '--percentile', '-PT', type=float, default=90, help=''
     )
     parser.add_argument(
+        '--rho_min', '-RhM', type=float, default=1e-1, help=''
+    )
+    
+    parser.add_argument(
         '--eta', '-ET', type=float, default=0.3, help=''
     )
     parser.add_argument(
@@ -313,7 +317,6 @@ if __name__ == '__main__':
     else:
         tsk = toy_problem.toy_msh(args.task_name, args.mesh_path)
     
-    tsk.Emin = 1e-2
     print("load toy problem")
     
     print("generate KKT_Config")
