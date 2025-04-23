@@ -229,7 +229,7 @@ class Sensitivity_Analysis():
             # density_interpolation = composer.simp_interpolation_numba
             density_interpolation = composer.simp_interpolation
             dC_drho_func = derivatives.dC_drho_simp
-            val_init = 0.8
+            val_init = cfg.vol_frac_init
         elif cfg.interpolation == "RAMP":
             density_interpolation = composer.ramp_interpolation
             dC_drho_func = derivatives.dC_drho_ramp
@@ -260,7 +260,7 @@ class Sensitivity_Analysis():
             # _vol_frac = cfg.vol_frac if cfg.vol_frac_step < 0 else cfg.vol_frac_init
             # rho += _vol_frac + 0.1 * (np.random.rand(len(tsk.all_elements)) - 0.5)
             # rho += _vol_frac + 0.15
-            rho += val_init if cfg.vol_frac_step < 0 else cfg.vol_frac_init
+            rho += val_init
             np.clip(rho, cfg.rho_min, cfg.rho_max, out=rho)
             iter_end = cfg.max_iters + 1
 

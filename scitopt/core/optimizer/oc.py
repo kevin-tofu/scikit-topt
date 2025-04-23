@@ -72,6 +72,7 @@ class OC_Optimizer(common.Sensitivity_Analysis):
         super().__init__(cfg, tsk)
         self.recorder.add("-dC", plot_type="min-max-mean-std", ylog=True)
         self.recorder.add("lmid", ylog=True) # True
+        self.running_scale = 0
             
     
     def init_schedulers(self, export: bool=True):
