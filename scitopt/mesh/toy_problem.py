@@ -99,7 +99,7 @@ def toy_base(
 
     print("generate config")
     E0 = 1.0
-    F = 0.3
+    F = 0.03
     return task.TaskConfig.from_defaults(
         E0,
         0.30,
