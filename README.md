@@ -214,3 +214,15 @@ Scikit-Topt is standing on the shoulders of proverbial giants. In particular, I 
  - PyVista
  - Topology Optimization Community
 
+
+## Citation
+
+If you use this repository in your work, please cite it as follows:
+
+@misc{your_repo_name,
+  author = {Kohei Watanabe},
+  title = {Scikit Topt},
+  year = {2025},
+  howpublished = {\url{https://github.com/kevin-tofu/scikit-topt}},
+  note = {Accessed: 2025-04-24}
+}
