@@ -6,7 +6,7 @@ from scitopt.core.optimizer import common
 
 
 @dataclass
-class KKT_Config(common.Sensitivity_Config):
+class KKT_Config(common.SensitivityConfig):
     mu_p: float = 2.0
     lambda_v: float = 0.1
     lambda_decay: float = 0.95
@@ -113,7 +113,7 @@ def kkt_moc_log_update(
     np.clip(rho, rho_min, rho_max, out=rho)
 
 
-class KKT_Optimizer(common.Sensitivity_Analysis):
+class KKT_Optimizer(common.SensitivityAnalysis):
     def __init__(
         self,
         cfg: KKT_Config,

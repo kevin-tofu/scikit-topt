@@ -7,7 +7,7 @@ from scitopt.core.optimizer import common
 
 
 @dataclass
-class MOC_Config(common.Sensitivity_Config):
+class MOC_Config(common.SensitivityConfig):
     interpolation: Literal["SIMP"] = "SIMP"
     mu_p: float = 2.0
     lambda_v: float = 0.1
@@ -80,7 +80,7 @@ def moc_log_update_logspace(
     np.clip(rho, rho_min, rho_max, out=rho)
 
 
-class MOC_Optimizer(common.Sensitivity_Analysis):
+class MOC_Optimizer(common.SensitivityAnalysis):
     def __init__(
         self,
         cfg: MOC_Config,
