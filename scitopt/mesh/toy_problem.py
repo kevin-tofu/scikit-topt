@@ -201,7 +201,8 @@ def toy_msh(
         z_len = 0.5
     elif task_name == "pull_2":
         # x_len = 8.0
-        x_len = 4.0
+        x_len = 6.0
+        # x_len = 6.0
         y_len = 3.0
         z_len = 0.5
     # eps = 0.10
@@ -274,11 +275,15 @@ def toy_msh(
             (y_len*2/5, y_len*3/5),
             (z_len*2/5, z_len*3/5)
         ).nodal['u^1']
-        F = 0.0002
+        # F = 0.0001
+        F = 0.001
         
         print("F_points:", F_points)
         print("F_nodes:", F_nodes)
     elif task_name == "pull_2":
+        # eps = eps * 4
+        # eps = 1.8
+        # print(f"eps: {eps}")
         F_points = utils.get_point_indices_in_range(
             basis,
             (x_len-eps, x_len+0.05),
@@ -292,7 +297,6 @@ def toy_msh(
             (z_len*2/5, z_len*3/5)
         ).nodal['u^1']
         F = 0.0002
-        F = 10.0 * F
     
     design_elements = utils.get_elements_in_box(
         mesh,
