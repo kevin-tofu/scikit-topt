@@ -17,7 +17,7 @@ from scitopt.core import misc
 
 
 @dataclass
-class Sensitivity_Config():
+class SensitivityConfig():
     dst_path: str = "./result"
     interpolation: Literal["SIMP", "RAMP"] = "SIMP"
     record_times: int=20
@@ -83,10 +83,10 @@ class Sensitivity_Config():
 
 
 
-class Sensitivity_Analysis():
+class SensitivityAnalysis():
     def __init__(
         self,
-        cfg: Sensitivity_Config,
+        cfg: SensitivityConfig,
         tsk: scitopt.mesh.TaskConfig,
     ):
         self.cfg = cfg

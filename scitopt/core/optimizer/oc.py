@@ -9,7 +9,7 @@ from scitopt.core.optimizer import common
 
 
 @dataclass
-class OC_Config(common.Sensitivity_Config):
+class OC_Config(common.SensitivityConfig):
     interpolation: Literal["SIMP"] = "SIMP"
     eta_init: float = 0.1
     eta: float = 0.5
@@ -63,7 +63,7 @@ def bisection_with_projection(
     return lmid, vol_error
 
 
-class OC_Optimizer(common.Sensitivity_Analysis):
+class OC_Optimizer(common.SensitivityAnalysis):
     def __init__(
         self,
         cfg: OC_Config,
