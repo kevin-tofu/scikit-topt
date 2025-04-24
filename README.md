@@ -215,14 +215,19 @@ Scikit-Topt is standing on the shoulders of proverbial giants. In particular, I 
  - Topology Optimization Community
 
 
-## Citation
+## 📖 Citation
 
-If you use this repository in your work, please cite it as follows:
+If you use this repository in your work, please cite it as follows:  
 
-@misc{your_repo_name,
-  author = {Kohei Watanabe},
-  title = {Scikit Topt},
-  year = {2025},
+If you use Scikit Topt in your research or software, please cite it as:
+
+```bibtex
+@misc{scikit-topt2025,
+  author       = {Kohei Watanabe},
+  title        = {Scikit Topt: A Python library for topology optimization using scikit-fem},
+  year         = {2025},
+  publisher    = {GitHub},
   howpublished = {\url{https://github.com/kevin-tofu/scikit-topt}},
-  note = {Accessed: 2025-04-24}
+  note         = {Accessed: 2025-04-24}
 }
+```
