@@ -8,7 +8,7 @@ from scitopt.fea import composer
 
 
 def compute_compliance_simp_basis(
-    basis, free_nodes, dirichlet_nodes, force,
+    basis, free_dofs, dirichlet_dofs, force,
     E0, Emin, p, nu0,
     rho,
 ) -> tuple:
@@ -16,11 +16,11 @@ def compute_compliance_simp_basis(
         basis, rho, E0,
         Emin, p, nu0
     )
-    K_e, F_e = skfem.enforce(K, force, D=dirichlet_nodes)
+    K_e, F_e = skfem.enforce(K, force, D=dirichlet_dofs)
     # u = scipy.sparse.linalg.spsolve(K_e, F_e)
     u = skfem.solve(K_e, F_e)
-    f_free = force[free_nodes]
-    compliance = f_free @ u[free_nodes]
+    f_free = force[free_dofs]
+    compliance = f_free @ u[free_dofs]
     return (compliance, u)
 
 
@@ -59,7 +59,7 @@ def solve_u(
 
 
 def compute_compliance_basis(
-    basis, free_nodes, dirichlet_nodes, force,
+    basis, free_dofs, dirichlet_dofs, force,
     E0, Emin, p, nu0,
     rho,
     elem_func: Callable = composer.simp_interpolation,
@@ -88,27 +88,28 @@ def compute_compliance_basis(
     _maxiter = min(1000, max(300, n_dof // 5)) if maxiter is None else maxiter
     
     
-    # K_e, F_e = skfem.enforce(K, force, D=dirichlet_nodes)
+    # K_e, F_e = skfem.enforce(K, force, D=dirichlet_dofs)
     K_csr = K.tocsr()
-    K_c, F_c, U_c, I = skfem.condense(K_csr, force, D=dirichlet_nodes)
+    K_c, F_c, U_c, I = skfem.condense(K_csr, force, D=dirichlet_dofs)
     U_c[I] = solve_u(
         K_c, F_c, chosen_solver=chosen_solver,
         rtol=rtol, maxiter=_maxiter
     )
-    U_c[dirichlet_nodes] = 0.0
+    U_c[dirichlet_dofs] = 0.0
     u = U_c
-    # K_e, F_e = skfem.enforce(K_csr, force, D=dirichlet_nodes)
+    # K_e, F_e = skfem.enforce(K_csr, force, D=dirichlet_dofs)
     # u = solve_u(
     #     K_e, F_e , chosen_solver=chosen_solver,
     #     rtol=rtol, maxiter=_maxiter
     # )
-    f_free = force[free_nodes]
-    compliance = f_free @ u[free_nodes]
-    return (compliance, u)
+    f_free = force[free_dofs]
+    compliance = f_free @ u[free_dofs]
+    
+    return (float(compliance), u)
 
 
 def compute_compliance_basis_numba(
-    basis, free_nodes, dirichlet_nodes, force,
+    basis, free_dofs, dirichlet_dofs, force,
     E0, Emin, p, nu0,
     rho,
     elem_func: Callable = composer.simp_interpolation_numba,
@@ -119,7 +120,7 @@ def compute_compliance_basis_numba(
     K = composer.assemble_stiffness_matrix_numba(
         basis, rho, E0, Emin, p, nu0, elem_func
     )
-    K_e, F_e = skfem.enforce(K, force, D=dirichlet_nodes)
+    K_e, F_e = skfem.enforce(K, force, D=dirichlet_dofs)
     n_dof = K.shape[0]
 
     # Solver auto-selection
@@ -142,13 +143,13 @@ def compute_compliance_basis_numba(
         rtol=rtol, maxiter=_maxiter
     )
 
-    f_free = force[free_nodes]
-    compliance = f_free @ u[free_nodes]
+    f_free = force[free_dofs]
+    compliance = f_free @ u[free_dofs]
     return (compliance, u)
 
 
 def compute_compliance_batch(
-    basis, free_nodes, dirichlet_nodes, force_batch,
+    basis, free_dofs, dirichlet_dofs, force_batch,
     E0, Emin, p, nu0,
     rho,
     elem_func: Callable = composer.ramp_interpolation_numba,
@@ -170,13 +171,13 @@ def compute_compliance_batch(
     n_cases = force_batch.shape[1]
     n_dof = K.shape[0]
     
-    # Apply boundary condition once (assuming same dirichlet_nodes for all)
-    K_e, _ = skfem.enforce(K, np.zeros(n_dof), D=dirichlet_nodes)
+    # Apply boundary condition once (assuming same dirichlet_dofs for all)
+    K_e, _ = skfem.enforce(K, np.zeros(n_dof), D=dirichlet_dofs)
     
     # Apply boundary condition to all force vectors
     F_batch = np.zeros((n_dof, n_cases))
     for i in range(n_cases):
-        _, F_batch[:, i] = skfem.enforce(K, force_batch[:, i], D=dirichlet_nodes)
+        _, F_batch[:, i] = skfem.enforce(K, force_batch[:, i], D=dirichlet_dofs)
 
     if solver != "spsolve":
         raise NotImplementedError("Currently only 'spsolve' is supported for batch.")
@@ -184,22 +185,11 @@ def compute_compliance_batch(
     # Solve Ku = f for all cases
     u_all = scipy.sparse.linalg.spsolve(K_e, F_batch)  # shape: (n_dof, n_cases)
 
-    f_free = force_batch[free_nodes, :]
-    u_free = u_all[free_nodes, :]
+    f_free = force_batch[free_dofs, :]
+    u_free = u_all[free_dofs, :]
     compliance_all = np.sum(f_free * u_free, axis=0)  # f^T u for each case
 
     return compliance_all, u_all
-
-
-def compute_compliance_simp(
-    prb,
-    rho,
-    p
-) -> tuple:
-    return compute_compliance_simp_basis(
-        prb.basis, prb.free_nodes, prb.dirichlet_nodes, prb.force,
-        prb.E0, prb.Emin, p, prb.nu0, rho
-    )
 
 
 if __name__ == '__main__':
@@ -210,7 +200,7 @@ if __name__ == '__main__':
     rho = np.ones(tsk.all_elements.shape)
     p = 1.0
     compliacne, u = compute_compliance_basis_numba(
-        tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, tsk.force,
+        tsk.basis, tsk.free_dofs, tsk.dirichlet_dofs, tsk.force,
         tsk.E0, tsk.Emin, p, tsk.nu0,
         rho,
     )

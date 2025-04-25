@@ -2,7 +2,9 @@
 [![PyPI version](https://img.shields.io/pypi/v/scitopt.svg?cacheSeconds=60)](https://pypi.org/project/scitopt/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-# Scikit Topology Optimization (Scikit-Topt)
+# 🧠 Scikit Topt
+**A lightweight, flexible Python library for topology optimization built on top of [scikit-fem](https://github.com/kinnala/scikit-fem).**
+
 ## Features
  To contribute to the open-source community and education—which I’ve always benefited from—I decided to start this project. 
  
@@ -206,8 +208,8 @@ This is often implemented via solving a sparse linear system using finite elemen
  This software does not exist in a vacuum.
 Scikit-Topt is standing on the shoulders of proverbial giants. In particular, I want to thank the following projects for constituting the technical backbone of the project:
  - Scipy
- - PyAMG
  - Scikit-fem
+ - PyAMG
  - Numba
  - MeshIO
  - Matplotlib

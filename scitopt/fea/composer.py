@@ -702,7 +702,7 @@ def compute_element_stress_tensor(w):
     return stress
 
 
-def stress_skfem(
+def stress_tensor_skfem(
     basis: skfem.Basis,
     rho: np.ndarray, u, 
     E0: float, Emin: float, p: float, nu: float,
@@ -723,6 +723,7 @@ def stress_skfem(
         lam_elem=lam_elem, mu_elem=mu_elem
     )
     return stress_tensor  # shape: (n_elem, n_qp, 3, 3)
+
 
 
 def von_mises_from_stress_tensor(stress_tensor: np.ndarray) -> np.ndarray:
@@ -1073,7 +1074,7 @@ if __name__ == '__main__':
         # print("The Strain Energy Each =", elem_energy_simp)
         print("Difference =", np.sum((elem_energy_simp - element_U)**2))
 
-        stress = stress_skfem(
+        stress = stress_tensor_skfem(
             tsk.basis, np.ones(tsk.mesh.nelements), u,
             1.0, 0.0, 1.0, 0.3
         )

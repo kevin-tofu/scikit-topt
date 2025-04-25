@@ -82,15 +82,11 @@ def toy_base(
     dirichlet_points = utils.get_point_indices_in_range(
         basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
     )
-    dirichlet_nodes = utils.get_dofs_in_range(
-        basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
-    ).all()
+    dirichlet_nodes = basis.get_dofs(dirichlet_points).all()
     F_points = utils.get_point_indices_in_range(
         basis, (x_len - eps, x_len+0.1), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)
     )
-    F_nodes = utils.get_dofs_in_range(
-        basis, (x_len - eps, x_len+0.1), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)
-    ).nodal['u^1']
+    F_nodes = basis.get_dofs(nodes=F_points).nodal['u^1']
     design_elements = utils.get_elements_in_box(
         mesh,
         # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
@@ -103,7 +99,6 @@ def toy_base(
     return task.TaskConfig.from_defaults(
         E0,
         0.30,
-        mesh,
         basis,
         dirichlet_points,
         dirichlet_nodes,
@@ -139,15 +134,13 @@ def toy2():
     dirichlet_points = utils.get_point_indices_in_range(
         basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
     )
-    dirichlet_nodes = utils.get_dofs_in_range(
-        basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
-    ).all()
+    dirichlet_nodes = basis.get_dofs(dirichlet_points).all()
     F_points = utils.get_point_indices_in_range(
         basis, (x_len, x_len), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)
     )
-    F_nodes = utils.get_dofs_in_range(
-        basis, (x_len, x_len), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)
-    ).nodal['u^1']
+    F_nodes = basis.get_dofs(nodes=F_points).nodal["u^1"]
+    print(F_nodes)
+    print(F_nodes.shape)
     design_elements = utils.get_elements_in_box(
         mesh,
         # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
@@ -155,14 +148,12 @@ def toy2():
     )
 
     print("generate config")
-    E0 = 1.0
+    E0 = 210e9
     F = [0.3, -0.3]
     print("F:", F)
     return task.TaskConfig.from_defaults(
         E0,
         0.30,
-        1e-3 * E0,
-        mesh,
         basis,
         dirichlet_points,
         dirichlet_nodes,
@@ -201,7 +192,7 @@ def toy_msh(
         z_len = 0.5
     elif task_name == "pull_2":
         # x_len = 8.0
-        x_len = 6.0
+        x_len = 4.0
         # x_len = 6.0
         y_len = 3.0
         z_len = 0.5
@@ -217,15 +208,6 @@ def toy_msh(
     # eps = np.min(dists) * 1.2
     # eps = np.min(dists) * 5.0
     print(f"eps: {eps}")
-
-    # Check Index Order.
-    # print("Before mesh.t fix:", mesh.t[:, 0])
-    # t_fixed = utils.fix_tetrahedron_orientation(mesh.t, mesh.p)
-    # print("After fix        :", t_fixed[:, 0])
-    # mesh_fixed = MeshTet(mesh.p, t_fixed)
-    # print("Mesh fixed .t    :", mesh_fixed.t[:, 0])
-    # composer._get_elements_volume(mesh_fixed.t, mesh_fixed.p)
-    
     # mesh = skfem.MeshTet.from_mesh(meshio.read(msh_path))
     if isinstance(mesh, skfem.MeshTet):
         e = skfem.ElementVector(skfem.ElementTetP1())
@@ -240,9 +222,7 @@ def toy_msh(
     dirichlet_points = utils.get_point_indices_in_range(
         basis, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
-    dirichlet_nodes = utils.get_dofs_in_range(
-        basis, (0.0, 0.0), (0.0, y_len), (0.0, z_len)
-    ).all()
+    dirichlet_nodes = basis.get_dofs(nodes=dirichlet_points).all()
     
     if task_name == "down":
         F_points = utils.get_point_indices_in_range(
@@ -252,16 +232,8 @@ def toy_msh(
             # (y_len*2/5, y_len*3/5),
             # (z_len*2/5, z_len*3/5)
         )
-        F_nodes = utils.get_dofs_in_range(
-            basis,
-            (x_len, x_len+0.0),
-            # (x_len-eps, x_len+0.05),
-            (0, y_len),
-            (0.0, eps)
-            # (y_len*2/5, y_len*3/5),
-            # (z_len*2/5, z_len*3/5)
-        ).nodal['u^3']
-        F = -0.002
+        F_nodes = basis.get_dofs(nodes=F_points).nodal["u^2"]
+        F = -100
     elif task_name == "pull":
         F_points = utils.get_point_indices_in_range(
             basis,
@@ -269,34 +241,17 @@ def toy_msh(
             (y_len*2/5, y_len*3/5),
             (z_len*2/5, z_len*3/5)
         )
-        F_nodes = utils.get_dofs_in_range(
-            basis,
-            (x_len-eps, x_len+0.05),
-            (y_len*2/5, y_len*3/5),
-            (z_len*2/5, z_len*3/5)
-        ).nodal['u^1']
-        # F = 0.0001
-        F = 0.001
-        
-        print("F_points:", F_points)
-        print("F_nodes:", F_nodes)
+        F_nodes = basis.get_dofs(nodes=F_points).nodal["u^1"]
+        F = 1200.0
     elif task_name == "pull_2":
-        # eps = eps * 4
-        # eps = 1.8
-        # print(f"eps: {eps}")
         F_points = utils.get_point_indices_in_range(
             basis,
             (x_len-eps, x_len+0.05),
             (y_len*2/5, y_len*3/5),
             (z_len*2/5, z_len*3/5)
         )
-        F_nodes = utils.get_dofs_in_range(
-            basis,
-            (x_len-eps, x_len+0.05),
-            (y_len*2/5, y_len*3/5),
-            (z_len*2/5, z_len*3/5)
-        ).nodal['u^1']
-        F = 0.0002
+        F_nodes = basis.get_dofs(nodes=F_points).nodal["u^1"]
+        F = 100
     
     design_elements = utils.get_elements_in_box(
         mesh,
@@ -306,7 +261,7 @@ def toy_msh(
     
     p = basis.mesh.p
     print("generate config")
-    E0 = 1.0
+    E0 = 210e9
     print("F:", F)
     print("F_points:", F_points.shape)
     print("F_nodes:", F_nodes.shape)
@@ -314,7 +269,6 @@ def toy_msh(
     return task.TaskConfig.from_defaults(
         E0,
         0.30,
-        mesh,
         basis,
         dirichlet_points,
         dirichlet_nodes,
