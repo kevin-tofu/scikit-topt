@@ -209,7 +209,7 @@ if __name__ == '__main__':
         '--E0', '-E', type=float, default=1.0, help=''
     )
     parser.add_argument(
-        '--E_min', '-EM', type=float, default=1e-6, help=''
+        '--E_min', '-EM', type=float, default=1e-2, help=''
     )
     
     parser.add_argument(

@@ -20,141 +20,157 @@ def setdiff1d(a, b):
 class TaskConfig():
     E: float
     nu: float
-    mesh: skfem.Mesh
     basis: skfem.Basis
-    dirichlet_points: np.ndarray
-    dirichlet_nodes: np.ndarray
+    # dirichlet_points: np.ndarray
+    dirichlet_dofs: np.ndarray
     dirichlet_elements: np.ndarray
-    dirichlet_adj_elements: np.ndarray
-    force_points: np.ndarray | list[np.ndarray]
-    force_nodes: np.ndarray | list[np.ndarray]
+    # force_points: np.ndarray | list[np.ndarray]
+    force_dofs: np.ndarray | list[np.ndarray]
     force_elements: np.ndarray
     force: np.ndarray | list[np.ndarray]
     design_elements: np.ndarray
-    free_nodes: np.ndarray
+    free_dofs: np.ndarray
     free_elements: np.ndarray
     all_elements: np.ndarray
-    fixed_elements_in_rho: np.ndarray
+    fixed_elements: np.ndarray
     dirichlet_force_elements: np.ndarray
     elements_volume: np.ndarray
+
+
+    @property
+    def mesh(self):
+        return self.basis.mesh
 
     @classmethod
     def from_defaults(
         cls,
         E: float,
         nu: float,
-        mesh: skfem.Mesh,
         basis: skfem.Basis,
         dirichlet_points: np.ndarray,
-        dirichlet_nodes: np.ndarray,
+        dirichlet_dofs: np.ndarray,
         force_points: np.ndarray | list[np.ndarray],
-        force_nodes: np.ndarray | list[np.ndarray],
+        force_dofs: np.ndarray | list[np.ndarray],
         force_value: float | list[float],
         design_elements: np.ndarray,
     ) -> 'TaskConfig':
+        
+        # 
+        # Dirichlet
+        # 
         dirichlet_elements = utils.get_elements_with_points_fast(
-            mesh, [dirichlet_points]
+            basis.mesh, [dirichlet_points]
         )
-        adjacency = utils.build_element_adjacency_matrix_fast(mesh)
-        # Elements that are next to boundary condition
-        dirichlet_adj_elements = utils.get_adjacent_elements_fast(adjacency, dirichlet_elements)
+        
+        # 
+        # Force
+        # 
         if isinstance(force_points, np.ndarray):
             force_elements = utils.get_elements_with_points_fast(
-                mesh, [force_points]
+                basis.mesh, [force_points]
             )
         else:
             force_elements = utils.get_elements_with_points_fast(
-                mesh, force_points
+                basis.mesh, force_points
             )
         
         if force_elements.shape[0] == 0:
             raise ValueError("force_elements has not been set.")
-        # elements_related_with_bc = np.concatenate([bc_elements, dirichlet_adj_elements, force_elements])
         
-        # design_elements = np.setdiff1d(design_elements, elements_related_with_bc)
+        # 
+        # Design Field
+        # 
         design_elements = setdiff1d(design_elements, force_elements)
-        # design_elements = setdiff1d(design_elements, elements_related_with_bc)
-        
-
         if len(design_elements) == 0:
             error_msg = "⚠️Warning: `design_elements` is empty"
             raise ValueError(error_msg)
         
-        all_elements = np.arange(mesh.nelements)
-        fixed_elements_in_rho = setdiff1d(all_elements, design_elements)
+        all_elements = np.arange(basis.mesh.nelements)
+        fixed_elements = setdiff1d(all_elements, design_elements)
         dirichlet_force_elements = np.concatenate([dirichlet_elements, force_elements])
-        print(
-            f"all_elements: {all_elements.shape}",
-            f"design_elements: {design_elements.shape}",
-            f"fixed_elements_in_rho: {fixed_elements_in_rho.shape}",
-            f"dirichlet_force_elements: {dirichlet_force_elements.shape}",
-            f"force_elements: {force_elements}"
-        )
-        # free_nodes = np.setdiff1d(np.arange(basis.N), dirichlet_nodes)
-        free_nodes = setdiff1d(np.arange(basis.N), dirichlet_nodes)
-        free_elements = utils.get_elements_with_points_fast(mesh, [free_nodes])
-        if isinstance(force_nodes, np.ndarray):
+        
+        free_dofs = setdiff1d(np.arange(basis.N), dirichlet_dofs)
+        free_elements = utils.get_elements_with_points_fast(basis.mesh, [free_dofs])
+        if isinstance(force_dofs, np.ndarray):
             if isinstance(force_value, (float, int)):
                 force = np.zeros(basis.N)
-                force[force_nodes] = force_value / len(force_nodes)
+                force[force_dofs] = force_value / len(force_dofs)
             elif isinstance(force_value, list):
                 force = list()
                 for fv in force_value:
                     print("fv", fv)
                     f_temp = np.zeros(basis.N)
-                    f_temp[force_nodes] = fv / len(force_nodes)
+                    f_temp[force_dofs] = fv / len(force_dofs)
                     force.append(f_temp)    
-        elif isinstance(force_nodes, list):
+        elif isinstance(force_dofs, list):
             force = list()
-            for fn_loop, fv in zip(force_nodes, force_value):
+            for fn_loop, fv in zip(force_dofs, force_value):
                 f_temp = np.zeros(basis.N)
                 f_temp[fn_loop] = fv / len(fn_loop)
                 force.append(f_temp)
-            
 
-        elements_volume = composer.get_elements_volume(mesh)
+        elements_volume = composer.get_elements_volume(basis.mesh)
+        print(
+            f"all_elements: {all_elements.shape}",
+            f"design_elements: {design_elements.shape}",
+            f"fixed_elements: {fixed_elements.shape}",
+            f"dirichlet_force_elements: {dirichlet_force_elements.shape}",
+            f"force_elements: {force_elements}"
+        )
         return cls(
             E,
             nu,
-            mesh,
             basis,
-            dirichlet_points,
-            dirichlet_nodes,
+            dirichlet_dofs,
             dirichlet_elements,
-            dirichlet_adj_elements,
-            force_points,
-            force_nodes,
+            force_dofs,
             force_elements,
             force,
             design_elements,
-            free_nodes,
+            free_dofs,
             free_elements,
             all_elements,
-            fixed_elements_in_rho,
+            fixed_elements,
             dirichlet_force_elements,
             elements_volume
         )
 
 
-    @property
-    def dirichlet_and_adj_elements(self):
-        return np.concatenate(
-            [self.dirichlet_elements, self.dirichlet_adj_elements]
-        )
-        
-    
     def exlude_dirichlet_from_design(self):
         self.design_elements = setdiff1d(
             self.design_elements, self.dirichlet_elements
         )
-        
+
+
+    def scale(
+        self,
+        L_scale: float,
+        F_scale: float
+    ):
+        # this wont work
+        # self.basis.mesh.p /= L_scale 
+        mesh = self.basis.mesh
+        p_scaled = mesh.p * L_scale
+        mesh_scaled = type(mesh)(p_scaled, mesh.t)
+        basis_scaled = skfem.Basis(mesh_scaled, self.basis.elem)
+        self.basis = basis_scaled
+
+        if isinstance(self.force, np.ndarray):
+            self.force *= F_scale
+        elif isinstance(self.force, list):
+            for loop in range(len(self.force)):
+                self.force[loop] *= F_scale
+        else:
+            raise ValueError("should be ndarray or list of ndarray")
+
+
     def nodes_and_elements_stats(self, dst_path: str):
-        node_points = self.mesh.p.T  # shape = (n_points, 3)
+        node_points = self.basis.mesh.p.T  # shape = (n_points, 3)
         tree_nodes = cKDTree(node_points)
         dists_node, _ = tree_nodes.query(node_points, k=2)
         node_nearest_dists = dists_node[:, 1]
 
-        element_centers = np.mean(self.mesh.p[:, self.mesh.t], axis=1).T
+        element_centers = np.mean(self.basis.mesh.p[:, self.basis.mesh.t], axis=1).T
         tree_elems = cKDTree(element_centers)
         dists_elem, _ = tree_elems.query(element_centers, k=2)
         element_nearest_dists = dists_elem[:, 1]
