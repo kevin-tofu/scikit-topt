@@ -60,7 +60,7 @@ class HistoriesLogger():
         name: str,
         constants: Optional[list[float]] = None,
         constant_names: Optional[list[str]] = None,
-        plot_type: Literal["min-max-mean", "min-max-mean-std"] = "min-max-mean",
+        plot_type: Literal["value", "min-max-mean", "min-max-mean-std"] = "value",
         ylog: bool = False
     ):
         hist = HistoryLogger(
@@ -110,7 +110,6 @@ class HistoriesLogger():
                     p = idx // cols
                     q = idx % cols
                     d = np.array(h.data)
-
                     if d.ndim > 1:
                         x_array = np.array(range(d[:, 0].shape[0]))
                         ax[p, q].plot(x_array, d[:, 0], marker='o', linestyle='-', label="min")

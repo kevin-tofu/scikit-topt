@@ -56,12 +56,12 @@ def save_info_on_mesh(
     else:
         raise ValueError("")
     mesh = tsk.mesh
-    dirichlet_ele = utils.get_elements_with_points(mesh, [tsk.dirichlet_points])
-    F_ele = utils.get_elements_with_points(mesh, [tsk.force_points])
+    dirichlet_ele = tsk.dirichlet_elements
+    F_ele = tsk.force_elements
     element_colors_df1 = np.zeros(mesh.nelements, dtype=int)
     element_colors_df2 = np.zeros(mesh.nelements, dtype=int)
     element_colors_df1[tsk.design_elements] = 1
-    element_colors_df1[tsk.fixed_elements_in_rho] = 2
+    element_colors_df1[tsk.fixed_elements] = 2
     element_colors_df2[dirichlet_ele] = 1
     element_colors_df2[F_ele] = 2
     
@@ -72,7 +72,7 @@ def save_info_on_mesh(
     cell_outputs["rho"] = [rho]
     cell_outputs["rho-diff"] = [rho - rho_prev]
     if dC is not None:
-        # dC[tsk.fixed_elements_in_rho] = 0.0
+        # dC[tsk.fixed_elements] = 0.0
         # dC_ranked = rank_scale_0_1(dC)
         cell_outputs["strain_energy"] = [dC]
     # cell_outputs["rho_projected"] = [rho_projected]
@@ -145,7 +145,7 @@ def save_info_on_mesh(
 #     mesh = tsk.mesh
 #     element_colors_df1 = np.zeros_like(info[0])
 #     element_colors_df1[tsk.design_elements] = 1
-#     element_colors_df1[tsk.fixed_elements_in_rho] = 0.0
+#     element_colors_df1[tsk.fixed_elements] = 0.0
     
 #     cell_outputs = dict()
 #     cell_outputs[info_name] = info
