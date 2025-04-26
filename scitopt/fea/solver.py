@@ -5,6 +5,8 @@ from scipy.sparse.linalg import cg, spilu, LinearOperator
 import skfem
 import pyamg
 from scitopt.fea import composer
+from scitopt.tools.logconf import mylogger
+logger = mylogger(__name__)
 
 
 def compute_compliance_simp_basis(
@@ -36,17 +38,28 @@ def solve_u(
             M_diag = K_cond.diagonal()
             M_inv = 1.0 / M_diag
             M = LinearOperator(K_cond.shape, matvec=lambda x: M_inv * x)
-            u_c, info = cg(A=K_cond, b=F_cond, M=M, rtol=rtol, maxiter=maxiter)
-            print("CG (diag preconditioner) solver info:", info)
+
+            u_c, info = scipy.sparse.linalg.cg(
+                A=K_cond, b=F_cond, M=M, tol=rtol, maxiter=maxiter
+            )
+            logger.info(f"CG (diag preconditioner) solver info: {info}")
 
         elif chosen_solver == 'pyamg':
-            pyamg_solver = pyamg.smoothed_aggregation_solver(K_cond)
-            u_c = pyamg_solver.solve(F_cond, tol=rtol)
+            ml = pyamg.smoothed_aggregation_solver(K_cond)
+            M = ml.aspreconditioner()
+
+            # u_c, info = scipy.sparse.linalg.cg(
+            #     A=K_cond, b=F_cond, M=M, tol=rtol, maxiter=maxiter
+            # )
+            u_c, info = scipy.sparse.linalg.cg(
+                A=K_cond, b=F_cond, M=M, rtol=rtol, maxiter=maxiter
+            )
+            logger.info(f"CG (AMG preconditioner) solver info: {info}")
 
         elif chosen_solver == 'spsolve':
             u_c = scipy.sparse.linalg.spsolve(K_cond, F_cond)
             info = 0
-            print("Direct solver used: spsolve")
+            logger.info("Direct solver used: spsolve")
 
         else:
             raise ValueError(f"Unknown solver: {chosen_solver}")
@@ -54,7 +67,41 @@ def solve_u(
     except Exception as e:
         print(f"Solver exception - {e}, falling back to spsolve.")
         u_c = scipy.sparse.linalg.spsolve(K_cond, F_cond)
+
     return u_c
+
+
+# def solve_u(
+#     K_cond: scipy.sparse.csc_matrix,
+#     F_cond: np.ndarray,
+#     chosen_solver: Literal['cg', 'spsolve', 'pyamg'] = 'auto',
+#     rtol: float = 1e-8,
+#     maxiter: int = None,
+# ) -> np.ndarray:
+#     try:
+#         if chosen_solver == 'cg':
+#             M_diag = K_cond.diagonal()
+#             M_inv = 1.0 / M_diag
+#             M = LinearOperator(K_cond.shape, matvec=lambda x: M_inv * x)
+#             u_c, info = cg(A=K_cond, b=F_cond, M=M, rtol=rtol, maxiter=maxiter)
+#             print("CG (diag preconditioner) solver info:", info)
+
+#         elif chosen_solver == 'pyamg':
+#             pyamg_solver = pyamg.smoothed_aggregation_solver(K_cond)
+#             u_c = pyamg_solver.solve(F_cond, tol=rtol)
+
+#         elif chosen_solver == 'spsolve':
+#             u_c = scipy.sparse.linalg.spsolve(K_cond, F_cond)
+#             info = 0
+#             print("Direct solver used: spsolve")
+
+#         else:
+#             raise ValueError(f"Unknown solver: {chosen_solver}")
+
+#     except Exception as e:
+#         print(f"Solver exception - {e}, falling back to spsolve.")
+#         u_c = scipy.sparse.linalg.spsolve(K_cond, F_cond)
+#     return u_c
 
 
 
@@ -87,24 +134,35 @@ def compute_compliance_basis(
 
     _maxiter = min(1000, max(300, n_dof // 5)) if maxiter is None else maxiter
     
-    
-    # K_e, F_e = skfem.enforce(K, force, D=dirichlet_dofs)
     K_csr = K.tocsr()
-    K_c, F_c, U_c, I = skfem.condense(K_csr, force, D=dirichlet_dofs)
-    U_c[I] = solve_u(
-        K_c, F_c, chosen_solver=chosen_solver,
-        rtol=rtol, maxiter=_maxiter
-    )
-    U_c[dirichlet_dofs] = 0.0
-    u = U_c
+    # condense
+    # K_c, F_c, U_c, I = skfem.condense(K_csr, force, D=dirichlet_dofs)
+    # U_c[I] = solve_u(
+    #     K_c, F_c, chosen_solver=chosen_solver,
+    #     rtol=rtol, maxiter=_maxiter
+    # )
+    # U_c[dirichlet_dofs] = 0.0
+    # u = U_c
+    
+    # enforce
     # K_e, F_e = skfem.enforce(K_csr, force, D=dirichlet_dofs)
     # u = solve_u(
     #     K_e, F_e , chosen_solver=chosen_solver,
     #     rtol=rtol, maxiter=_maxiter
     # )
-    f_free = force[free_dofs]
-    compliance = f_free @ u[free_dofs]
     
+    
+    all_dofs = np.arange(K_csr.shape[0])
+    free_dofs = np.setdiff1d(all_dofs, dirichlet_dofs, assume_unique=True)
+
+    K_c = K_csr[free_dofs, :][:, free_dofs]
+    F_c = force[free_dofs]
+    u_free = solve_u(K_c, F_c, chosen_solver=chosen_solver, rtol=rtol, maxiter=_maxiter)
+    u = np.zeros_like(force)
+    u[free_dofs] = u_free
+
+    f_free = force[free_dofs]
+    compliance = f_free @ u[free_dofs]    
     return (float(compliance), u)
 
 

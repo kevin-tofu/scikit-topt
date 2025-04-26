@@ -17,7 +17,6 @@ from scitopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 
 
-
 @dataclass
 class SensitivityConfig():
     dst_path: str = "./result/pytests"
@@ -43,8 +42,8 @@ class SensitivityConfig():
     filter_radius: float = 0.05
     filter_radius_step: int = 3
     mu_p: float = 2.0
-    E0: float = 1.0
-    E_min: float = 1e-9
+    E0: float = 210e9
+    E_min: float = 210e6
     rho_min: float = 1e-1
     rho_max: float = 1.0
     move_limit_init: float = 0.3
