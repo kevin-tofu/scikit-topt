@@ -319,7 +319,7 @@ class Schedulers():
         num_pages = math.ceil(num_graphs / graphs_per_page)
 
         for page in range(num_pages):
-            page_index = "" if num_pages == 1 else str(page)
+            page_index = "0" if num_pages == 1 else str(page)
             cols = 4
             keys = list(schedules.keys())
             start = page * cols * 2  # 2 rows on each page
@@ -353,6 +353,6 @@ class Schedulers():
                 ax[p, q].axis("off")
 
             fig.tight_layout()
-            print(f"{self.dst_path}/schedule-{page_index}{fname}")
-            fig.savefig(f"{self.dst_path}/schedule-{page_index}{fname}")
+            print(f"{self.dst_path}/schedule-{page_index}-{fname}")
+            fig.savefig(f"{self.dst_path}/schedule-{page_index}-{fname}")
             plt.close("all")

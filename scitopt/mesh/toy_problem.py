@@ -174,7 +174,8 @@ def load_mesh_auto(msh_path: str):
     else:
         raise ValueError("")
 
-
+# from memory_profiler import profile
+# @profile
 def toy_msh(
     task_name: str="down",
     msh_path: str = 'plate.msh',
@@ -215,10 +216,13 @@ def toy_msh(
         e = skfem.ElementVector(skfem.ElementHex1())
     else:
         raise ValueError("")
-    basis = skfem.Basis(mesh, e, intorder=3)
+    print("basis")
+    basis = skfem.Basis(mesh, e, intorder=2)
+    # basis = skfem.Basis(mesh, e, intorder=3)
     # basis = skfem.Basis(mesh, e, intorder=4)
     # basis = skfem.Basis(mesh, e, intorder=5)
     
+    print("dirichlet_points")
     dirichlet_points = utils.get_point_indices_in_range(
         basis, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
@@ -247,7 +251,7 @@ def toy_msh(
         F_points = utils.get_point_indices_in_range(
             basis,
             (x_len-eps, x_len+0.05),
-            (y_len*2/5, y_len*3/5),
+            (y_len/2.0-eps, y_len/2+eps),
             (z_len*2/5, z_len*3/5)
         )
         F_nodes = basis.get_dofs(nodes=F_points).nodal["u^1"]
@@ -259,7 +263,6 @@ def toy_msh(
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
     
-    p = basis.mesh.p
     print("generate config")
     E0 = 210e9
     print("F:", F)

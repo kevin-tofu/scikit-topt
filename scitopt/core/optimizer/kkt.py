@@ -279,10 +279,10 @@ if __name__ == '__main__':
         '--lambda_decay', '-LD', type=float, default=0.95, help=''
     )
     parser.add_argument(
-        '--lambda_lower', '-BSL', type=float, default=1e-2, help=''
+        '--lambda_lower', '-BSL', type=float, default=1e-3, help=''
     )
     parser.add_argument(
-        '--lambda_upper', '-BSH', type=float, default=1e+2, help=''
+        '--lambda_upper', '-BSH', type=float, default=1e+3, help=''
     )
     parser.add_argument(
         '--restart', '-RS', type=misc.str2bool, default=False, help=''
