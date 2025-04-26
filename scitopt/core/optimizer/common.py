@@ -239,7 +239,8 @@ class SensitivityAnalysis():
         self.helmholz_solver = filter.HelmholtzFilter.from_defaults(
             self.tsk.mesh,
             self.cfg.filter_radius,
-            solver_option=self.cfg.solver_option,
+            solver_option="pyamg",
+            # solver_option=self.cfg.solver_option,
             dst_path=f"{self.cfg.dst_path}/data",
             
         )
@@ -345,11 +346,11 @@ class SensitivityAnalysis():
             solver_option = cfg.solver_option
 
             if filter_radius_prev != filter_radius:
-                print("Filter Update")
+                logger.info("Filter Update")
                 self.helmholz_solver.update_radius(tsk.mesh, filter_radius, cfg.solver_option)
             
-            print(f"p {p:.4f}, vol_frac {vol_frac:.4f}, beta {beta:.4f}, move_limit {move_limit:.4f}")
-            print(f"eta {eta:.4f}, percentile {percentile:.4f} filter_radius {filter_radius:.4f}")
+            logger.info(f"p {p:.4f}, vol_frac {vol_frac:.4f}, beta {beta:.4f}, move_limit {move_limit:.4f}")
+            logger.info(f"eta {eta:.4f}, percentile {percentile:.4f} filter_radius {filter_radius:.4f}")
             rho_prev[:] = rho[:]
             rho_filtered[:] = self.helmholz_solver.filter(rho)
             projection.heaviside_projection_inplace(
@@ -402,7 +403,7 @@ class SensitivityAnalysis():
             dC_drho_full /= len(force_list)
             strain_energy_ave /= len(force_list)
             compliance_avg /= len(force_list)
-            print(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
+            logger.info(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
             
             if cfg.sensitivity_filter:
                 filtered = self.helmholz_solver.filter(dC_drho_full)
@@ -439,7 +440,7 @@ class SensitivityAnalysis():
 
             filter_radius_prev = filter_radius
             # rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
-            print(
+            logger.info(
                 f"scaling_rate min/mean/max {scaling_rate.min()} {scaling_rate.mean()} {scaling_rate.max()}"
             )
             self.recorder.feed_data("rho", rho[tsk.design_elements])
@@ -452,7 +453,7 @@ class SensitivityAnalysis():
 
             if iter % (cfg.max_iters // self.cfg.record_times) == 0 or iter == 1:
             # if True:
-                print(f"Saving at iteration {iter}")
+                logger.info(f"Saving at iteration {iter}")
                 self.recorder.print()
                 # self.recorder_params.print()
                 self.recorder.export_progress()

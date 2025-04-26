@@ -40,7 +40,7 @@ def solve_u(
             M = LinearOperator(K_cond.shape, matvec=lambda x: M_inv * x)
 
             u_c, info = scipy.sparse.linalg.cg(
-                A=K_cond, b=F_cond, M=M, tol=rtol, maxiter=maxiter
+                A=K_cond, b=F_cond, M=M, rtol=rtol, maxiter=maxiter
             )
             logger.info(f"CG (diag preconditioner) solver info: {info}")
 
@@ -111,7 +111,7 @@ def compute_compliance_basis(
     rho,
     elem_func: Callable = composer.simp_interpolation,
     solver: Literal['auto', 'cg', 'spsolve', 'pyamg'] = 'auto',
-    rtol: float = 1e-8,
+    rtol: float = 1e-5,
     maxiter: int = None,
 ) -> tuple:
     
