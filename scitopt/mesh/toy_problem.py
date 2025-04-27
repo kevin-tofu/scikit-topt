@@ -180,11 +180,14 @@ def toy_msh(
     task_name: str="down",
     msh_path: str = 'plate.msh',
 ):
-    from scitopt.fea import composer
     if task_name == "down":
         x_len = 4.0
-        y_len = 3.0
+        y_len = 0.16
         # z_len = 1.0
+        z_len = 2.0
+    elif task_name == "down_box":
+        x_len = 4.0
+        y_len = 3.0
         z_len = 2.0
     elif task_name == "pull":
         x_len = 8.0
@@ -195,7 +198,7 @@ def toy_msh(
         # x_len = 8.0
         x_len = 4.0
         # x_len = 6.0
-        y_len = 3.0
+        y_len = 2.0
         z_len = 0.5
     # eps = 0.10
     # eps = 0.20
@@ -217,8 +220,8 @@ def toy_msh(
     else:
         raise ValueError("")
     print("basis")
-    basis = skfem.Basis(mesh, e, intorder=2)
-    # basis = skfem.Basis(mesh, e, intorder=3)
+    # basis = skfem.Basis(mesh, e, intorder=2)
+    basis = skfem.Basis(mesh, e, intorder=3)
     # basis = skfem.Basis(mesh, e, intorder=4)
     # basis = skfem.Basis(mesh, e, intorder=5)
     
@@ -228,16 +231,17 @@ def toy_msh(
     )
     dirichlet_nodes = basis.get_dofs(nodes=dirichlet_points).all()
     
-    if task_name == "down":
+    if task_name == "down" or task_name == "down_box":
         F_points = utils.get_point_indices_in_range(
-            basis, (x_len-eps, x_len+0.05),
+            basis,
+            (x_len-eps, x_len+0.05),
             (0, y_len),
             (0.0, eps)
             # (y_len*2/5, y_len*3/5),
             # (z_len*2/5, z_len*3/5)
         )
-        F_nodes = basis.get_dofs(nodes=F_points).nodal["u^2"]
-        F = -100
+        F_nodes = basis.get_dofs(nodes=F_points).nodal["u^3"]
+        F = -800
     elif task_name == "pull":
         F_points = utils.get_point_indices_in_range(
             basis,
@@ -255,13 +259,21 @@ def toy_msh(
             (z_len*2/5, z_len*3/5)
         )
         F_nodes = basis.get_dofs(nodes=F_points).nodal["u^1"]
-        F = 100
+        F = 200.0
     
     design_elements = utils.get_elements_in_box(
         mesh,
         # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
+    if task_name == "down":
+        # removed_elements = utils.get_elements_in_box(
+        #     mesh,
+        #     (0.0, x_len), (0.0, y_len), (0.0, z_len)
+        # )
+        # design_elements = np.setdiff1d(design_elements, removed_elements)
+        pass
+
     
     print("generate config")
     E0 = 210e9
