@@ -110,11 +110,14 @@ class OC_Optimizer(common.SensitivityAnalysis):
         tsk = self.tsk
         eps = 1e-6
         
-        scale = np.percentile(np.abs(dC_drho_ave), percentile)
-        # scale = max(scale, np.mean(np.abs(dC_drho_ave)), 1e-4)
-        # scale = np.median(np.abs(dC_drho_full[tsk.design_elements]))
-        self.running_scale = 0.6 * self.running_scale + (1 - 0.6) * scale if iter_loop > 1 else scale
-        dC_drho_ave /= (self.running_scale + eps)
+        if percentile > 0:
+            scale = np.percentile(np.abs(dC_drho_ave), percentile)
+            # scale = max(scale, np.mean(np.abs(dC_drho_ave)), 1e-4)
+            # scale = np.median(np.abs(dC_drho_full[tsk.design_elements]))
+            self.running_scale = 0.6 * self.running_scale + (1 - 0.6) * scale if iter_loop > 1 else scale
+            dC_drho_ave /= (self.running_scale + eps)
+        else:
+            pass
         print(f"dC_drho_ave-scaled min:{dC_drho_ave.min()} max:{dC_drho_ave.max()}")
         print(f"dC_drho_ave-scaled ave:{np.mean(dC_drho_ave)} sdv:{np.std(dC_drho_ave)}")
         # rho_e = rho_projected[tsk.design_elements]

@@ -188,9 +188,9 @@ class Scheduler():
         
 
     def value(self, iter: int | np.ndarray):
-        if self.num_steps < 0:
+        if self.num_steps < 0 or iter >= self.iters_max:
             return self.target_value
-        
+
         ret = self.func(
             it=iter,
             total=self.iters_max,
