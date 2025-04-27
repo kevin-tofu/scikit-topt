@@ -211,12 +211,16 @@ def rho_histo_plot(
 def images2gif(
     dir_path: str,
     prefix: str="rho",
-    scale: float=0.7
+    scale: float=0.7,
+    skip_frame: int=0
 ):
     from scipy.ndimage import zoom
 
     file_pattern = f"{dir_path}/mesh_rho/info_{prefix}-*.jpg"
     image_files = sorted(glob.glob(file_pattern))
+    if skip_frame > 0:
+        image_files = image_files[::skip_frame+1]
+
     output_gif = os.path.join(dir_path, f"animation-{prefix}.gif")
     
     if len(image_files) > 0:
@@ -239,9 +243,12 @@ if __name__ == '__main__':
         '--images_path', '-IP', type=str, default="./result/test1_oc2", help=''
     )
     parser.add_argument(
-        '--scale', '-SL', type=float, default=0.5, help=''
+        '--scale', '-SL', type=float, default=0.50, help=''
+    )
+    parser.add_argument(
+        '--skip_frame', '-SF', type=int, default=0, help=''
     )
     args = parser.parse_args()
-    images2gif(f"{args.images_path}", "rho", scale=args.scale)
-    images2gif(f"{args.images_path}", "dC", scale=args.scale)
+    images2gif(f"{args.images_path}", "rho", scale=args.scale, skip_frame=args.skip_frame)
+    images2gif(f"{args.images_path}", "dC", scale=args.scale, skip_frame=args.skip_frame)
     
