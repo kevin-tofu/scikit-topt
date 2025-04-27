@@ -6,8 +6,8 @@
 **A lightweight, flexible Python library for topology optimization built on top of [scikit-fem](https://github.com/kinnala/scikit-fem).**
 
 <p align="center">
-  <img src="assets/ex-pull-down-0.gif" alt="Optimization Process Pull-Down-0" width="500">
-  <img src="assets/ex-pull-down-1.jpg" alt="Optimization Process Pull-Down-0" width="500">
+  <img src="assets/ex-pull-down-0.gif" alt="Optimization Process Pull-Down-0" width="400" style="margin-right: 20px;">
+  <img src="assets/ex-pull-down-1.jpg" alt="Optimization Process Pull-Down-1" width="400">
 </p>
 
 
