@@ -231,7 +231,18 @@ def toy_msh(
     )
     dirichlet_nodes = basis.get_dofs(nodes=dirichlet_points).all()
     
-    if task_name == "down" or task_name == "down_box":
+    if task_name == "down":
+        F_points = utils.get_point_indices_in_range(
+            basis,
+            (x_len-eps, x_len+0.05),
+            (y_len/2-eps, y_len/2+eps),
+            (0.0, eps)
+            # (y_len*2/5, y_len*3/5),
+            # (z_len*2/5, z_len*3/5)
+        )
+        F_nodes = basis.get_dofs(nodes=F_points).nodal["u^3"]
+        F = -800
+    if task_name == "down_box":
         F_points = utils.get_point_indices_in_range(
             basis,
             (x_len-eps, x_len+0.05),
