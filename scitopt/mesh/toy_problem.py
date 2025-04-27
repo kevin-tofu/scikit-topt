@@ -84,9 +84,9 @@ def toy_base(
     )
     dirichlet_nodes = basis.get_dofs(dirichlet_points).all()
     F_points = utils.get_point_indices_in_range(
-        basis, (x_len - eps, x_len+0.1), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)
+        basis, (x_len - eps, x_len+0.1), (y_len*2/5, y_len*3/5), (z_len-eps, z_len)
     )
-    F_nodes = basis.get_dofs(nodes=F_points).nodal['u^1']
+    F_nodes = basis.get_dofs(nodes=F_points).nodal['u^3']
     design_elements = utils.get_elements_in_box(
         mesh,
         # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
@@ -94,8 +94,8 @@ def toy_base(
     )
 
     print("generate config")
-    E0 = 1.0
-    F = 0.03
+    E0 = 210e9
+    F = -100.0
     return task.TaskConfig.from_defaults(
         E0,
         0.30,
