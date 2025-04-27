@@ -35,6 +35,7 @@ def moc_log_update_logspace(
     eps = 1e-8
     
     print("dC:", dC.min(), dC.max())
+    # if percentile > 0:
     np.negative(dC, out=scaling_rate)
     scaling_rate /= (lambda_v + eps)
     np.maximum(scaling_rate, eps, out=scaling_rate)
@@ -43,13 +44,11 @@ def moc_log_update_logspace(
     # np.clip(scaling_rate, -0.05, 0.05, out=scaling_rate)
     # np.clip(scaling_rate, -0.10, 0.10, out=scaling_rate)
     # np.clip(scaling_rate, -0.20, 0.20, out=scaling_rate)
-    np.clip(scaling_rate, -0.30, 0.30, out=scaling_rate)
+    # np.clip(scaling_rate, -0.30, 0.30, out=scaling_rate)
+    np.clip(scaling_rate, -0.50, 0.50, out=scaling_rate)
     np.clip(rho, rho_min, 1.0, out=rho)
     np.log(rho, out=tmp_lower)
     
-    
-
-    # 
 
     # 
     # 
@@ -112,20 +111,24 @@ class MOC_Optimizer(common.SensitivityAnalysis):
         cfg = self.cfg
         tsk = self.tsk
         eps = 1e-8
-        scale = np.percentile(np.abs(dC_drho_ave), percentile)
-        self.recorder.feed_data("-dC", -dC_drho_ave)
-        # scale = np.percentile(np.abs(dC_drho_full[tsk.design_elements]), percentile)
-        # scale = np.median(np.abs(dC_drho_full[tsk.design_elements]))
-        self.running_scale = 0.9 * self.running_scale + (1 - 0.9) * scale if iter_loop > 1 else scale
-        dC_drho_ave = dC_drho_ave / (self.running_scale + eps)
         
+        if percentile > 0:
+            scale = np.percentile(np.abs(dC_drho_ave), percentile)
+            self.recorder.feed_data("-dC", -dC_drho_ave)
+            # scale = np.percentile(np.abs(dC_drho_full[tsk.design_elements]), percentile)
+            # scale = np.median(np.abs(dC_drho_full[tsk.design_elements]))
+            self.running_scale = 0.2 * self.running_scale + (1 - 0.2) * scale if iter_loop > 1 else scale
+            print(f"running_scale: {self.running_scale}")
+            dC_drho_ave = dC_drho_ave / (self.running_scale + eps)
+        else:
+            pass    
         # np.minimum(
         #     dC_drho_full,
         #     -lambda_lower*0.1,
         #     out=dC_drho_full
         # )
         # np.clip(dC_drho_full, -lambda_upper * 10, -lambda_lower * 0.1, out=dC_drho_full)
-        print(f"running_scale: {self.running_scale}")
+        
         
         
         # vol_error = np.mean(rho_projected[tsk.design_elements]) - vol_frac

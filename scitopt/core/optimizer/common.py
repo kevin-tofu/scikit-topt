@@ -322,7 +322,7 @@ class SensitivityAnalysis():
         filter_radius_prev = cfg.filter_radius_init if cfg.filter_radius_step > 0 else cfg.filter_radius
         self.helmholz_solver.update_radius(tsk.mesh, filter_radius_prev, solver_option=cfg.solver_option)
         for iter_loop, iter in enumerate(range(iter_begin, iter_end)):
-            print(f"iterations: {iter} / {iter_end - 1}")
+            logger.info(f"iterations: {iter} / {iter_end - 1}")
             p, vol_frac, beta, move_limit, eta, percentile, filter_radius = (
                 self.schedulers.values(iter)[k] for k in [
                     'p', 'vol_frac', 'beta', 'move_limit', 'eta', 'percentile', 'filter_radius'
@@ -351,11 +351,15 @@ class SensitivityAnalysis():
             
             logger.info(f"p {p:.4f}, vol_frac {vol_frac:.4f}, beta {beta:.4f}, move_limit {move_limit:.4f}")
             logger.info(f"eta {eta:.4f}, percentile {percentile:.4f} filter_radius {filter_radius:.4f}")
+            
+            logger.info("project and filter")
             rho_prev[:] = rho[:]
             rho_filtered[:] = self.helmholz_solver.filter(rho)
             projection.heaviside_projection_inplace(
                 rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
             )
+            
+            logger.info("compute compliance")
             dC_drho_ave[:] = 0.0
             dC_drho_full[:] = 0.0
             strain_energy_ave[:] = 0.0
@@ -406,6 +410,7 @@ class SensitivityAnalysis():
             logger.info(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
             
             if cfg.sensitivity_filter:
+                logger.info("sensitivity filter")
                 filtered = self.helmholz_solver.filter(dC_drho_full)
                 np.copyto(dC_drho_full, filtered)
             
@@ -413,6 +418,7 @@ class SensitivityAnalysis():
             rho_candidate[:] = rho[tsk.design_elements] # Dont forget. inplace
             
             # 
+            logger.info("update density")
             self.rho_update(
                 # iter_loop,
                 iter,

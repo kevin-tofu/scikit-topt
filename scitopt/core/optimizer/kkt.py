@@ -58,18 +58,22 @@ def kkt_moc_log_update(
     # Normalize: subtract mean
     # print(f"interpolation: {interpolation}")
     np.copyto(scaling_rate, dC)
-    if interpolation == "SIMP":
-        norm = np.percentile(np.abs(dC), percentile) + 1e-8
-    elif interpolation == "RAMP":
-        scaling_rate -= np.mean(dC)
-        percentile_value = np.percentile(np.abs(scaling_rate), percentile)
-        # norm = max(percentile_value, 1e-4)
-        norm = percentile_value
-        # norm = max(np.abs(scaling_rate), 1e-4)
-        # print(f"percentile_value: {percentile_value}, norm: {norm}")
+    if percentile > 0:
+        if interpolation == "SIMP":
+            norm = np.percentile(np.abs(dC), percentile) + 1e-8
+            np.divide(scaling_rate, norm, out=scaling_rate)
+        elif interpolation == "RAMP":
+            scaling_rate -= np.mean(dC)
+            percentile_value = np.percentile(np.abs(scaling_rate), percentile)
+            # norm = max(percentile_value, 1e-4)
+            norm = percentile_value
+            # norm = max(np.abs(scaling_rate), 1e-4)
+            # print(f"percentile_value: {percentile_value}, norm: {norm}")
+            np.divide(scaling_rate, norm, out=scaling_rate)
+        else:
+            raise ValueError("should be SIMP/RAMP")
     else:
-        raise ValueError("should be SIMP/RAMP")
-    np.divide(scaling_rate, norm, out=scaling_rate)
+        pass
     # scaling_rate /= norm
     scaling_rate += lambda_v
     # Optional clipping of scaled gradient
