@@ -28,52 +28,14 @@
 
 
 ## ToDo
-- density interpolation
-- coarse to fine optimization
-- stabilize
-- set break point from the optimization loop
+- Make 
+- Set break point from the optimization loop
 - Add LevelSet
 
 ### Install Package
 ```bash
 pip install scitopt
 poetry add scitopt
-```
-
-### Optimize Toy Problem with command line.
-```bash
-OMP_NUM_THREADS=3 OPENBLAS_NUM_THREADS=3  MKL_NUM_THREADS=3 PYTHONPATH=./ python ./scitopt/core/optimizer/kkt.py \
- --dst_path ./result/test2_kkt1 \
- --interpolation SIMP \
- --p_init 1.2 \
- --p 3.0 \
- --p_step 3 \
- --filter_radius_init 1.50 \
- --filter_radius 0.05 \
- --filter_radius_step 3 \
- --move_limit_init 0.40 \
- --move_limit 0.10 \
- --move_limit_step 50 \
- --vol_frac_init 0.80 \
- --vol_frac 0.40 \
- --vol_frac_step 3 \
- --beta_init 0.1 \
- --beta 4.0 \
- --beta_step -5 \
- --percentile_init 70 \
- --percentile 90 \
- --percentile_step -5 \
- --eta 0.3 \
- --record_times 120 \
- --max_iters 300 \
- --lambda_v 0.01 \
- --lambda_decay  0.8 \
- --lambda_lower -100.0 \
- --lambda_upper 100.0 \
- --mu_p 2.5 \
- --export_img true \
- --task plate-0.2.msh \
- --design_dirichlet true
 ```
 
 ### Optimize Toy Problem with Python Script
@@ -90,6 +52,47 @@ optimizer.parameterize()
 optimizer.optimize()
 ```
 
+
+### Optimize Toy Problem with command line.
+```bash
+OMP_NUM_THREADS=3 OPENBLAS_NUM_THREADS=3  MKL_NUM_THREADS=3 PYTHONPATH=./ python ./scitopt/core/optimizer/kkt.py \
+ --dst_path ./result/test1_kkt1 \
+ --interpolation SIMP \
+ --p_init 1.0 \
+ --p 3.0 \
+ --p_step -4 \
+ --filter_radius_init 0.2 \
+ --filter_radius 0.08 \
+ --filter_radius_step 2 \
+ --move_limit_init 0.20 \
+ --move_limit 0.02 \
+ --move_limit_step 2 \
+ --vol_frac_init 0.60 \
+ --vol_frac 0.40 \
+ --vol_frac_step 2 \
+ --beta_init 1.0 \
+ --beta 2.0 \
+ --beta_step 2 \
+ --beta_curvature 2.0 \
+ --percentile_init 70 \
+ --percentile 90 \
+ --percentile_step -4 \
+ --eta 0.8 \
+ --record_times 100 \
+ --max_iters 100 \
+ --lambda_v 0.01 \
+ --lambda_decay  0.8 \
+ --mu_p 2.50 \
+ --export_img true \
+ --sensitivity_filter false \
+ --task_name down_box \
+ --mesh_path box-down.msh \
+ --solver_option pyamg \
+ --rho_min 1e-2 \
+ --E0 210e9 \
+ --E_min 210e5 \
+ --design_dirichlet true
+```
 
 
 ## Optiization Algorithm
