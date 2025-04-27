@@ -6,7 +6,7 @@
 **A lightweight, flexible Python library for topology optimization built on top of [scikit-fem](https://github.com/kinnala/scikit-fem).**
 
 <p align="center">
-  <img src="scitopt/assets/pull-down-0.gif" alt="Optimization Process Pull-Down-0" width="600">
+  <img src="assets/ex-pull-down-0.gif" alt="Optimization Process Pull-Down-0" width="600">
 </p>
 
 
