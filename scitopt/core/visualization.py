@@ -224,7 +224,7 @@ def images2gif(
     output_gif = os.path.join(dir_path, f"animation-{prefix}.gif")
     
     if len(image_files) > 0:
-        with imageio.get_writer(output_gif, mode='I', duration=0.2) as writer:
+        with imageio.get_writer(output_gif, mode='I', duration=0.2, loop=0) as writer:
             for filename in image_files:
                 image = imageio.imread(filename)
                 image_small = zoom(image, (scale, scale, 1))  # (H, W, C)
