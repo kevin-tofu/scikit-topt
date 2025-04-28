@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 import numpy as np
 import scitopt
-from scitopt.core import misc
 from scitopt.core.optimizer import common
 
 
@@ -9,7 +8,7 @@ from scitopt.core.optimizer import common
 class KKT_Config(common.SensitivityConfig):
     mu_p: float = 2.0
     lambda_v: float = 0.1
-    lambda_decay: float = 0.95
+    lambda_decay: float = 0.80
 
 
 # log(x) = -0.4   →   x ≈ 0.670
@@ -177,144 +176,21 @@ class KKT_Optimizer(common.SensitivityAnalysis):
 if __name__ == '__main__':
     import argparse
     from scitopt.mesh import toy_problem
+    from scitopt.core import misc
 
     parser = argparse.ArgumentParser(
         description=''
     )
-
-    parser.add_argument(
-        '--interpolation', '-I', type=str, default="RAMP", help=''
-    )
-    parser.add_argument(
-        '--max_iters', '-NI', type=int, default=200, help=''
-    )
-    parser.add_argument(
-        '--move_limit_init', '-MLI', type=float, default=0.8, help=''
-    )
-    parser.add_argument(
-        '--move_limit', '-ML', type=float, default=0.2, help=''
-    )
-    parser.add_argument(
-        '--move_limit_step', '-MLR', type=int, default=5, help=''
-    )
-    parser.add_argument(
-        '--percentile_init', '-PTI', type=float, default=60, help=''
-    )
-    parser.add_argument(
-        '--percentile_step', '-PTR', type=int, default=2, help=''
-    )
-    parser.add_argument(
-        '--percentile', '-PT', type=float, default=90, help=''
-    )
-    parser.add_argument(
-        '--rho_min', '-RhM', type=float, default=1e-1, help=''
-    )
-    parser.add_argument(
-        '--E0', '-E', type=float, default=1.0, help=''
-    )
-    parser.add_argument(
-        '--E_min', '-EM', type=float, default=1e-2, help=''
-    )
-    
-    parser.add_argument(
-        '--eta', '-ET', type=float, default=0.3, help=''
-    )
-    parser.add_argument(
-        '--record_times', '-RT', type=int, default=20, help=''
-    )
-    parser.add_argument(
-        '--dst_path', '-DP', type=str, default="./result/test0", help=''
-    )
-    parser.add_argument(
-        '--vol_frac_init', '-VI', type=float, default=0.8, help=''
-    )
-    parser.add_argument(
-        '--vol_frac', '-V', type=float, default=0.4, help=''
-    )
-    parser.add_argument(
-        '--vol_frac_step', '-VFT', type=int, default=3, help=''
-    )
-    parser.add_argument(
-        '--filter_radius_init', '-FRI', type=float, default=0.2, help=''
-    )
-    parser.add_argument(
-        '--filter_radius', '-FR', type=float, default=0.05, help=''
-    )
-    parser.add_argument(
-        '--filter_radius_step', '-FRS', type=int, default=3, help=''
-    )
-    parser.add_argument(
-        '--p_init', '-PI', type=float, default=1.0, help=''
-    )
-    parser.add_argument(
-        '--p', '-P', type=float, default=3.0, help=''
-    )
-    parser.add_argument(
-        '--p_step', '-PRT', type=int, default=3, help=''
-    )
-    parser.add_argument(
-        '--beta_init', '-BI', type=float, default=0.1, help=''
-    )
-    parser.add_argument(
-        '--beta', '-B', type=float, default=5.0, help=''
-    )
-    parser.add_argument(
-        '--beta_curvature', '-BC', type=float, default=5.0, help=''
-    )
-    parser.add_argument(
-        '--beta_step', '-BR', type=int, default=3, help=''
-    )
-    parser.add_argument(
-        '--beta_eta', '-BE', type=float, default=0.5, help=''
-    )
+    parser = misc.add_common_arguments(parser)
     parser.add_argument(
         '--mu_p', '-MUP', type=float, default=100.0, help=''
     )
-    # parser.add_argument(
-    #     '--mu_d', '-MUD', type=float, default=200.0, help=''
-    # )
-    # parser.add_argument(
-    #     '--mu_i', '-MUI', type=float, default=10.0, help=''
-    # )
     parser.add_argument(
         '--lambda_v', '-LV', type=float, default=1.0, help=''
     )
     parser.add_argument(
         '--lambda_decay', '-LD', type=float, default=0.95, help=''
     )
-    parser.add_argument(
-        '--lambda_lower', '-BSL', type=float, default=1e-3, help=''
-    )
-    parser.add_argument(
-        '--lambda_upper', '-BSH', type=float, default=1e+3, help=''
-    )
-    parser.add_argument(
-        '--restart', '-RS', type=misc.str2bool, default=False, help=''
-    )
-    parser.add_argument(
-        '--restart_from', '-RF', type=int, default=-1, help=''
-    )
-    
-    parser.add_argument(
-        '--export_img', '-EI', type=misc.str2bool, default=False, help=''
-    )
-    parser.add_argument(
-        '--design_dirichlet', '-DD', type=misc.str2bool, default=True, help=''
-    )
-    parser.add_argument(
-        '--sensitivity_filter', '-SF', type=misc.str2bool, default=True, help=''
-    )
-    # 
-    parser.add_argument(
-        '--task_name', '-T', type=str, default="toy1", help=''
-    )
-    parser.add_argument(
-        '--mesh_path', '-MP', type=str, default="plate.msh", help=''
-    )
-    parser.add_argument(
-        '--solver_option', '-SO', type=str, default="pyamg", help=''
-    )
-    
     args = parser.parse_args()
     
 
