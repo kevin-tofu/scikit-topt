@@ -22,14 +22,14 @@
   - Modified OC Method
   - Lagrange Method
 - Multiple objective functions (forces)  
-- High-performance computation using sparse matrices with Scipy and Numba  
+- High-performance computation using sparse matrices with Scipy and PyAMG  
 - easy installation with pip/poetry
 
 
-
 ## ToDo
-- Make 
+- Make workflow efficient
 - Set break point from the optimization loop
+- Organize documentation
 - Add LevelSet
 
 ### Install Package
