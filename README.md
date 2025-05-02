@@ -27,7 +27,7 @@
 
 
 ## ToDo
-- Make workflow efficient
+- Make workflow for multi-load cases efficient
 - Set break point from the optimization loop
 - Organize documentation
 - Add LevelSet
