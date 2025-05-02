@@ -11,6 +11,13 @@ class KKT_Config(common.SensitivityConfig):
     lambda_decay: float = 0.80
 
 
+    @staticmethod
+    def import_from(path: str):
+        import yaml
+        with open(f"{path}/cfg.yaml", "r") as f:
+            data = yaml.safe_load(f)
+        return KKT_Config(**data)
+
 # log(x) = -0.4   →   x ≈ 0.670
 # log(x) = -0.3   →   x ≈ 0.741
 # log(x) = -0.2   →   x ≈ 0.819
