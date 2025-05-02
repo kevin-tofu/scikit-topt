@@ -68,11 +68,6 @@ class SensitivityConfig():
         filtered_args = {k: v for k, v in args.items() if k in valid_keys}
         return cls(**filtered_args)
 
-    
-    def export(self, path: str):
-        with open(f"{path}/cfg.json", "w") as f:
-            json.dump(asdict(self), f, indent=2)
-
 
     @classmethod
     def import_from(cls, path: str) -> 'SensitivityConfig':
@@ -80,6 +75,11 @@ class SensitivityConfig():
         with open(f"{path}/cfg.json", "r") as f:
             data = json.load(f)
         return cls(**data)
+
+    
+    def export(self, path: str):
+        with open(f"{path}/cfg.json", "w") as f:
+            json.dump(asdict(self), f, indent=2)
 
 
     # def export(self, path: str):
