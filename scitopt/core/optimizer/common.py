@@ -75,7 +75,7 @@ class SensitivityConfig():
 
 
     @classmethod
-    def import_from(cls, path: str):
+    def import_from(cls, path: str) -> 'SensitivityConfig':
         import json
         with open(f"{path}/cfg.json", "r") as f:
             data = json.load(f)
