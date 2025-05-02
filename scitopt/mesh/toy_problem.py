@@ -119,49 +119,6 @@ def toy1_fine():
     return toy_base(0.2)
 
 
-def toy2():
-    x_len = 16.0
-    y_len = 9.0
-    z_len = 2.0
-    # mesh_size = 0.5
-    # mesh_size = 0.3
-    mesh_size = 0.1
-    mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
-    
-    # 
-    e = skfem.ElementVector(skfem.ElementTetP1())
-    basis = skfem.Basis(mesh, e, intorder=3)
-    dirichlet_points = utils.get_point_indices_in_range(
-        basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
-    )
-    dirichlet_nodes = basis.get_dofs(dirichlet_points).all()
-    F_points = utils.get_point_indices_in_range(
-        basis, (x_len, x_len), (y_len*2/5, y_len*3/5), (z_len*2/5, z_len*3/5)
-    )
-    F_nodes = basis.get_dofs(nodes=F_points).nodal["u^1"]
-    print(F_nodes)
-    print(F_nodes.shape)
-    design_elements = utils.get_elements_in_box(
-        mesh,
-        # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
-        (0.0, x_len), (0.0, y_len), (0.0, z_len)
-    )
-
-    print("generate config")
-    E0 = 210e9
-    F = [0.3, -0.3]
-    print("F:", F)
-    return task.TaskConfig.from_defaults(
-        E0,
-        0.30,
-        basis,
-        dirichlet_points,
-        dirichlet_nodes,
-        F_points,
-        F_nodes,
-        F,
-        design_elements
-    )
 
 
 def load_mesh_auto(msh_path: str):
@@ -173,6 +130,61 @@ def load_mesh_auto(msh_path: str):
         return skfem.MeshHex.load(pathlib.Path(msh_path))
     else:
         raise ValueError("")
+
+
+def toy2():
+    x_len = 8.0
+    y_len = 8.0
+    z_len = 2.0
+    # mesh_size = 0.5
+    # mesh_size = 0.3
+    mesh_size = 0.6
+    mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
+    
+    # 
+    e = skfem.ElementVector(skfem.ElementHex1())
+    basis = skfem.Basis(mesh, e, intorder=2)
+    dirichlet_points_0 = utils.get_point_indices_in_range(
+        basis, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
+    )
+    dirichlet_points_1 = utils.get_point_indices_in_range(
+        basis, (0.0, x_len), (0.0, 0.05), (0.0, z_len)
+    )
+    dirichlet_points = np.concatenate([dirichlet_points_0, dirichlet_points_1])
+    dirichlet_nodes = basis.get_dofs(nodes=dirichlet_points).all()
+    
+    F_points_0 = utils.get_point_indices_in_range(
+        basis, (x_len, x_len), (y_len, y_len), (0, z_len)
+    )
+    F_nodes_0 = basis.get_dofs(nodes=F_points_0).nodal["u^1"]
+    F_points_1 = utils.get_point_indices_in_range(
+        basis, (x_len, x_len), (y_len, y_len), (0, z_len)
+    )
+    F_nodes_1 = basis.get_dofs(nodes=F_points_1).nodal["u^2"]
+    print(F_nodes_0)
+    print(F_nodes_0.shape)
+    design_elements = utils.get_elements_in_box(
+        mesh,
+        # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
+        (0.0, x_len), (0.0, y_len), (0.0, z_len)
+    )
+
+    print("generate config")
+    E0 = 210e9
+    F = [300, 300]
+    print("F:", F)
+    return task.TaskConfig.from_defaults(
+        E0,
+        0.30,
+        basis,
+        dirichlet_points,
+        dirichlet_nodes,
+        [F_points_0, F_points_1],
+        [F_nodes_0, F_nodes_1],
+        F,
+        design_elements
+    )
+
 
 # from memory_profiler import profile
 # @profile
