@@ -73,6 +73,30 @@ class SensitivityConfig():
         with open(f"{path}/cfg.json", "w") as f:
             json.dump(asdict(self), f, indent=2)
 
+
+    @classmethod
+    def import_from(cls, path: str):
+        import json
+        with open(f"{path}/cfg.json", "r") as f:
+            data = json.load(f)
+        return cls(**data)
+
+
+    # def export(self, path: str):
+    #     import yaml
+    #     with open(f"{path}/cfg.yaml", "w") as f:
+    #         yaml.dump(asdict(self), f, sort_keys=False)
+
+
+    # @classmethod
+    # def import_from(cls, path: str):
+    #     import yaml
+    #     with open(f"{path}/cfg.yaml", "r") as f:
+    #         data = yaml.safe_load(f)
+    #     return OC_Config(**data)
+
+
+    
     def vtu_path(self, iter: int):
         return f"{self.dst_path}/mesh_rho/info_mesh-{iter:08d}.vtu"
 
