@@ -135,10 +135,10 @@ def load_mesh_auto(msh_path: str):
 def toy2():
     x_len = 8.0
     y_len = 8.0
-    z_len = 2.0
+    z_len = 1.0
     # mesh_size = 0.5
     # mesh_size = 0.3
-    mesh_size = 0.6
+    mesh_size = 0.2
     mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
     
     # 
@@ -147,22 +147,26 @@ def toy2():
     dirichlet_points_0 = utils.get_point_indices_in_range(
         basis, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
-    dirichlet_points_1 = utils.get_point_indices_in_range(
-        basis, (0.0, x_len), (0.0, 0.05), (0.0, z_len)
-    )
-    dirichlet_points = np.concatenate([dirichlet_points_0, dirichlet_points_1])
+    # dirichlet_points_1 = utils.get_point_indices_in_range(
+    #     basis, (0.0, x_len), (0.0, 0.05), (0.0, z_len)
+    # )
+    # dirichlet_points = np.concatenate([dirichlet_points_0, dirichlet_points_1])
+    dirichlet_points = dirichlet_points_0
     dirichlet_nodes = basis.get_dofs(nodes=dirichlet_points).all()
     
     F_points_0 = utils.get_point_indices_in_range(
         basis, (x_len, x_len), (y_len, y_len), (0, z_len)
     )
-    F_nodes_0 = basis.get_dofs(nodes=F_points_0).nodal["u^1"]
+    F_nodes_0 = basis.get_dofs(nodes=F_points_0).nodal["u^2"]
     F_points_1 = utils.get_point_indices_in_range(
-        basis, (x_len, x_len), (y_len, y_len), (0, z_len)
+        basis, (x_len, x_len), (0, 0), (0, z_len)
     )
     F_nodes_1 = basis.get_dofs(nodes=F_points_1).nodal["u^2"]
-    print(F_nodes_0)
-    print(F_nodes_0.shape)
+    # F_points_1 = utils.get_point_indices_in_range(
+    #     basis, (x_len, x_len), (y_len, y_len), (0, z_len)
+    # )
+    # F_nodes_1 = basis.get_dofs(nodes=F_points_1).nodal["u^2"]
+    # print(F_nodes_0.shape, F_nodes_1.shape)
     design_elements = utils.get_elements_in_box(
         mesh,
         # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
@@ -171,7 +175,7 @@ def toy2():
 
     print("generate config")
     E0 = 210e9
-    F = [300, 300]
+    F = [-300, 300]
     print("F:", F)
     return task.TaskConfig.from_defaults(
         E0,

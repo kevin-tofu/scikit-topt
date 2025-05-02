@@ -454,7 +454,7 @@ class SensitivityAnalysis():
             self.recorder.feed_data("strain_energy", strain_energy_ave)
             self.recorder.feed_data("compliance", compliance_avg)
             self.recorder.feed_data("scaling_rate", scaling_rate)
-            u_max = u_max[0] if len(u_max) == 1 else np.ndarray(u_max)
+            u_max = u_max[0] if len(u_max) == 1 else np.array(u_max)
             self.recorder.feed_data("u_max", u_max)
 
             if iter % (cfg.max_iters // self.cfg.record_times) == 0 or iter == 1:
