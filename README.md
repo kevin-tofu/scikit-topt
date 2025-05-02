@@ -16,7 +16,7 @@
  
   The currently supported features are as follows:
 - Coding with Python  
-- Implement FEA on structured mesh using scikit-fem
+- Implement FEA on unstructured mesh using scikit-fem
 - Topology optimization using the density method and its optimization algorithm
   - Optimality Criteria (OC) Method  
   - Modified OC Method
