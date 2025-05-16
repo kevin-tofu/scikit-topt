@@ -191,7 +191,7 @@ If you use Scikit Topt in your research or software, please cite it as:
 ```bibtex
 @misc{scikit-topt2025,
 author = {Kohei Watanabe},
-title = {{Scikit Topt}: A Python library for topology optimization with {Scikit}},
+title = {{Scikit Topt}: A Python library for topology optimization with {Scipy Ecosystem}},
 publisher = {Zenodo},
 year = {2025},
 doi = {10.5281/zenodo.15441499},
