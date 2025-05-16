@@ -2,6 +2,8 @@ from typing import Optional, Literal
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from scitopt.tools.logconf import mylogger
+logger = mylogger(__name__)
 
 
 class HistoryLogger():
@@ -39,9 +41,9 @@ class HistoryLogger():
     def print(self):
         d = self.data[-1]
         if isinstance(d, list):
-            print(f"{self.name}: min={d[0]:.3f}, mean={d[1]:.3f}, max={d[2]:.3f}")
+            logger.info(f"{self.name}: min={d[0]:.3f}, mean={d[1]:.3f}, max={d[2]:.3f}")
         else:
-            print(f"{self.name}: {d:.3f}")
+            logger.info(f"{self.name}: {d:.3f}")
 
 
 class HistoriesLogger():
