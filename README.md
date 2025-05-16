@@ -5,11 +5,23 @@
 # 🧠 Scikit Topt
 **A lightweight, flexible Python library for topology optimization built on top of [scikit-fem](https://github.com/kinnala/scikit-fem).**
 
+## Examples and Fieatures
+### Example 1 : Single Load Condition
 <p align="center">
   <img src="assets/ex-pull-down-0.gif" alt="Optimization Process Pull-Down-0" width="400" style="margin-right: 20px;">
   <img src="assets/ex-pull-down-1.jpg" alt="Optimization Process Pull-Down-1" width="400">
 </p>
 
+### Example 2 : Multiple Load Condition
+<p align="center">
+  <img src="assets/ex-multi-load-condition2.png" alt="multi-load-condition" width="400" style="margin-right: 20px;">
+  <img src="assets/ex-multi-load-v-50.jpg" alt="multi-load-condition-distribution" width="400">
+</p>
+
+### Progress Report
+<p align="center">
+  <img src="assets/ex-multi-load-v-50-progress.jpg" alt="multi-load-condition-progress" width="600">
+</p>
 
 ## Features
  To contribute to the open-source community and education—which I’ve always benefited from—I decided to start this project. 
@@ -32,11 +44,68 @@
 - Organize documentation
 - Add LevelSet
 
+## Usage
 ### Install Package
 ```bash
 pip install scitopt
 poetry add scitopt
 ```
+
+
+### How to define a task from mesh structure (or .msh file)
+
+```Python
+import pathlib
+import skfem
+import scitopt
+
+# Load or Creat a mesh model
+x_len, y_len, z_len = 1.0, 1.0, 1.0
+element_size = 0.1
+e = skfem.ElementVector(skfem.ElementHex1())
+# msh_path = "model.msh"
+# mesh = skfem.MeshHex.load(pathlib.Path(msh_path))
+
+# define basis
+mesh = scitopt.mesh.toy_problem.create_box_hex(x_len, y_len, z_len, element_size)
+basis = skfem.Basis(mesh, e, intorder=3)
+
+# Specify Dirichlet Boundary Conditions
+dirichlet_points = scitopt.mesh.utils.get_point_indices_in_range(
+    basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
+)
+dirichlet_nodes = basis.get_dofs(nodes=dirichlet_points).all()
+
+# Define Force Vector
+F_points = scitopt.mesh.utils.get_point_indices_in_range(
+    basis,
+    (x_len, x_len),
+    (y_len*2/5, y_len*3/5),
+    (z_len*2/5, z_len*3/5)
+)
+F_nodes = basis.get_dofs(nodes=F_points).nodal["u^1"]
+F = 100
+
+# Specify Design Field
+design_elements = scitopt.mesh.utils.get_elements_in_box(
+    mesh,
+    (0.0, x_len), (0.0, y_len), (0.0, z_len)
+)
+
+# Define it as a task
+tsk = scitopt.mesh.task.TaskConfig.from_defaults(
+    210e9,
+    0.30,
+    basis,
+    dirichlet_points,
+    dirichlet_nodes,
+    F_points,
+    F_nodes,
+    F,
+    design_elements
+)
+```
+
 
 ### Optimize Toy Problem with Python Script
 
@@ -96,120 +165,8 @@ OMP_NUM_THREADS=3 OPENBLAS_NUM_THREADS=3  MKL_NUM_THREADS=3 PYTHONPATH=./ python
 
 
 ## Optiization Algorithm
-### Density Method
-#### Optimality Criteria (OC) Method
-
-The **OC method** is a widely used algorithm for compliance minimization problems in structural topology optimization. It updates the material distribution (`density field`) based on a set of local update rules derived from optimality conditions.
-
-**Key characteristics:**
-- Simple and efficient to implement.
-- Iteratively updates densities using sensitivity information (e.g., compliance derivatives).
-- Often includes move limits to stabilize convergence.
-
-**Update rule (simplified):**
-```math
-\rho_i^{(new)} = \text{clip}\left(\rho_i \cdot \left(-\frac{\partial C}{\partial \rho_i} / \lambda \right)^{\eta}, \rho_{min}, \rho_{max} \right)
-```
-where:
-- ρ_i: density of element i
-- dC/dρ_i: compliance sensitivity
-- λ: Lagrange multiplier (to satisfy volume constraint)
-- η: damping factor
-
----
-
-#### Modified OC (MOC) Method
-
-The **Modified OC method (MOC)** extends the classic OC method by introducing enhancements such as:
-- **Log-domain updates** to improve numerical stability,
-- **Dynamic lambda adjustment** to better handle volume constraints,
-- **Stress constraints** or **connectivity penalties** (optional).
-
-**Advantages of MOC:**
-- Improved convergence in difficult optimization problems.
-- Better control over numerical instability (e.g., checkerboard patterns).
-- More flexibility to incorporate complex constraints.
-
----
-
-Both methods are particularly suited for density-based approaches (e.g., SIMP), and can be combined with filters (e.g., sensitivity or density filters) to control minimum feature size and avoid numerical issues.
-
----
-
-## Techinical Components
-### Material Interpolation: SIMP and RAMP
-In density-based topology optimization, the material stiffness is interpolated as a function of the element density.
-
-#### SIMP (Solid Isotropic Material with Penalization)
-SIMP is the most commonly used interpolation scheme:
-
-```math
-E(ρ) = ρ^p * E₀
-```
-
-- ρ: element density (range: 0 to 1)
-- p: penalization factor (typically p ≥ 3)
-- E0: Young’s modulus of solid material
-
-
-
-This method penalizes intermediate densities and encourages a 0–1 (black-and-white) design.
-
-####  RAMP (Rational Approximation of Material Properties)
-
-RAMP is another interpolation scheme used to reduce numerical instabilities like checkerboarding:
-
-```math
-E(ρ) = E₀ * ρ / (1 + q * (1 - ρ))
-```
-
-- q: penalization parameter (higher q gives stronger 0–1 behavior)
-
-
-RAMP can sometimes provide smoother convergence than SIMP.
-
----
-
-### Heaviside Projection
-
-Heaviside projection is used to **sharpen the boundaries** between solid and void regions after filtering:
-
-```math
-ρ̃ = (tanh(β * η) + tanh(β * (ρ - η))) / (tanh(β * η) + tanh(β * (1 - η)))
-```
-
-- ρ: filtered density
-- ρ̃: projected density
-- β: steepness parameter (higher = sharper transitions)
-- η: threshold level (usually 0.5)
-
-As beta → ∞, the projection approaches a binary function.
-
----
-
-### Helmholtz Filter (Density Smoothing)
-
-The **Helmholtz filter** smooths the density field to prevent checkerboard patterns and enforce a minimum feature size.
-
-It solves the PDE:
-
-```math
-(-r² ∇² + 1) ρ̃ = ρ
-```
-
-- ρ: raw density field  
-- ρ̃: filtered density  
-- r: filter radius (controls the minimum length scale)
-
-This is often implemented via solving a sparse linear system using finite elements.
-
-**Benefits:**
-- Enforces minimum feature size
-- Suppresses numerical instabilities
-- Improves manufacturability of the design
-
----
-
+Optimization Algorithms and Techniques are briefly summarized here.  
+[Optimization Algorithms and Techniques](./docs/techniques.md)
 
 
 ## Acknowledgements
