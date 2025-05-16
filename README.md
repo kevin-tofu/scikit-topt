@@ -5,7 +5,10 @@
 
 
 # 🧠 Scikit Topt
-**A lightweight, flexible Python library for topology optimization built on top of [scikit-fem](https://github.com/kinnala/scikit-fem).**
+**A lightweight, flexible Python library for topology optimization built on top of Scikit Libraries**
+- [scipy](https://scipy.org/)
+- [scikit-fem](https://github.com/kinnala/scikit-fem)
+
 
 ## Examples and Fieatures
 ### Example 1 : Single Load Condition
@@ -25,26 +28,22 @@
   <img src="assets/ex-multi-load-v-50-progress.jpg" alt="multi-load-condition-progress" width="600">
 </p>
 
+
 ## Features
  To contribute to the open-source community and education—which I’ve always benefited from—I decided to start this project. 
  
-  The currently supported features are as follows:
+The currently supported features are as follows:
 - Coding with Python  
+- easy installation with pip/poetry
 - Implement FEA on unstructured mesh using scikit-fem
 - Topology optimization using the density method and its optimization algorithm
   - Optimality Criteria (OC) Method  
   - Modified OC Method
   - Lagrange Method
-- Multiple objective functions (forces)  
+- able to handle multiple objectives / constraints
 - High-performance computation using sparse matrices with Scipy and PyAMG  
-- easy installation with pip/poetry
+- has a function to monitor the transition of parameters.
 
-
-## ToDo
-- Make workflow for multi-load cases efficient
-- Set break point from the optimization loop
-- Organize documentation
-- Add LevelSet
 
 ## Usage
 ### Install Package
@@ -187,17 +186,21 @@ Scikit-Topt is standing on the shoulders of proverbial giants. In particular, I 
 
 ## 📖 Citation
 
-If you use this repository in your work, please cite it as follows:  
-
 If you use Scikit Topt in your research or software, please cite it as:
 
 ```bibtex
 @misc{scikit-topt2025,
-  author       = {Kohei Watanabe},
-  title        = {Scikit Topt: A Python library for topology optimization using scikit-fem},
-  year         = {2025},
-  publisher    = {GitHub},
-  howpublished = {\url{https://github.com/kevin-tofu/scikit-topt}},
-  note         = {Accessed: 2025-04-24}
+author = {Kohei Watanabe},
+title = {{Scikit Topt}: A Python library for topology optimization with {Scikit}},
+publisher = {Zenodo},
+year = {2025},
+doi = {10.5281/zenodo.15441499},
 }
 ```
+
+
+## ToDo
+- Make workflow for multi-load cases efficient
+- Set break point from the optimization loop
+- Organize documentation
+- Add LevelSet
