@@ -4,6 +4,8 @@ import numpy as np
 import scitopt
 from scitopt.core import misc
 from scitopt.core.optimizer import common
+from scitopt.tools.logconf import mylogger
+logger = mylogger(__name__)
 
 
 @dataclass
@@ -33,14 +35,13 @@ def moc_log_update_logspace(
     rho_min, rho_max
 ):
     eps = 1e-8
-    
-    print("dC:", dC.min(), dC.max())
+    logger.info("dC:", dC.min(), dC.max())
     # if percentile > 0:
     np.negative(dC, out=scaling_rate)
     scaling_rate /= (lambda_v + eps)
     np.maximum(scaling_rate, eps, out=scaling_rate)
     np.log(scaling_rate, out=scaling_rate)
-    scaling_rate -= np.mean(scaling_rate) # 
+    scaling_rate -= np.mean(scaling_rate)
     # np.clip(scaling_rate, -0.05, 0.05, out=scaling_rate)
     # np.clip(scaling_rate, -0.10, 0.10, out=scaling_rate)
     # np.clip(scaling_rate, -0.20, 0.20, out=scaling_rate)
@@ -48,10 +49,7 @@ def moc_log_update_logspace(
     np.clip(scaling_rate, -0.50, 0.50, out=scaling_rate)
     np.clip(rho, rho_min, 1.0, out=rho)
     np.log(rho, out=tmp_lower)
-    
 
-    # 
-    # 
     # tmp_upper = exp(tmp_lower) = rho (real space)
     np.exp(tmp_lower, out=tmp_upper)
     # tmp_upper = log(1 + move_limit / rho)
@@ -87,9 +85,8 @@ class MOC_Optimizer(common.SensitivityAnalysis):
     ):
         super().__init__(cfg, tsk)
         self.recorder.add("-dC", plot_type="min-max-mean-std", ylog=True)
-        self.recorder.add("lambda_v", ylog=True) # True
+        self.recorder.add("lambda_v", ylog=True)
 
-    
     def rho_update(
         self,
         iter_loop: int,
@@ -111,39 +108,30 @@ class MOC_Optimizer(common.SensitivityAnalysis):
         cfg = self.cfg
         tsk = self.tsk
         eps = 1e-8
-        
         if percentile > 0:
             scale = np.percentile(np.abs(dC_drho_ave), percentile)
             self.recorder.feed_data("-dC", -dC_drho_ave)
-            # scale = np.percentile(np.abs(dC_drho_full[tsk.design_elements]), percentile)
-            # scale = np.median(np.abs(dC_drho_full[tsk.design_elements]))
-            self.running_scale = 0.2 * self.running_scale + (1 - 0.2) * scale if iter_loop > 1 else scale
-            print(f"running_scale: {self.running_scale}")
+            self.running_scale = 0.2 * self.running_scale + \
+                (1 - 0.2) * scale if iter_loop > 1 else scale
+            logger.info(f"running_scale: {self.running_scale}")
             dC_drho_ave = dC_drho_ave / (self.running_scale + eps)
         else:
-            pass    
-        # np.minimum(
-        #     dC_drho_full,
-        #     -lambda_lower*0.1,
-        #     out=dC_drho_full
-        # )
-        # np.clip(dC_drho_full, -lambda_upper * 10, -lambda_lower * 0.1, out=dC_drho_full)
-        
-        
-        
-        # vol_error = np.mean(rho_projected[tsk.design_elements]) - vol_frac
+            pass
+
         vol_error = np.sum(
             rho_projected[tsk.design_elements] * elements_volume_design
         ) / elements_volume_design_sum - vol_frac
-        
+
         penalty = cfg.mu_p * vol_error
-        self.lambda_v = cfg.lambda_decay * self.lambda_v + penalty if iter_loop > 1 else penalty
-        self.lambda_v = np.clip(self.lambda_v, cfg.lambda_lower, cfg.lambda_upper)
+        self.lambda_v = cfg.lambda_decay * self.lambda_v + \
+            penalty if iter_loop > 1 else penalty
+        self.lambda_v = np.clip(
+            self.lambda_v, cfg.lambda_lower, cfg.lambda_upper
+        )
         self.recorder.feed_data("lambda_v", self.lambda_v)
         self.recorder.feed_data("vol_error", vol_error)
         self.recorder.feed_data("-dC", -dC_drho_ave)
-        
-        # 
+
         moc_log_update_logspace(
             rho_candidate,
             dC_drho_ave,
@@ -153,9 +141,8 @@ class MOC_Optimizer(common.SensitivityAnalysis):
             tmp_lower, tmp_upper,
             cfg.rho_min, 1.0
         )
-        
-    
-    
+
+
 if __name__ == '__main__':
     import argparse
     from scitopt.mesh import toy_problem
@@ -174,7 +161,6 @@ if __name__ == '__main__':
         '--lambda_decay', '-LD', type=float, default=0.95, help=''
     )
     args = parser.parse_args()
-    
 
     if args.task_name == "toy1":
         tsk = toy_problem.toy1()
@@ -184,9 +170,8 @@ if __name__ == '__main__':
         tsk = toy_problem.toy2()
     else:
         tsk = toy_problem.toy_msh(args.task_name, args.mesh_path)
-    
+
     print("load toy problem")
-    
     print("generate MOC_Config")
     cfg = MOC_Config.from_defaults(
         **vars(args)

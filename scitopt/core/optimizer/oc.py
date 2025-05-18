@@ -3,9 +3,10 @@ from dataclasses import dataclass
 import numpy as np
 import scitopt
 from scitopt.core import projection
-from scitopt import filter
 from scitopt.core import misc
 from scitopt.core.optimizer import common
+from scitopt.tools.logconf import mylogger
+logger = mylogger(__name__)
 
 
 @dataclass
@@ -23,9 +24,10 @@ def bisection_with_projection(
     scaling_rate, rho_candidate,
     tmp_lower, tmp_upper,
     elements_volume, elements_volume_sum,
-    max_iter=100, tolerance=1e-4,
-    l1 = 1e-3,
-    l2 = 1e+3
+    max_iter: int = 100,
+    tolerance: float = 1e-4,
+    l1: float = 1e-3,
+    l2: float = 1e+3
 ):
     # for _ in range(100):
     # while abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
@@ -38,7 +40,6 @@ def bisection_with_projection(
 
         # Clip
         np.clip(scaling_rate, 0.8, 1.2, out=scaling_rate)
-        
         np.multiply(rho_e, scaling_rate, out=rho_candidate)
         np.maximum(rho_e - move_limit, rho_min, out=tmp_lower)
         np.minimum(rho_e + move_limit, rho_max, out=tmp_upper)
@@ -47,19 +48,19 @@ def bisection_with_projection(
         projection.heaviside_projection_inplace(
             rho_candidate, beta=beta, eta=beta_eta, out=rho_candidate
         )
-        
+
         # vol_error = np.mean(rho_candidate) - vol_frac
         vol_error = np.sum(
             rho_candidate * elements_volume
         ) / elements_volume_sum - vol_frac
-        
+
         if abs(vol_error) < 1e-6:
             break
         if vol_error > 0:
             l1 = lmid
         else:
             l2 = lmid
-            
+
     return lmid, vol_error
 
 
@@ -71,11 +72,10 @@ class OC_Optimizer(common.SensitivityAnalysis):
     ):
         super().__init__(cfg, tsk)
         self.recorder.add("-dC", plot_type="min-max-mean-std", ylog=True)
-        self.recorder.add("lmid", ylog=True) # True
+        self.recorder.add("lmid", ylog=True)
         self.running_scale = 0
-            
-    
-    def init_schedulers(self, export: bool=True):
+
+    def init_schedulers(self, export: bool = True):
         super().init_schedulers(False)
         self.schedulers.add(
             "eta",
@@ -86,7 +86,6 @@ class OC_Optimizer(common.SensitivityAnalysis):
         )
         if export:
             self.schedulers.export()
-
 
     def rho_update(
         self,
@@ -107,19 +106,18 @@ class OC_Optimizer(common.SensitivityAnalysis):
         vol_frac: float
     ):
         cfg = self.cfg
-        tsk = self.tsk
+        # tsk = self.tsk
         eps = 1e-6
-        
         if percentile > 0:
             scale = np.percentile(np.abs(dC_drho_ave), percentile)
             # scale = max(scale, np.mean(np.abs(dC_drho_ave)), 1e-4)
             # scale = np.median(np.abs(dC_drho_full[tsk.design_elements]))
-            self.running_scale = 0.6 * self.running_scale + (1 - 0.6) * scale if iter_loop > 1 else scale
+            self.running_scale = 0.6 * self.running_scale + \
+                (1 - 0.6) * scale if iter_loop > 1 else scale
             dC_drho_ave /= (self.running_scale + eps)
         else:
             pass
-        print(f"dC_drho_ave-scaled min:{dC_drho_ave.min()} max:{dC_drho_ave.max()}")
-        print(f"dC_drho_ave-scaled ave:{np.mean(dC_drho_ave)} sdv:{np.std(dC_drho_ave)}")
+
         # rho_e = rho_projected[tsk.design_elements]
         # rho_e = rho[tsk.design_elements]
         rho_e = rho_candidate.copy()
@@ -133,12 +131,15 @@ class OC_Optimizer(common.SensitivityAnalysis):
             tmp_lower, tmp_upper,
             elements_volume_design, elements_volume_design_sum,
             max_iter=1000, tolerance=1e-5,
-            l1 = cfg.lambda_lower,
-            l2 = cfg.lambda_upper
+            l1=cfg.lambda_lower,
+            l2=cfg.lambda_upper
         )
-        print(
-            f"λ: {lmid:.4e}, vol_error: {vol_error:.4f}, mean(rho): {np.mean(rho_candidate):.4f}"
-        )
+        l_str = f"λ: {lmid:.4e}"
+        vol_str = f"vol_error: {vol_error:.4f}"
+        rho_str = f"mean(rho): {np.mean(rho_candidate):.4f}"
+        message = f"{l_str}, {vol_str}, {rho_str}"
+
+        logger.info(message)
         self.recorder.feed_data("lmid", lmid)
         self.recorder.feed_data("vol_error", vol_error)
         self.recorder.feed_data("-dC", -dC_drho_ave)
@@ -148,8 +149,7 @@ if __name__ == '__main__':
 
     import argparse
     from scitopt.mesh import toy_problem
-    from scitopt.core import misc
-    
+
     parser = argparse.ArgumentParser(
         description=''
     )
@@ -162,7 +162,6 @@ if __name__ == '__main__':
         '--eta_step', '-ETR', type=float, default=-1.0, help=''
     )
     args = parser.parse_args()
-    
 
     if args.task_name == "toy1":
         tsk = toy_problem.toy1()
@@ -172,14 +171,12 @@ if __name__ == '__main__':
         tsk = toy_problem.toy2()
     else:
         tsk = toy_problem.toy_msh(args.task_name, args.mesh_path)
-    
+
     print("load toy problem")
-    
     print("generate OC_Config")
     cfg = OC_Config.from_defaults(
         **vars(args)
     )
-    
     print("optimizer")
     optimizer = OC_Optimizer(cfg, tsk)
     print("parameterize")

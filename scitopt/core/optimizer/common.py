@@ -1,5 +1,5 @@
 import os
-from typing import Literal, Optional
+from typing import Literal
 import inspect
 import shutil
 import json
@@ -21,8 +21,8 @@ logger = mylogger(__name__)
 class SensitivityConfig():
     dst_path: str = "./result/pytests"
     interpolation: Literal["SIMP", "RAMP"] = "SIMP"
-    record_times: int=20
-    max_iters: int=200
+    record_times: int = 20
+    max_iters: int = 200
     p_init: float = 1.0
     p: float = 3.0
     p_step: int = -1
@@ -53,13 +53,12 @@ class SensitivityConfig():
     restart_from: int = -1
     export_img: bool = False
     export_img_opaque: bool = False
-    design_dirichlet: bool=False
-    lambda_lower: float=1e-2
-    lambda_upper: float=1e+2
+    design_dirichlet: bool = False
+    lambda_lower: float = 1e-2
+    lambda_upper: float = 1e+2
     sensitivity_filter: bool = False
-    solver_option: Literal["spsolve", "pyamg"]="pyamg"
-    scaling: bool=False
-
+    solver_option: Literal["spsolve", "pyamg"] = "pyamg"
+    scaling: bool = False
 
     @classmethod
     def from_defaults(cls, **args):
@@ -68,7 +67,6 @@ class SensitivityConfig():
         filtered_args = {k: v for k, v in args.items() if k in valid_keys}
         return cls(**filtered_args)
 
-
     @classmethod
     def import_from(cls, path: str) -> 'SensitivityConfig':
         import json
@@ -76,17 +74,14 @@ class SensitivityConfig():
             data = json.load(f)
         return cls(**data)
 
-    
     def export(self, path: str):
         with open(f"{path}/cfg.json", "w") as f:
             json.dump(asdict(self), f, indent=2)
-
 
     # def export(self, path: str):
     #     import yaml
     #     with open(f"{path}/cfg.yaml", "w") as f:
     #         yaml.dump(asdict(self), f, sort_keys=False)
-
 
     # @classmethod
     # def import_from(cls, path: str):
@@ -95,18 +90,14 @@ class SensitivityConfig():
     #         data = yaml.safe_load(f)
     #     return OC_Config(**data)
 
-
-    
     def vtu_path(self, iter: int):
         return f"{self.dst_path}/mesh_rho/info_mesh-{iter:08d}.vtu"
-
 
     def image_path(self, iter: int, prefix: str):
         if self.export_img:
             return f"{self.dst_path}/mesh_rho/info_{prefix}-{iter:08d}.jpg"
         else:
             return None
-
 
 
 class SensitivityAnalysis():
@@ -124,10 +115,10 @@ class SensitivityAnalysis():
             os.makedirs(self.cfg.dst_path)
         self.cfg.export(self.cfg.dst_path)
         # self.tsk.nodes_and_elements_stats(self.cfg.dst_path)
-        
+
         if cfg.design_dirichlet is False:
             self.tsk.exlude_dirichlet_from_design()
-        
+
         if cfg.restart is True:
             self.load_parameters()
         else:
@@ -136,7 +127,7 @@ class SensitivityAnalysis():
             os.makedirs(f"{self.cfg.dst_path}/mesh_rho")
             if not os.path.exists(f"{self.cfg.dst_path}/data"):
                 os.makedirs(f"{self.cfg.dst_path}/data")
-            
+
             # self.parameterize(cfg.solver_option)
 
         self.recorder = tools.HistoriesLogger(self.cfg.dst_path)
@@ -154,9 +145,7 @@ class SensitivityAnalysis():
         # self.recorder.add("lambda_v", ylog=False) # True
         self.schedulers = tools.Schedulers(self.cfg.dst_path)
 
-
     def scale(self):
-        
         bbox = np.ptp(self.tsk.mesh.p, axis=1)
         L_max = np.max(bbox)
         # L_mean = np.mean(bbox)
@@ -168,14 +157,12 @@ class SensitivityAnalysis():
             1.0 / self.L_scale, 1.0 / self.F_scale
         )
 
-
     def unscale(self):
         self.tsk.scale(
             self.L_scale, self.F_scale
         )
 
-
-    def init_schedulers(self, export: bool=True):
+    def init_schedulers(self, export: bool = True):
 
         cfg = self.cfg
         p_init = cfg.p_init
@@ -258,7 +245,6 @@ class SensitivityAnalysis():
         if export:
             self.schedulers.export()
 
-
     def parameterize(self):
         self.helmholz_solver = filter.HelmholtzFilter.from_defaults(
             self.tsk.mesh,
@@ -266,7 +252,6 @@ class SensitivityAnalysis():
             solver_option="pyamg",
             # solver_option=self.cfg.solver_option,
             dst_path=f"{self.cfg.dst_path}/data",
-            
         )
 
     def load_parameters(self):
@@ -274,13 +259,10 @@ class SensitivityAnalysis():
             f"{self.cfg.dst_path}/data"
         )
 
-    
     def optimize(self):
         tsk = self.tsk
         cfg = self.cfg
         if cfg.interpolation == "SIMP":
-        # if False:
-            # density_interpolation = composer.simp_interpolation_numba
             density_interpolation = composer.simp_interpolation
             dC_drho_func = derivatives.dC_drho_simp
             val_init = cfg.vol_frac_init
@@ -290,7 +272,7 @@ class SensitivityAnalysis():
             val_init = 0.4
         else:
             raise ValueError("should be SIMP/RAMP")
-        
+
         elements_volume_design = tsk.elements_volume[tsk.design_elements]
         elements_volume_design_sum = np.sum(elements_volume_design)
 
@@ -298,12 +280,15 @@ class SensitivityAnalysis():
         iter_begin = 1
         if cfg.restart is True:
             if cfg.restart_from > 0:
-                data = np.load(
-                    f"{cfg.dst_path}/data/{str(cfg.restart_from).zfill(6)}-rho.npz"
-                )
+                data_dir = f"{cfg.dst_path}/data"
+                data_fname = f"{cfg.restart_from:06d}-rho.npz"
+                data_path = f"{data_dir}/{data_fname}"
+                data = np.load(data_path)
                 iter_begin = cfg.restart_from + 1
             else:
-                iter, data_path = misc.find_latest_iter_file(f"{cfg.dst_path}/data")
+                iter, data_path = misc.find_latest_iter_file(
+                    f"{cfg.dst_path}/data"
+                )
                 data = np.load(data_path)
                 iter_begin = iter + 1
             iter_end = cfg.max_iters + 1
@@ -311,8 +296,10 @@ class SensitivityAnalysis():
             rho[tsk.design_elements] = data["rho_design_elements"]
             del data
         else:
-            # _vol_frac = cfg.vol_frac if cfg.vol_frac_step < 0 else cfg.vol_frac_init
-            # rho += _vol_frac + 0.1 * (np.random.rand(len(tsk.all_elements)) - 0.5)
+            # _vol_frac = cfg.vol_frac \
+            #     if cfg.vol_frac_step < 0 else cfg.vol_frac_init
+            # rho += _vol_frac + \
+            #     0.1 * (np.random.rand(len(tsk.all_elements)) - 0.5)
             # rho += _vol_frac + 0.15
             rho += val_init
             np.clip(rho, cfg.rho_min, cfg.rho_max, out=rho)
@@ -324,8 +311,6 @@ class SensitivityAnalysis():
             rho[tsk.dirichlet_force_elements] = 1.0
         rho[tsk.fixed_elements] = 1.0
         self.init_schedulers()
-        
-        
         rho_prev = np.zeros_like(rho)
         rho_filtered = np.zeros_like(rho)
         rho_projected = np.zeros_like(rho)
@@ -343,13 +328,17 @@ class SensitivityAnalysis():
         tmp_lower = np.empty_like(rho[tsk.design_elements])
         tmp_upper = np.empty_like(rho[tsk.design_elements])
         force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
-        filter_radius_prev = cfg.filter_radius_init if cfg.filter_radius_step > 0 else cfg.filter_radius
-        self.helmholz_solver.update_radius(tsk.mesh, filter_radius_prev, solver_option=cfg.solver_option)
+        filter_radius_prev = cfg.filter_radius_init \
+            if cfg.filter_radius_step > 0 else cfg.filter_radius
+        self.helmholz_solver.update_radius(
+            tsk.mesh, filter_radius_prev, solver_option=cfg.solver_option
+        )
         for iter_loop, iter in enumerate(range(iter_begin, iter_end)):
             logger.info(f"iterations: {iter} / {iter_end - 1}")
             p, vol_frac, beta, move_limit, eta, percentile, filter_radius = (
                 self.schedulers.values(iter)[k] for k in [
-                    'p', 'vol_frac', 'beta', 'move_limit', 'eta', 'percentile', 'filter_radius'
+                    'p', 'vol_frac', 'beta', 'move_limit',
+                    'eta', 'percentile', 'filter_radius'
                 ]
             )
             # if iter_loop == 0:
@@ -360,7 +349,6 @@ class SensitivityAnalysis():
             #     solver_option = dict(
             #         solver="pyamg"
             #     )
-            
             # solver_option = dict(
             #     solver="spsolve"
             # )
@@ -371,18 +359,27 @@ class SensitivityAnalysis():
 
             if filter_radius_prev != filter_radius:
                 logger.info("Filter Update")
-                self.helmholz_solver.update_radius(tsk.mesh, filter_radius, cfg.solver_option)
-            
-            logger.info(f"p {p:.4f}, vol_frac {vol_frac:.4f}, beta {beta:.4f}, move_limit {move_limit:.4f}")
-            logger.info(f"eta {eta:.4f}, percentile {percentile:.4f} filter_radius {filter_radius:.4f}")
-            
+                self.helmholz_solver.update_radius(
+                    tsk.mesh, filter_radius, cfg.solver_option
+                )
+            logger.info(
+                f"p {p:.4f}, vol_frac {vol_frac:.4f}"
+            )
+            logger.info(
+                f"beta {beta:.4f}, move_limit {move_limit:.4f}"
+            )
+            logger.info(
+                f"eta {eta:.4f}, percentile {percentile:.4f}"
+            )
+            logger.info(
+                f"filter_radius {filter_radius:.4f}"
+            )
             logger.info("project and filter")
             rho_prev[:] = rho[:]
             rho_filtered[:] = self.helmholz_solver.filter(rho)
             projection.heaviside_projection_inplace(
                 rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
             )
-            
             logger.info("compute compliance")
             dC_drho_ave[:] = 0.0
             dC_drho_full[:] = 0.0
@@ -398,7 +395,7 @@ class SensitivityAnalysis():
                     elem_func=density_interpolation,
                     solver=solver_option
                 )
-                
+
                 u_max.append(np.abs(u).max())
                 compliance_avg += compliance
                 strain_energy = composer.strain_energy_skfem(
@@ -407,7 +404,7 @@ class SensitivityAnalysis():
                     elem_func=density_interpolation
                 )
                 strain_energy_ave += strain_energy
-                
+
                 # rho_safe = np.clip(rho_filtered, 1e-3, 1.0)
                 np.copyto(
                     dC_drho_projected,
@@ -427,21 +424,18 @@ class SensitivityAnalysis():
                 dC_drho_full[:] += self.helmholz_solver.gradient(grad_filtered)
                 # dC_drho_ave[:] += dC_drho_full[tsk.design_elements]
                 # dC_drho_dirichlet[:] += dC_drho_full[tsk.dirichlet_elements]
-                
             dC_drho_full /= len(force_list)
             strain_energy_ave /= len(force_list)
             compliance_avg /= len(force_list)
-            logger.info(f"dC_drho_full- min:{dC_drho_full.min()} max:{dC_drho_full.max()}")
-            
+            message = f"dC_drho_full- min:{dC_drho_full.min()} "
+            message += f"max:{dC_drho_full.max()}"
+            logger.info(message)
             if cfg.sensitivity_filter:
                 logger.info("sensitivity filter")
                 filtered = self.helmholz_solver.filter(dC_drho_full)
                 np.copyto(dC_drho_full, filtered)
-            
             dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
-            rho_candidate[:] = rho[tsk.design_elements] # Dont forget. inplace
-            
-            # 
+            rho_candidate[:] = rho[tsk.design_elements]
             logger.info("update density")
             self.rho_update(
                 # iter_loop,
@@ -461,7 +455,6 @@ class SensitivityAnalysis():
                 elements_volume_design_sum,
                 vol_frac
             )
-            # 
             rho[tsk.design_elements] = rho_candidate
             if cfg.design_dirichlet is True:
                 rho[tsk.force_elements] = 1.0
@@ -469,25 +462,34 @@ class SensitivityAnalysis():
                 rho[tsk.dirichlet_force_elements] = 1.0
 
             filter_radius_prev = filter_radius
-            # rho_diff = np.mean(np.abs(rho[tsk.design_elements] - rho_prev[tsk.design_elements]))
+            message = f"{scaling_rate.min()} {scaling_rate.mean()} "
+            message += f"{scaling_rate.max()}"
             logger.info(
-                f"scaling_rate min/mean/max {scaling_rate.min()} {scaling_rate.mean()} {scaling_rate.max()}"
+                f"scaling_rate min/mean/max {message}"
+            )
+            message = f"{scaling_rate.min()} {scaling_rate.mean()} "
+            message += f"{scaling_rate.max()}"
+            logger.info(
+                f"scaling_rate min/mean/max {message}"
             )
             self.recorder.feed_data("rho", rho[tsk.design_elements])
-            self.recorder.feed_data("rho_projected", rho_projected[tsk.design_elements])
+            self.recorder.feed_data(
+                "rho_projected", rho_projected[tsk.design_elements]
+            )
             self.recorder.feed_data("strain_energy", strain_energy_ave)
             self.recorder.feed_data("compliance", compliance_avg)
             self.recorder.feed_data("scaling_rate", scaling_rate)
             u_max = u_max[0] if len(u_max) == 1 else np.array(u_max)
             self.recorder.feed_data("u_max", u_max)
 
-            if iter % (cfg.max_iters // self.cfg.record_times) == 0 or iter == 1:
-            # if True:
+            if any(
+                (iter % (cfg.max_iters // self.cfg.record_times) == 0,
+                 iter == 1)
+            ):
                 logger.info(f"Saving at iteration {iter}")
                 self.recorder.print()
                 # self.recorder_params.print()
                 self.recorder.export_progress()
-                
                 visualization.save_info_on_mesh(
                     tsk,
                     rho_projected, rho_prev, strain_energy_ave,
@@ -516,7 +518,6 @@ class SensitivityAnalysis():
         visualization.export_submesh(
             tsk, rho, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
         )
-
 
     def rho_update(
         self,

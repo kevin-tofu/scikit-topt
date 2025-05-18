@@ -2,6 +2,8 @@ from dataclasses import dataclass
 import numpy as np
 import scitopt
 from scitopt.core.optimizer import common
+from scitopt.tools.logconf import mylogger
+logger = mylogger(__name__)
 
 
 @dataclass
@@ -46,8 +48,7 @@ def kkt_moc_log_update(
     - tmp_lower, tmp_upper, scaling_rate: work arrays (same shape as rho)
     """
 
-    eps = 1e-8
-
+    # eps = 1e-8
     # Compute dL = dC + lambda_v
     # np.copyto(scaling_rate, dC)
     # scaling_rate += lambda_v
@@ -124,9 +125,8 @@ class KKT_Optimizer(common.SensitivityAnalysis):
     ):
         super().__init__(cfg, tsk)
         self.recorder.add("dC", plot_type="min-max-mean-std")
-        self.recorder.add("lambda_v", ylog=False) # True
+        self.recorder.add("lambda_v", ylog=False)
         self.lambda_v = cfg.lambda_v
-
 
     def rho_update(
         self,
@@ -148,18 +148,20 @@ class KKT_Optimizer(common.SensitivityAnalysis):
     ):
         cfg = self.cfg
         tsk = self.tsk
-        
+
         vol_error = np.sum(
             rho_projected[tsk.design_elements] * elements_volume_design
         ) / elements_volume_design_sum - vol_frac
         penalty = cfg.mu_p * vol_error
-        self.lambda_v = cfg.lambda_decay * self.lambda_v + penalty if iter_loop > 1 else penalty
-        self.lambda_v = np.clip(self.lambda_v, cfg.lambda_lower, cfg.lambda_upper)
+        self.lambda_v = cfg.lambda_decay * self.lambda_v + \
+            penalty if iter_loop > 1 else penalty
+        self.lambda_v = np.clip(
+            self.lambda_v, cfg.lambda_lower, cfg.lambda_upper
+        )
         self.recorder.feed_data("lambda_v", self.lambda_v)
         self.recorder.feed_data("vol_error", vol_error)
         self.recorder.feed_data("dC", dC_drho_ave)
-        
-        # 
+
         kkt_moc_log_update(
             rho=rho_candidate,
             dC=dC_drho_ave,
@@ -172,7 +174,7 @@ class KKT_Optimizer(common.SensitivityAnalysis):
             interpolation=cfg.interpolation
         )
 
-    
+
 if __name__ == '__main__':
     import argparse
     from scitopt.mesh import toy_problem
@@ -192,7 +194,6 @@ if __name__ == '__main__':
         '--lambda_decay', '-LD', type=float, default=0.95, help=''
     )
     args = parser.parse_args()
-    
 
     if args.task_name == "toy1":
         tsk = toy_problem.toy1()
@@ -202,9 +203,8 @@ if __name__ == '__main__':
         tsk = toy_problem.toy2()
     else:
         tsk = toy_problem.toy_msh(args.task_name, args.mesh_path)
-    
+
     print("load toy problem")
-    
     print("generate KKT_Config")
     cfg = KKT_Config.from_defaults(
         **vars(args)

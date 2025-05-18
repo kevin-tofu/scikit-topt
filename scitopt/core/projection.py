@@ -36,7 +36,8 @@ def heaviside_projection_inplace(rho, beta, eta=0.5, out=None):
     eta : float
         Threshold.
     out : ndarray or None
-        If provided, output will be written here. Otherwise, a new array is returned.
+        If provided, output will be written here.
+        Otherwise, a new array is returned.
     """
     if out is None:
         out = np.empty_like(rho)
@@ -72,7 +73,8 @@ def heaviside_projection_derivative_inplace(rho, beta, eta=0.5, out=None):
     eta : float
         Threshold parameter.
     out : ndarray or None
-        If provided, result will be written here. Otherwise, a new array is allocated.
+        If provided, result will be written here.
+        Otherwise, a new array is allocated.
 
     Returns
     -------

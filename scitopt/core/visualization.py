@@ -3,14 +3,13 @@ import glob
 
 from typing import Optional
 import imageio.v2 as imageio
-    
+
 import numpy as np
 import skfem
 import meshio
 import pyvista as pv
 import matplotlib.pyplot as plt
 import scitopt
-from scitopt.mesh import utils
 
 
 def rank_scale_0_1(dc: np.ndarray) -> np.ndarray:
@@ -29,30 +28,29 @@ def rank_scale_0_1(dc: np.ndarray) -> np.ndarray:
     """
     abs_dc = np.abs(dc)
     ranks = np.argsort(np.argsort(abs_dc))  # rank: 0 (min) → n-1 (max)
-    
+
     n = len(dc)
     scaled = ranks / (n - 1 + 1e-8)  # avoid divide-by-zero
 
     return scaled
 
 
-
 def save_info_on_mesh(
-    tsk, 
+    tsk,
     rho: np.ndarray,
     rho_prev: np.ndarray,
-    dC: Optional[np.ndarray]=None,
-    mesh_path: str='mesh.vtu',
-    rho_image_path: Optional[str]=None,
-    rho_image_title: Optional[str]=None,
-    dC_image_path: Optional[str]=None,
-    dC_image_title: Optional[str]=None,
+    dC: Optional[np.ndarray] = None,
+    mesh_path: str = 'mesh.vtu',
+    rho_image_path: Optional[str] = None,
+    rho_image_title: Optional[str] = None,
+    dC_image_path: Optional[str] = None,
+    dC_image_title: Optional[str] = None,
     opaque: bool = True
 ):
     if isinstance(tsk.mesh, skfem.MeshTet):
-        mesh_type = "tetra" 
+        mesh_type = "tetra"
     elif isinstance(tsk.mesh, skfem.MeshHex):
-        mesh_type = "hexahedron" 
+        mesh_type = "hexahedron"
     else:
         raise ValueError("")
     mesh = tsk.mesh
@@ -64,7 +62,7 @@ def save_info_on_mesh(
     element_colors_df1[tsk.fixed_elements] = 2
     element_colors_df2[dirichlet_ele] = 1
     element_colors_df2[F_ele] = 2
-    
+
     # rho_projected = techniques.heaviside_projection(
     #     rho, beta=beta, eta=eta
     # )
@@ -80,15 +78,14 @@ def save_info_on_mesh(
     cell_outputs["condition"] = [element_colors_df2]
     # if sigma_v is not None:
     #     cell_outputs["sigma_v"] = [sigma_v]
-    
+
     meshio_mesh = meshio.Mesh(
         points=mesh.p.T,
         cells=[(mesh_type, mesh.t.T)],
         cell_data=cell_outputs
     )
     meshio.write(mesh_path, meshio_mesh)
-    
-    # 
+
     if isinstance(rho_image_path, str):
         pv.start_xvfb()
         mesh = pv.read(mesh_path)
@@ -106,9 +103,10 @@ def save_info_on_mesh(
             add_mesh_params["opacity"] = (rho > 1e-1).astype(float)
         plotter.add_mesh(
             mesh, **add_mesh_params
-            
         )
-        plotter.add_text(rho_image_title, position="upper_left", font_size=12, color="black")
+        plotter.add_text(
+            rho_image_title, position="upper_left", font_size=12, color="black"
+        )
         plotter.screenshot(rho_image_path)
         plotter.close()
 
@@ -128,49 +126,11 @@ def save_info_on_mesh(
             lighting=False,
             scalar_bar_args={"title": scalar_name}
         )
-        plotter.add_text(dC_image_title, position="upper_left", font_size=12, color="black")
+        plotter.add_text(
+            dC_image_title, position="upper_left", font_size=12, color="black"
+        )
         plotter.screenshot(dC_image_path)
         plotter.close()
-
-    
-# def save_info_on_mesh_as_image(
-#     tsk, 
-#     info: list[np.ndarray],
-#     info_name: str,
-#     mesh_path: str,
-#     image_path :str,
-#     image_title: str
-# ):
-    
-#     mesh = tsk.mesh
-#     element_colors_df1 = np.zeros_like(info[0])
-#     element_colors_df1[tsk.design_elements] = 1
-#     element_colors_df1[tsk.fixed_elements] = 0.0
-    
-#     cell_outputs = dict()
-#     cell_outputs[info_name] = info
-#     meshio_mesh = meshio.Mesh(
-#         points=mesh.p.T,
-#         cells=[("tetra", mesh.t.T)],
-#         cell_data=cell_outputs
-#     )
-#     meshio.write(mesh_path, meshio_mesh)
-    
-#     pv.start_xvfb()
-#     mesh = pv.read(mesh_path)
-#     scalar_name = "rho"
-#     plotter = pv.Plotter(off_screen=True)
-#     plotter.add_mesh(
-#         mesh,
-#         scalars=scalar_name,
-#         cmap="turbo",
-#         clim=(0, 1),
-#         opacity=0.3,
-#         show_edges=False,
-#         scalar_bar_args={"title": scalar_name}
-#     )
-#     plotter.add_text(image_title, position="upper_left", font_size=12, color="black")
-#     plotter.screenshot(image_path)
 
 
 def export_submesh(
@@ -180,12 +140,18 @@ def export_submesh(
     dst_path: str
 ):
     mesh = tsk.mesh
-    remove_elements = tsk.design_elements[rho_projected[tsk.design_elements] <= threshold]
-    kept_elements = scitopt.mesh.task.setdiff1d(tsk.all_elements, remove_elements)
+    remove_elements = tsk.design_elements[
+        rho_projected[tsk.design_elements] <= threshold
+    ]
+    kept_elements = scitopt.mesh.task.setdiff1d(
+        tsk.all_elements, remove_elements
+    )
     kept_t = mesh.t[:, kept_elements]
     unique_vertex_indices = np.unique(kept_t)
     new_points = np.ascontiguousarray(mesh.p[:, unique_vertex_indices])
-    index_map = {old_idx: new_idx for new_idx, old_idx in enumerate(unique_vertex_indices)}
+    index_map = {
+        old: new for new, old in enumerate(unique_vertex_indices)
+    }
     new_elements = np.vectorize(index_map.get)(kept_t)
     new_elements = np.ascontiguousarray(new_elements)
     meshtype = type(mesh)
@@ -210,9 +176,9 @@ def rho_histo_plot(
 
 def images2gif(
     dir_path: str,
-    prefix: str="rho",
-    scale: float=0.7,
-    skip_frame: int=0
+    prefix: str = "rho",
+    scale: float = 0.7,
+    skip_frame: int = 0
 ):
     from scipy.ndimage import zoom
 
@@ -222,9 +188,10 @@ def images2gif(
         image_files = image_files[::skip_frame+1]
 
     output_gif = os.path.join(dir_path, f"animation-{prefix}.gif")
-    
     if len(image_files) > 0:
-        with imageio.get_writer(output_gif, mode='I', duration=0.2, loop=0) as writer:
+        with imageio.get_writer(
+            output_gif, mode='I', duration=0.2, loop=0
+        ) as writer:
             for filename in image_files:
                 image = imageio.imread(filename)
                 image_small = zoom(image, (scale, scale, 1))  # (H, W, C)
@@ -235,7 +202,6 @@ def images2gif(
 
 if __name__ == '__main__':
     import argparse
-    
     parser = argparse.ArgumentParser(
         description=''
     )
@@ -249,6 +215,11 @@ if __name__ == '__main__':
         '--skip_frame', '-SF', type=int, default=0, help=''
     )
     args = parser.parse_args()
-    images2gif(f"{args.images_path}", "rho", scale=args.scale, skip_frame=args.skip_frame)
-    images2gif(f"{args.images_path}", "dC", scale=args.scale, skip_frame=args.skip_frame)
-    
+    images2gif(
+        f"{args.images_path}", "rho", scale=args.scale,
+        skip_frame=args.skip_frame
+    )
+    images2gif(
+        f"{args.images_path}", "dC", scale=args.scale,
+        skip_frame=args.skip_frame
+    )
