@@ -10,10 +10,12 @@ class HistoryLogger():
     def __init__(
         self,
         name: str,
-        constants: Optional[list[float]]=None,
-        constant_names: Optional[list[str]]=None,
-        plot_type: Literal["min-max-mean", "min-max-mean-std"] = "min-max-mean",
-        ylog: bool=False
+        constants: Optional[list[float]] = None,
+        constant_names: Optional[list[str]] = None,
+        plot_type: Literal[
+            "min-max-mean", "min-max-mean-std"
+        ] = "min-max-mean",
+        ylog: bool = False
     ):
         self.data = list()
         self.name = name
@@ -21,11 +23,11 @@ class HistoryLogger():
         self.constant_names = constant_names
         self.plot_type = plot_type
         self.ylog = ylog
-    
+
     def exists(self):
         ret = True if len(self.data) > 0 else False
         return ret
-    
+
     def add(self, data: np.ndarray | float):
         if isinstance(data, np.ndarray):
             if data.shape == ():
@@ -37,11 +39,13 @@ class HistoryLogger():
                 self.data.append(_temp)
         else:
             self.data.append(float(data))
-        
+
     def print(self):
         d = self.data[-1]
         if isinstance(d, list):
-            logger.info(f"{self.name}: min={d[0]:.3f}, mean={d[1]:.3f}, max={d[2]:.3f}")
+            logger.info(
+                f"{self.name}: min={d[0]:.3f}, mean={d[1]:.3f}, max={d[2]:.3f}"
+            )
         else:
             logger.info(f"{self.name}: {d:.3f}")
 
@@ -53,16 +57,18 @@ class HistoriesLogger():
     ):
         self.dst_path = dst_path
         self.histories = dict()
-    
+
     def feed_data(self, name: str, data: np.ndarray | float):
         self.histories[name].add(data)
-    
+
     def add(
         self,
         name: str,
         constants: Optional[list[float]] = None,
         constant_names: Optional[list[str]] = None,
-        plot_type: Literal["value", "min-max-mean", "min-max-mean-std"] = "value",
+        plot_type: Literal[
+            "value", "min-max-mean", "min-max-mean-std"
+        ] = "value",
         ylog: bool = False
     ):
         hist = HistoryLogger(
@@ -73,13 +79,12 @@ class HistoriesLogger():
             ylog=ylog
         )
         self.histories[name] = hist
-    
+
     def print(self):
         for k in self.histories.keys():
             if self.histories[k].exists():
                 self.histories[k].print()
-    
-        
+
     def export_progress(self, fname: Optional[str] = None):
         if fname is None:
             fname = "progress.jpg"
@@ -92,14 +97,14 @@ class HistoriesLogger():
             page_index = "" if num_pages == 1 else str(page)
             cols = 4
             keys = list(self.histories.keys())
-            start = page * cols * 2  # 2 rows on each page
-            end = min(start + cols * 2, len(keys))  # 8 plots maximum on each page
-
+            # 2 rows on each page
+            # 8 plots maximum on each page
+            start = page * cols * 2
+            end = min(start + cols * 2, len(keys))
             n_graphs_this_page = end - start
             rows = math.ceil(n_graphs_this_page / cols)
 
             fig, ax = plt.subplots(rows, cols, figsize=(16, 4 * rows))
-
             ax = np.atleast_2d(ax)
             if ax.ndim == 1:
                 ax = np.reshape(ax, (rows, cols))
@@ -114,9 +119,18 @@ class HistoriesLogger():
                     d = np.array(h.data)
                     if d.ndim > 1:
                         x_array = np.array(range(d[:, 0].shape[0]))
-                        ax[p, q].plot(x_array, d[:, 0], marker='o', linestyle='-', label="min")
-                        ax[p, q].plot(x_array, d[:, 1], marker='o', linestyle='-', label="mean")
-                        ax[p, q].plot(x_array, d[:, 2], marker='o', linestyle='-', label="max")
+                        ax[p, q].plot(
+                            x_array, d[:, 0],
+                            marker='o', linestyle='-', label="min"
+                        )
+                        ax[p, q].plot(
+                            x_array, d[:, 1],
+                            marker='o', linestyle='-', label="mean"
+                        )
+                        ax[p, q].plot(
+                            x_array, d[:, 2],
+                            marker='o', linestyle='-', label="max"
+                        )
                         if h.plot_type == "min-max-mean-std":
                             ax[p, q].fill_between(
                                 x_array,

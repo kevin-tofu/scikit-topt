@@ -5,7 +5,6 @@ from skfem import MeshTet
 import meshio
 from scitopt.mesh import task
 from scitopt.mesh import utils
-from scitopt.fea import composer
 
 
 def create_box_hex(x_len, y_len, z_len, mesh_size):
@@ -36,7 +35,6 @@ def create_box_hex(x_len, y_len, z_len, mesh_size):
 
     print("Before mesh.t fix:", mesh.t[:, 0])
     t_fixed = utils.fix_hexahedron_orientation(mesh.t, mesh.p)
-    
     print("After fix        :", t_fixed[:, 0])
     mesh_fixed = skfem.MeshHex(mesh.p, t_fixed)
     print("Mesh fixed .t    :", mesh_fixed.t[:, 0])
@@ -51,11 +49,10 @@ def create_box_tet(x_len, y_len, z_len, mesh_size):
     scale = np.array([x_len, y_len, z_len])
     mesh = mesh.scaled(scale)
 
-    
     print("Before mesh.t fix:", mesh.t[:, 0])
     t_fixed = utils.fix_tetrahedron_orientation(mesh.t, mesh.p)
     # t_fixed = utils.fix_tetrahedron_orientation_numba(mesh.t, mesh.p)
-    
+
     print("After fix        :", t_fixed[:, 0])
     mesh_fixed = MeshTet(mesh.p, t_fixed)
     print("Mesh fixed .t    :", mesh_fixed.t[:, 0])
@@ -70,7 +67,7 @@ def toy_base(
     y_len = 6.0
     z_len = 4.0
     eps = 1.2
-    
+
     # if True:
     if False:
         mesh = create_box_tet(x_len, y_len, z_len, mesh_size)
@@ -84,7 +81,8 @@ def toy_base(
     )
     dirichlet_nodes = basis.get_dofs(dirichlet_points).all()
     F_points = utils.get_point_indices_in_range(
-        basis, (x_len - eps, x_len+0.1), (y_len*2/5, y_len*3/5), (z_len-eps, z_len)
+        basis,
+        (x_len - eps, x_len+0.1), (y_len*2/5, y_len*3/5), (z_len-eps, z_len)
     )
     F_nodes = basis.get_dofs(nodes=F_points).nodal['u^3']
     design_elements = utils.get_elements_in_box(
@@ -108,8 +106,10 @@ def toy_base(
         design_elements
     )
 
+
 def toy_test():
     return toy_base(1.0)
+
 
 def toy1():
     return toy_base(0.3)
@@ -117,8 +117,6 @@ def toy1():
 
 def toy1_fine():
     return toy_base(0.2)
-
-
 
 
 def load_mesh_auto(msh_path: str):
@@ -140,20 +138,13 @@ def toy2():
     # mesh_size = 0.3
     mesh_size = 0.2
     mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
-    
-    # 
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=2)
     dirichlet_points_0 = utils.get_point_indices_in_range(
         basis, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
-    # dirichlet_points_1 = utils.get_point_indices_in_range(
-    #     basis, (0.0, x_len), (0.0, 0.05), (0.0, z_len)
-    # )
-    # dirichlet_points = np.concatenate([dirichlet_points_0, dirichlet_points_1])
     dirichlet_points = dirichlet_points_0
     dirichlet_nodes = basis.get_dofs(nodes=dirichlet_points).all()
-    
     F_points_0 = utils.get_point_indices_in_range(
         basis, (x_len, x_len), (y_len, y_len), (0, z_len)
     )
@@ -162,11 +153,6 @@ def toy2():
         basis, (x_len, x_len), (0, 0), (0, z_len)
     )
     F_nodes_1 = basis.get_dofs(nodes=F_points_1).nodal["u^2"]
-    # F_points_1 = utils.get_point_indices_in_range(
-    #     basis, (x_len, x_len), (y_len, y_len), (0, z_len)
-    # )
-    # F_nodes_1 = basis.get_dofs(nodes=F_points_1).nodal["u^2"]
-    # print(F_nodes_0.shape, F_nodes_1.shape)
     design_elements = utils.get_elements_in_box(
         mesh,
         # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
@@ -193,7 +179,7 @@ def toy2():
 # from memory_profiler import profile
 # @profile
 def toy_msh(
-    task_name: str="down",
+    task_name: str = "down",
     msh_path: str = 'plate.msh',
 ):
     if task_name == "down":
@@ -240,13 +226,11 @@ def toy_msh(
     basis = skfem.Basis(mesh, e, intorder=3)
     # basis = skfem.Basis(mesh, e, intorder=4)
     # basis = skfem.Basis(mesh, e, intorder=5)
-    
     print("dirichlet_points")
     dirichlet_points = utils.get_point_indices_in_range(
         basis, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
     dirichlet_nodes = basis.get_dofs(nodes=dirichlet_points).all()
-    
     if task_name == "down":
         F_points = utils.get_point_indices_in_range(
             basis,
@@ -287,7 +271,6 @@ def toy_msh(
         )
         F_nodes = basis.get_dofs(nodes=F_points).nodal["u^1"]
         F = 200.0
-    
     design_elements = utils.get_elements_in_box(
         mesh,
         # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
@@ -301,13 +284,11 @@ def toy_msh(
         # design_elements = np.setdiff1d(design_elements, removed_elements)
         pass
 
-    
     print("generate config")
     E0 = 210e9
     print("F:", F)
     print("F_points:", F_points.shape)
     print("F_nodes:", F_nodes.shape)
-    
     return task.TaskConfig.from_defaults(
         E0,
         0.30,
@@ -319,14 +300,12 @@ def toy_msh(
         F,
         design_elements
     )
-    
-    
+
+
 if __name__ == '__main__':
 
-    import scitopt
     from scitopt.fea import solver
-    tsk = toy()
-    
+    tsk = toy1()
     rho = np.ones_like(tsk.design_elements)
     p = 3.0
     compliance, u = solver.compute_compliance_basis_numba(
