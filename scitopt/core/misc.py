@@ -16,7 +16,8 @@ def find_latest_iter_file(dst_path: str):
                 max_iter = iter_num
                 latest_file = fname
 
-    return max_iter, os.path.join(dst_path, latest_file) if latest_file else None
+    return max_iter, os.path.join(dst_path, latest_file) \
+        if latest_file else None
 
 
 def str2bool(value):
@@ -30,7 +31,9 @@ def str2bool(value):
         raise argparse.ArgumentTypeError('Boolean values is expeted')
 
 
-def add_common_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+def add_common_arguments(
+    parser: argparse.ArgumentParser
+) -> argparse.ArgumentParser:
     parser.add_argument(
         '--interpolation', '-I', type=str, default="SIMP", help=''
     )

@@ -5,9 +5,9 @@ from typing import Literal
 import numpy as np
 import scipy
 from scipy.sparse import coo_matrix, csc_matrix
-from scipy.sparse.linalg import splu, spsolve
+from scipy.sparse.linalg import splu
 from scipy.sparse.linalg import cg
-from scipy.sparse.linalg import LinearOperator, spilu
+from scipy.sparse.linalg import LinearOperator
 import pyamg
 import skfem
 
@@ -199,7 +199,7 @@ def element_to_element_laplacian(
         adjacency, volumes = adjacency_matrix_volume_hex_fast(mesh)
     else:
         raise NotImplementedError("skfem.MeshTet or skfem.MeshHex")
-    
+
     n_elements = mesh.t.shape[1]
     element_centers = np.mean(mesh.p[:, mesh.t], axis=1).T
     rows = []
@@ -226,7 +226,9 @@ def element_to_element_laplacian(
         rows.append(i)
         cols.append(i)
         data.append(diag)
-    laplacian = coo_matrix((data, (rows, cols)), shape=(n_elements, n_elements)).tocsc()
+    laplacian = coo_matrix(
+        (data, (rows, cols)), shape=(n_elements, n_elements)
+    ).tocsc()
     return laplacian, volumes
 
 
@@ -284,7 +286,8 @@ def prepare_helmholtz_filter(
                 laplacian.data[i] = []
         laplacian = laplacian.tocsc()
 
-        mean_volume = np.mean(volumes[valid_mask]) if np.any(valid_mask) else 1.0
+        mean_volume = np.mean(volumes[valid_mask]) if np.any(valid_mask) \
+            else 1.0
         volumes_normalized = volumes / mean_volume
         volumes_normalized[~valid_mask] = 0.0
     else:
@@ -328,7 +331,8 @@ def apply_filter_gradient_lu(
     V: scipy.sparse._csc.csc_matrix
 ) -> np.ndarray:
     """
-    Apply the Jacobian of the Helmholtz filter: d(rho_filtered)/d(rho) to a vector.
+    Apply the Jacobian of the Helmholtz filter:
+    d(rho_filtered)/d(rho) to a vector.
     """
     return solver.solve(V @ vec)
 
@@ -420,7 +424,7 @@ def apply_filter_gradient_amg(
     """
     Apply the Jacobian of the Helmholtz filter to a vector
     using AMG (i.e., solve A x = V @ vec).
-    
+
     Parameters
     ----------
     vec : ndarray
@@ -433,7 +437,7 @@ def apply_filter_gradient_amg(
         Precomputed AMG multilevel solver.
     tol : float
         Solver tolerance.
-    
+
     Returns
     -------
     x : ndarray
@@ -467,11 +471,11 @@ def _update_radius(
 class HelmholtzFilter():
     A: csc_matrix
     V: csc_matrix
-    dst_path: Optional[str]=None
+    dst_path: Optional[str] = None
     solver_option: Literal["spsolve", "cg", "pyamg"] = "cg"
-    A_solver: Optional[scipy.sparse.linalg.SuperLU]=None
-    M: Optional[LinearOperator]=None
-    pyamg_solver: Optional[pyamg.multilevel.MultilevelSolver]=None
+    A_solver: Optional[scipy.sparse.linalg.SuperLU] = None
+    M: Optional[LinearOperator] = None
+    pyamg_solver: Optional[pyamg.multilevel.MultilevelSolver] = None
     rtol: float = 1e-5
     maxiter: int = 1000
 
@@ -489,7 +493,6 @@ class HelmholtzFilter():
             design_mask=design_mask
         )
         self.preprocess(solver_option)
-        
 
     @classmethod
     def from_defaults(
@@ -524,7 +527,9 @@ class HelmholtzFilter():
 
     def filter(self, rho_element: np.ndarray):
         if self.solver_option == "spsolve":
-            return apply_helmholtz_filter_lu(rho_element, self.A_solver, self.V)
+            return apply_helmholtz_filter_lu(
+                rho_element, self.A_solver, self.V
+            )
         elif self.solver_option == "cg":
             return apply_helmholtz_filter_cg(
                 rho_element, self.A, self.V, M=self.M,

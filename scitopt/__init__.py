@@ -1,32 +1,45 @@
 import pathlib
 import re
+from scitopt import mesh, core, fea, tools
+
 
 try:
     from importlib.metadata import version, PackageNotFoundError
 except ImportError:
-    from importlib_metadata import version, PackageNotFoundError  # Python < 3.8
-
-try:
-    __version__ = version("scitopt")
-except PackageNotFoundError:
-    # Fallback: Read from pyproject.toml when not installed
-    def read_version_from_pyproject():
-        root = pathlib.Path(__file__).resolve().parent.parent
-        pyproject_path = root / "pyproject.toml"
-        if pyproject_path.exists():
-            content = pyproject_path.read_text()
-            match = re.search(r'version\s*=\s*"(.*?)"', content)
-            if match:
-                return match.group(1)
-        return "0.0.0"  # fallback version
-
-    __version__ = read_version_from_pyproject()
+    # old python
+    from importlib_metadata import version, PackageNotFoundError
 
 
-from scitopt import mesh, core, fea, tools
+def read_version_from_pyproject():
+    root = pathlib.Path(__file__).resolve().parent.parent
+    # while root != root.parent and depth < max_depth:
+    pyproject_path = root / "pyproject.toml"
+    if pyproject_path.exists():
+        content = pyproject_path.read_text()
+        match = re.search(r'version\s*=\s*"(.*?)"', content)
+        if match:
+            return match.group(1)
+    # root = root.parent
+    #     depth += 1
+    return "0.0.0"
 
-__all__ = []
-__all__.append("mesh")
-__all__.append("core")
-__all__.append("fea")
-__all__.append("tools")
+
+def get_version(package_name):
+    try:
+        # print("version-", version(package_name))
+        return version(package_name)
+    except PackageNotFoundError:
+        return read_version_from_pyproject()
+
+
+__version__ = get_version("scitopt")
+# print(f"scitopt version: {__version__}")
+
+
+__all__ = [
+    "__version__",
+    "mesh",
+    "core",
+    "fea",
+    "tools",
+]
