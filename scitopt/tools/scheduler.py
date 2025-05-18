@@ -14,9 +14,11 @@ def schedule_exp_slowdown(it, total, start=1.0, target=0.4, rate=10.0):
     final_decay = np.exp(-rate)
 
     if start > target:
-        return target + (start - target) * (decay - final_decay) / (1 - final_decay)
+        return target + \
+            (start - target) * (decay - final_decay) / (1 - final_decay)
     else:
-        return target - (target - start) * (decay - final_decay) / (1 - final_decay)
+        return target - \
+            (target - start) * (decay - final_decay) / (1 - final_decay)
 
 
 def schedule_exp_accelerate(
@@ -30,11 +32,13 @@ def schedule_exp_accelerate(
 
 
 def schedule_step(
-    it: int, total: int, start: float=1.0, target: float=0.4, num_steps: int=10,
+    it: int, total: int,
+    start: float = 1.0, target: float = 0.4, num_steps: int = 10,
     **args
 ):
     """
-    Step-function scheduler where each step value is used for (approximately) equal number of iterations.
+    Step-function scheduler where each step value is used for
+    (approximately) equal number of iterations.
 
     Parameters
     ----------
@@ -81,7 +85,7 @@ def schedule_step_accelerating(
     """
     Step-function scheduler with increasing step size.
 
-    The steps get gradually larger (nonlinear interpolation), 
+    The steps get gradually larger (nonlinear interpolation),
     controlled by 'curvature'.
 
     Parameters
@@ -130,7 +134,7 @@ def schedule_sawtooth_decay(
     **args
 ) -> float:
     """
-    Sawtooth-style scheduler: value decays linearly from `start` to `target` 
+    Sawtooth-style scheduler: value decays linearly from `start` to `target`
     in each step, and resets at each new step.
 
     Parameters
@@ -167,7 +171,6 @@ def schedule_sawtooth_decay(
 
 
 class Scheduler():
-    
     def __init__(
         self,
         name: str,
@@ -175,7 +178,7 @@ class Scheduler():
         target_value: float,
         num_steps: float,
         iters_max: int,
-        curvature: Optional[float]=None,
+        curvature: Optional[float] = None,
         func: Callable = schedule_step
     ):
         self.name = name
@@ -185,7 +188,6 @@ class Scheduler():
         self.num_steps = num_steps
         self.curvature = curvature
         self.func = func
-        
 
     def value(self, iter: int | np.ndarray):
         if self.num_steps < 0 or iter >= self.iters_max:
@@ -199,12 +201,10 @@ class Scheduler():
             num_steps=self.num_steps,
             curvature=self.curvature,
         )
-            
         return ret
 
 
 class SchedulerStep(Scheduler):
-    
     def __init__(
         self,
         name: str,
@@ -225,7 +225,6 @@ class SchedulerStep(Scheduler):
 
 
 class SchedulerStepAccelerating(Scheduler):
-    
     def __init__(
         self,
         name: str,
@@ -247,7 +246,6 @@ class SchedulerStepAccelerating(Scheduler):
 
 
 class SchedulerSawtoothDecay(Scheduler):
-    
     def __init__(
         self,
         name: str,
@@ -265,26 +263,23 @@ class SchedulerSawtoothDecay(Scheduler):
             None,
             func=schedule_sawtooth_decay
         )
-        
+
 
 class Schedulers():
     def __init__(self, dst_path: str):
         self.scheduler_list = []
         self.dst_path = dst_path
-    
-    
+
     def values(self, iter: int):
         ret = dict()
         for sche in self.scheduler_list:
-           ret[sche.name] = sche.value(iter)
+            ret[sche.name] = sche.value(iter)
         return ret
-
 
     def add_object(
         self, s: Scheduler
     ):
         self.scheduler_list.append(s)
-
 
     def add(
         self,
@@ -293,24 +288,26 @@ class Schedulers():
         target_value: float,
         num_steps: float,
         iters_max: int,
-        curvature: Optional[float]=None,
+        curvature: Optional[float] = None,
         func: Callable = schedule_step
     ):
         s = Scheduler(
-            name, init_value, target_value, num_steps, iters_max, curvature, func
+            name, init_value, target_value, num_steps,
+            iters_max, curvature, func
         )
         # print(s.name)
         self.scheduler_list.append(s)
 
-
     def export(
         self,
-        fname: Optional[str]=None
+        fname: Optional[str] = None
     ):
         schedules = dict()
         for sche in self.scheduler_list:
-           schedules[sche.name] = [ sche.value(it) for it in range(1, sche.iters_max+1)]
-    
+            schedules[sche.name] = [
+               sche.value(it) for it in range(1, sche.iters_max+1)
+            ]
+
         if fname is None:
             fname = "progress.jpg"
         plt.clf()
@@ -322,8 +319,10 @@ class Schedulers():
             page_index = "0" if num_pages == 1 else str(page)
             cols = 4
             keys = list(schedules.keys())
-            start = page * cols * 2  # 2 rows on each page
-            end = min(start + cols * 2, len(keys))  # 8 plots maximum on each page
+            # 2 rows on each page
+            # 8 plots maximum on each page
+            start = page * cols * 2
+            end = min(start + cols * 2, len(keys))
             n_graphs_this_page = end - start
             rows = math.ceil(n_graphs_this_page / cols)
 

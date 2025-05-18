@@ -50,7 +50,6 @@ def adjacency_matrix_volume_tet(mesh):
     return (adjacency, volumes)
 
 
-
 def tetra_volume(p):
     # p: shape (3, 4)
     a = p[:, 1] - p[:, 0]
@@ -81,14 +80,14 @@ def adjacency_matrix_volume_hex(mesh):
 
         coords = mesh.p[:, hex_elem]  # shape (3, 8)
 
-        # 体積を8個のTetrahedraに分割して近似
+        # approximate by dividing a volume into 8 Tetrahedra
         v = 0.0
-        v += tetra_volume(coords[:, [0,1,3,4]])
-        v += tetra_volume(coords[:, [1,2,3,6]])
-        v += tetra_volume(coords[:, [1,5,6,4]])
-        v += tetra_volume(coords[:, [3,6,7,4]])
-        v += tetra_volume(coords[:, [1,3,6,4]])
-        v += tetra_volume(coords[:, [1,6,5,4]])
+        v += tetra_volume(coords[:, [0, 1, 3, 4]])
+        v += tetra_volume(coords[:, [1, 2, 3, 6]])
+        v += tetra_volume(coords[:, [1, 5, 6, 4]])
+        v += tetra_volume(coords[:, [3, 6, 7, 4]])
+        v += tetra_volume(coords[:, [1, 3, 6, 4]])
+        v += tetra_volume(coords[:, [1, 6, 5, 4]])
         volumes[i] = v
 
     adjacency = defaultdict(list)
@@ -106,7 +105,7 @@ def adjacency_matrix_volume_hex_fast(mesh):
     n_elements = t.shape[1]
 
     # ----------------------------------
-    # 1. Hex体積をTetra6個に分解して高速計算
+    # approximate by dividing a volume into 6 Tetrahedra
     # ----------------------------------
     coords = mesh.p[:, t]  # shape: (3, 8, n_elements)
 
@@ -116,17 +115,23 @@ def adjacency_matrix_volume_hex_fast(mesh):
         c = p3 - p0
         return np.abs(np.einsum('ij,ij->j', a, np.cross(b, c, axis=0))) / 6.0
 
-    v0 = tet_volume_vectorized(coords[:, 0, :], coords[:, 1, :], coords[:, 3, :], coords[:, 4, :])
-    v1 = tet_volume_vectorized(coords[:, 1, :], coords[:, 2, :], coords[:, 3, :], coords[:, 6, :])
-    v2 = tet_volume_vectorized(coords[:, 1, :], coords[:, 5, :], coords[:, 6, :], coords[:, 4, :])
-    v3 = tet_volume_vectorized(coords[:, 3, :], coords[:, 6, :], coords[:, 7, :], coords[:, 4, :])
-    v4 = tet_volume_vectorized(coords[:, 1, :], coords[:, 3, :], coords[:, 6, :], coords[:, 4, :])
-    v5 = tet_volume_vectorized(coords[:, 1, :], coords[:, 6, :], coords[:, 5, :], coords[:, 4, :])
+    v0 = tet_volume_vectorized(
+        coords[:, 0, :], coords[:, 1, :], coords[:, 3, :], coords[:, 4, :])
+    v1 = tet_volume_vectorized(
+        coords[:, 1, :], coords[:, 2, :], coords[:, 3, :], coords[:, 6, :])
+    v2 = tet_volume_vectorized(
+        coords[:, 1, :], coords[:, 5, :], coords[:, 6, :], coords[:, 4, :])
+    v3 = tet_volume_vectorized(
+        coords[:, 3, :], coords[:, 6, :], coords[:, 7, :], coords[:, 4, :])
+    v4 = tet_volume_vectorized(
+        coords[:, 1, :], coords[:, 3, :], coords[:, 6, :], coords[:, 4, :])
+    v5 = tet_volume_vectorized(
+        coords[:, 1, :], coords[:, 6, :], coords[:, 5, :], coords[:, 4, :])
 
     volumes = v0 + v1 + v2 + v3 + v4 + v5  # shape: (n_elements,)
 
     # ----------------------------------
-    # 2. 面（4節点）を辞書に格納して adjacency を構築
+    # 2. build adjancy by storing 4 vertices to dictonary
     # ----------------------------------
     face_to_elements = defaultdict(list)
 
@@ -155,7 +160,6 @@ def adjacency_matrix_volume_hex_fast(mesh):
             adjacency[j].append(i)
 
     return adjacency, volumes
-
 
 
 def adjacency_matrix_volume_tet_fast(mesh):
@@ -247,8 +251,8 @@ def compute_filter_gradient_matrix(mesh: skfem.Mesh, radius: float):
     def filter_jacobian_matrix() -> np.ndarray:
         """Returns the full Jacobian matrix: A^{-1} @ M"""
         n = M.shape[0]
-        I = np.eye(n)
-        return np.column_stack([filter_grad_vec(I[:, i]) for i in range(n)])
+        Imat = np.eye(n)
+        return np.column_stack([filter_grad_vec(Imat[:, i]) for i in range(n)])
 
     return filter_grad_vec, filter_jacobian_matrix
 
@@ -262,9 +266,7 @@ def prepare_helmholtz_filter(
     Precompute and return the matrices and solver for Helmholtz filter.
     """
     laplacian, volumes = element_to_element_laplacian(mesh, radius)
-    
     if False:
-    # if exclude_nonadjacent and design_elements_mask is not None:
         centroids = np.mean(mesh.p[:, mesh.t], axis=1).T
         tree = scipy.spatial.cKDTree(centroids)
         n_elements = mesh.t.shape[1]
@@ -299,7 +301,8 @@ def apply_helmholtz_filter_lu(
     V: scipy.sparse._csc.csc_matrix
 ) -> np.ndarray:
     """
-    Apply the Helmholtz filter using a precomputed SuperLU solver and mass matrix V.
+    Apply the Helmholtz filter
+    using a precomputed SuperLU solver and mass matrix V.
 
     Parameters
     ----------
@@ -334,14 +337,15 @@ def apply_helmholtz_filter_cg(
     rho_element: np.ndarray,
     A: scipy.sparse._csc.csc_matrix, V: scipy.sparse._csc.csc_matrix,
     M: Optional[LinearOperator] = None,
-    rtol: float=1e-6,
-    maxiter: Optional[int]=None
+    rtol: float = 1e-6,
+    maxiter: Optional[int] = None
 ) -> np.ndarray:
     """
     Apply the Helmholtz filter using precomputed solver and M.
     """
     n_elements = A.shape
-    _maxiter = min(1000, max(300, n_elements // 5)) if maxiter is None else maxiter
+    _maxiter = min(1000, max(300, n_elements // 5)) \
+        if maxiter is None else maxiter
     rhs = V @ rho_element
     rho_filtered, info = cg(A, rhs, M=M, rtol=rtol, maxiter=_maxiter)
     print("helmholtz_filter_cg-info: ", info)
@@ -389,14 +393,16 @@ def apply_filter_gradient_cg(
     A: scipy.sparse._csc.csc_matrix,
     V: scipy.sparse._csc.csc_matrix,
     M: Optional[LinearOperator] = None,
-    rtol: float=1e-6,
-    maxiter: Optional[int]=None
+    rtol: float = 1e-6,
+    maxiter: Optional[int] = None
 ) -> np.ndarray:
     """
-    Apply the Jacobian of the Helmholtz filter: d(rho_filtered)/d(rho) to a vector.
+    Apply the Jacobian of the Helmholtz filter:
+    d(rho_filtered)/d(rho) to a vector.
     """
     n_elements = A.shape
-    _maxiter = min(1000, max(300, n_elements // 5)) if maxiter is None else maxiter
+    _maxiter = min(1000, max(300, n_elements // 5)) \
+        if maxiter is None else maxiter
 
     ret, info = cg(A, V @ vec, M=M, rtol=rtol, maxiter=_maxiter)
     print("filter_gradient_cg-info: ", info)
@@ -412,7 +418,8 @@ def apply_filter_gradient_amg(
     tol: float = 1e-8
 ) -> np.ndarray:
     """
-    Apply the Jacobian of the Helmholtz filter to a vector using AMG (i.e., solve A x = V @ vec).
+    Apply the Jacobian of the Helmholtz filter to a vector
+    using AMG (i.e., solve A x = V @ vec).
     
     Parameters
     ----------
@@ -440,8 +447,8 @@ def apply_filter_gradient_amg(
 def _update_radius(
     mesh: skfem.Mesh,
     radius: float,
-    dst_path: Optional[str]=None,
-    design_mask: Optional[np.ndarray]=None
+    dst_path: Optional[str] = None,
+    design_mask: Optional[np.ndarray] = None
 ):
     exclude_nonadjacent = False if design_mask is None else True
     A, V = prepare_helmholtz_filter(
@@ -465,15 +472,14 @@ class HelmholtzFilter():
     A_solver: Optional[scipy.sparse.linalg.SuperLU]=None
     M: Optional[LinearOperator]=None
     pyamg_solver: Optional[pyamg.multilevel.MultilevelSolver]=None
-    rtol: float=1e-5
-    maxiter: int=1000
-    
+    rtol: float = 1e-5
+    maxiter: int = 1000
 
     def update_radius(
         self,
         mesh: skfem.Mesh,
         radius: float,
-        design_mask: Optional[np.ndarray]=None,
+        design_mask: Optional[np.ndarray] = None,
         solver_option="pyamg"
     ):
         self.A, self.V = _update_radius(
@@ -491,8 +497,8 @@ class HelmholtzFilter():
         mesh: skfem.Mesh,
         radius: float,
         solver_option: Literal["spsolve", "cg", "pyamg"] = "pyamg",
-        dst_path: Optional[str]=None,
-        design_mask: Optional[np.ndarray]=None,
+        dst_path: Optional[str] = None,
+        design_mask: Optional[np.ndarray] = None,
     ):
         A, V = _update_radius(
             mesh=mesh,
@@ -509,14 +515,12 @@ class HelmholtzFilter():
         print(ret.solver_option)
         return ret
 
-    
     @classmethod
     def from_file(cls, dst_path: str):
         V = scipy.sparse.load_npz(f"{dst_path}/V.npz")
         A = scipy.sparse.load_npz(f"{dst_path}/A.npz")
         # A_solver = splu(A)
         return cls(A, V)
-
 
     def filter(self, rho_element: np.ndarray):
         if self.solver_option == "spsolve":
@@ -533,7 +537,6 @@ class HelmholtzFilter():
                 tol=self.rtol
             )
 
-        
     def gradient(self, v: np.ndarray):
         if self.solver_option == "spsolve":
             return apply_filter_gradient_lu(v, self.A_solver, self.V)
@@ -555,7 +558,7 @@ class HelmholtzFilter():
 
     def preprocess(
         self,
-        solver_option: Optional[str]=None
+        solver_option: Optional[str] = None
     ):
         if isinstance(solver_option, str):
             if solver_option in ["cg", "pyamg", "spsolve"]:
@@ -569,21 +572,18 @@ class HelmholtzFilter():
             self.create_LinearOperator()
         elif self.solver_option == "spsolve":
             self.create_solver()
-                
+
     def create_solver(self):
         self.A_solver = splu(self.A)
-    
 
     def create_LinearOperator(
         self,
-        rtol: float=1e-5,
-        maxiter: int=-1
+        rtol: float = 1e-5,
+        maxiter: int = -1
     ):
         self.rtol = rtol
         n_dof = self.A.shape[0]
         self.maxiter = maxiter if maxiter > 0 else n_dof // 4
-        
-        # 
         eps = 1e-8
         M_inv = 1.0 / (self.A.diagonal() + eps)
 
@@ -593,11 +593,10 @@ class HelmholtzFilter():
         self.M = LinearOperator(
             self.A.shape, matvec=apply_M
         )
-    
+
     def create_amgsolver(self):
         self.A = self.A.tocsr()
         self.pyamg_solver = pyamg.smoothed_aggregation_solver(self.A)
-        
         # or
         # Algebraic Multigrid
         # import pyamg

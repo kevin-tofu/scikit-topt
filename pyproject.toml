@@ -13,8 +13,6 @@ dependencies = [
     "matplotlib (>=3.10.1,<4.0.0)",
     "meshio (>=5.3.5,<6.0.0)",
     "numba (>=0.61.0,<0.62.0)",
-    "line-profiler (>=4.2.0,<5.0.0)",
-    "memory-profiler (>=0.61.0,<0.62.0)",
     "pyamg (>=5.2.1,<6.0.0)",
     "pyvista (>=0.44.2,<0.45.0)",
     "pyproject-toml (>=0.1.0,<0.2.0)",
@@ -36,8 +34,6 @@ scikit-fem = ">=10.0.2,<11.0.0"
 matplotlib = ">=3.10.1,<4.0.0"
 meshio = ">=5.3.5,<6.0.0"
 numba = ">=0.61.0,<0.62.0"
-line-profiler = ">=4.2.0,<5.0.0"
-memory-profiler = ">=0.61.0,<0.62.0"
 pyamg = ">=5.2.1,<6.0.0"
 pyproject-toml = ">=0.1.0,<0.2.0"
 pyvista = ">=0.44.2,<0.45.0"
@@ -46,6 +42,9 @@ imageio = ">=2.37.0,<3.0.0"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
 pytest-cov = "^5.0.0"
+line-profiler = ">=4.2.0,<5.0.0"
+memory-profiler = ">=0.61.0,<0.62.0"
+flake8 = "^7.2.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

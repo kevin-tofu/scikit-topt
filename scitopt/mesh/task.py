@@ -1,11 +1,8 @@
-import pathlib
 from dataclasses import dataclass
 import numpy as np
 import skfem
 from scipy.spatial import cKDTree
 import matplotlib.pyplot as plt
-import meshio
-from scitopt import tools
 from scitopt.mesh import utils
 from scitopt.fea import composer
 
@@ -36,7 +33,6 @@ class TaskConfig():
     dirichlet_force_elements: np.ndarray
     elements_volume: np.ndarray
 
-
     @property
     def mesh(self):
         return self.basis.mesh
@@ -54,17 +50,15 @@ class TaskConfig():
         force_value: float | list[float],
         design_elements: np.ndarray,
     ) -> 'TaskConfig':
-        
-        # 
+        #
         # Dirichlet
-        # 
+        #
         dirichlet_elements = utils.get_elements_with_points_fast(
             basis.mesh, [dirichlet_points]
         )
-        
-        # 
+        #
         # Force
-        # 
+        #
         if isinstance(force_points, np.ndarray):
             force_elements = utils.get_elements_with_points_fast(
                 basis.mesh, [force_points]
@@ -73,24 +67,26 @@ class TaskConfig():
             force_elements = utils.get_elements_with_points_fast(
                 basis.mesh, force_points
             )
-        
         if force_elements.shape[0] == 0:
             raise ValueError("force_elements has not been set.")
-        
-        # 
+
+        #
         # Design Field
-        # 
+        #
         design_elements = setdiff1d(design_elements, force_elements)
         if len(design_elements) == 0:
             error_msg = "⚠️Warning: `design_elements` is empty"
             raise ValueError(error_msg)
-        
+
         all_elements = np.arange(basis.mesh.nelements)
         fixed_elements = setdiff1d(all_elements, design_elements)
-        dirichlet_force_elements = np.concatenate([dirichlet_elements, force_elements])
-        
+        dirichlet_force_elements = np.concatenate(
+            [dirichlet_elements, force_elements]
+        )
         free_dofs = setdiff1d(np.arange(basis.N), dirichlet_dofs)
-        free_elements = utils.get_elements_with_points_fast(basis.mesh, [free_dofs])
+        free_elements = utils.get_elements_with_points_fast(
+            basis.mesh, [free_dofs]
+        )
         if isinstance(force_dofs, np.ndarray):
             if isinstance(force_value, (float, int)):
                 force = np.zeros(basis.N)
@@ -101,7 +97,7 @@ class TaskConfig():
                     print("fv", fv)
                     f_temp = np.zeros(basis.N)
                     f_temp[force_dofs] = fv / len(force_dofs)
-                    force.append(f_temp)    
+                    force.append(f_temp)
         elif isinstance(force_dofs, list):
             force = list()
             for fn_loop, fv in zip(force_dofs, force_value):
@@ -135,12 +131,10 @@ class TaskConfig():
             elements_volume
         )
 
-
     def exlude_dirichlet_from_design(self):
         self.design_elements = setdiff1d(
             self.design_elements, self.dirichlet_elements
         )
-
 
     def scale(
         self,
@@ -148,7 +142,7 @@ class TaskConfig():
         F_scale: float
     ):
         # this wont work
-        # self.basis.mesh.p /= L_scale 
+        # self.basis.mesh.p /= L_scale
         mesh = self.basis.mesh
         p_scaled = mesh.p * L_scale
         mesh_scaled = type(mesh)(p_scaled, mesh.t)
@@ -163,14 +157,15 @@ class TaskConfig():
         else:
             raise ValueError("should be ndarray or list of ndarray")
 
-
     def nodes_and_elements_stats(self, dst_path: str):
         node_points = self.basis.mesh.p.T  # shape = (n_points, 3)
         tree_nodes = cKDTree(node_points)
         dists_node, _ = tree_nodes.query(node_points, k=2)
         node_nearest_dists = dists_node[:, 1]
 
-        element_centers = np.mean(self.basis.mesh.p[:, self.basis.mesh.t], axis=1).T
+        element_centers = np.mean(
+            self.basis.mesh.p[:, self.basis.mesh.t], axis=1
+        ).T
         tree_elems = cKDTree(element_centers)
         dists_elem, _ = tree_elems.query(element_centers, k=2)
         element_nearest_dists = dists_elem[:, 1]
@@ -211,9 +206,9 @@ class TaskConfig():
         axs[1, 0].set_xlabel("Volume")
         axs[1, 0].set_ylabel("Count")
         axs[1, 0].grid(True)
-        
         axs[1, 1].hist(
-            self.elements_volume[self.design_elements], bins=30, edgecolor='black'
+            self.elements_volume[self.design_elements],
+            bins=30, edgecolor='black'
         )
         axs[1, 1].set_title("elements_volume - design")
         axs[1, 1].set_xlabel("Volume")
@@ -232,7 +227,10 @@ class TaskConfig():
         # axs[1, 0].bar_label(bars)
         for bar in bars:
             yval = bar.get_height()
-            axs[1, 2].text(bar.get_x() + bar.get_width()/2, yval + 0.5, f'{yval:.2g}', ha='center', va='bottom')
+            axs[1, 2].text(
+                bar.get_x() + bar.get_width()/2,
+                yval + 0.5, f'{yval:.2g}', ha='center', va='bottom'
+            )
 
         axs[1, 2].set_title("THe volume difference elements")
         axs[1, 2].set_xlabel("Elements Attribute")
@@ -241,4 +239,3 @@ class TaskConfig():
         fig.tight_layout()
         fig.savefig(f"{dst_path}/info-nodes-elements.jpg")
         plt.close("all")
-

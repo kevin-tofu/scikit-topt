@@ -44,10 +44,9 @@ def fix_hexahedron_orientation(t, p):
     return t_fixed
 
 
-
 def fix_tetrahedron_orientation(t, p):
     """
-    Returns a corrected version of `t` where all tetrahedral elements 
+    Returns a corrected version of `t` where all tetrahedral elements
     follow a right-handed (positive volume) orientation.
 
     Parameters
@@ -66,7 +65,7 @@ def fix_tetrahedron_orientation(t, p):
         tetrahedron is adjusted (if needed) to ensure positive volume.
     """
 
-    t_fixed = np.array(t, copy=True) 
+    t_fixed = np.array(t, copy=True)
     n_elem = t.shape[1]
 
     for e in range(n_elem):
@@ -85,7 +84,7 @@ def fix_tetrahedron_orientation(t, p):
 @njit(parallel=True)
 def fix_tetrahedron_orientation_numba(t, p):
     """
-    Returns a corrected version of `t` where all tetrahedral elements 
+    Returns a corrected version of `t` where all tetrahedral elements
     follow a right-handed (positive volume) orientation.
 
     Parameters
@@ -104,18 +103,16 @@ def fix_tetrahedron_orientation_numba(t, p):
         tetrahedron is adjusted (if needed) to ensure positive volume.
     """
 
-    t_fixed = np.array(t, copy=True) 
+    t_fixed = np.array(t, copy=True)
     n_elem = t.shape[1]
-
     for e in prange(n_elem):
         n0, n1, n2, n3 = t_fixed[:, e]
         v1 = p[:, n1] - p[:, n0]
         v2 = p[:, n2] - p[:, n0]
         v3 = p[:, n3] - p[:, n0]
         vol = np.dot(np.cross(v1, v2), v3) / 6.0
-
-        # if vol < 0:
-            # t_fixed[1, e], t_fixed[2, e] = t_fixed[2, e], t_fixed[1, e]
+        if vol < 0:
+            t_fixed[1, e], t_fixed[2, e] = t_fixed[2, e], t_fixed[1, e]
 
     return t_fixed
 
@@ -128,7 +125,10 @@ def fix_elements_orientation(mesh):
     else:
         raise ValueError("")
 
-def get_elements_with_points(mesh: skfem.mesh, target_nodes_list: list[np.ndarray]) -> np.ndarray:
+
+def get_elements_with_points(
+    mesh: skfem.mesh, target_nodes_list: list[np.ndarray]
+) -> np.ndarray:
     """
     """
     all_target_nodes = np.unique(np.concatenate(target_nodes_list))
@@ -136,7 +136,9 @@ def get_elements_with_points(mesh: skfem.mesh, target_nodes_list: list[np.ndarra
     return np.where(mask)[0]
 
 
-def get_elements_without_points(mesh: skfem.mesh, excluded_nodes_list: list[np.ndarray]):
+def get_elements_without_points(
+    mesh: skfem.mesh, excluded_nodes_list: list[np.ndarray]
+):
     """
     """
     all_excluded_nodes = np.unique(np.concatenate(excluded_nodes_list))
@@ -160,7 +162,9 @@ def build_element_adjacency_matrix(mesh):
                 cols.append(j)
 
     data = np.ones(len(rows), dtype=np.uint8)
-    adjacency = csr_matrix((data, (rows, cols)), shape=(num_elements, num_elements))
+    adjacency = csr_matrix(
+        (data, (rows, cols)), shape=(num_elements, num_elements)
+    )
 
     return adjacency
 
@@ -189,7 +193,6 @@ def get_elements_with_points_fast(mesh, target_nodes):
 
     mesh_id = id(mesh)
     if mesh_id not in get_elements_with_points_fast._cache:
-        # 構築: node → set of element indices
         node_to_elements = defaultdict(set)
         for e, nodes in enumerate(mesh.t.T):
             for n in nodes:
@@ -211,7 +214,8 @@ def get_elements_with_nodes_fast(
     mesh: skfem.Mesh, target_nodes: np.ndarray | list[np.ndarray]
 ) -> np.ndarray:
     """
-    Fast retrieval of element indices that contain any of the given node indices.
+    Fast retrieval of element indices that
+     contain any of the given node indices.
 
     Parameters
     ----------
@@ -223,7 +227,8 @@ def get_elements_with_nodes_fast(
     Returns
     -------
     elems : np.ndarray
-        Sorted, unique array of element indices that include any of the target nodes.
+        Sorted, unique array of element indices that
+        include any of the target nodes.
     """
 
     # Initialize cache once
@@ -234,7 +239,8 @@ def get_elements_with_nodes_fast(
     if mesh_id not in get_elements_with_nodes_fast._cache:
         # Build: node index → set of element indices
         node_to_elements = defaultdict(set)
-        for e, nodes in enumerate(mesh.t.T):  # mesh.t.T: shape = (n_elements, nodes_per_element)
+        # mesh.t.T: shape = (n_elements, nodes_per_element)
+        for e, nodes in enumerate(mesh.t.T):
             for n in nodes:
                 node_to_elements[n].add(e)
         get_elements_with_nodes_fast._cache[mesh_id] = node_to_elements
@@ -276,7 +282,9 @@ def build_element_adjacency_matrix_fast(mesh):
             col.append(a)
 
     data = np.ones(len(row), dtype=np.uint8)
-    return csr_matrix((data, (row, col)), shape=(mesh.nelements, mesh.nelements))
+    return csr_matrix(
+        (data, (row, col)), shape=(mesh.nelements, mesh.nelements)
+    )
 
 
 def get_adjacent_elements_fast(adjacency, element_indices):
@@ -288,9 +296,12 @@ def get_adjacent_elements_fast(adjacency, element_indices):
     return np.array(sorted(neighbors), dtype=np.int32)
 
 
-def get_boundary_nodes_from_elements(elements: np.ndarray, mesh: skfem.Mesh, dirichlet_nodes: np.ndarray) -> np.ndarray:
+def get_boundary_nodes_from_elements(
+    elements: np.ndarray, mesh: skfem.Mesh, dirichlet_nodes: np.ndarray
+) -> np.ndarray:
     """
-    Given a set of element indices, return the indices of boundary (Dirichlet) nodes contained in those elements.
+    Given a set of element indices, return the indices of boundary (Dirichlet)
+    nodes contained in those elements.
 
     Parameters
     ----------
@@ -299,7 +310,8 @@ def get_boundary_nodes_from_elements(elements: np.ndarray, mesh: skfem.Mesh, dir
     mesh : skfem.Mesh
         The skfem mesh object.
     dirichlet_nodes : np.ndarray
-        Global indices of nodes where Dirichlet boundary conditions are applied.
+        Global indices of nodes where
+        Dirichlet boundary conditions are applied.
 
     Returns
     -------
@@ -318,6 +330,7 @@ def in_box(coords, x_range, y_range, z_range):
         (z_range[0] <= coords[2]) & (coords[2] <= z_range[1])
     )
 
+
 def get_point_indices_in_range(
     basis: skfem.Basis, x_range: tuple, y_range: tuple, z_range: tuple
 ) -> np.ndarray:
@@ -332,6 +345,7 @@ def get_dofs_in_range(
         lambda x: in_box(x, x_range, y_range, z_range)
     )
 
+
 def get_elements_in_box(
     mesh: skfem.Mesh,
     x_range: tuple,
@@ -341,58 +355,3 @@ def get_elements_in_box(
     element_centers = mesh.p[:, mesh.t].mean(axis=1)
     mask = in_box(element_centers, x_range, y_range, z_range)
     return np.flatnonzero(mask)
-
-
-# def get_point_indices_in_range(
-#     basis: skfem.Basis, x_range: tuple, y_range: tuple, z_range: tuple
-# ):
-#     x = basis.mesh.p  # (3, n_points)
-#     mask = (
-#         (x_range[0] <= x[0]) & (x[0] <= x_range[1]) &
-#         (y_range[0] <= x[1]) & (x[1] <= y_range[1]) &
-#         (z_range[0] <= x[2]) & (x[2] <= z_range[1])
-#     )
-
-#     return np.where(mask)[0]
-
-
-# def get_dofs_in_range(
-#     basis: skfem.Basis, x_range: tuple, y_range: tuple, z_range: tuple
-# ):
-#     return basis.get_dofs(
-#         lambda x: (x_range[0] <= x[0]) & (x[0] <= x_range[1]) &
-#                   (y_range[0] <= x[1]) & (x[1] <= y_range[1]) &
-#                   (z_range[0] <= x[2]) & (x[2] <= z_range[1])
-#     )
-
-# def get_elements_in_box(
-#     mesh: skfem.Mesh,
-#     x_range: tuple,
-#     y_range: tuple,
-#     z_range: tuple
-# ) -> np.ndarray:
-#     """
-#     Returns the indices of elements whose centers lie within the specified rectangular box.
-
-#     Parameters:
-#         mesh (skfem.Mesh): The mesh object.
-#         x_range (tuple): Range in the x-direction (xmin, xmax).
-#         y_range (tuple): Range in the y-direction (ymin, ymax).
-#         z_range (tuple): Range in the z-direction (zmin, zmax).
-
-#     Returns:
-#         np.ndarray: Array of indices of elements that satisfy the given conditions.
-
-#     """
-#     # element_centers = mesh.p[:, mesh.t].mean(axis=0)
-#     element_centers = np.array([np.mean(mesh.p[:, elem], axis=1) for elem in mesh.t.T]).T
-
-#     mask = (
-#         (x_range[0] <= element_centers[0]) & (element_centers[0] <= x_range[1]) &
-#         (y_range[0] <= element_centers[1]) & (element_centers[1] <= y_range[1]) &
-#         (z_range[0] <= element_centers[2]) & (element_centers[2] <= z_range[1])
-#     )
-
-#     return np.where(mask)[0]
-
-
