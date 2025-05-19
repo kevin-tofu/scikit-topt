@@ -114,9 +114,9 @@ tsk = scitopt.mesh.task.TaskConfig.from_defaults(
 import scitopt
 
 tsk = scitopt.mesh.toy_problem.toy1()
-cfg = scitopt.core.KKT_Config()
+cfg = scitopt.core.EUMOC_Config()
 
-optimizer = scitopt.core.KKT_Optimizer(cfg, tsk)
+optimizer = scitopt.core.EUMOC_Optimizer(cfg, tsk)
 
 optimizer.parameterize()
 optimizer.optimize()
@@ -125,38 +125,39 @@ optimizer.optimize()
 
 ### Optimize Toy Problem with command line.
 ```bash
-OMP_NUM_THREADS=3 OPENBLAS_NUM_THREADS=3  MKL_NUM_THREADS=3 PYTHONPATH=./ python ./scitopt/core/optimizer/kkt.py \
- --dst_path ./result/test1_kkt1 \
+OMP_NUM_THREADS=3 OPENBLAS_NUM_THREADS=3 MKL_NUM_THREADS=3 PYTHONPATH=./ python ./scitopt/core/optimizer/ldmoc.py \
+ --dst_path ./result/base_moc_down \
  --interpolation SIMP \
  --p_init 1.0 \
  --p 3.0 \
  --p_step -4 \
  --filter_radius_init 0.2 \
- --filter_radius 0.08 \
- --filter_radius_step 2 \
+ --filter_radius 0.20 \
+ --filter_radius_step -2 \
  --move_limit_init 0.20 \
  --move_limit 0.02 \
- --move_limit_step 2 \
+ --move_limit_step -2 \
  --vol_frac_init 0.60 \
  --vol_frac 0.40 \
- --vol_frac_step 2 \
+ --vol_frac_step -2 \
  --beta_init 1.0 \
  --beta 2.0 \
  --beta_step 2 \
  --beta_curvature 2.0 \
  --percentile_init 70 \
- --percentile 90 \
+ --percentile -90 \
  --percentile_step -4 \
  --eta 0.8 \
  --record_times 100 \
- --max_iters 100 \
+ --max_iters 600 \
  --lambda_v 0.01 \
- --lambda_decay  0.8 \
- --mu_p 2.50 \
+ --lambda_decay  0.80 \
+ --mu_p 2000 \
+ --lambda_lower 1e-9 \
+ --lambda_upper 1e+9 \
  --export_img true \
  --sensitivity_filter false \
  --task_name down_box \
- --mesh_path box-down.msh \
  --solver_option pyamg \
  --rho_min 1e-2 \
  --E0 210e9 \

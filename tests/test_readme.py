@@ -1,52 +1,44 @@
 import scitopt
-import pytest
+# import pytest
 
 
 def oc_ramp_optimize(tsk):
     cfg = scitopt.core.optimizer.OC_Config()
     cfg.max_iters = 1
     cfg.record_times = 1
-
     optimizer = scitopt.core.OC_Optimizer(cfg, tsk)
-
     optimizer.parameterize()
     optimizer.optimize()
 
 
 def moc_optimize(tsk):
-    
-    cfg = scitopt.core.optimizer.MOC_Config()
+    cfg = scitopt.core.optimizer.LDMOC_Config()
     cfg.max_iters = 1
     cfg.record_times = 1
-
-    optimizer = scitopt.core.MOC_Optimizer(cfg, tsk)
-
+    optimizer = scitopt.core.LDMOC_Optimizer(cfg, tsk)
     optimizer.parameterize()
     optimizer.optimize()
 
 
-def kkt_optimize(tsk):
-    
-    cfg = scitopt.core.optimizer.KKT_Config()
+def eumoc_optimize(tsk):
+    cfg = scitopt.core.optimizer.EUMOC_Config()
     cfg.max_iters = 1
     cfg.record_times = 1
 
-    optimizer = scitopt.core.KKT_Optimizer(cfg, tsk)
-
+    optimizer = scitopt.core.EUMOC_Optimizer(cfg, tsk)
     optimizer.parameterize()
     optimizer.optimize()
-
-
 
 
 def test_define_task():
-    
+
     import skfem
     x_len, y_len, z_len = 1.0, 1.0, 1.0
     element_size = 0.1
     e = skfem.ElementVector(skfem.ElementHex1())
-    
-    mesh = scitopt.mesh.toy_problem.create_box_hex(x_len, y_len, z_len, element_size)
+    mesh = scitopt.mesh.toy_problem.create_box_hex(
+        x_len, y_len, z_len, element_size
+    )
     basis = skfem.Basis(mesh, e, intorder=3)
 
     # Specify Dirichlet Boundary Conditions
@@ -70,8 +62,7 @@ def test_define_task():
         mesh,
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
-
-    tsk = scitopt.mesh.task.TaskConfig.from_defaults(
+    _ = scitopt.mesh.task.TaskConfig.from_defaults(
         210e9,
         0.30,
         basis,
@@ -88,6 +79,6 @@ def test_optimizers():
     tsk = scitopt.mesh.toy_problem.toy_test()
     oc_ramp_optimize(tsk)
     moc_optimize(tsk)
-    kkt_optimize(tsk)
-    
+    eumoc_optimize(tsk)
+
     test_define_task()

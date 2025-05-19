@@ -26,8 +26,8 @@ def bisection_with_projection(
     elements_volume, elements_volume_sum,
     max_iter: int = 100,
     tolerance: float = 1e-4,
-    l1: float = 1e-3,
-    l2: float = 1e+3
+    l1: float = 1e-7,
+    l2: float = 1e+7
 ):
     # for _ in range(100):
     # while abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
