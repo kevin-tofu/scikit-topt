@@ -28,7 +28,7 @@ class SensitivityConfig():
     p_step: int = -1
     vol_frac_init: float = 0.8
     vol_frac: float = 0.4
-    vol_frac_step: int = 3
+    vol_frac_step: int = -3
     beta_init: float = 1.0
     beta: float = 2
     beta_step: int = -1
@@ -36,26 +36,26 @@ class SensitivityConfig():
     beta_eta: float = 0.50
     eta: float = 0.5
     percentile_init: float = 60
-    percentile: float = 90
+    percentile: float = -90
     percentile_step: int = -1
     filter_radius_init: float = 2.0
     filter_radius: float = 1.20
-    filter_radius_step: int = 3
-    mu_p: float = 2.0
+    filter_radius_step: int = -3
+    # mu_p: float = 200.0
     E0: float = 210e9
     E_min: float = 210e6
     rho_min: float = 1e-2
     rho_max: float = 1.0
     move_limit_init: float = 0.3
     move_limit: float = 0.10
-    move_limit_step: int = 3
+    move_limit_step: int = -3
     restart: bool = False
     restart_from: int = -1
     export_img: bool = False
     export_img_opaque: bool = False
     design_dirichlet: bool = False
-    lambda_lower: float = 1e-2
-    lambda_upper: float = 1e+2
+    lambda_lower: float = 1e-7
+    lambda_upper: float = 1e+7
     sensitivity_filter: bool = False
     solver_option: Literal["spsolve", "pyamg"] = "pyamg"
     scaling: bool = False
@@ -131,7 +131,7 @@ class SensitivityAnalysis():
             # self.parameterize(cfg.solver_option)
 
         self.recorder = tools.HistoriesLogger(self.cfg.dst_path)
-        self.recorder.add("rho", plot_type="min-max-mean-std")
+        # self.recorder.add("rho", plot_type="min-max-mean-std")
         self.recorder.add("rho_projected", plot_type="min-max-mean-std")
         self.recorder.add("strain_energy", plot_type="min-max-mean-std")
         self.recorder.add("vol_error")
@@ -472,7 +472,7 @@ class SensitivityAnalysis():
             logger.info(
                 f"scaling_rate min/mean/max {message}"
             )
-            self.recorder.feed_data("rho", rho[tsk.design_elements])
+            # self.recorder.feed_data("rho", rho[tsk.design_elements])
             self.recorder.feed_data(
                 "rho_projected", rho_projected[tsk.design_elements]
             )
