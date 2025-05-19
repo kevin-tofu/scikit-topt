@@ -38,8 +38,8 @@ The currently supported features are as follows:
 - Implement FEA on unstructured mesh using scikit-fem
 - Topology optimization using the density method and its optimization algorithm
   - Optimality Criteria (OC) Method  
-  - Modified OC Method
-  - Lagrange Method
+  - (Lagrangian Dual) Modified OC Method 
+  - (Exponential Update) Modified OC Method 
 - able to handle multiple objectives / constraints
 - High-performance computation using sparse matrices with Scipy and PyAMG  
 - has a function to monitor the transition of parameters.
