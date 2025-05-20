@@ -25,7 +25,7 @@
 
 ### Progress Report
 <p align="center">
-  <img src="assets/ex-multi-load-v-50-progress.jpg" alt="multi-load-condition-progress" width="600">
+  <img src="assets/ex-progress-report.jpg" alt="multi-load-condition-progress" width="600">
 </p>
 
 
