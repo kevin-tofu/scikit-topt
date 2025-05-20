@@ -24,7 +24,7 @@ jobs:
           poetry-version: "1.8.3"
       
       - name: Install dependencies
-        run: poetry install
+        run: poetry install --no-interaction --dev
 
       - name: Build Sphinx documentation
         run: sphinx-build -b html ./docs ./docs/_build
