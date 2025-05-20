@@ -23,11 +23,10 @@ jobs:
         with:
           poetry-version: "1.8.3"
       
-      - name: Install dependencies
-        run: poetry install --no-interaction --dev
-
-      - name: Build Sphinx documentation
-        run: sphinx-build -b html ./docs ./docs/_build
+      - name: Install dependencies and Build Sphinx documentation
+        run: |
+          poetry install --no-interaction --dev
+          poetry run sphinx-build -b html ./docs ./docs/_build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
