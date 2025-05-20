@@ -25,7 +25,7 @@ jobs:
       
       - name: Install dependencies and Build Sphinx documentation
         run: |
-          poetry install --no-interaction --dev
+          poetry install --no-interaction
           poetry run sphinx-build -b html ./docs ./docs/_build
 
       - name: Deploy to GitHub Pages
