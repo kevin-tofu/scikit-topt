@@ -4,7 +4,7 @@ import numpy as np
 import scitopt
 from scitopt.core import projection
 from scitopt.core import misc
-from scitopt.core.optimizer import common
+from scitopt.core.optimizers import common
 from scitopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 
