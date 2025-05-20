@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
 import scitopt
-from scitopt.core.optimizer import common
+from scitopt.core.optimizers import common
 from scitopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 

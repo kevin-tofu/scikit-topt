@@ -3,7 +3,7 @@ import scitopt
 
 
 def oc_ramp_optimize(tsk):
-    cfg = scitopt.core.optimizer.OC_Config()
+    cfg = scitopt.core.optimizers.OC_Config()
     cfg.max_iters = 1
     cfg.record_times = 1
     optimizer = scitopt.core.OC_Optimizer(cfg, tsk)
@@ -12,7 +12,7 @@ def oc_ramp_optimize(tsk):
 
 
 def moc_optimize(tsk):
-    cfg = scitopt.core.optimizer.LDMOC_Config()
+    cfg = scitopt.core.optimizers.LDMOC_Config()
     cfg.max_iters = 1
     cfg.record_times = 1
     optimizer = scitopt.core.LDMOC_Optimizer(cfg, tsk)
@@ -21,7 +21,7 @@ def moc_optimize(tsk):
 
 
 def eumoc_optimize(tsk):
-    cfg = scitopt.core.optimizer.EUMOC_Config()
+    cfg = scitopt.core.optimizers.EUMOC_Config()
     cfg.max_iters = 1
     cfg.record_times = 1
 

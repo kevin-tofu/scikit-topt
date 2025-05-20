@@ -46,9 +46,10 @@ line-profiler = ">=4.2.0,<5.0.0"
 memory-profiler = ">=0.61.0,<0.62.0"
 flake8 = "^7.2.0"
 sphinx = "^8.2.3"
-sphinx-rtd-theme = "^3.0.2"
-sphinx-autodoc-typehints = "^3.2.0"
 recommonmark = "^0.7.1"
+sphinx-rtd-theme = "^3.0.2"
+myst-parser = "^4.0.1"
+sphinx-autodoc-typehints = "^3.2.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
