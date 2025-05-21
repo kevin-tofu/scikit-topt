@@ -48,26 +48,7 @@
 <li class="toctree-l1 current"><a class="reference internal" href="api.html">API Reference</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="core.optimizers.html">scitopt.core.optimizers.common</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mesh.task.html">scitopt.mesh.task</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">scitopt.mesh.utils</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.build_element_adjacency_matrix"><code class="docutils literal notranslate"><span class="pre">build_element_adjacency_matrix()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.build_element_adjacency_matrix_fast"><code class="docutils literal notranslate"><span class="pre">build_element_adjacency_matrix_fast()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.fix_elements_orientation"><code class="docutils literal notranslate"><span class="pre">fix_elements_orientation()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.fix_hexahedron_orientation"><code class="docutils literal notranslate"><span class="pre">fix_hexahedron_orientation()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.fix_tetrahedron_orientation"><code class="docutils literal notranslate"><span class="pre">fix_tetrahedron_orientation()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.fix_tetrahedron_orientation_numba"><code class="docutils literal notranslate"><span class="pre">fix_tetrahedron_orientation_numba()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.get_adjacent_elements"><code class="docutils literal notranslate"><span class="pre">get_adjacent_elements()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.get_adjacent_elements_fast"><code class="docutils literal notranslate"><span class="pre">get_adjacent_elements_fast()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.get_boundary_nodes_from_elements"><code class="docutils literal notranslate"><span class="pre">get_boundary_nodes_from_elements()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.get_dofs_in_range"><code class="docutils literal notranslate"><span class="pre">get_dofs_in_range()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.get_elements_in_box"><code class="docutils literal notranslate"><span class="pre">get_elements_in_box()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.get_elements_with_nodes_fast"><code class="docutils literal notranslate"><span class="pre">get_elements_with_nodes_fast()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.get_elements_with_points"><code class="docutils literal notranslate"><span class="pre">get_elements_with_points()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.get_elements_with_points_fast"><code class="docutils literal notranslate"><span class="pre">get_elements_with_points_fast()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.get_elements_without_points"><code class="docutils literal notranslate"><span class="pre">get_elements_without_points()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.get_point_indices_in_range"><code class="docutils literal notranslate"><span class="pre">get_point_indices_in_range()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.in_box"><code class="docutils literal notranslate"><span class="pre">in_box()</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">scitopt.mesh.utils</a></li>
 </ul>
 </li>
 </ul>
@@ -97,28 +78,28 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-scitopt.mesh.utils">
-<span id="scitopt-mesh-utils"></span><h1>scitopt.mesh.utils<a class="headerlink" href="#module-scitopt.mesh.utils" title="Link to this heading"></a></h1>
+  <section id="scitopt-mesh-utils">
+<h1>scitopt.mesh.utils<a class="headerlink" href="#scitopt-mesh-utils" title="Link to this heading"></a></h1>
 <dl class="py function">
-<dt class="sig sig-object py" id="scitopt.mesh.utils.build_element_adjacency_matrix">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">build_element_adjacency_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.utils.build_element_adjacency_matrix" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">build_element_adjacency_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Returns sparse adjacency matrix A such that A[i, j] = 1
 if element i and j share at least one node.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="scitopt.mesh.utils.build_element_adjacency_matrix_fast">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">build_element_adjacency_matrix_fast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.utils.build_element_adjacency_matrix_fast" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">build_element_adjacency_matrix_fast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="scitopt.mesh.utils.fix_elements_orientation">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">fix_elements_orientation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.utils.fix_elements_orientation" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">fix_elements_orientation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em><span class="sig-paren">)</span></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="scitopt.mesh.utils.fix_hexahedron_orientation">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">fix_hexahedron_orientation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.utils.fix_hexahedron_orientation" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">fix_hexahedron_orientation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Ensures that each hexahedral element in the mesh has positive volume
 (i.e., right-handed orientation). Adjusts the order of nodes if needed.</p>
 <dl class="field-list simple">
@@ -138,8 +119,8 @@ if element i and j share at least one node.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="scitopt.mesh.utils.fix_tetrahedron_orientation">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">fix_tetrahedron_orientation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.utils.fix_tetrahedron_orientation" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">fix_tetrahedron_orientation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Returns a corrected version of <cite>t</cite> where all tetrahedral elements
 follow a right-handed (positive volume) orientation.</p>
 <dl class="field-list simple">
@@ -162,8 +143,8 @@ tetrahedron is adjusted (if needed) to ensure positive volume.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="scitopt.mesh.utils.fix_tetrahedron_orientation_numba">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">fix_tetrahedron_orientation_numba</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.utils.fix_tetrahedron_orientation_numba" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">fix_tetrahedron_orientation_numba</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Returns a corrected version of <cite>t</cite> where all tetrahedral elements
 follow a right-handed (positive volume) orientation.</p>
 <dl class="field-list simple">
@@ -186,20 +167,20 @@ tetrahedron is adjusted (if needed) to ensure positive volume.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="scitopt.mesh.utils.get_adjacent_elements">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_adjacent_elements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">element_indices</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.utils.get_adjacent_elements" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_adjacent_elements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">element_indices</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Given a list of element indices, return the set of elements
 that are adjacent (share at least one node) with any of them.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="scitopt.mesh.utils.get_adjacent_elements_fast">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_adjacent_elements_fast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adjacency</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">element_indices</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.utils.get_adjacent_elements_fast" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_adjacent_elements_fast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adjacency</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">element_indices</span></span></em><span class="sig-paren">)</span></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="scitopt.mesh.utils.get_boundary_nodes_from_elements">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_boundary_nodes_from_elements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mesh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirichlet_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#scitopt.mesh.utils.get_boundary_nodes_from_elements" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_boundary_nodes_from_elements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mesh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirichlet_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
 <dd><p>Given a set of element indices, return the indices of boundary (Dirichlet)
 nodes contained in those elements.</p>
 <dl class="field-list simple">
@@ -221,13 +202,13 @@ Dirichlet boundary conditions are applied.</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="scitopt.mesh.utils.get_dofs_in_range">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_dofs_in_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CellBasis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#scitopt.mesh.utils.get_dofs_in_range" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_dofs_in_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CellBasis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="scitopt.mesh.utils.get_elements_in_box">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_elements_in_box</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#scitopt.mesh.utils.get_elements_in_box" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_elements_in_box</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
 <dd><p>Return indices of elements whose centroids lie within a given 3D bounding         box.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -248,8 +229,8 @@ Dirichlet boundary conditions are applied.</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="scitopt.mesh.utils.get_elements_with_nodes_fast">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_elements_with_nodes_fast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#scitopt.mesh.utils.get_elements_with_nodes_fast" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_elements_with_nodes_fast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
 <dd><dl class="simple">
 <dt>Fast retrieval of element indices that</dt><dd><p>contain any of the given node indices.</p>
 </dd>
@@ -272,23 +253,23 @@ include any of the target nodes.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="scitopt.mesh.utils.get_elements_with_points">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_elements_with_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">mesh:</span> <span class="pre">&lt;module</span> <span class="pre">'skfem.mesh'</span> <span class="pre">from</span> <span class="pre">'/home/runner/.cache/pypoetry/virtualenvs/scitopt-t8TcnFm1-py3.11/lib/python3.11/site-packages/skfem/mesh/__init__.py'&gt;,</span> <span class="pre">target_nodes_list:</span> <span class="pre">list[~numpy.ndarray]</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#scitopt.mesh.utils.get_elements_with_points" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_elements_with_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">mesh:</span> <span class="pre">&lt;module</span> <span class="pre">'skfem.mesh'</span> <span class="pre">from</span> <span class="pre">'/home/runner/.cache/pypoetry/virtualenvs/scitopt-t8TcnFm1-py3.11/lib/python3.11/site-packages/skfem/mesh/__init__.py'&gt;,</span> <span class="pre">target_nodes_list:</span> <span class="pre">list[~numpy.ndarray]</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="scitopt.mesh.utils.get_elements_with_points_fast">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_elements_with_points_fast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_nodes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.utils.get_elements_with_points_fast" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_elements_with_points_fast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_nodes</span></span></em><span class="sig-paren">)</span></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="scitopt.mesh.utils.get_elements_without_points">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_elements_without_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">mesh:</span> <span class="pre">&lt;module</span> <span class="pre">'skfem.mesh'</span> <span class="pre">from</span> <span class="pre">'/home/runner/.cache/pypoetry/virtualenvs/scitopt-t8TcnFm1-py3.11/lib/python3.11/site-packages/skfem/mesh/__init__.py'&gt;,</span> <span class="pre">excluded_nodes_list:</span> <span class="pre">list[~numpy.ndarray]</span></em><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.utils.get_elements_without_points" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_elements_without_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">mesh:</span> <span class="pre">&lt;module</span> <span class="pre">'skfem.mesh'</span> <span class="pre">from</span> <span class="pre">'/home/runner/.cache/pypoetry/virtualenvs/scitopt-t8TcnFm1-py3.11/lib/python3.11/site-packages/skfem/mesh/__init__.py'&gt;,</span> <span class="pre">excluded_nodes_list:</span> <span class="pre">list[~numpy.ndarray]</span></em><span class="sig-paren">)</span></dt>
 <dd></dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="scitopt.mesh.utils.get_point_indices_in_range">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_point_indices_in_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CellBasis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#scitopt.mesh.utils.get_point_indices_in_range" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_point_indices_in_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CellBasis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
 <dd><p>Get the indices of mesh nodes that lie within a specified 3D bounding box.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -309,8 +290,8 @@ include any of the target nodes.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="scitopt.mesh.utils.in_box">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">in_box</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.utils.in_box" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">in_box</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Check whether 3D points lie within a given axis-aligned bounding box.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
