@@ -11,6 +11,7 @@ scikit-topt documentation
    :maxdepth: 2
    :caption: Content
 
-
-   api
+   installation
    tutorial
+   api
+
