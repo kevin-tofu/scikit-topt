@@ -1,0 +1,470 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>scitopt.mesh.task &mdash; scikit-topt 0.0.8 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=53b53b71"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="scitopt.mesh.utils" href="mesh.utils.html" />
+    <link rel="prev" title="scitopt.core.optimizers.common" href="core.optimizers.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            scikit-topt
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Content</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial Page</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core.optimizers.html">scitopt.core.optimizers.common</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">scitopt.mesh.task</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig"><code class="docutils literal notranslate"><span class="pre">TaskConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.E"><code class="docutils literal notranslate"><span class="pre">TaskConfig.E</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.nu"><code class="docutils literal notranslate"><span class="pre">TaskConfig.nu</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.basis"><code class="docutils literal notranslate"><span class="pre">TaskConfig.basis</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.dirichlet_dofs"><code class="docutils literal notranslate"><span class="pre">TaskConfig.dirichlet_dofs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.dirichlet_elements"><code class="docutils literal notranslate"><span class="pre">TaskConfig.dirichlet_elements</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.force_dofs"><code class="docutils literal notranslate"><span class="pre">TaskConfig.force_dofs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.force_elements"><code class="docutils literal notranslate"><span class="pre">TaskConfig.force_elements</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.force"><code class="docutils literal notranslate"><span class="pre">TaskConfig.force</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.design_elements"><code class="docutils literal notranslate"><span class="pre">TaskConfig.design_elements</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.free_dofs"><code class="docutils literal notranslate"><span class="pre">TaskConfig.free_dofs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.free_elements"><code class="docutils literal notranslate"><span class="pre">TaskConfig.free_elements</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.all_elements"><code class="docutils literal notranslate"><span class="pre">TaskConfig.all_elements</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.fixed_elements"><code class="docutils literal notranslate"><span class="pre">TaskConfig.fixed_elements</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.dirichlet_force_elements"><code class="docutils literal notranslate"><span class="pre">TaskConfig.dirichlet_force_elements</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.elements_volume"><code class="docutils literal notranslate"><span class="pre">TaskConfig.elements_volume</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id0"><code class="docutils literal notranslate"><span class="pre">TaskConfig.E</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id1"><code class="docutils literal notranslate"><span class="pre">TaskConfig.all_elements</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id2"><code class="docutils literal notranslate"><span class="pre">TaskConfig.basis</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id3"><code class="docutils literal notranslate"><span class="pre">TaskConfig.design_elements</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id4"><code class="docutils literal notranslate"><span class="pre">TaskConfig.dirichlet_dofs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id5"><code class="docutils literal notranslate"><span class="pre">TaskConfig.dirichlet_elements</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id6"><code class="docutils literal notranslate"><span class="pre">TaskConfig.dirichlet_force_elements</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id7"><code class="docutils literal notranslate"><span class="pre">TaskConfig.elements_volume</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.exlude_dirichlet_from_design"><code class="docutils literal notranslate"><span class="pre">TaskConfig.exlude_dirichlet_from_design()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id8"><code class="docutils literal notranslate"><span class="pre">TaskConfig.fixed_elements</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id9"><code class="docutils literal notranslate"><span class="pre">TaskConfig.force</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id10"><code class="docutils literal notranslate"><span class="pre">TaskConfig.force_dofs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id11"><code class="docutils literal notranslate"><span class="pre">TaskConfig.force_elements</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id12"><code class="docutils literal notranslate"><span class="pre">TaskConfig.free_dofs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id13"><code class="docutils literal notranslate"><span class="pre">TaskConfig.free_elements</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.from_defaults"><code class="docutils literal notranslate"><span class="pre">TaskConfig.from_defaults()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.mesh"><code class="docutils literal notranslate"><span class="pre">TaskConfig.mesh</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.nodes_and_elements_stats"><code class="docutils literal notranslate"><span class="pre">TaskConfig.nodes_and_elements_stats()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id14"><code class="docutils literal notranslate"><span class="pre">TaskConfig.nu</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig.scale"><code class="docutils literal notranslate"><span class="pre">TaskConfig.scale()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.task.setdiff1d"><code class="docutils literal notranslate"><span class="pre">setdiff1d()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mesh.utils.html">scitopt.mesh.utils</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">scikit-topt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="api.html">API Reference</a></li>
+      <li class="breadcrumb-item active">scitopt.mesh.task</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/mesh.task.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-scitopt.mesh.task">
+<span id="scitopt-mesh-task"></span><h1>scitopt.mesh.task<a class="headerlink" href="#module-scitopt.mesh.task" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scitopt.mesh.task.</span></span><span class="sig-name descname"><span class="pre">TaskConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">E</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nu</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CellBasis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirichlet_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirichlet_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">free_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">free_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirichlet_force_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elements_volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Container for storing finite element and optimization-related data
+used in topology optimization tasks.</p>
+<p>This class holds material properties, boundary condition information,
+designable and non-designable element indices, as well as force vectors
+and volume data for each element. It is typically constructed using
+<cite>TaskConfig.from_defaults</cite>.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.E">
+<span class="sig-name descname"><span class="pre">E</span></span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.E" title="Link to this definition"></a></dt>
+<dd><p>Young’s modulus of the base material.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.nu">
+<span class="sig-name descname"><span class="pre">nu</span></span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.nu" title="Link to this definition"></a></dt>
+<dd><p>Poisson’s ratio of the base material.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.basis">
+<span class="sig-name descname"><span class="pre">basis</span></span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.basis" title="Link to this definition"></a></dt>
+<dd><p>Finite element basis object associated with the mesh and function space.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>skfem.Basis</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.dirichlet_dofs">
+<span class="sig-name descname"><span class="pre">dirichlet_dofs</span></span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.dirichlet_dofs" title="Link to this definition"></a></dt>
+<dd><p>Degrees of freedom constrained by Dirichlet (displacement) boundary conditions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.dirichlet_elements">
+<span class="sig-name descname"><span class="pre">dirichlet_elements</span></span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.dirichlet_elements" title="Link to this definition"></a></dt>
+<dd><p>Elements that contain Dirichlet boundary points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.force_dofs">
+<span class="sig-name descname"><span class="pre">force_dofs</span></span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.force_dofs" title="Link to this definition"></a></dt>
+<dd><p>Degrees of freedom where external forces are applied.
+Can be a list for multiple load cases.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray or list of np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.force_elements">
+<span class="sig-name descname"><span class="pre">force_elements</span></span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.force_elements" title="Link to this definition"></a></dt>
+<dd><p>Elements that contain the force application points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.force">
+<span class="sig-name descname"><span class="pre">force</span></span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.force" title="Link to this definition"></a></dt>
+<dd><p>External force vector(s) applied to the system.
+A list is used when multiple load cases are present.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray or list of np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.design_elements">
+<span class="sig-name descname"><span class="pre">design_elements</span></span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.design_elements" title="Link to this definition"></a></dt>
+<dd><p>Indices of elements that are considered designable in the optimization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.free_dofs">
+<span class="sig-name descname"><span class="pre">free_dofs</span></span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.free_dofs" title="Link to this definition"></a></dt>
+<dd><p>Degrees of freedom that are not fixed by boundary conditions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.free_elements">
+<span class="sig-name descname"><span class="pre">free_elements</span></span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.free_elements" title="Link to this definition"></a></dt>
+<dd><p>Elements associated with the free degrees of freedom.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.all_elements">
+<span class="sig-name descname"><span class="pre">all_elements</span></span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.all_elements" title="Link to this definition"></a></dt>
+<dd><p>Array of all element indices in the mesh.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.fixed_elements">
+<span class="sig-name descname"><span class="pre">fixed_elements</span></span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.fixed_elements" title="Link to this definition"></a></dt>
+<dd><p>Elements excluded from the design domain.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.dirichlet_force_elements">
+<span class="sig-name descname"><span class="pre">dirichlet_force_elements</span></span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.dirichlet_force_elements" title="Link to this definition"></a></dt>
+<dd><p>Union of Dirichlet and force elements.
+Useful for identifying constrained and loaded regions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.elements_volume">
+<span class="sig-name descname"><span class="pre">elements_volume</span></span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.elements_volume" title="Link to this definition"></a></dt>
+<dd><p>Volume of each finite element, used in volume constraints and integration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">E</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#id0" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">all_elements</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#id1" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">basis</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">CellBasis</span></em><a class="headerlink" href="#id2" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id3">
+<span class="sig-name descname"><span class="pre">design_elements</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#id3" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id4">
+<span class="sig-name descname"><span class="pre">dirichlet_dofs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#id4" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id5">
+<span class="sig-name descname"><span class="pre">dirichlet_elements</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#id5" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id6">
+<span class="sig-name descname"><span class="pre">dirichlet_force_elements</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#id6" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id7">
+<span class="sig-name descname"><span class="pre">elements_volume</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#id7" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.exlude_dirichlet_from_design">
+<span class="sig-name descname"><span class="pre">exlude_dirichlet_from_design</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.exlude_dirichlet_from_design" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id8">
+<span class="sig-name descname"><span class="pre">fixed_elements</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#id8" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id9">
+<span class="sig-name descname"><span class="pre">force</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id9" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id10">
+<span class="sig-name descname"><span class="pre">force_dofs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id10" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id11">
+<span class="sig-name descname"><span class="pre">force_elements</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#id11" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id12">
+<span class="sig-name descname"><span class="pre">free_dofs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#id12" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id13">
+<span class="sig-name descname"><span class="pre">free_elements</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#id13" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.from_defaults">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_defaults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">E</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nu</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CellBasis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirichlet_points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirichlet_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#scitopt.mesh.task.TaskConfig" title="scitopt.mesh.task.TaskConfig"><span class="pre">TaskConfig</span></a></span></span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.from_defaults" title="Link to this definition"></a></dt>
+<dd><p>Create a TaskConfig instance using basic material parameters and         boundary conditions.</p>
+<p>This method automatically computes the sets of Dirichlet and             Neumann (force) elements,
+filters out non-designable elements, and constructs force vectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>E</strong> (<em>float</em>) – Young’s modulus of the material.</p></li>
+<li><p><strong>nu</strong> (<em>float</em>) – Poisson’s ratio of the material.</p></li>
+<li><p><strong>basis</strong> (<em>skfem.Basis</em>) – Basis object from scikit-fem representing the finite element                 space.</p></li>
+<li><p><strong>dirichlet_points</strong> (<em>np.ndarray</em>) – Coordinates used to determine which elements are subject to                 Dirichlet boundary conditions.</p></li>
+<li><p><strong>dirichlet_dofs</strong> (<em>np.ndarray</em>) – Degrees of freedom fixed under Dirichlet boundary conditions.</p></li>
+<li><p><strong>force_points</strong> (<em>np.ndarray</em><em> or </em><em>list</em><em> of </em><em>np.ndarray</em>) – Coordinates used to determine which elements are subject to                 external forces.</p></li>
+<li><p><strong>force_dofs</strong> (<em>np.ndarray</em><em> or </em><em>list</em><em> of </em><em>np.ndarray</em>) – Degrees of freedom where external forces are applied.</p></li>
+<li><p><strong>force_value</strong> (<em>float</em><em> or </em><em>list</em><em> of </em><em>float</em>) – Magnitude(s) of the external force(s). If multiple load cases                 are used, provide a list.</p></li>
+<li><p><strong>design_elements</strong> (<em>np.ndarray</em>) – Initial set of element indices considered designable.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A fully initialized TaskConfig object containing mesh, boundary condition, and load data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#scitopt.mesh.task.TaskConfig" title="scitopt.mesh.task.TaskConfig">TaskConfig</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If no force elements are found or if design elements are empty after filtering.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.mesh">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mesh</span></span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.mesh" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.nodes_and_elements_stats">
+<span class="sig-name descname"><span class="pre">nodes_and_elements_stats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dst_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.nodes_and_elements_stats" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id14">
+<span class="sig-name descname"><span class="pre">nu</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#id14" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scitopt.mesh.task.TaskConfig.scale">
+<span class="sig-name descname"><span class="pre">scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L_scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F_scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.task.TaskConfig.scale" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="scitopt.mesh.task.setdiff1d">
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.task.</span></span><span class="sig-name descname"><span class="pre">setdiff1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.task.setdiff1d" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="core.optimizers.html" class="btn btn-neutral float-left" title="scitopt.core.optimizers.common" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mesh.utils.html" class="btn btn-neutral float-right" title="scitopt.mesh.utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Kohei Watanabe.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -19,8 +19,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Tutorial Page" href="tutorial.html" />
-    <link rel="prev" title="scitopt.core.optimizers.common" href="core.optimizers.html" /> 
+    <link rel="prev" title="scitopt.mesh.task" href="mesh.task.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -44,8 +43,11 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Content</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial Page</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="api.html">API Reference</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="core.optimizers.html">scitopt.core.optimizers.common</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mesh.task.html">scitopt.mesh.task</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">scitopt.mesh.utils</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.build_element_adjacency_matrix"><code class="docutils literal notranslate"><span class="pre">build_element_adjacency_matrix()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#scitopt.mesh.utils.build_element_adjacency_matrix_fast"><code class="docutils literal notranslate"><span class="pre">build_element_adjacency_matrix_fast()</span></code></a></li>
@@ -68,7 +70,6 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial Page</a></li>
 </ul>
 
         </div>
@@ -227,7 +228,24 @@ Dirichlet boundary conditions are applied.</p></li>
 <dl class="py function">
 <dt class="sig sig-object py" id="scitopt.mesh.utils.get_elements_in_box">
 <span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_elements_in_box</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#scitopt.mesh.utils.get_elements_in_box" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Return indices of elements whose centroids lie within a given 3D bounding         box.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mesh</strong> (<em>skfem.Mesh</em>) – The finite element mesh containing node and element connectivity data.</p></li>
+<li><p><strong>x_range</strong> (<em>tuple</em><em> of </em><em>float</em>) – (min, max) range specifying the bounds in the x-direction.</p></li>
+<li><p><strong>y_range</strong> (<em>tuple</em><em> of </em><em>float</em>) – (min, max) range specifying the bounds in the y-direction.</p></li>
+<li><p><strong>z_range</strong> (<em>tuple</em><em> of </em><em>float</em>) – (min, max) range specifying the bounds in the z-direction.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Array of element indices (integers) whose centroids are within             the specified box.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="scitopt.mesh.utils.get_elements_with_nodes_fast">
@@ -271,12 +289,46 @@ include any of the target nodes.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="scitopt.mesh.utils.get_point_indices_in_range">
 <span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_point_indices_in_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CellBasis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#scitopt.mesh.utils.get_point_indices_in_range" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Get the indices of mesh nodes that lie within a specified 3D bounding box.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>basis</strong> (<em>skfem.Basis</em>) – Finite element basis object containing the mesh and node coordinates.</p></li>
+<li><p><strong>x_range</strong> (<em>tuple</em>) – (min, max) range for x-axis.</p></li>
+<li><p><strong>y_range</strong> (<em>tuple</em>) – (min, max) range for y-axis.</p></li>
+<li><p><strong>z_range</strong> (<em>tuple</em>) – (min, max) range for z-axis.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Array of indices corresponding to mesh nodes inside the given box.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="scitopt.mesh.utils.in_box">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">in_box</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_range</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.utils.in_box" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">in_box</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scitopt.mesh.utils.in_box" title="Link to this definition"></a></dt>
+<dd><p>Check whether 3D points lie within a given axis-aligned bounding box.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coords</strong> (<em>np.ndarray</em><em>, </em><em>shape</em><em> (</em><em>3</em><em>, </em><em>N</em><em>)</em>) – Array of 3D coordinates where each column is a point (x, y, z).</p></li>
+<li><p><strong>x_range</strong> (<em>tuple</em>) – Tuple specifying the (min, max) bounds in the x-direction.</p></li>
+<li><p><strong>y_range</strong> (<em>tuple</em>) – Tuple specifying the (min, max) bounds in the y-direction.</p></li>
+<li><p><strong>z_range</strong> (<em>tuple</em>) – Tuple specifying the (min, max) bounds in the z-direction.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Boolean array of shape (N,) where True indicates the point is inside the box.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray of bool</p>
+</dd>
+</dl>
+</dd></dl>
 
 </section>
 
@@ -284,8 +336,7 @@ include any of the target nodes.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="core.optimizers.html" class="btn btn-neutral float-left" title="scitopt.core.optimizers.common" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="tutorial.html" class="btn btn-neutral float-right" title="Tutorial Page" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="mesh.task.html" class="btn btn-neutral float-left" title="scitopt.mesh.task" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
