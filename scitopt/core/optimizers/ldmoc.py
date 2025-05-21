@@ -19,42 +19,63 @@ class LDMOC_Config(common.SensitivityConfig):
     volume constraints via a Lagrangian formulation and pseudo-inverse (PIV)
     update logic, and it serves as a baseline alternative to EUMOC.
 
-    Unlike `EUMOC_Config`, which operates in the exponential (log-domain) space,
-    LDMOC uses direct arithmetic operations. This can lead to more interpretable
-    update rules but may sacrifice numerical stability or generality in some cases.
+    Unlike `EUMOC_Config`, 
+    which operates in the exponential (log-domain) space,
+    LDMOC uses direct arithmetic operations. 
+    This can lead to more interpretable update rules but may sacrifice
+    numerical stability or generality in some cases.
+
 
     Attributes
     ----------
     interpolation : Literal["SIMP"]
-        Interpolation scheme used for material penalization. Only "SIMP" is supported in LDMOC.
+        Interpolation scheme used for material penalization. Only "SIMP" is
+        supported in LDMOC.
 
     mu_p : float
-        Weight for the volume constraint penalty term. Represents the "P" in pseudo-inverse (PIV) update formulation.
+        Weight for the volume constraint penalty term. Represents the "P" in
+        pseudo-inverse (PIV) update formulation.
 
     lambda_v : float
-        Initial value for the Lagrange multiplier controlling the volume constraint.
+        Initial value for the Lagrange multiplier controlling the volume
+        constraint.
 
     lambda_decay : float
         Decay factor for adapting the Lagrange multiplier during iterations.
-        A value close to 1.0 preserves previous values longer; smaller values update more aggressively.
+        A value close to 1.0 preserves previous values longer; smaller values
+        update more aggressively.
+
 
     Differences from EUMOC
     ----------------------
     - Domain:
-        LDMOC performs updates in the **linear domain**, while EUMOC performs them in the **log/exponential domain**.
+      LDMOC performs updates in the **linear domain**, while EUMOC performs
+      them in the **log/exponential domain**.
+
     - Lambda Range:
-        LDMOC assumes **positive-valued** Lagrange multipliers, whereas EUMOC can operate with **negative values** due to log-domain transformation.
+      LDMOC assumes **positive-valued** Lagrange multipliers, whereas EUMOC
+      can operate with **negative values** due to log-domain transformation.
+
     - Numerical Stability:
-        EUMOC may offer better **stability** for problems with high contrast or stiffness gradients, while LDMOC is more **transparent** and easier to debug.
+      EUMOC may offer better **stability** for problems with high contrast or
+      stiffness gradients, while LDMOC is more **transparent** and
+      easier to debug.
+
     - Interpretability:
-        LDMOC has more **intuitive update rules**, making it easier to understand analytically or derive by hand.
+      LDMOC has more **intuitive update rules**, making it easier to
+      understand analytically or derive by hand.
+
     - Flexibility:
-        EUMOC allows for more **robust constraint handling** in edge cases, especially when sensitivities vary by several orders of magnitude.
+      EUMOC allows for more **robust constraint handling** in edge cases,
+      especially when sensitivities vary by several orders of magnitude.
 
     Use Cases
     ---------
-    LDMOC is suitable for simpler or well-scaled problems where exponential scaling is not required.
-    For more challenging designs with sharp sensitivity landscapes or stiffness jumps, EUMOC may be preferable.
+    LDMOC is suitable for simpler or well-scaled problems where exponential
+    scaling is not required.
+
+    For more challenging designs with sharp sensitivity landscapes or stiffness
+    jumps, EUMOC may be preferable.
     """
 
     interpolation: Literal["SIMP"] = "SIMP"
