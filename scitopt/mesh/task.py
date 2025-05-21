@@ -15,6 +15,52 @@ def setdiff1d(a, b):
 
 @dataclass
 class TaskConfig():
+    """
+    Container for storing finite element and optimization-related data
+    used in topology optimization tasks.
+
+    This class holds material properties, boundary condition information,
+    designable and non-designable element indices, as well as force vectors
+    and volume data for each element. It is typically constructed using
+    `TaskConfig.from_defaults`.
+
+    Attributes
+    ----------
+    E : float
+        Young's modulus of the base material.
+    nu : float
+        Poisson's ratio of the base material.
+    basis : skfem.Basis
+        Finite element basis object associated with the mesh and function space.
+    dirichlet_dofs : np.ndarray
+        Degrees of freedom constrained by Dirichlet (displacement) boundary conditions.
+    dirichlet_elements : np.ndarray
+        Elements that contain Dirichlet boundary points.
+    force_dofs : np.ndarray or list of np.ndarray
+        Degrees of freedom where external forces are applied.
+        Can be a list for multiple load cases.
+    force_elements : np.ndarray
+        Elements that contain the force application points.
+    force : np.ndarray or list of np.ndarray
+        External force vector(s) applied to the system.
+        A list is used when multiple load cases are present.
+    design_elements : np.ndarray
+        Indices of elements that are considered designable in the optimization.
+    free_dofs : np.ndarray
+        Degrees of freedom that are not fixed by boundary conditions.
+    free_elements : np.ndarray
+        Elements associated with the free degrees of freedom.
+    all_elements : np.ndarray
+        Array of all element indices in the mesh.
+    fixed_elements : np.ndarray
+        Elements excluded from the design domain.
+    dirichlet_force_elements : np.ndarray
+        Union of Dirichlet and force elements.
+        Useful for identifying constrained and loaded regions.
+    elements_volume : np.ndarray
+        Volume of each finite element, used in volume constraints and integration.
+    """
+
     E: float
     nu: float
     basis: skfem.Basis
@@ -50,6 +96,49 @@ class TaskConfig():
         force_value: float | list[float],
         design_elements: np.ndarray,
     ) -> 'TaskConfig':
+        """Create a TaskConfig instance using basic material parameters and \
+        boundary conditions.
+
+        This method automatically computes the sets of Dirichlet and \
+            Neumann (force) elements,
+        filters out non-designable elements, and constructs force vectors.
+
+        Parameters
+        ----------
+        E : float
+            Young's modulus of the material.
+        nu : float
+            Poisson's ratio of the material.
+        basis : skfem.Basis
+            Basis object from scikit-fem representing the finite element \
+                space.
+        dirichlet_points : np.ndarray
+            Coordinates used to determine which elements are subject to \
+                Dirichlet boundary conditions.
+        dirichlet_dofs : np.ndarray
+            Degrees of freedom fixed under Dirichlet boundary conditions.
+        force_points : np.ndarray or list of np.ndarray
+            Coordinates used to determine which elements are subject to \
+                external forces.
+        force_dofs : np.ndarray or list of np.ndarray
+            Degrees of freedom where external forces are applied.
+        force_value : float or list of float
+            Magnitude(s) of the external force(s). If multiple load cases \
+                are used, provide a list.
+        design_elements : np.ndarray
+            Initial set of element indices considered designable.
+
+        Returns
+        -------
+        TaskConfig
+            A fully initialized TaskConfig object containing mesh, boundary condition, and load data.
+
+        Raises
+        ------
+        ValueError
+            If no force elements are found or if design elements are empty after filtering.
+        """
+
         #
         # Dirichlet
         #

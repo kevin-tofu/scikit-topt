@@ -65,6 +65,49 @@ def bisection_with_projection(
 
 
 class OC_Optimizer(common.SensitivityAnalysis):
+    """
+    Topology optimization solver using the classic Optimality Criteria (OC) method.
+
+    This class implements the standard OC algorithm for compliance minimization problems.
+    It uses a multiplicative density update formula derived from Karush-Kuhn-Tucker (KKT)
+    optimality conditions under volume constraints.
+
+    The update rule typically takes the form:
+        ρ_new = clamp(ρ * sqrt(-dC / λ), ρ_min, ρ_max)
+    where:
+        - dC is the sensitivity of the compliance objective,
+        - λ is a Lagrange multiplier for the volume constraint.
+
+    This method is widely used in structural optimization due to its simplicity,
+    interpretability, and solid theoretical foundation.
+
+    Attributes
+    ----------
+    config : SensitivityConfig
+        Configuration object specifying the interpolation method, volume fraction,
+        continuation settings, filter radius, and other numerical parameters.
+
+    mesh, basis, etc. : inherited from common.SensitivityAnalysis
+        FEM components required for simulation, including boundary conditions and loads.
+
+    Advantages
+    ----------
+    - Simple and easy to implement
+    - Intuitive update rule based on physical insight
+    - Well-established and widely validated in literature
+
+    Limitations
+    ----------
+    - May become unstable for extreme volume fractions or sharp sensitivity gradients
+    - Less flexible than MOC variants (e.g., no built-in λ adaptation or log-space control)
+    - Requires careful tuning of move limits and filters for robust convergence
+
+    Notes
+    -----
+    This class serves as a baseline implementation against which more advanced
+    methods (like LDMOC or EUMOC) can be compared.
+    """
+
     def __init__(
         self,
         cfg: OC_Config,

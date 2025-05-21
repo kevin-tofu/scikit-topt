@@ -19,6 +19,124 @@ logger = mylogger(__name__)
 
 @dataclass
 class SensitivityConfig():
+    """
+    Configuration class for controlling parameters in topology optimization.
+
+    This class defines optimization parameters, filtering and projection settings,
+    continuation schedules, and numerical solver options. It is designed to support
+    sensitivity-based topology optimization algorithms such as SIMP and RAMP.
+
+    Attributes
+    ----------
+    dst_path : str
+        Directory to which results and logs are saved.
+    interpolation : {"SIMP", "RAMP"}
+        Interpolation method for material penalization.
+    record_times : int
+        Number of snapshots to record during optimization.
+    max_iters : int
+        Maximum number of optimization iterations.
+
+    p_init : float
+        Initial penalization power in SIMP/RAMP interpolation.
+    p : float
+        Final value of the penalization power.
+    p_step : int
+        Number of steps to continue p from p_init to p.
+        If negative, p is fixed at p_init.
+
+    vol_frac_init : float
+        Initial volume fraction for continuation.
+    vol_frac : float
+        Final volume fraction constraint.
+    vol_frac_step : int
+        Number of continuation steps from vol_frac_init to vol_frac.
+        If negative, vol_frac is fixed at vol_frac_init.
+
+    beta_init : float
+        Initial sharpness parameter for Heaviside projection.
+    beta : float
+        Final beta value for projection.
+    beta_step : int
+        Number of continuation steps from beta_init to beta.
+        If negative, beta is fixed at beta_init.
+
+    beta_curvature : float
+        Controls the curvature of the Heaviside projection function.
+    beta_eta : float
+        Threshold parameter for Heaviside projection; determines where
+        the projection function switches rapidly between 0 and 1.
+
+    eta : float
+        Threshold density used in projection. Often used to define
+        intermediate region in Heaviside or filtering.
+
+    percentile_init : float
+        Initial percentile used to scale sensitivity fields.
+    percentile : float
+        Final percentile value. If set to a negative value,
+        percentile-based scaling is disabled, resulting in a
+        more "exact" optimization behavior.
+    percentile_step : int
+        Number of continuation steps for the percentile value.
+        If negative, fixed at percentile_init.
+
+    filter_radius_init : float
+        Initial radius of the sensitivity or density filter.
+    filter_radius : float
+        Final filter radius.
+    filter_radius_step : int
+        Number of continuation steps for filter radius.
+        If negative, filter_radius is fixed at initial value.
+
+    E0 : float
+        Young's modulus of the solid material.
+    E_min : float
+        Minimum Young's modulus (used for void regions).
+    rho_min : float
+        Minimum density value (to avoid singular stiffness).
+    rho_max : float
+        Maximum density value (usually 1.0 for full material).
+
+    move_limit_init : float
+        Initial move limit for density update.
+    move_limit : float
+        Final move limit.
+    move_limit_step : int
+        Number of continuation steps for move limit.
+        If negative, move limit is fixed.
+
+    restart : bool
+        Whether to resume optimization from an existing state.
+    restart_from : int
+        Iteration index to restart from.
+
+    export_img : bool
+        Whether to export images during optimization.
+    export_img_opaque : bool
+        If True, image export uses opaque rendering.
+
+    design_dirichlet : bool
+        If True, Dirichlet boundary elements are included in the design domain.
+
+    lambda_lower : float
+        Lower bound for the Lagrange multiplier in constrained optimization.
+    lambda_upper : float
+        Upper bound for the Lagrange multiplier.
+
+    sensitivity_filter : bool
+        If True, applies filtering to the sensitivity field.
+
+    solver_option : {"spsolve", "pyamg"}
+        Linear solver to be used in analysis. `"pyamg"` enables multigrid
+        acceleration.
+
+    scaling : bool
+        If True, length and force scaling are applied to normalize the mesh geometry and load magnitudes.
+        This helps improve numerical stability by making the system dimensionless or better conditioned.
+
+    """
+
     dst_path: str = "./result/pytests"
     interpolation: Literal["SIMP", "RAMP"] = "SIMP"
     record_times: int = 20
@@ -34,7 +152,7 @@ class SensitivityConfig():
     beta_step: int = -1
     beta_curvature: float = 2.0
     beta_eta: float = 0.50
-    eta: float = 0.5
+    eta: float = 0.6
     percentile_init: float = 60
     percentile: float = -90
     percentile_step: int = -1
@@ -101,6 +219,55 @@ class SensitivityConfig():
 
 
 class SensitivityAnalysis():
+    """
+    Base class for sensitivity-based topology optimization routines.
+
+    This class provides common functionality shared by multiple optimization \
+        strategies
+    (e.g., OC, LDMOC, EUMOC), including finite element analysis (FEA), \
+        sensitivity
+    filtering, and density projection using Heaviside-type functions. It does \
+        not
+    perform the optimization update itself — that logic is delegated to \
+        subclasses.
+
+    Typical usage involves:
+    - Assembling the global stiffness matrix
+    - Solving the displacement field under given loads and boundary conditions
+    - Computing the compliance and its sensitivity with respect to density
+    - Applying density or sensitivity filters (e.g., Helmholtz, cone filters)
+    - Projecting intermediate densities using smooth Heaviside functions
+
+    This class is designed for reuse and extension. All algorithm-specific \
+        update
+    steps (e.g., density changes, Lagrange multiplier updates) should be \
+        implemented
+    in derived classes such as `OC_Optimizer`, `LDMOC_Optimizer`, or `\
+        EUMOC_Optimizer`.
+
+    Responsibilities
+    ----------------
+    - Manage problem configuration (e.g., material parameters, mesh, basis)
+    - Provide filtered sensitivities for stable optimization
+    - Apply projection functions for sharp interface control
+    - Evaluate objective functions such as compliance
+
+    Attributes
+    ----------
+    tsk : TaskConfig
+        Contains FEM mesh, basis, boundary condition data, and load vectors.
+    config : SensitivityConfig
+        Holds numerical and algorithmic settings like filtering radius,
+        penalization power, projection beta, etc.
+
+    Notes
+    -----
+    This class serves as the backbone of sensitivity-based topology \
+        optimization.
+    Subclasses are expected to override methods such as `rho_update()` \
+        to implement specific optimization logic.
+    """
+
     def __init__(
         self,
         cfg: SensitivityConfig,

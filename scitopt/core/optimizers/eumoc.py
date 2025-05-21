@@ -8,6 +8,77 @@ logger = mylogger(__name__)
 
 @dataclass
 class EUMOC_Config(common.SensitivityConfig):
+    """
+    Configuration for Exponential Update Modified Optimality Criteria (EUMOC) method.
+
+    This class extends SensitivityConfig and adds specific parameters for performing
+    topology optimization in the exponential (log-domain) space using a variant of
+    the MOC method.
+
+    Attributes
+    ----------
+    mu_p : float
+        Penalization weight for the volume constraint term, used in \
+            the Pseudo-Inverse
+        formulation (PIV) of the MOC update rule. Higher values enforce \
+            the volume
+        constraint more strictly.
+
+    lambda_v : float
+        Initial value for the Lagrange multiplier controlling the volume \
+            constraint.
+        Used in the exponentiated update equation.
+
+    lambda_decay : float
+        Exponential decay weight applied to the Lagrange multiplier between \
+            iterations.
+        Allows smoothing and gradual adaptation of the volume constraint \
+            influence.
+
+    lambda_lower : float
+        Lower bound for the Lagrange multiplier in the exponential domain.
+        Note that this can be negative, unlike in standard OC methods, due \
+            to the log-domain
+        formulation.
+
+    lambda_upper : float
+        Upper bound for the Lagrange multiplier. Used to clamp updates 
+        in the exponential MOC framework.
+
+        Differences from LDMOC
+    ----------------------
+    - Domain:
+        EUMOC operates in the **exponential/log-domain**, applying \
+            multiplicative updates of the form:
+        ρ_new = ρ * exp( - scaling_rate / λ ), which offers smoother control \
+            in ill-conditioned problems.
+        In contrast, LDMOC uses additive updates in the linear domain.
+
+    - λ behavior:
+        EUMOC allows **negative values** for λ, which are valid in the \
+            exponential framework.
+        This flexibility enables more robust control over the update direction \
+            and magnitude.
+
+    - Numerical stability:
+        The exponential formulation makes EUMOC more stable in the presence of
+        high stiffness contrasts or extreme sensitivity variations.
+
+    - Interpretation:
+        Although EUMOC can be more stable, its update rule is \
+            **less intuitive** than LDMOC's
+        arithmetic update, and the effect of λ and μ_p is more nonlinear.
+
+    - Applicability:
+        EUMOC is particularly useful in **advanced or unstable optimization \
+            scenarios**, such as:
+        - very low volume fractions
+        - highly heterogeneous designs
+        - stress- or constraint-driven problems
+
+    For simpler or educational use cases, LDMOC may be easier to interpret and \
+        tune.
+    """
     mu_p: float = 300.0
     lambda_v: float = 0.1
     lambda_decay: float = 0.90
@@ -121,6 +192,48 @@ def kkt_moc_log_update(
 
 # Exponential Update MOC
 class EUMOC_Optimizer(common.SensitivityAnalysis):
+    """
+    Topology optimization solver using the Exponential Update Modified \
+        Optimality Criteria (EUMOC) method.
+
+    This optimizer performs sensitivity-based topology optimization \
+        in the log-domain
+    using a multiplicative update rule. By leveraging exponential updates and \
+        a decaying
+    Lagrange multiplier, EUMOC provides enhanced numerical stability and \
+        robustness,
+    particularly for problems involving low volume fractions or high \
+        sensitivity gradients.
+
+    In each iteration, the density update takes the form:
+        ρ_new = ρ * exp( - dC / λ )
+    where dC is the sensitivity of compliance and λ is the Lagrange multiplier.
+
+    This method is well-suited for advanced or ill-conditioned optimization \
+        problems.
+
+    Attributes
+    ----------
+    config : EUMOC_Config
+        Configuration object specifying parameters such as mu_p, lambda_v,
+        continuation schedules, and filtering options.
+
+    mesh, basis, etc. : inherited from common.SensitivityAnalysis
+        Core FEM components required for analysis, boundary conditions, and \
+            optimization loops.
+
+    Advantages
+    ----------
+    - High numerical stability for ill-conditioned problems
+    - Better handling of extreme sensitivities
+    - Suitable for low volume fraction designs
+
+    Limitations
+    ----------
+    - Less intuitive than traditional OC methods
+    - Requires care when tuning λ and μ_p
+    """
+
     def __init__(
         self,
         cfg: EUMOC_Config,

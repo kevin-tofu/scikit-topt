@@ -223,3 +223,22 @@ class HistoriesLogger():
         np.savez(
             f"{self.dst_path}/{fname}", **histories
         )
+
+    # def import_histories(
+    #     self,
+    #     fname: Optional[str] = None
+    # ):
+    #     if fname is None:
+    #         fname = "histories.npz"
+    #     histories = np.load(f"{self.dst_path}/{fname}", allow_pickle=True)
+
+    #     if "header" in histories:
+    #         header = histories["header"]
+    #         del histories["header"]
+    #     else:
+    #         raise ValueError(
+    #             "No header found in the histories file."
+    #         )
+    #     if len(histories) == 0:
+    #         logger.warning("No histories to load.")
+    #         return

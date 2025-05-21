@@ -323,7 +323,33 @@ def get_boundary_nodes_from_elements(
     return boundary_nodes
 
 
-def in_box(coords, x_range, y_range, z_range):
+def in_box(
+    coords: np.ndarray,
+    x_range: tuple, y_range: tuple, z_range: tuple
+):
+    """
+    Check whether 3D points lie within a given axis-aligned bounding box.
+
+    Parameters
+    ----------
+    coords : np.ndarray, shape (3, N)
+        Array of 3D coordinates where each column is a point (x, y, z).
+    x_range : tuple
+        Tuple specifying the (min, max) bounds in the x-direction.
+    y_range : tuple
+        Tuple specifying the (min, max) bounds in the y-direction.
+    z_range : tuple
+        Tuple specifying the (min, max) bounds in the z-direction.
+
+    Returns
+    -------
+    np.ndarray of bool
+        Boolean array of shape (N,) where True indicates the point is inside the box.
+    """
+    if coords.ndim == 1:
+        coords = coords.reshape(3, 1)
+    elif coords.ndim != 2 or coords.shape[0] != 3:
+        raise ValueError("coords must be a 2D array with shape (3, N)")
     return (
         (x_range[0] <= coords[0]) & (coords[0] <= x_range[1]) &
         (y_range[0] <= coords[1]) & (coords[1] <= y_range[1]) &
@@ -334,6 +360,25 @@ def in_box(coords, x_range, y_range, z_range):
 def get_point_indices_in_range(
     basis: skfem.Basis, x_range: tuple, y_range: tuple, z_range: tuple
 ) -> np.ndarray:
+    """
+    Get the indices of mesh nodes that lie within a specified 3D bounding box.
+
+    Parameters
+    ----------
+    basis : skfem.Basis
+        Finite element basis object containing the mesh and node coordinates.
+    x_range : tuple
+        (min, max) range for x-axis.
+    y_range : tuple
+        (min, max) range for y-axis.
+    z_range : tuple
+        (min, max) range for z-axis.
+
+    Returns
+    -------
+    np.ndarray
+        Array of indices corresponding to mesh nodes inside the given box.
+    """
     mask = in_box(basis.mesh.p, x_range, y_range, z_range)
     return np.flatnonzero(mask)
 
@@ -352,6 +397,27 @@ def get_elements_in_box(
     y_range: tuple,
     z_range: tuple
 ) -> np.ndarray:
+    """
+    Return indices of elements whose centroids lie within a given 3D bounding \
+        box.
+
+    Parameters
+    ----------
+    mesh : skfem.Mesh
+        The finite element mesh containing node and element connectivity data.
+    x_range : tuple of float
+        (min, max) range specifying the bounds in the x-direction.
+    y_range : tuple of float
+        (min, max) range specifying the bounds in the y-direction.
+    z_range : tuple of float
+        (min, max) range specifying the bounds in the z-direction.
+
+    Returns
+    -------
+    np.ndarray
+        Array of element indices (integers) whose centroids are within \
+            the specified box.
+    """
     element_centers = mesh.p[:, mesh.t].mean(axis=1)
     mask = in_box(element_centers, x_range, y_range, z_range)
     return np.flatnonzero(mask)

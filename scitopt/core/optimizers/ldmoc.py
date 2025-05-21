@@ -10,6 +10,53 @@ logger = mylogger(__name__)
 
 @dataclass
 class LDMOC_Config(common.SensitivityConfig):
+    """
+    Configuration for Linear-Domain Modified Optimality Criteria (LDMOC) method
+    using standard Lagrangian updates.
+
+    This class defines the configuration for a traditional MOC-based topology
+    optimization algorithm in the linear (non-logarithmic) domain. It handles
+    volume constraints via a Lagrangian formulation and pseudo-inverse (PIV)
+    update logic, and it serves as a baseline alternative to EUMOC.
+
+    Unlike `EUMOC_Config`, which operates in the exponential (log-domain) space,
+    LDMOC uses direct arithmetic operations. This can lead to more interpretable
+    update rules but may sacrifice numerical stability or generality in some cases.
+
+    Attributes
+    ----------
+    interpolation : Literal["SIMP"]
+        Interpolation scheme used for material penalization. Only "SIMP" is supported in LDMOC.
+
+    mu_p : float
+        Weight for the volume constraint penalty term. Represents the "P" in pseudo-inverse (PIV) update formulation.
+
+    lambda_v : float
+        Initial value for the Lagrange multiplier controlling the volume constraint.
+
+    lambda_decay : float
+        Decay factor for adapting the Lagrange multiplier during iterations.
+        A value close to 1.0 preserves previous values longer; smaller values update more aggressively.
+
+    Differences from EUMOC
+    ----------------------
+    - Domain:
+        LDMOC performs updates in the **linear domain**, while EUMOC performs them in the **log/exponential domain**.
+    - Lambda Range:
+        LDMOC assumes **positive-valued** Lagrange multipliers, whereas EUMOC can operate with **negative values** due to log-domain transformation.
+    - Numerical Stability:
+        EUMOC may offer better **stability** for problems with high contrast or stiffness gradients, while LDMOC is more **transparent** and easier to debug.
+    - Interpretability:
+        LDMOC has more **intuitive update rules**, making it easier to understand analytically or derive by hand.
+    - Flexibility:
+        EUMOC allows for more **robust constraint handling** in edge cases, especially when sensitivities vary by several orders of magnitude.
+
+    Use Cases
+    ---------
+    LDMOC is suitable for simpler or well-scaled problems where exponential scaling is not required.
+    For more challenging designs with sharp sensitivity landscapes or stiffness jumps, EUMOC may be preferable.
+    """
+
     interpolation: Literal["SIMP"] = "SIMP"
     mu_p: float = 300.0
     lambda_v: float = 0.1
@@ -79,6 +126,44 @@ def moc_log_update_logspace(
 
 # Lagrangian Dual MOC
 class LDMOC_Optimizer(common.SensitivityAnalysis):
+    """
+    Topology optimization solver using the Linear-Domain Modified Optimality \
+        Criteria (LDMOC) method.
+
+    This optimizer implements a traditional Lagrangian-based approach to MOC,
+    operating in the linear domain. It applies sensitivity-driven additive \
+        updates
+    based on pseudo-inverse volume control logic.
+
+    The method updates density via:
+        ρ_new = ρ + Δρ
+    where the update Δρ is derived from sensitivities and volume constraints.
+
+    This formulation is straightforward to implement and interpret, making it \
+        a good
+    choice for prototyping, teaching, or moderately scaled design problems.
+
+    Attributes
+    ----------
+    config : LDMOC_Config
+        Configuration object including mu_p, lambda_v, continuation parameters,
+        and interpolation settings (currently supports SIMP only).
+
+    mesh, basis, etc. : inherited from common.SensitivityAnalysis
+        FEM components used to evaluate sensitivities and apply boundary \
+            conditions.
+
+    Advantages
+    ----------
+    - Easy to interpret and debug
+    - Suitable for well-scaled or educational problems
+    - Compatible with standard OC-style update logic
+
+    Limitations
+    ----------
+    - May suffer from instability in high-contrast or low-volume cases
+    - Less robust than EUMOC for stiff or nonlinear problems
+    """
     def __init__(
         self,
         cfg: LDMOC_Config,
