@@ -518,6 +518,7 @@ class SensitivityAnalysis():
         visualization.export_submesh(
             tsk, rho, 0.5, f"{cfg.dst_path}/cubic_top.vtu"
         )
+        self.recorder.export_histories("histories.npz")
 
     def rho_update(
         self,

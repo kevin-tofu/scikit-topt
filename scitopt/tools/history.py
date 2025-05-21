@@ -49,6 +49,35 @@ class HistoryLogger():
         else:
             logger.info(f"{self.name}: {d:.3f}")
 
+    def data_to_array(
+        self
+    ) -> tuple[np.ndarray, Optional[list[str]]]:
+        if len(self.data) == 0:
+            return np.array([])
+        if isinstance(self.data[0], list):
+            data = np.array(self.data)
+            if self.plot_type == "min-max-mean-std":
+                data = np.transpose(data)
+                data = np.vstack((data[0], data[1], data[2], data[3]))
+            else:
+                data = np.transpose(data)
+                data = np.vstack((data[0], data[1], data[2]))
+        else:
+            data = np.array(self.data)
+
+        header = None
+        if self.constants is not None:
+            header = [self.name]
+            if self.constant_names is not None:
+                header += self.constant_names
+            else:
+                header += [f"constant_{i}" for i in range(len(self.constants))]
+            data = np.vstack((header, data))
+            data[0, 1:] = self.constants
+        else:
+            data = np.array(self.data)
+        return (data, header)
+
 
 class HistoriesLogger():
     def __init__(
@@ -161,3 +190,36 @@ class HistoriesLogger():
             fig.tight_layout()
             fig.savefig(f"{self.dst_path}/{page_index}{fname}")
             plt.close("all")
+
+    def histories_to_array(
+        self
+    ) -> tuple[dict[str, np.ndarray], Optional[list[str]]]:
+        histories = dict()
+        for k in self.histories.keys():
+            if self.histories[k].exists():
+                data, header = self.histories[k].data_to_array()
+                histories[k] = data
+                if header is not None:
+                    histories[f"{k}_header"] = header
+        return histories, header
+
+    def export_histories(self, fname: Optional[str] = None):
+        if fname is None:
+            fname = "histories.npz"
+        histories, header = self.histories_to_array()
+        if header is not None:
+            histories["header"] = header
+        else:
+            histories["header"] = None
+        if len(histories) == 0:
+            logger.warning("No histories to save.")
+            return
+        if self.dst_path is None:
+            logger.warning("No destination path specified.")
+            return
+        if not isinstance(self.dst_path, str):
+            logger.warning("Destination path is not a string.")
+            return
+        np.savez(
+            f"{self.dst_path}/{fname}", **histories
+        )
