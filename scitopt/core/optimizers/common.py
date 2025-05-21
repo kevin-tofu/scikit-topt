@@ -500,9 +500,9 @@ class SensitivityAnalysis():
                     f"Iteration : {iter}",
                     cfg.export_img_opaque
                 )
-                visualization.export_submesh(
-                    tsk, rho, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
-                )
+                # visualization.export_submesh(
+                #     tsk, rho, 0.5, f"{cfg.dst_path}/sub_mesh.vtu"
+                # )
                 np.savez_compressed(
                     f"{cfg.dst_path}/data/{str(iter).zfill(6)}-rho.npz",
                     rho_design_elements=rho[tsk.design_elements],
@@ -516,7 +516,7 @@ class SensitivityAnalysis():
             f"{self.cfg.dst_path}/mesh_rho/last.jpg"
         )
         visualization.export_submesh(
-            tsk, rho, 0.5, f"{cfg.dst_path}/cubic_top.vtk"
+            tsk, rho, 0.5, f"{cfg.dst_path}/cubic_top.vtu"
         )
 
     def rho_update(
