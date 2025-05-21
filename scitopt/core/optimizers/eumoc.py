@@ -11,6 +11,8 @@ class EUMOC_Config(common.SensitivityConfig):
     mu_p: float = 300.0
     lambda_v: float = 0.1
     lambda_decay: float = 0.90
+    lambda_lower: float = -1e+7
+    lambda_upper: float = 1e+7
 
 
 # log(x) = -0.4   →   x ≈ 0.670
@@ -124,6 +126,8 @@ class EUMOC_Optimizer(common.SensitivityAnalysis):
         cfg: EUMOC_Config,
         tsk: scitopt.mesh.TaskConfig,
     ):
+        assert cfg.lambda_lower < 0
+        assert cfg.lambda_upper > 0
         super().__init__(cfg, tsk)
         self.recorder.add("dC", plot_type="min-max-mean-std")
         self.recorder.add("lambda_v", ylog=False)

@@ -84,6 +84,7 @@ class LDMOC_Optimizer(common.SensitivityAnalysis):
         cfg: LDMOC_Config,
         tsk: scitopt.mesh.TaskConfig,
     ):
+        assert cfg.lambda_lower < cfg.lambda_upper
         super().__init__(cfg, tsk)
         self.recorder.add("-dC", plot_type="min-max-mean-std", ylog=True)
         self.recorder.add("lambda_v", ylog=True)
