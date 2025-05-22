@@ -81,15 +81,6 @@ class OC_Optimizer(common.SensitivityAnalysis):
     This method is widely used in structural optimization due to its simplicity,
     interpretability, and solid theoretical foundation.
 
-    Attributes
-    ----------
-    config : SensitivityConfig
-        Configuration object specifying the interpolation method, volume fraction,
-        continuation settings, filter radius, and other numerical parameters.
-
-    mesh, basis, etc. : inherited from common.SensitivityAnalysis
-        FEM components required for simulation, including boundary conditions and loads.
-
     Advantages
     ----------
     - Simple and easy to implement
@@ -106,6 +97,17 @@ class OC_Optimizer(common.SensitivityAnalysis):
     -----
     This class serves as a baseline implementation against which more advanced
     methods (like LDMOC or EUMOC) can be compared.
+
+    Attributes
+    ----------
+    config : SensitivityConfig
+        Configuration object specifying the interpolation method, volume fraction,
+        continuation settings, filter radius, and other numerical parameters.
+
+    mesh, basis, etc. : inherited from common.SensitivityAnalysis
+        FEM components required for simulation, including boundary conditions and loads.
+
+    
     """
 
     def __init__(

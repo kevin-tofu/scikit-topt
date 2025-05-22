@@ -29,6 +29,16 @@ def eumoc_optimize(tsk):
     optimizer.parameterize()
     optimizer.optimize()
 
+    cfg2 = scitopt.core.optimizers.EUMOC_Config(
+        restart=True,
+        restart_from=1
+    )
+    cfg2.max_iters = 1
+    cfg2.record_times = 1
+    optimizer = scitopt.core.EUMOC_Optimizer(cfg, tsk)
+    optimizer.parameterize()
+    optimizer.optimize()
+
 
 def test_define_task():
 

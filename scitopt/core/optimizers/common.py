@@ -252,6 +252,13 @@ class SensitivityAnalysis():
     - Apply projection functions for sharp interface control
     - Evaluate objective functions such as compliance
 
+    Notes
+    -----
+    This class serves as the backbone of sensitivity-based topology \
+        optimization.
+    Subclasses are expected to override methods such as `rho_update()` \
+        to implement specific optimization logic.
+
     Attributes
     ----------
     tsk : TaskConfig
@@ -260,12 +267,6 @@ class SensitivityAnalysis():
         Holds numerical and algorithmic settings like filtering radius,
         penalization power, projection beta, etc.
 
-    Notes
-    -----
-    This class serves as the backbone of sensitivity-based topology \
-        optimization.
-    Subclasses are expected to override methods such as `rho_update()` \
-        to implement specific optimization logic.
     """
 
     def __init__(

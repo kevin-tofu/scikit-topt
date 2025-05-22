@@ -3,6 +3,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![DOI](https://zenodo.org/badge/957674835.svg)](https://doi.org/10.5281/zenodo.15441499)
 ![Build Status](https://img.shields.io/github/workflow/status/kevin-tofu/scikit-topt/CI)
+[![PyPI Downloads](https://static.pepy.tech/badge/scitopt)](https://pepy.tech/projects/scitopt)
 
 
 # 🧠 Scikit Topt

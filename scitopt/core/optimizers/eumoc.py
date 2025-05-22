@@ -45,39 +45,6 @@ class EUMOC_Config(common.SensitivityConfig):
         Upper bound for the Lagrange multiplier. Used to clamp updates 
         in the exponential MOC framework.
 
-        Differences from LDMOC
-    ----------------------
-    - Domain:
-        EUMOC operates in the **exponential/log-domain**, applying \
-            multiplicative updates of the form:
-        ρ_new = ρ * exp( - scaling_rate / λ ), which offers smoother control \
-            in ill-conditioned problems.
-        In contrast, LDMOC uses additive updates in the linear domain.
-
-    - λ behavior:
-        EUMOC allows **negative values** for λ, which are valid in the \
-            exponential framework.
-        This flexibility enables more robust control over the update direction \
-            and magnitude.
-
-    - Numerical stability:
-        The exponential formulation makes EUMOC more stable in the presence of
-        high stiffness contrasts or extreme sensitivity variations.
-
-    - Interpretation:
-        Although EUMOC can be more stable, its update rule is \
-            **less intuitive** than LDMOC's
-        arithmetic update, and the effect of λ and μ_p is more nonlinear.
-
-    - Applicability:
-        EUMOC is particularly useful in **advanced or unstable optimization \
-            scenarios**, such as:
-        - very low volume fractions
-        - highly heterogeneous designs
-        - stress- or constraint-driven problems
-
-    For simpler or educational use cases, LDMOC may be easier to interpret and \
-        tune.
     """
     mu_p: float = 300.0
     lambda_v: float = 0.1
@@ -222,16 +189,6 @@ class EUMOC_Optimizer(common.SensitivityAnalysis):
         Core FEM components required for analysis, boundary conditions, and \
             optimization loops.
 
-    Advantages
-    ----------
-    - High numerical stability for ill-conditioned problems
-    - Better handling of extreme sensitivities
-    - Suitable for low volume fraction designs
-
-    Limitations
-    ----------
-    - Less intuitive than traditional OC methods
-    - Requires care when tuning λ and μ_p
     """
 
     def __init__(
