@@ -460,7 +460,7 @@ class SensitivityAnalysis():
                 data = np.load(data_path)
                 iter_begin = iter + 1
             iter_end = cfg.max_iters + 1
-
+            self.recorder.import_histories()
             rho[tsk.design_elements] = data["rho_design_elements"]
             del data
         else:
