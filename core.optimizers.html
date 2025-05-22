@@ -107,6 +107,9 @@ in derived classes such as <cite>OC_Optimizer</cite>, <cite>LDMOC_Optimizer</cit
 <li><p>Apply projection functions for sharp interface control</p></li>
 <li><p>Evaluate objective functions such as compliance</p></li>
 </ul>
+<p class="rubric">Notes</p>
+<p>This class serves as the backbone of sensitivity-based topology         optimization.
+Subclasses are expected to override methods such as <cite>rho_update()</cite>         to implement specific optimization logic.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">tsk</span></span></dt>
@@ -130,9 +133,6 @@ penalization power, projection beta, etc.</p>
 </dl>
 </dd></dl>
 
-<p class="rubric">Notes</p>
-<p>This class serves as the backbone of sensitivity-based topology         optimization.
-Subclasses are expected to override methods such as <cite>rho_update()</cite>         to implement specific optimization logic.</p>
 <dl class="py method">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">init_schedulers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">export</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span></dt>
@@ -887,6 +887,24 @@ optimality conditions under volume constraints.</p>
 </dl>
 <p>This method is widely used in structural optimization due to its simplicity,
 interpretability, and solid theoretical foundation.</p>
+<section id="advantages">
+<h2>Advantages<a class="headerlink" href="#advantages" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Simple and easy to implement</p></li>
+<li><p>Intuitive update rule based on physical insight</p></li>
+<li><p>Well-established and widely validated in literature</p></li>
+</ul>
+</section>
+<section id="limitations">
+<h2>Limitations<a class="headerlink" href="#limitations" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>May become unstable for extreme volume fractions or sharp sensitivity gradients</p></li>
+<li><p>Less flexible than MOC variants (e.g., no built-in λ adaptation or log-space control)</p></li>
+<li><p>Requires careful tuning of move limits and filters for robust convergence</p></li>
+</ul>
+<p class="rubric">Notes</p>
+<p>This class serves as a baseline implementation against which more advanced
+methods (like LDMOC or EUMOC) can be compared.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">config</span></span></dt>
@@ -910,59 +928,6 @@ continuation settings, filter radius, and other numerical parameters.</p>
 </dl>
 </dd></dl>
 
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">Advantages</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">----------</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">Simple</span> <span class="pre">and</span> <span class="pre">easy</span> <span class="pre">to</span> <span class="pre">implement</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">Intuitive</span> <span class="pre">update</span> <span class="pre">rule</span> <span class="pre">based</span> <span class="pre">on</span> <span class="pre">physical</span> <span class="pre">insight</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">Well-established</span> <span class="pre">and</span> <span class="pre">widely</span> <span class="pre">validated</span> <span class="pre">in</span> <span class="pre">literature</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">Limitations</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">----------</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">May</span> <span class="pre">become</span> <span class="pre">unstable</span> <span class="pre">for</span> <span class="pre">extreme</span> <span class="pre">volume</span> <span class="pre">fractions</span> <span class="pre">or</span> <span class="pre">sharp</span> <span class="pre">sensitivity</span> <span class="pre">gradients</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">Less</span> <span class="pre">flexible</span> <span class="pre">than</span> <span class="pre">MOC</span> <span class="pre">variants</span> <span class="pre">(e.g.,</span> <span class="pre">no</span> <span class="pre">built-in</span> <span class="pre">λ</span> <span class="pre">adaptation</span> <span class="pre">or</span> <span class="pre">log-space</span> <span class="pre">control)</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">Requires</span> <span class="pre">careful</span> <span class="pre">tuning</span> <span class="pre">of</span> <span class="pre">move</span> <span class="pre">limits</span> <span class="pre">and</span> <span class="pre">filters</span> <span class="pre">for</span> <span class="pre">robust</span> <span class="pre">convergence</span></span></dt>
-<dd></dd></dl>
-
-<p class="rubric">Notes</p>
-<p>This class serves as a baseline implementation against which more advanced
-methods (like LDMOC or EUMOC) can be compared.</p>
 <dl class="py method">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">init_schedulers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">export</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span></dt>
@@ -973,6 +938,7 @@ methods (like LDMOC or EUMOC) can be compared.</p>
 <span class="sig-name descname"><span class="pre">rho_update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iter_loop</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_candidate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_projected</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dC_drho_ave</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strain_energy_ave</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">move_limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tmp_lower</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tmp_upper</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percentile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elements_volume_design</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elements_volume_design_sum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vol_frac</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span></dt>
 <dd></dd></dl>
 
+</section>
 </dd></dl>
 
 <dl class="py function">
@@ -1044,33 +1010,6 @@ update more aggressively.</p>
 </dl>
 </dd></dl>
 
-<section id="differences-from-eumoc">
-<h2>Differences from EUMOC<a class="headerlink" href="#differences-from-eumoc" title="Link to this heading"></a></h2>
-<ul class="simple">
-<li><p>Domain:
-LDMOC performs updates in the <strong>linear domain</strong>, while EUMOC performs
-them in the <strong>log/exponential domain</strong>.</p></li>
-<li><p>Lambda Range:
-LDMOC assumes <strong>positive-valued</strong> Lagrange multipliers, whereas EUMOC
-can operate with <strong>negative values</strong> due to log-domain transformation.</p></li>
-<li><p>Numerical Stability:
-EUMOC may offer better <strong>stability</strong> for problems with high contrast or
-stiffness gradients, while LDMOC is more <strong>transparent</strong> and
-easier to debug.</p></li>
-<li><p>Interpretability:
-LDMOC has more <strong>intuitive update rules</strong>, making it easier to
-understand analytically or derive by hand.</p></li>
-<li><p>Flexibility:
-EUMOC allows for more <strong>robust constraint handling</strong> in edge cases,
-especially when sensitivities vary by several orders of magnitude.</p></li>
-</ul>
-</section>
-<section id="use-cases">
-<h2>Use Cases<a class="headerlink" href="#use-cases" title="Link to this heading"></a></h2>
-<p>LDMOC is suitable for simpler or well-scaled problems where exponential
-scaling is not required.</p>
-<p>For more challenging designs with sharp sensitivity landscapes or stiffness
-jumps, EUMOC may be preferable.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">interpolation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'SIMP'</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SIMP'</span></em></dt>
@@ -1091,7 +1030,6 @@ jumps, EUMOC may be preferable.</p>
 <span class="sig-name descname"><span class="pre">mu_p</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">300.0</span></em></dt>
 <dd></dd></dl>
 
-</section>
 </dd></dl>
 
 <dl class="py class">
@@ -1109,6 +1047,20 @@ based on pseudo-inverse volume control logic.</p>
 <p>where the update Δρ is derived from sensitivities and volume constraints.</p>
 <p>This formulation is straightforward to implement and interpret, making it         a good
 choice for prototyping, teaching, or moderately scaled design problems.</p>
+<section id="id1">
+<h2>Advantages<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Easy to interpret and debug</p></li>
+<li><p>Suitable for well-scaled or educational problems</p></li>
+<li><p>Compatible with standard OC-style update logic</p></li>
+</ul>
+</section>
+<section id="id2">
+<h2>Limitations<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>May suffer from instability in high-contrast or low-volume cases</p></li>
+<li><p>Less robust than EUMOC for stiff or nonlinear problems</p></li>
+</ul>
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">config</span></span></dt>
@@ -1132,56 +1084,12 @@ and interpolation settings (currently supports SIMP only).</p>
 </dl>
 </dd></dl>
 
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">Advantages</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">----------</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">Easy</span> <span class="pre">to</span> <span class="pre">interpret</span> <span class="pre">and</span> <span class="pre">debug</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">Suitable</span> <span class="pre">for</span> <span class="pre">well-scaled</span> <span class="pre">or</span> <span class="pre">educational</span> <span class="pre">problems</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">Compatible</span> <span class="pre">with</span> <span class="pre">standard</span> <span class="pre">OC-style</span> <span class="pre">update</span> <span class="pre">logic</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">Limitations</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">----------</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">May</span> <span class="pre">suffer</span> <span class="pre">from</span> <span class="pre">instability</span> <span class="pre">in</span> <span class="pre">high-contrast</span> <span class="pre">or</span> <span class="pre">low-volume</span> <span class="pre">cases</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">Less</span> <span class="pre">robust</span> <span class="pre">than</span> <span class="pre">EUMOC</span> <span class="pre">for</span> <span class="pre">stiff</span> <span class="pre">or</span> <span class="pre">nonlinear</span> <span class="pre">problems</span></span></dt>
-<dd></dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">rho_update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iter_loop</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_candidate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_projected</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dC_drho_ave</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strain_energy_ave</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">move_limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tmp_lower</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tmp_upper</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percentile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elements_volume_design</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elements_volume_design_sum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vol_frac</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span></dt>
 <dd></dd></dl>
 
+</section>
 </dd></dl>
 
 <dl class="py function">
@@ -1252,61 +1160,12 @@ formulation.</p>
 <span class="sig-name descname"><span class="pre">lambda_upper</span></span></dt>
 <dd><p>Upper bound for the Lagrange multiplier. Used to clamp updates
 in the exponential MOC framework.</p>
-<p>Differences from LDMOC</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>float</p>
 </dd>
 </dl>
 </dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">----------------------</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">Domain</span></span></dt>
-<dd><p>EUMOC operates in the <strong>exponential/log-domain</strong>, applying             multiplicative updates of the form:
-ρ_new = ρ * exp( - scaling_rate / λ ), which offers smoother control             in ill-conditioned problems.
-In contrast, LDMOC uses additive updates in the linear domain.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">λ</span> <span class="pre">behavior</span></span></dt>
-<dd><p>EUMOC allows <strong>negative values</strong> for λ, which are valid in the             exponential framework.
-This flexibility enables more robust control over the update direction             and magnitude.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">Numerical</span> <span class="pre">stability</span></span></dt>
-<dd><p>The exponential formulation makes EUMOC more stable in the presence of
-high stiffness contrasts or extreme sensitivity variations.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">Interpretation</span></span></dt>
-<dd><p>Although EUMOC can be more stable, its update rule is             <strong>less intuitive</strong> than LDMOC’s
-arithmetic update, and the effect of λ and μ_p is more nonlinear.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">Applicability</span></span></dt>
-<dd><p>EUMOC is particularly useful in <strong>advanced or unstable optimization             scenarios</strong>, such as:
-- very low volume fractions
-- highly heterogeneous designs
-- stress- or constraint-driven problems</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">For</span> <span class="pre">simpler</span> <span class="pre">or</span> <span class="pre">educational</span> <span class="pre">use</span> <span class="pre">cases,</span> <span class="pre">LDMOC</span> <span class="pre">may</span> <span class="pre">be</span> <span class="pre">easier</span> <span class="pre">to</span> <span class="pre">interpret</span> <span class="pre">and</span>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; <span class="pre">tune.</span></span></dt>
-<dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py">
@@ -1372,51 +1231,6 @@ continuation schedules, and filtering options.</p>
 </dd>
 </dl>
 </dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">Advantages</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">----------</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">High</span> <span class="pre">numerical</span> <span class="pre">stability</span> <span class="pre">for</span> <span class="pre">ill-conditioned</span> <span class="pre">problems</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">Better</span> <span class="pre">handling</span> <span class="pre">of</span> <span class="pre">extreme</span> <span class="pre">sensitivities</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">Suitable</span> <span class="pre">for</span> <span class="pre">low</span> <span class="pre">volume</span> <span class="pre">fraction</span> <span class="pre">designs</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">Limitations</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">----------</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">Less</span> <span class="pre">intuitive</span> <span class="pre">than</span> <span class="pre">traditional</span> <span class="pre">OC</span> <span class="pre">methods</span></span></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">-</span> <span class="pre">Requires</span> <span class="pre">care</span> <span class="pre">when</span> <span class="pre">tuning</span> <span class="pre">λ</span> <span class="pre">and</span> <span class="pre">μ_p</span></span></dt>
-<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py">
