@@ -21,6 +21,7 @@ release = '0.0.8'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
+    'sphinx.ext.mathjax',
     'myst_parser'
 ]
 
