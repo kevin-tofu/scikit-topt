@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Overview of Topology Optimization Algorithm &mdash; scikit-topt 0.0.8 documentation</title>
+  <title>Topology Optimization Algorithm Overview &mdash; scikit-topt 0.0.8 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -46,8 +46,7 @@
               <p class="caption" role="heading"><span class="caption-text">Content</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview of Topology Optimization Algorithm</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#topology-optimization-algorithm-overview">Topology Optimization Algorithm Overview</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Topology Optimization Algorithm Overview</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#interpolation-setup">Interpolation Setup</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#initialization">Initialization</a></li>
 </ul>
@@ -64,8 +63,6 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization Algorithms in Density-Based Topology Optimization</a></li>
-<li class="toctree-l1"><a class="reference internal" href="optimization.html#optimality-criteria">Optimality Criteria</a></li>
-<li class="toctree-l1"><a class="reference internal" href="optimization.html#modified-optimality-criteria-moc-variants">Modified Optimality Criteria (MOC) Variants</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial Page</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
 </ul>
@@ -84,7 +81,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Overview of Topology Optimization Algorithm</li>
+      <li class="breadcrumb-item active">Topology Optimization Algorithm Overview</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/theory.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -94,12 +91,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="overview-of-topology-optimization-algorithm">
-<h1>Overview of Topology Optimization Algorithm<a class="headerlink" href="#overview-of-topology-optimization-algorithm" title="Link to this heading"></a></h1>
-<section id="topology-optimization-algorithm-overview">
-<h2>Topology Optimization Algorithm Overview<a class="headerlink" href="#topology-optimization-algorithm-overview" title="Link to this heading"></a></h2>
+  <section id="topology-optimization-algorithm-overview">
+<h1>Topology Optimization Algorithm Overview<a class="headerlink" href="#topology-optimization-algorithm-overview" title="Link to this heading"></a></h1>
 <p>This page provides a high-level explanation of the topology optimization routine implemented in the <code class="docutils literal notranslate"><span class="pre">optimize</span></code> method. The algorithm follows a density-based approach, using SIMP or RAMP interpolation, a Helmholtz filter, and Heaviside projection to iteratively update the design variables under compliance minimization.</p>
-</section>
 <section id="interpolation-setup">
 <h2>Interpolation Setup<a class="headerlink" href="#interpolation-setup" title="Link to this heading"></a></h2>
 <p>The optimization supports two types of material interpolation:</p>

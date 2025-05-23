@@ -1,5 +1,5 @@
 Optimization Algorithms in Density-Based Topology Optimization
---------------------------------------------------------------
+================================================================
 
 Density-based topology optimization relies on continuous design variables to represent material distribution, and various optimization algorithms have been developed to update these densities effectively.
 
@@ -65,7 +65,7 @@ Despite its limitations, the OC method remains popular for compliance-based prob
 Modified Optimality Criteria (MOC) Variants
 -------------------------------------------
 
-In density-based topology optimization, the Modified Optimality Criteria (MOC) method can be implemented in several ways. Two commonly used variants include a log-space in-place update and a direct additive update. These differ in how they incorporate sensitivity information and handle volume constraints.
+In density-based topology optimization, the Modified Optimality Criteria (MOC) method can be implemented in several ways. I implemented 2 variants which are log-space update and direct additive update. These differ in how they incorporate sensitivity information and handle volume constraints.
 
 1. Log-space Update Method
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

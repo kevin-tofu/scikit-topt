@@ -1,8 +1,5 @@
-Overview of Topology Optimization Algorithm
-=================================================
-
 Topology Optimization Algorithm Overview
-----------------------------------------
+=================================================
 
 This page provides a high-level explanation of the topology optimization routine implemented in the ``optimize`` method. The algorithm follows a density-based approach, using SIMP or RAMP interpolation, a Helmholtz filter, and Heaviside projection to iteratively update the design variables under compliance minimization.
 
