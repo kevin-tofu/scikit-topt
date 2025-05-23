@@ -47,7 +47,18 @@
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="theory.html">Topology Optimization Algorithm Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization Algorithms in Density-Based Topology Optimization</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial Page</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial Page</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#optimization">Optimization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#optimizer-configuration-and-run">Optimizer Configuration, and Run</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#task-definition">Task Definition</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#shape-modeling-and-its-basis-function">Shape modeling and its basis function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#task-configuration">Task Configuration</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
 </ul>
 
@@ -77,6 +88,78 @@
              
   <section id="tutorial-page">
 <h1>Tutorial Page<a class="headerlink" href="#tutorial-page" title="Link to this heading"></a></h1>
+<section id="optimization">
+<h2>Optimization<a class="headerlink" href="#optimization" title="Link to this heading"></a></h2>
+<p>Below is a minimal working example that performs a topology optimization.
+This will run a compliance minimization with OC method.</p>
+<section id="optimizer-configuration-and-run">
+<h3>Optimizer Configuration, and Run<a class="headerlink" href="#optimizer-configuration-and-run" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">scitopt</span>
+
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">scitopt</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OC_Config</span><span class="p">()</span>
+
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">scitopt</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">OC_Optimizer</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">tsk</span><span class="p">)</span>
+<span class="n">optimizer</span><span class="o">.</span><span class="n">parameterize</span><span class="p">()</span>
+<span class="n">optimizer</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>But before running the optimization, we need to set up the task configuration and the design variables.</p>
+</section>
+</section>
+<section id="task-definition">
+<h2>Task Definition<a class="headerlink" href="#task-definition" title="Link to this heading"></a></h2>
+<section id="shape-modeling-and-its-basis-function">
+<h3>Shape modeling and its basis function<a class="headerlink" href="#shape-modeling-and-its-basis-function" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">skfem</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scitopt</span>
+
+<span class="n">x_len</span><span class="p">,</span> <span class="n">y_len</span><span class="p">,</span> <span class="n">z_len</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span>
+ <span class="n">element_size</span> <span class="o">=</span> <span class="mf">0.1</span>
+ <span class="n">e</span> <span class="o">=</span> <span class="n">skfem</span><span class="o">.</span><span class="n">ElementVector</span><span class="p">(</span><span class="n">skfem</span><span class="o">.</span><span class="n">ElementHex1</span><span class="p">())</span>
+ <span class="n">mesh</span> <span class="o">=</span> <span class="n">scitopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">toy_problem</span><span class="o">.</span><span class="n">create_box_hex</span><span class="p">(</span>
+     <span class="n">x_len</span><span class="p">,</span> <span class="n">y_len</span><span class="p">,</span> <span class="n">z_len</span><span class="p">,</span> <span class="n">element_size</span>
+ <span class="p">)</span>
+ <span class="n">basis</span> <span class="o">=</span> <span class="n">skfem</span><span class="o">.</span><span class="n">Basis</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">intorder</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="task-configuration">
+<h3>Task Configuration<a class="headerlink" href="#task-configuration" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dirichlet_points</span> <span class="o">=</span> <span class="n">scitopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">get_point_indices_in_range</span><span class="p">(</span>
+    <span class="n">basis</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.03</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y_len</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">z_len</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">dirichlet_nodes</span> <span class="o">=</span> <span class="n">basis</span><span class="o">.</span><span class="n">get_dofs</span><span class="p">(</span><span class="n">nodes</span><span class="o">=</span><span class="n">dirichlet_points</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+
+<span class="c1"># Specify Force Vector</span>
+<span class="n">F_points</span> <span class="o">=</span> <span class="n">scitopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">get_point_indices_in_range</span><span class="p">(</span>
+    <span class="n">basis</span><span class="p">,</span>
+    <span class="p">(</span><span class="n">x_len</span><span class="p">,</span> <span class="n">x_len</span><span class="p">),</span>
+    <span class="p">(</span><span class="n">y_len</span><span class="o">*</span><span class="mi">2</span><span class="o">/</span><span class="mi">5</span><span class="p">,</span> <span class="n">y_len</span><span class="o">*</span><span class="mi">3</span><span class="o">/</span><span class="mi">5</span><span class="p">),</span>
+    <span class="p">(</span><span class="n">z_len</span><span class="o">*</span><span class="mi">2</span><span class="o">/</span><span class="mi">5</span><span class="p">,</span> <span class="n">z_len</span><span class="o">*</span><span class="mi">3</span><span class="o">/</span><span class="mi">5</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">F_nodes</span> <span class="o">=</span> <span class="n">basis</span><span class="o">.</span><span class="n">get_dofs</span><span class="p">(</span><span class="n">nodes</span><span class="o">=</span><span class="n">F_points</span><span class="p">)</span><span class="o">.</span><span class="n">nodal</span><span class="p">[</span><span class="s2">&quot;u^1&quot;</span><span class="p">]</span>
+<span class="n">F</span> <span class="o">=</span> <span class="mi">100</span>
+
+<span class="c1"># Specify Design Field</span>
+<span class="n">design_elements</span> <span class="o">=</span> <span class="n">scitopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">get_elements_in_box</span><span class="p">(</span>
+    <span class="n">mesh</span><span class="p">,</span>
+    <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">x_len</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y_len</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">z_len</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">mytask</span> <span class="o">=</span> <span class="n">scitopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">TaskConfig</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">(</span>
+    <span class="mf">210e9</span><span class="p">,</span>
+    <span class="mf">0.30</span><span class="p">,</span>
+    <span class="n">basis</span><span class="p">,</span>
+    <span class="n">dirichlet_points</span><span class="p">,</span>
+    <span class="n">dirichlet_nodes</span><span class="p">,</span>
+    <span class="n">F_points</span><span class="p">,</span>
+    <span class="n">F_nodes</span><span class="p">,</span>
+    <span class="n">F</span><span class="p">,</span>
+    <span class="n">design_elements</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
 </section>
 
 
