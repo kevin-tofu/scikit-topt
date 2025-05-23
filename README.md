@@ -1,9 +1,10 @@
-![CI](https://github.com/kevin-tofu/scikit-topt/actions/workflows/python-tests.yml/badge.svg)
 [![PyPI version](https://img.shields.io/pypi/v/scitopt.svg?cacheSeconds=60)](https://pypi.org/project/scitopt/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![DOI](https://zenodo.org/badge/957674835.svg)](https://doi.org/10.5281/zenodo.15441499)
-![Build Status](https://img.shields.io/github/workflow/status/kevin-tofu/scikit-topt/CI)
+[![Python Version](https://img.shields.io/pypi/pyversions/scitopt.svg)](https://pypi.org/project/scitopt/)
 [![PyPI Downloads](https://static.pepy.tech/badge/scitopt)](https://pepy.tech/projects/scitopt)
+![CI](https://github.com/kevin-tofu/scikit-topt/actions/workflows/python-tests.yml/badge.svg)
+![CI](https://github.com/kevin-tofu/scikit-topt/actions/workflows/sphinx.yml/badge.svg)
 
 
 # 🧠 Scikit Topt
