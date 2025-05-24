@@ -9,40 +9,38 @@ logger = mylogger(__name__)
 
 
 @dataclass
-class LDMOC_Config(common.SensitivityConfig):
+class LogMOC_Config(common.SensitivityConfig):
     """
-    Configuration for Linear-Domain Modified Optimality Criteria (LDMOC) method
-    using standard Lagrangian updates.
+    Configuration for log-space gradient update with optional mean-centering.
 
-    This class defines the configuration for a traditional MOC-based topology
-    optimization algorithm in the linear (non-logarithmic) domain. It handles
-    volume constraints via a Lagrangian formulation and pseudo-inverse (PIV)
-    update logic, and it serves as a baseline alternative to EUMOC.
+    This configuration supports a variant of log-space Lagrangian descent used in topology
+    optimization. The update is performed in the logarithmic domain to ensure strictly positive
+    densities and to simulate multiplicative behavior. Optionally, the computed update direction
+    can be centered (mean-subtracted) to improve numerical stability.
 
-    Unlike `EUMOC_Config`,
-    which operates in the exponential (log-domain) space,
-    LDMOC uses direct arithmetic operations. 
-    This can lead to more interpretable update rules but may sacrifice
-    numerical stability or generality in some cases.
+    This method differs from standard OC-based updates: it adds the volume constraint penalty
+    directly to the compliance sensitivity and applies the gradient step in log(ρ)-space:
+
+        log(ρ_new) = log(ρ) - η · (∂C/∂ρ + λ)
+
+    Optionally (when enabled), the update direction is centered as:
+
+        Δ = (∂C/∂ρ + λ) - mean(∂C/∂ρ + λ)
 
     Attributes
     ----------
     interpolation : Literal["SIMP"]
-        Interpolation scheme used for material penalization. Only "SIMP" is
-        supported in LDMOC.
+        Interpolation scheme used for material penalization. Currently only "SIMP" is supported.
 
     mu_p : float
-        Weight for the volume constraint penalty term. Represents the "P" in
-        pseudo-inverse (PIV) update formulation.
+        Penalty weight for the volume constraint. This controls how strongly the constraint
+        influences the descent direction.
 
     lambda_v : float
-        Initial value for the Lagrange multiplier controlling the volume
-        constraint.
+        Initial Lagrange multiplier for the volume constraint.
 
     lambda_decay : float
-        Decay factor for adapting the Lagrange multiplier during iterations.
-        A value close to 1.0 preserves previous values longer; smaller values
-        update more aggressively.
+        Factor by which lambda_v decays over iterations. Smaller values cause λ to adapt more rapidly.
 
     """
 
@@ -72,16 +70,10 @@ def moc_log_update_logspace(
 ):
     eps = 1e-8
     logger.info(f"dC: {dC.min()} {dC.max()}")
-    # if percentile > 0:
     np.negative(dC, out=scaling_rate)
     scaling_rate /= (lambda_v + eps)
     np.maximum(scaling_rate, eps, out=scaling_rate)
     np.log(scaling_rate, out=scaling_rate)
-    scaling_rate -= np.mean(scaling_rate)
-    # np.clip(scaling_rate, -0.05, 0.05, out=scaling_rate)
-    # np.clip(scaling_rate, -0.10, 0.10, out=scaling_rate)
-    # np.clip(scaling_rate, -0.20, 0.20, out=scaling_rate)
-    # np.clip(scaling_rate, -0.30, 0.30, out=scaling_rate)
     np.clip(scaling_rate, -0.50, 0.50, out=scaling_rate)
     np.clip(rho, rho_min, 1.0, out=rho)
     np.log(rho, out=tmp_lower)
@@ -114,48 +106,53 @@ def moc_log_update_logspace(
 
 
 # Lagrangian Dual MOC
-class LDMOC_Optimizer(common.SensitivityAnalysis):
+class LogMOC_Optimizer(common.SensitivityAnalysis):
     """
-    Topology optimization solver using the Linear-Domain Modified Optimality \
-        Criteria (LDMOC) method.
+    Topology optimization solver using log-space Lagrangian gradient descent.
 
-    This optimizer implements a traditional Lagrangian-based approach to MOC,
-    operating in the linear domain. It applies sensitivity-driven additive \
-        updates
-    based on pseudo-inverse volume control logic.
+    This optimizer performs sensitivity-based topology optimization by applying
+    gradient descent on the Lagrangian (compliance + volume penalty) in the
+    logarithmic domain. The update is computed in log(ρ)-space to ensure positive
+    densities and simulate multiplicative behavior.
 
-    The method updates density via:
-        ρ_new = ρ + Δρ
-    where the update Δρ is derived from sensitivities and volume constraints.
+    Unlike traditional Optimality Criteria (OC) methods, this approach adds the
+    volume constraint penalty λ directly to the compliance sensitivity, rather than
+    forming a multiplicative ratio. The update is then applied as:
 
-    This formulation is straightforward to implement and interpret, making it \
-        a good
-    choice for prototyping, teaching, or moderately scaled design problems.
+        log(ρ_new) = log(ρ) - η · (∂C/∂ρ + λ)
+
+    which is equivalent to:
+
+        ρ_new = ρ · exp( - η · (∂C/∂ρ + λ) )
+
+    This method maintains positivity of the density field without explicit clipping
+    and offers improved numerical robustness for problems involving low volume fractions
+    or sharp sensitivity gradients.
 
     Advantages
     ----------
-    - Easy to interpret and debug
-    - Suitable for well-scaled or educational problems
-    - Compatible with standard OC-style update logic
+    - Ensures positive densities via log-space formulation
+    - Simulates OC-like multiplicative update behavior
+    - Straightforward gradient descent formulation
 
     Limitations
-    ----------
-    - May suffer from instability in high-contrast or low-volume cases
-    - Less robust than EUMOC for stiff or nonlinear problems
+    -----------
+    - Not derived from strict OC/KKT conditions
+    - May still require step size tuning and clipping for stability
+    - Involves logarithmic and exponential operations at each iteration
 
     Attributes
     ----------
-    config : LDMOC_Config
-        Configuration object including mu_p, lambda_v, continuation parameters,
-        and interpolation settings (currently supports SIMP only).
+    config : LogGradientUpdateConfig
+        Configuration object specifying parameters such as mu_p, lambda_v,
+        decay schedules, and interpolation settings (currently SIMP only).
 
     mesh, basis, etc. : inherited from common.SensitivityAnalysis
-        FEM components used to evaluate sensitivities and apply boundary \
-            conditions.
+        FEM components used to evaluate sensitivities and apply boundary conditions.
     """
     def __init__(
         self,
-        cfg: LDMOC_Config,
+        cfg: LogMOC_Config,
         tsk: scitopt.mesh.TaskConfig,
     ):
         assert cfg.lambda_lower < cfg.lambda_upper
@@ -215,7 +212,7 @@ class LDMOC_Optimizer(common.SensitivityAnalysis):
             move_limit,
             eta,
             tmp_lower, tmp_upper,
-            cfg.rho_min, 1.0
+            cfg.rho_min, 1.0,
         )
 
 
@@ -248,13 +245,13 @@ if __name__ == '__main__':
         tsk = toy_problem.toy_msh(args.task_name, args.mesh_path)
 
     print("load toy problem")
-    print("generate LDMOC_Config")
-    cfg = LDMOC_Config.from_defaults(
+    print("generate LogMOC_Config")
+    cfg = LogMOC_Config.from_defaults(
         **vars(args)
     )
 
     print("optimizer")
-    optimizer = LDMOC_Optimizer(cfg, tsk)
+    optimizer = LogMOC_Optimizer(cfg, tsk)
     print("parameterize")
     optimizer.parameterize()
     # optimizer.parameterize(preprocess=False)

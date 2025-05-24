@@ -57,33 +57,33 @@ def oc_ramp_optimize(tsk):
 
 
 def ldmoc_optimize(tsk):
-    cfg = scitopt.core.optimizers.LDMOC_Config()
+    cfg = scitopt.core.optimizers.LogMOC_Config()
     cfg.max_iters = 1
     cfg.record_times = 1
-    optimizer = scitopt.core.LDMOC_Optimizer(cfg, tsk)
+    optimizer = scitopt.core.LogMOC_Optimizer(cfg, tsk)
     optimizer.parameterize()
     optimizer.optimize()
 
 
-def eumoc_optimize(tsk):
-    cfg = scitopt.core.optimizers.EUMOC_Config(
+def loglagrangian_optimize(tsk):
+    cfg = scitopt.core.optimizers.LogLagrangian_Config(
         dst_path="./result/pytests"
     )
     cfg.max_iters = 1
     cfg.record_times = 1
 
-    optimizer = scitopt.core.EUMOC_Optimizer(cfg, tsk)
+    optimizer = scitopt.core.LogLagrangian_Optimizer(cfg, tsk)
     optimizer.parameterize()
     optimizer.optimize()
 
-    cfg2 = scitopt.core.optimizers.EUMOC_Config(
+    cfg2 = scitopt.core.optimizers.LogLagrangian_Config(
         dst_path="./result/pytests",
         restart=True,
         restart_from=1
     )
     cfg2.max_iters = 1
     cfg2.record_times = 1
-    optimizer2 = scitopt.core.EUMOC_Optimizer(cfg2, tsk)
+    optimizer2 = scitopt.core.LogLagrangian_Optimizer(cfg2, tsk)
     optimizer2.parameterize()
     optimizer2.optimize()
 
@@ -92,11 +92,11 @@ def test_optimizers():
     tsk = scitopt.mesh.toy_problem.toy_test()
     oc_ramp_optimize(tsk)
     ldmoc_optimize(tsk)
-    eumoc_optimize(tsk)
+    loglagrangian_optimize(tsk)
 
     test_define_task()
 
 
 if __name__ == "__main__":
     tsk = scitopt.mesh.toy_problem.toy_test()
-    eumoc_optimize(tsk)
+    loglagrangian_optimize(tsk)

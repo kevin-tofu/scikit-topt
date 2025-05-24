@@ -70,13 +70,20 @@ In density-based topology optimization, the Modified Optimality Criteria (MOC) m
 1. Log-space Update Method
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This method modifies the OC update by applying it in log-space. It computes the Lagrangian gradient :math:`dL` as the sum of the compliance sensitivity :math:`dC` and a volume penalty term :math:`\lambda_v`, and then updates the density in-place.
+This method modifies the OC update by applying it in **log-space**. Instead of directly updating the density :math:`\rho`, it performs the update on :math:`\log \rho`, ensuring better numerical stability and multiplicative behavior.
 
-The update rule can be written as:
+It computes the Lagrangian gradient :math:`dL` as the sum of the compliance sensitivity :math:`dC` and a volume penalty term :math:`\lambda_v`, and applies the update in log-space:
 
 .. math::
 
-   \rho^{(t+1)} = \rho^{(t)} \cdot \exp\left( -\eta \cdot (dC + \lambda_v) \right)
+   \log \rho^{(t+1)} = \log \rho^{(t)} - \eta \cdot (dC + \lambda_v)
+
+Then, the updated density is recovered by exponentiation:
+
+.. math::
+
+   \rho^{(t+1)} = \exp\left( \log \rho^{(t)} - \eta \cdot (dC + \lambda_v) \right)
+               = \rho^{(t)} \cdot \exp\left( -\eta \cdot (dC + \lambda_v) \right)
 
 Here:
 
@@ -85,7 +92,7 @@ Here:
 - :math:`\lambda_v` is the derivative of the volume penalty,
 - :math:`\eta` is a step size or learning rate.
 
-This log-space formulation ensures the density remains positive and can be interpreted as a multiplicative update in a transformed space.
+This approach improves numerical stability and ensures that the density remains positive throughout the optimization process.
 
 **Advantages**:
 
@@ -99,8 +106,8 @@ This log-space formulation ensures the density remains positive and can be inter
 - Does not enforce volume constraints exactly—relies on penalty balancing.
 - Convergence behavior may vary depending on the problem and filter.
 
-2. Additive Δρ Update Method
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2. Linear-Space Update Method (Not Implemented yet)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This variant formulates the update as an explicit increment :math:`\Delta \rho` added to the current density. The update is defined as:
 
@@ -136,3 +143,56 @@ Both update strategies aim to descend along the objective gradient while respect
 - Use the log-space update when prioritizing positivity and multiplicative structure.
 - Use the additive update when flexibility, constraint control, or custom damping is desired.
 
+Log-space Lagrangian Method
+-----------------------------------
+
+Log-space Lagrangian Method
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This method is a variant of the Modified Optimality Criteria (MOC) approach that performs density updates in **log-space** rather than directly in the physical domain. The goal is to improve numerical stability and ensure that the updated density field remains strictly positive.
+
+Instead of updating the density :math:`\rho` directly, the update is applied to its logarithm :math:`\log \rho`. This transforms the multiplicative update behavior into an additive one in log-space.
+
+The method computes the Lagrangian gradient :math:`dL` as the sum of the compliance sensitivity :math:`dC` and the derivative of the volume penalty term :math:`\lambda_v`. The update rule is:
+
+.. math::
+
+   \log \rho^{(t+1)} = \log \rho^{(t)} - \eta \cdot (dC + \lambda_v)
+
+The density is then recovered by exponentiation:
+
+.. math::
+
+   \rho^{(t+1)} = \exp\left( \log \rho^{(t)} - \eta \cdot (dC + \lambda_v) \right)
+               = \rho^{(t)} \cdot \exp\left( -\eta \cdot (dC + \lambda_v) \right)
+
+Here:
+
+- :math:`\rho^{(t)}` is the current density at iteration :math:`t`,
+- :math:`dC` is the derivative of compliance with respect to density,
+- :math:`\lambda_v` is the derivative of the volume constraint penalty,
+- :math:`\eta` is a scalar step size (analogous to a learning rate).
+
+Optional clipping is applied in log-space to limit excessive updates and preserve stability:
+
+.. math::
+
+   \log \rho^{(t+1)} = \text{clip}\left( \log \rho^{(t+1)},\ \log \rho_{\min},\ \log \rho_{\max} \right)
+
+Finally, move limits can also be enforced using:
+
+.. math::
+
+   \rho^{(t+1)} = \text{clip}\left( \rho^{(t+1)},\ \rho^{(t)} - \Delta \rho_{\max},\ \rho^{(t)} + \Delta \rho_{\max} \right)
+
+**Advantages**:
+
+- Naturally ensures :math:`\rho > 0` without additional constraints.
+- Suitable for in-place and vectorized computation in large-scale problems.
+- Converts multiplicative effects into additive updates, improving numerical robustness.
+
+**Disadvantages**:
+
+- Sensitive to step size :math:`\eta` and penalty weight :math:`\lambda_v`.
+- Volume constraints are only enforced implicitly via penalty.
+- Requires careful initialization and parameter tuning to ensure convergence.

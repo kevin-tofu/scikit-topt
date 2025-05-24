@@ -20,7 +20,7 @@ scitopt.core.optimizers.common
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: scitopt.core.optimizers.eumoc
+.. automodule:: scitopt.core.optimizers.loglagrangian
    :members:
    :no-index:
    :undoc-members:

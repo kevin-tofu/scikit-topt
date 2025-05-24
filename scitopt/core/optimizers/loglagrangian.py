@@ -7,43 +7,43 @@ logger = mylogger(__name__)
 
 
 @dataclass
-class EUMOC_Config(common.SensitivityConfig):
+class LogLagrangian_Config(common.SensitivityConfig):
     """
-    Configuration for Exponential Update Modified Optimality Criteria (EUMOC) method.
+    Configuration for Log-space Lagrangian Gradient Update method.
 
-    This class extends SensitivityConfig and adds specific parameters for performing
-    topology optimization in the exponential (log-domain) space using a variant of
-    the MOC method.
+    This class defines the configuration parameters for performing topology optimization
+    via gradient-based updates in the logarithmic domain. Unlike traditional Optimality Criteria (OC)
+    methods, this approach explicitly follows the gradient of the Lagrangian
+    (compliance + volume penalty) and applies the update in log-space to ensure
+    positive densities and multiplicative-like behavior.
 
     Attributes
     ----------
     mu_p : float
-        Penalization weight for the volume constraint term, used in \
-            the Pseudo-Inverse
-        formulation (PIV) of the MOC update rule. Higher values enforce \
-            the volume
-        constraint more strictly.
+        Weighting factor applied to the volume constraint in the Lagrangian.
+        This term scales the influence of the volume penalty in the descent direction.
 
     lambda_v : float
-        Initial value for the Lagrange multiplier controlling the volume \
-            constraint.
-        Used in the exponentiated update equation.
+        Initial value for the Lagrange multiplier associated with the volume constraint.
+        This is added directly to the compliance gradient to form the full Lagrangian gradient.
 
     lambda_decay : float
-        Exponential decay weight applied to the Lagrange multiplier between \
-            iterations.
-        Allows smoothing and gradual adaptation of the volume constraint \
-            influence.
+        Decay factor applied to lambda_v over iterations, allowing gradual tuning
+        of constraint strength.
 
     lambda_lower : float
-        Lower bound for the Lagrange multiplier in the exponential domain.
-        Note that this can be negative, unlike in standard OC methods, due \
-            to the log-domain
-        formulation.
+        Minimum allowed value for the Lagrange multiplier. Can be negative in this formulation,
+        since lambda_v is added to the gradient rather than used as a ratio.
 
     lambda_upper : float
-        Upper bound for the Lagrange multiplier. Used to clamp updates 
-        in the exponential MOC framework.
+        Maximum allowed value for the Lagrange multiplier. Clamping helps avoid instability
+        in the update steps due to large penalties.
+
+    Notes
+    -----
+    This method is sometimes referred to as 'EUMOC', but it is mathematically distinct
+    from classical OC-based updates. It performs gradient descent on the Lagrangian
+    in log(ρ)-space, leading to multiplicative behavior while maintaining gradient fidelity.
 
     """
     mu_p: float = 300.0
@@ -64,7 +64,7 @@ class EUMOC_Config(common.SensitivityConfig):
 # log(x) = +0.4   →   x ≈ 1.492
 
 
-def kkt_moc_log_update(
+def kkt_log_update(
     rho,
     dC, lambda_v, scaling_rate,
     eta, move_limit,
@@ -158,42 +158,55 @@ def kkt_moc_log_update(
 
 
 # Exponential Update MOC
-class EUMOC_Optimizer(common.SensitivityAnalysis):
+class LogLagrangian_Optimizer(common.SensitivityAnalysis):
     """
-    Topology optimization solver using the Exponential Update Modified \
-        Optimality Criteria (EUMOC) method.
+    Topology optimization solver using log-space Lagrangian gradient descent.
 
-    This optimizer performs sensitivity-based topology optimization \
-        in the log-domain
-    using a multiplicative update rule. By leveraging exponential updates and \
-        a decaying
-    Lagrange multiplier, EUMOC provides enhanced numerical stability and \
-        robustness,
-    particularly for problems involving low volume fractions or high \
-        sensitivity gradients.
+    This optimizer performs sensitivity-based topology optimization by applying
+    gradient descent on the Lagrangian (compliance + volume penalty) in log(ρ)-space.
+    Unlike traditional Optimality Criteria (OC) methods, this method adds the
+    volume constraint term (λ) directly to the compliance gradient before updating.
 
-    In each iteration, the density update takes the form:
-        ρ_new = ρ * exp( - dC / λ )
-    where dC is the sensitivity of compliance and λ is the Lagrange multiplier.
+    By performing updates in log-space, the method ensures strictly positive densities
+    and exhibits multiplicative behavior in the original density space, which can enhance
+    numerical stability—particularly for problems with low volume fractions or steep gradients.
 
-    This method is well-suited for advanced or ill-conditioned optimization \
-        problems.
+    In each iteration, the update follows:
+
+        log(ρ_new) = log(ρ) - η · (∂C/∂ρ + λ)
+
+    which is equivalent to:
+
+        ρ_new = ρ · exp( -η · (∂C/∂ρ + λ) )
+
+    Here:
+    - ∂C/∂ρ is the compliance sensitivity,
+    - λ is the Lagrange multiplier (volume penalty weight),
+    - η is a step size parameter.
 
     Attributes
     ----------
-    config : EUMOC_Config
-        Configuration object specifying parameters such as mu_p, lambda_v,
-        continuation schedules, and filtering options.
+    config : LogGradientUpdateConfig
+        Configuration object specifying optimization parameters such as mu_p,
+        lambda_v, decay schedules, and filtering strategies.
 
     mesh, basis, etc. : inherited from common.SensitivityAnalysis
-        Core FEM components required for analysis, boundary conditions, and \
-            optimization loops.
+        Core finite element components required for stiffness evaluation,
+        boundary conditions, and optimization loop execution.
+
+    Notes
+    -----
+    Although previously referred to as 'EUMOC', this method is not derived
+    from the traditional Optimality Criteria framework. Instead, it implements
+    log-space gradient descent on the Lagrangian, directly adding the volume
+    penalty to the sensitivity.
+
 
     """
 
     def __init__(
         self,
-        cfg: EUMOC_Config,
+        cfg: LogLagrangian_Config,
         tsk: scitopt.mesh.TaskConfig,
     ):
         assert cfg.lambda_lower < 0
@@ -237,7 +250,7 @@ class EUMOC_Optimizer(common.SensitivityAnalysis):
         self.recorder.feed_data("vol_error", vol_error)
         self.recorder.feed_data("dC", dC_drho_ave)
 
-        kkt_moc_log_update(
+        kkt_log_update(
             rho=rho_candidate,
             dC=dC_drho_ave,
             lambda_v=self.lambda_v, scaling_rate=scaling_rate,
@@ -280,13 +293,13 @@ if __name__ == '__main__':
         tsk = toy_problem.toy_msh(args.task_name, args.mesh_path)
 
     print("load toy problem")
-    print("generate EUMOC_Config")
-    cfg = EUMOC_Config.from_defaults(
+    print("generate LogLagrangian_Config")
+    cfg = LogLagrangian_Config.from_defaults(
         **vars(args)
     )
 
     print("optimizer")
-    optimizer = EUMOC_Optimizer(cfg, tsk)
+    optimizer = LogLagrangian_Optimizer(cfg, tsk)
     print("parameterize")
     optimizer.parameterize()
     # optimizer.parameterize(preprocess=False)

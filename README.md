@@ -117,9 +117,9 @@ tsk = scitopt.mesh.task.TaskConfig.from_defaults(
 import scitopt
 
 tsk = scitopt.mesh.toy_problem.toy1()
-cfg = scitopt.core.EUMOC_Config()
+cfg = scitopt.core.LogMOC_Config()
 
-optimizer = scitopt.core.EUMOC_Optimizer(cfg, tsk)
+optimizer = scitopt.core.LogMOC_Optimizer(cfg, tsk)
 
 optimizer.parameterize()
 optimizer.optimize()

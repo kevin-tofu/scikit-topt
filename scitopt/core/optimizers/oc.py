@@ -107,7 +107,6 @@ class OC_Optimizer(common.SensitivityAnalysis):
     mesh, basis, etc. : inherited from common.SensitivityAnalysis
         FEM components required for simulation, including boundary conditions and loads.
 
-    
     """
 
     def __init__(
