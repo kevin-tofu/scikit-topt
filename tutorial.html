@@ -19,8 +19,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="API Reference" href="api.html" />
-    <link rel="prev" title="Optimization Algorithms in Density-Based Topology Optimization" href="optimization.html" /> 
+    <link rel="next" title="Topology Optimization Algorithm Overview" href="theory.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -45,8 +45,6 @@
               <p class="caption" role="heading"><span class="caption-text">Content</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="theory.html">Topology Optimization Algorithm Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization Algorithms in Density-Based Topology Optimization</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial Page</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#optimization">Optimization</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#optimizer-configuration-and-run">Optimizer Configuration, and Run</a></li>
@@ -55,10 +53,13 @@
 <li class="toctree-l2"><a class="reference internal" href="#task-definition">Task Definition</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#shape-modeling-and-its-basis-function">Shape modeling and its basis function</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#task-configuration">Task Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#results-and-visualization">Results and Visualization</a></li>
 </ul>
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="theory.html">Topology Optimization Algorithm Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization Algorithms in Density-Based Topology Optimization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
 </ul>
 
@@ -159,6 +160,15 @@ This will run a compliance minimization with OC method.</p>
 </pre></div>
 </div>
 </section>
+<section id="results-and-visualization">
+<h3>Results and Visualization<a class="headerlink" href="#results-and-visualization" title="Link to this heading"></a></h3>
+<p>The results of the optimization are stored in the directory specified by cfg.dst_path.
+For example, it contains visualizations of the density distribution, as well as graphs showing the evolution of various parameters during the optimization process, such as the density field, volume fraction, and sensitivity values.</p>
+<a class="reference internal image-reference" href="_images/ex-progress-report.jpg"><img alt="Alternative text" class="align-center" src="_images/ex-progress-report.jpg" style="width: 400px;" />
+</a>
+<a class="reference internal image-reference" href="_images/ex-pull-down-1.gif"><img alt="Alternative text" class="align-center" src="_images/ex-pull-down-1.gif" style="width: 400px;" />
+</a>
+</section>
 </section>
 </section>
 
@@ -166,8 +176,8 @@ This will run a compliance minimization with OC method.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="optimization.html" class="btn btn-neutral float-left" title="Optimization Algorithms in Density-Based Topology Optimization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="api.html" class="btn btn-neutral float-right" title="API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="theory.html" class="btn btn-neutral float-right" title="Topology Optimization Algorithm Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
