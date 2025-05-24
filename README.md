@@ -41,8 +41,8 @@ The currently supported features are as follows:
 - Implement FEA on unstructured mesh using scikit-fem
 - Topology optimization using the density method and its optimization algorithm
   - Optimality Criteria (OC) Method  
-  - (Lagrangian Dual) Modified OC Method 
-  - (Exponential Update) Modified OC Method 
+  - (Log-Space) Modified OC Method 
+  - Lagrangian Method
 - able to handle multiple objectives / constraints
 - High-performance computation using sparse matrices with Scipy and PyAMG  
 - has a function to monitor the transition of parameters.
@@ -128,7 +128,7 @@ optimizer.optimize()
 
 ### Optimize Toy Problem with command line.
 ```bash
-OMP_NUM_THREADS=3 OPENBLAS_NUM_THREADS=3 MKL_NUM_THREADS=3 PYTHONPATH=./ python ./scitopt/core/optimizer/ldmoc.py \
+OMP_NUM_THREADS=3 OPENBLAS_NUM_THREADS=3 MKL_NUM_THREADS=3 PYTHONPATH=./ python ./scitopt/core/optimizer/logmoc.py \
  --dst_path ./result/base_moc_down \
  --interpolation SIMP \
  --p_init 1.0 \
