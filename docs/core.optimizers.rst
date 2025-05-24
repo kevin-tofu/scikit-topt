@@ -14,7 +14,7 @@ scitopt.core.optimizers.common
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: scitopt.core.optimizers.ldmoc
+.. automodule:: scitopt.core.optimizers.logmoc
    :members:
    :no-index:
    :undoc-members:
