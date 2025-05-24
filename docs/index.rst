@@ -12,8 +12,8 @@ scikit-topt documentation
    :caption: Content
 
    installation
+   tutorial
    theory
    optimization
-   tutorial
    api
 

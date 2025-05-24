@@ -171,7 +171,7 @@ OMP_NUM_THREADS=3 OPENBLAS_NUM_THREADS=3 MKL_NUM_THREADS=3 PYTHONPATH=./ python 
 
 ## Optiization Algorithm
 Optimization Algorithms and Techniques are briefly summarized here.  
-[Optimization Algorithms and Techniques](./docs/techniques.md)
+[Optimization Algorithms and Techniques](https://kevin-tofu.github.io/scikit-topt/optimization.html)
 
 
 ## Acknowledgements
