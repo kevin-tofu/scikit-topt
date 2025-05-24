@@ -1,7 +1,7 @@
 from scitopt.core.optimizers.oc import OC_Config
 from scitopt.core.optimizers.oc import OC_Optimizer
-from scitopt.core.optimizers.ldmoc import LogMOC_Config
-from scitopt.core.optimizers.ldmoc import LogMOC_Optimizer
+from scitopt.core.optimizers.logmoc import LogMOC_Config
+from scitopt.core.optimizers.logmoc import LogMOC_Optimizer
 from scitopt.core.optimizers.loglagrangian import LogLagrangian_Config
 from scitopt.core.optimizers.loglagrangian import LogLagrangian_Optimizer
 

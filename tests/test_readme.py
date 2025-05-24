@@ -56,7 +56,7 @@ def oc_ramp_optimize(tsk):
     optimizer.optimize()
 
 
-def ldmoc_optimize(tsk):
+def logmoc_optimize(tsk):
     cfg = scitopt.core.optimizers.LogMOC_Config()
     cfg.max_iters = 1
     cfg.record_times = 1
@@ -91,7 +91,7 @@ def loglagrangian_optimize(tsk):
 def test_optimizers():
     tsk = scitopt.mesh.toy_problem.toy_test()
     oc_ramp_optimize(tsk)
-    ldmoc_optimize(tsk)
+    logmoc_optimize(tsk)
     loglagrangian_optimize(tsk)
 
     test_define_task()
