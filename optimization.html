@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Optimization Algorithms in Density-Based Topology Optimization &mdash; scikit-topt 0.0.8 documentation</title>
+  <title>Optimization Algorithms in Density-Based Topology Optimization &mdash; scikit-topt 0.1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=53b53b71"></script>
+      <script src="_static/documentation_options.js?v=01f34227"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -58,8 +58,12 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#modified-optimality-criteria-moc-variants">Modified Optimality Criteria (MOC) Variants</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#log-space-update-method">1. Log-space Update Method</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#additive-update-method">2. Additive Δρ Update Method</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#linear-space-update-method-not-implemented-yet">2. Linear-Space Update Method (Not Implemented yet)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#summary">Summary</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#log-space-lagrangian-method">Log-space Lagrangian Method</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Log-space Lagrangian Method</a></li>
 </ul>
 </li>
 </ul>
@@ -147,10 +151,14 @@
 <p>In density-based topology optimization, the Modified Optimality Criteria (MOC) method can be implemented in several ways. I implemented 2 variants which are log-space update and direct additive update. These differ in how they incorporate sensitivity information and handle volume constraints.</p>
 <section id="log-space-update-method">
 <h3>1. Log-space Update Method<a class="headerlink" href="#log-space-update-method" title="Link to this heading"></a></h3>
-<p>This method modifies the OC update by applying it in log-space. It computes the Lagrangian gradient <span class="math notranslate nohighlight">\(dL\)</span> as the sum of the compliance sensitivity <span class="math notranslate nohighlight">\(dC\)</span> and a volume penalty term <span class="math notranslate nohighlight">\(\lambda_v\)</span>, and then updates the density in-place.</p>
-<p>The update rule can be written as:</p>
+<p>This method modifies the OC update by applying it in <strong>log-space</strong>. Instead of directly updating the density <span class="math notranslate nohighlight">\(\rho\)</span>, it performs the update on <span class="math notranslate nohighlight">\(\log \rho\)</span>, ensuring better numerical stability and multiplicative behavior.</p>
+<p>It computes the Lagrangian gradient <span class="math notranslate nohighlight">\(dL\)</span> as the sum of the compliance sensitivity <span class="math notranslate nohighlight">\(dC\)</span> and a volume penalty term <span class="math notranslate nohighlight">\(\lambda_v\)</span>, and applies the update in log-space:</p>
 <div class="math notranslate nohighlight">
-\[\rho^{(t+1)} = \rho^{(t)} \cdot \exp\left( -\eta \cdot (dC + \lambda_v) \right)\]</div>
+\[\log \rho^{(t+1)} = \log \rho^{(t)} - \eta \cdot (dC + \lambda_v)\]</div>
+<p>Then, the updated density is recovered by exponentiation:</p>
+<div class="math notranslate nohighlight">
+\[\rho^{(t+1)} = \exp\left( \log \rho^{(t)} - \eta \cdot (dC + \lambda_v) \right)
+            = \rho^{(t)} \cdot \exp\left( -\eta \cdot (dC + \lambda_v) \right)\]</div>
 <p>Here:</p>
 <ul class="simple">
 <li><p><span class="math notranslate nohighlight">\(\rho^{(t)}\)</span> is the current density field,</p></li>
@@ -158,7 +166,7 @@
 <li><p><span class="math notranslate nohighlight">\(\lambda_v\)</span> is the derivative of the volume penalty,</p></li>
 <li><p><span class="math notranslate nohighlight">\(\eta\)</span> is a step size or learning rate.</p></li>
 </ul>
-<p>This log-space formulation ensures the density remains positive and can be interpreted as a multiplicative update in a transformed space.</p>
+<p>This approach improves numerical stability and ensures that the density remains positive throughout the optimization process.</p>
 <p><strong>Advantages</strong>:</p>
 <ul class="simple">
 <li><p>Efficient in-place update suitable for large-scale problems.</p></li>
@@ -172,8 +180,8 @@
 <li><p>Convergence behavior may vary depending on the problem and filter.</p></li>
 </ul>
 </section>
-<section id="additive-update-method">
-<h3>2. Additive Δρ Update Method<a class="headerlink" href="#additive-update-method" title="Link to this heading"></a></h3>
+<section id="linear-space-update-method-not-implemented-yet">
+<h3>2. Linear-Space Update Method (Not Implemented yet)<a class="headerlink" href="#linear-space-update-method-not-implemented-yet" title="Link to this heading"></a></h3>
 <p>This variant formulates the update as an explicit increment <span class="math notranslate nohighlight">\(\Delta \rho\)</span> added to the current density. The update is defined as:</p>
 <div class="math notranslate nohighlight">
 \[\rho^{(t+1)} = \rho^{(t)} + \Delta \rho\]</div>
@@ -200,6 +208,46 @@
 <ul class="simple">
 <li><p>Use the log-space update when prioritizing positivity and multiplicative structure.</p></li>
 <li><p>Use the additive update when flexibility, constraint control, or custom damping is desired.</p></li>
+</ul>
+</section>
+</section>
+<section id="log-space-lagrangian-method">
+<h2>Log-space Lagrangian Method<a class="headerlink" href="#log-space-lagrangian-method" title="Link to this heading"></a></h2>
+<section id="id1">
+<h3>Log-space Lagrangian Method<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<p>This method is a variant of the Modified Optimality Criteria (MOC) approach that performs density updates in <strong>log-space</strong> rather than directly in the physical domain. The goal is to improve numerical stability and ensure that the updated density field remains strictly positive.</p>
+<p>Instead of updating the density <span class="math notranslate nohighlight">\(\rho\)</span> directly, the update is applied to its logarithm <span class="math notranslate nohighlight">\(\log \rho\)</span>. This transforms the multiplicative update behavior into an additive one in log-space.</p>
+<p>The method computes the Lagrangian gradient <span class="math notranslate nohighlight">\(dL\)</span> as the sum of the compliance sensitivity <span class="math notranslate nohighlight">\(dC\)</span> and the derivative of the volume penalty term <span class="math notranslate nohighlight">\(\lambda_v\)</span>. The update rule is:</p>
+<div class="math notranslate nohighlight">
+\[\log \rho^{(t+1)} = \log \rho^{(t)} - \eta \cdot (dC + \lambda_v)\]</div>
+<p>The density is then recovered by exponentiation:</p>
+<div class="math notranslate nohighlight">
+\[\rho^{(t+1)} = \exp\left( \log \rho^{(t)} - \eta \cdot (dC + \lambda_v) \right)
+            = \rho^{(t)} \cdot \exp\left( -\eta \cdot (dC + \lambda_v) \right)\]</div>
+<p>Here:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\rho^{(t)}\)</span> is the current density at iteration <span class="math notranslate nohighlight">\(t\)</span>,</p></li>
+<li><p><span class="math notranslate nohighlight">\(dC\)</span> is the derivative of compliance with respect to density,</p></li>
+<li><p><span class="math notranslate nohighlight">\(\lambda_v\)</span> is the derivative of the volume constraint penalty,</p></li>
+<li><p><span class="math notranslate nohighlight">\(\eta\)</span> is a scalar step size (analogous to a learning rate).</p></li>
+</ul>
+<p>Optional clipping is applied in log-space to limit excessive updates and preserve stability:</p>
+<div class="math notranslate nohighlight">
+\[\log \rho^{(t+1)} = \text{clip}\left( \log \rho^{(t+1)},\ \log \rho_{\min},\ \log \rho_{\max} \right)\]</div>
+<p>Finally, move limits can also be enforced using:</p>
+<div class="math notranslate nohighlight">
+\[\rho^{(t+1)} = \text{clip}\left( \rho^{(t+1)},\ \rho^{(t)} - \Delta \rho_{\max},\ \rho^{(t)} + \Delta \rho_{\max} \right)\]</div>
+<p><strong>Advantages</strong>:</p>
+<ul class="simple">
+<li><p>Naturally ensures <span class="math notranslate nohighlight">\(\rho &gt; 0\)</span> without additional constraints.</p></li>
+<li><p>Suitable for in-place and vectorized computation in large-scale problems.</p></li>
+<li><p>Converts multiplicative effects into additive updates, improving numerical robustness.</p></li>
+</ul>
+<p><strong>Disadvantages</strong>:</p>
+<ul class="simple">
+<li><p>Sensitive to step size <span class="math notranslate nohighlight">\(\eta\)</span> and penalty weight <span class="math notranslate nohighlight">\(\lambda_v\)</span>.</p></li>
+<li><p>Volume constraints are only enforced implicitly via penalty.</p></li>
+<li><p>Requires careful initialization and parameter tuning to ensure convergence.</p></li>
 </ul>
 </section>
 </section>
