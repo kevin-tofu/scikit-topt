@@ -27,12 +27,15 @@ jobs:
         run: |
           mkdir -p docs/_static
           cp -r assets/* docs/_static/
-
+      
       - name: Install dependencies and Build Sphinx documentation
         working-directory: docs
         run: |
           poetry install --no-interaction
           poetry run sphinx-build -b html . _build/html
+
+      - name: Add .nojekyll
+        run: touch docs/_build/html/.nojekyll
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
