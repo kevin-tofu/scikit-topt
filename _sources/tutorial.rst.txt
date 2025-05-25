@@ -81,6 +81,9 @@ Task Configuration
     )
 
 Results and Visualization
+-----------------------------
+
+Results and Visualization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The results of the optimization are stored in the directory specified by cfg.dst_path.
