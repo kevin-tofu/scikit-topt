@@ -31,10 +31,10 @@ jobs:
       - name: Install dependencies and Build Sphinx documentation
         run: |
           poetry install --no-interaction
-          poetry run sphinx-build -b html ./docs ./docs/_build
+          poetry run sphinx-build -b html ./docs ./docs/_build/html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GH_TOKEN }}
-          publish_dir: ./docs/_build
+          publish_dir: ./docs/_build/html
