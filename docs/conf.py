@@ -6,9 +6,20 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import os
+import shutil
 import sys
 sys.path.insert(0, os.path.abspath('../'))
 
+
+def copy_assets():
+    src = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'assets'))
+    dst = os.path.abspath(os.path.join(os.path.dirname(__file__), '_build', 'html', 'assets'))
+    if os.path.exists(dst):
+        shutil.rmtree(dst)
+    shutil.copytree(src, dst)
+
+def setup(app):
+    app.connect('build-finished', lambda app, exception: copy_assets())
 
 project = 'scikit-topt'
 copyright = '2025, Kohei Watanabe'
