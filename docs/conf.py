@@ -23,12 +23,11 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
+    "sphinx_sitemap",
     'myst_parser'
 ]
-
 templates_path = ['_templates']
 exclude_patterns = []
-
 
 
 # -- Options for HTML output -------------------------------------------------
