@@ -36,3 +36,12 @@ exclude_patterns = []
 # html_theme = 'alabaster'
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
+
+html_meta = {
+    "description": "scitopt is a scientific topology optimization library in Python.",
+    "keywords": "topology optimization, FEM, Python, scientific computing",
+    "author": "Kohei Watanabe",
+    "robots": "index, follow",
+}
+
+html_baseurl = 'https://kevin-tofu.github.io/scitopt/'
