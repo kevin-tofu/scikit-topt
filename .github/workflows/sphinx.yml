@@ -32,7 +32,7 @@ jobs:
         working-directory: docs
         run: |
           poetry install --no-interaction
-          poetry run sphinx-build -b html . html
+          poetry run sphinx-build -b html . _build/html
 
       - name: Add .nojekyll
         run: touch docs/_build/html/.nojekyll
