@@ -11,16 +11,16 @@ import sys
 sys.path.insert(0, os.path.abspath('../'))
 
 
-def copy_assets_for_build(app):
-    src = os.path.abspath(os.path.join(app.confdir, '..', 'assets'))
-    dst = os.path.join(app.srcdir, 'assets')
-    if os.path.exists(dst):
-        shutil.rmtree(dst)
-    shutil.copytree(src, dst)
+# def copy_assets_for_build(app):
+#     src = os.path.abspath(os.path.join(app.confdir, '..', 'assets'))
+#     dst = os.path.join(app.srcdir, 'assets')
+#     if os.path.exists(dst):
+#         shutil.rmtree(dst)
+#     shutil.copytree(src, dst)
 
 
-def setup(app):
-    app.connect('builder-inited', copy_assets_for_build)
+# def setup(app):
+#     app.connect('builder-inited', copy_assets_for_build)
 
 
 project = 'scikit-topt'
