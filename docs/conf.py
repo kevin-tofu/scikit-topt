@@ -11,18 +11,6 @@ import sys
 sys.path.insert(0, os.path.abspath('../'))
 
 
-# def copy_assets_for_build(app):
-#     src = os.path.abspath(os.path.join(app.confdir, '..', 'assets'))
-#     dst = os.path.join(app.srcdir, 'assets')
-#     if os.path.exists(dst):
-#         shutil.rmtree(dst)
-#     shutil.copytree(src, dst)
-
-
-# def setup(app):
-#     app.connect('builder-inited', copy_assets_for_build)
-
-
 project = 'scikit-topt'
 copyright = '2025, Kohei Watanabe'
 author = 'Kohei Watanabe'
@@ -49,7 +37,7 @@ exclude_patterns = []
 # html_theme = 'alabaster'
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
-
+html_extra_path = ["extra"]
 html_meta = {
     "description": "scitopt is a scientific topology optimization library in Python.",
     "keywords": "topology optimization, FEM, Python, scientific computing",
