@@ -23,6 +23,11 @@ jobs:
         with:
           poetry-version: "1.8.3"
       
+      - name: Copy assets to _static
+        run: |
+          mkdir -p docs/_static
+          cp -r assets/* docs/_static/
+
       - name: Install dependencies and Build Sphinx documentation
         run: |
           poetry install --no-interaction
