@@ -46,7 +46,7 @@ class LogLagrangian_Config(common.SensitivityConfig):
     in log(ρ)-space, leading to multiplicative behavior while maintaining gradient fidelity.
 
     """
-    mu_p: float = 300.0
+    mu_p: float = 5.0
     lambda_v: float = 0.1
     lambda_decay: float = 0.90
     lambda_lower: float = -1e+7
@@ -157,7 +157,6 @@ def kkt_log_update(
     np.clip(rho, rho_min, rho_max, out=rho)
 
 
-# Exponential Update MOC
 class LogLagrangian_Optimizer(common.SensitivityAnalysis):
     """
     Topology optimization solver using log-space Lagrangian gradient descent.

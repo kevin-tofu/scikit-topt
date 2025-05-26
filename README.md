@@ -48,6 +48,21 @@ The currently supported features are as follows:
 - has a function to monitor the transition of parameters.
 
 
+## 📖 Citation
+
+If you use Scikit Topt in your research or software, please cite it as:
+
+```bibtex
+@misc{scikit-topt2025,
+author = {Kohei Watanabe},
+title = {{Scikit Topt}: A Python library for topology optimization with {Scipy Ecosystem}},
+publisher = {Zenodo},
+year = {2025},
+doi = {10.5281/zenodo.15441499},
+}
+```
+
+
 ## Usage
 ### Install Package
 ```bash
@@ -188,19 +203,10 @@ Scikit-Topt is standing on the shoulders of proverbial giants. In particular, I 
  - Topology Optimization Community
 
 
-## 📖 Citation
 
-If you use Scikit Topt in your research or software, please cite it as:
+## Documentation
 
-```bibtex
-@misc{scikit-topt2025,
-author = {Kohei Watanabe},
-title = {{Scikit Topt}: A Python library for topology optimization with {Scipy Ecosystem}},
-publisher = {Zenodo},
-year = {2025},
-doi = {10.5281/zenodo.15441499},
-}
-```
+- [Scikit-Topt](https://kevin-tofu.github.io/scitopt/)
 
 
 ## ToDo

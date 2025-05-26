@@ -68,7 +68,7 @@ def moc_log_update_logspace(
     tmp_lower, tmp_upper,
     rho_min, rho_max
 ):
-    eps = 1e-8
+    eps = 1e-30
     logger.info(f"dC: {dC.min()} {dC.max()}")
     np.negative(dC, out=scaling_rate)
     scaling_rate /= (lambda_v + eps)
@@ -157,8 +157,13 @@ class LogMOC_Optimizer(common.SensitivityAnalysis):
     ):
         assert cfg.lambda_lower < cfg.lambda_upper
         super().__init__(cfg, tsk)
-        self.recorder.add("-dC", plot_type="min-max-mean-std", ylog=True)
-        self.recorder.add("lambda_v", ylog=True)
+        ylog_dC = True if cfg.percentile > 0.0 else False
+        ylog_lambda_v = True if cfg.lambda_lower > 0.0 else False
+        self.recorder.add("-dC", plot_type="min-max-mean-std", ylog=ylog_dC)
+        self.recorder.add(
+            "lambda_v", ylog=ylog_lambda_v
+        )
+        self.lambda_v = cfg.lambda_v
 
     def rho_update(
         self,
@@ -191,16 +196,32 @@ class LogMOC_Optimizer(common.SensitivityAnalysis):
         else:
             pass
 
-        vol_error = np.sum(
-            rho_projected[tsk.design_elements] * elements_volume_design
-        ) / elements_volume_design_sum - vol_frac
+        # Linear Averaging
+        # vol_error = np.sum(
+        #     rho_projected[tsk.design_elements] * elements_volume_design
+        # ) / elements_volume_design_sum - vol_frac
+        # penalty = cfg.mu_p * vol_error
+        # self.lambda_v = cfg.lambda_decay * self.lambda_v + \
+        #     penalty if iter_loop > 1 else penalty
+        # self.lambda_v = np.clip(
+        #     self.lambda_v, cfg.lambda_lower, cfg.lambda_upper
+        # )
 
-        penalty = cfg.mu_p * vol_error
-        self.lambda_v = cfg.lambda_decay * self.lambda_v + \
-            penalty if iter_loop > 1 else penalty
-        self.lambda_v = np.clip(
-            self.lambda_v, cfg.lambda_lower, cfg.lambda_upper
-        )
+        # EMA
+        volume = np.sum(
+            rho_projected[tsk.design_elements] * elements_volume_design
+        ) / elements_volume_design_sum
+        volume_ratio = volume / vol_frac  # Target = 1.0
+
+        # error in volume ratio ( without log)
+        vol_error = volume_ratio - 1.0  # >0: over, <0: under
+
+        # Averaging with EMA
+        temp = cfg.lambda_decay * self.lambda_v
+        temp += (1 - cfg.lambda_decay) * cfg.mu_p * vol_error
+        if cfg.lambda_lower > 0.0:
+            self.lambda_v = max(temp, 0.0)
+
         self.recorder.feed_data("lambda_v", self.lambda_v)
         self.recorder.feed_data("vol_error", vol_error)
         self.recorder.feed_data("-dC", -dC_drho_ave)

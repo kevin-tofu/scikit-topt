@@ -119,7 +119,7 @@ def add_common_arguments(
         '--beta_eta', '-BE', type=float, default=0.5, help=''
     )
     parser.add_argument(
-        '--lambda_lower', '-BSL', type=float, default=1e-4, help=''
+        '--lambda_lower', type=float, default=1e-4, help=''
     )
     parser.add_argument(
         '--lambda_upper', '-BSH', type=float, default=1e+2, help=''
