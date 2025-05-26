@@ -76,7 +76,7 @@ It computes the Lagrangian gradient :math:`dL` as the sum of the compliance sens
 
 .. math::
 
-   \log \rho^{(t+1)} = \log \rho^{(t)} - \eta \cdot (dC + \lambda_v)
+   \log \rho^{(t+1)} = \log \rho^{(t)} + \eta \cdot \log \frac{-dC}{\lambda_v}
 
 Then, the updated density is recovered by exponentiation:
 

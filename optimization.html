@@ -155,7 +155,7 @@
 <p>This method modifies the OC update by applying it in <strong>log-space</strong>. Instead of directly updating the density <span class="math notranslate nohighlight">\(\rho\)</span>, it performs the update on <span class="math notranslate nohighlight">\(\log \rho\)</span>, ensuring better numerical stability and multiplicative behavior.</p>
 <p>It computes the Lagrangian gradient <span class="math notranslate nohighlight">\(dL\)</span> as the sum of the compliance sensitivity <span class="math notranslate nohighlight">\(dC\)</span> and a volume penalty term <span class="math notranslate nohighlight">\(\lambda_v\)</span>, and applies the update in log-space:</p>
 <div class="math notranslate nohighlight">
-\[\log \rho^{(t+1)} = \log \rho^{(t)} - \eta \cdot (dC + \lambda_v)\]</div>
+\[\log \rho^{(t+1)} = \log \rho^{(t)} + \eta \cdot \log \frac{-dC}{\lambda_v}\]</div>
 <p>Then, the updated density is recovered by exponentiation:</p>
 <div class="math notranslate nohighlight">
 \[\rho^{(t+1)} = \exp\left( \log \rho^{(t)} - \eta \cdot (dC + \lambda_v) \right)
