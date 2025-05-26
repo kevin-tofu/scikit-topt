@@ -219,8 +219,9 @@ class LogMOC_Optimizer(common.SensitivityAnalysis):
         # Averaging with EMA
         temp = cfg.lambda_decay * self.lambda_v
         temp += (1 - cfg.lambda_decay) * cfg.mu_p * vol_error
+        self.lambda_v = temp
         if cfg.lambda_lower > 0.0:
-            self.lambda_v = max(temp, 0.0)
+            self.lambda_v = max(self.lambda_v, 0.0)
 
         self.recorder.feed_data("lambda_v", self.lambda_v)
         self.recorder.feed_data("vol_error", vol_error)
