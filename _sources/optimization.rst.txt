@@ -65,25 +65,24 @@ Despite its limitations, the OC method remains popular for compliance-based prob
 Modified Optimality Criteria (MOC) Variants
 -------------------------------------------
 
-In density-based topology optimization, the Modified Optimality Criteria (MOC) method can be implemented in several ways. I implemented 2 variants which are log-space update and direct additive update. These differ in how they incorporate sensitivity information and handle volume constraints.
+In density-based topology optimization, the Modified Optimality Criteria (MOC) method can be implemented in several ways. I implemented two variants: a log-space update and a direct additive update. These differ in how they incorporate sensitivity information and handle volume constraints.
 
 1. Log-space Update Method
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This method modifies the OC update by applying it in **log-space**. Instead of directly updating the density :math:`\rho`, it performs the update on :math:`\log \rho`, ensuring better numerical stability and multiplicative behavior.
+This method modifies the OC update by applying it in **log-space**. Instead of directly updating the density :math:`\rho`, it updates :math:`\log \rho`, promoting better numerical stability and capturing multiplicative behavior.
 
-It computes the Lagrangian gradient :math:`dL` as the sum of the compliance sensitivity :math:`dC` and a volume penalty term :math:`\lambda_v`, and applies the update in log-space:
-
-.. math::
-
-   \log \rho^{(t+1)} = \log \rho^{(t)} + \eta \cdot \log \frac{-dC}{\lambda_v}
-
-Then, the updated density is recovered by exponentiation:
+The Lagrangian gradient :math:`dL` is computed as the sum of the compliance sensitivity :math:`dC` and a volume penalty term :math:`\lambda_v`. The update is then applied in log-space:
 
 .. math::
 
-   \rho^{(t+1)} = \exp\left( \log \rho^{(t)} - \eta \cdot (dC + \lambda_v) \right)
-               = \rho^{(t)} \cdot \exp\left( -\eta \cdot (dC + \lambda_v) \right)
+   \log \rho^{(t+1)} = \log \rho^{(t)} + \eta \cdot \log \left( \frac{-dC}{\lambda_v} \right)
+
+The updated density is then recovered via exponentiation:
+
+.. math::
+
+   \rho^{(t+1)} = \rho^{(t)} \cdot \left( \frac{-dC}{\lambda_v} \right)^{\eta}
 
 Here:
 
@@ -92,7 +91,27 @@ Here:
 - :math:`\lambda_v` is the derivative of the volume penalty,
 - :math:`\eta` is a step size or learning rate.
 
-This approach improves numerical stability and ensures that the density remains positive throughout the optimization process.
+This approach improves numerical stability and ensures that the density remains positive throughout the optimization process. Importantly, this means the optimization behaves **multiplicatively** rather than additively.
+
+In this multiplicative regime, using a simple linear average to smooth the dual variable :math:`\lambda_v` can lead to instability or a misrepresentation of the underlying dynamics. Instead, the **Exponential Moving Average (EMA)** is more appropriate because:
+
+- EMA applies a **multiplicative-style memory**, giving more weight to recent changes while still preserving the trend of past updates.
+- It provides a **smooth yet responsive** estimate of the dual variable, crucial for stable convergence.
+- It avoids sharp oscillations that may occur when :math:`\lambda_v` changes abruptly, which could cause large exponential shifts in the density update.
+
+The EMA of the dual variable is computed as:
+
+.. math::
+
+   \lambda_v^{(t)} = \lambda_\text{decay} \cdot \lambda_v^{(t-1)} + (1 - \lambda_\text{decay}) \mu_{p} \cdot \hat{\lambda}_v^{(t)}
+
+where :math:`\hat{\lambda}_v^{(t)}` is the current value (e.g., based on volume constraint violation) and :math:`\lambda_\text{decay} \in (0, 1]` is the smoothing factor.
+
+Since MOC operates in a **logarithmic or ratio-based update regime**, EMA naturally complements this behavior by ensuring the dual variable evolves in a similarly smooth and proportional manner.
+
+The objective function and the original constraint remain unchanged in the formulation:
+
+However, in the implementation of MOC with EMA, the control of the dual variable :math:`\lambda_v^{(t)}` is based on a **relative (ratio-based) constraint violation**, rather than an absolute difference.
 
 **Advantages**:
 

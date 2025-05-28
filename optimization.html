@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Optimization Algorithms in Density-Based Topology Optimization &mdash; scikit-topt 0.1.0 documentation</title>
+  <title>Optimization Algorithms in Density-Based Topology Optimization &mdash; scikit-topt 0.1.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -14,7 +14,7 @@
     <link rel="canonical" href="https://kevin-tofu.github.io/scitopt/optimization.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=01f34227"></script>
+      <script src="_static/documentation_options.js?v=a58bc63e"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -149,17 +149,16 @@
 </section>
 <section id="modified-optimality-criteria-moc-variants">
 <h2>Modified Optimality Criteria (MOC) Variants<a class="headerlink" href="#modified-optimality-criteria-moc-variants" title="Link to this heading"></a></h2>
-<p>In density-based topology optimization, the Modified Optimality Criteria (MOC) method can be implemented in several ways. I implemented 2 variants which are log-space update and direct additive update. These differ in how they incorporate sensitivity information and handle volume constraints.</p>
+<p>In density-based topology optimization, the Modified Optimality Criteria (MOC) method can be implemented in several ways. I implemented two variants: a log-space update and a direct additive update. These differ in how they incorporate sensitivity information and handle volume constraints.</p>
 <section id="log-space-update-method">
 <h3>1. Log-space Update Method<a class="headerlink" href="#log-space-update-method" title="Link to this heading"></a></h3>
-<p>This method modifies the OC update by applying it in <strong>log-space</strong>. Instead of directly updating the density <span class="math notranslate nohighlight">\(\rho\)</span>, it performs the update on <span class="math notranslate nohighlight">\(\log \rho\)</span>, ensuring better numerical stability and multiplicative behavior.</p>
-<p>It computes the Lagrangian gradient <span class="math notranslate nohighlight">\(dL\)</span> as the sum of the compliance sensitivity <span class="math notranslate nohighlight">\(dC\)</span> and a volume penalty term <span class="math notranslate nohighlight">\(\lambda_v\)</span>, and applies the update in log-space:</p>
+<p>This method modifies the OC update by applying it in <strong>log-space</strong>. Instead of directly updating the density <span class="math notranslate nohighlight">\(\rho\)</span>, it updates <span class="math notranslate nohighlight">\(\log \rho\)</span>, promoting better numerical stability and capturing multiplicative behavior.</p>
+<p>The Lagrangian gradient <span class="math notranslate nohighlight">\(dL\)</span> is computed as the sum of the compliance sensitivity <span class="math notranslate nohighlight">\(dC\)</span> and a volume penalty term <span class="math notranslate nohighlight">\(\lambda_v\)</span>. The update is then applied in log-space:</p>
 <div class="math notranslate nohighlight">
-\[\log \rho^{(t+1)} = \log \rho^{(t)} + \eta \cdot \log \frac{-dC}{\lambda_v}\]</div>
-<p>Then, the updated density is recovered by exponentiation:</p>
+\[\log \rho^{(t+1)} = \log \rho^{(t)} + \eta \cdot \log \left( \frac{-dC}{\lambda_v} \right)\]</div>
+<p>The updated density is then recovered via exponentiation:</p>
 <div class="math notranslate nohighlight">
-\[\rho^{(t+1)} = \exp\left( \log \rho^{(t)} - \eta \cdot (dC + \lambda_v) \right)
-            = \rho^{(t)} \cdot \exp\left( -\eta \cdot (dC + \lambda_v) \right)\]</div>
+\[\rho^{(t+1)} = \rho^{(t)} \cdot \left( \frac{-dC}{\lambda_v} \right)^{\eta}\]</div>
 <p>Here:</p>
 <ul class="simple">
 <li><p><span class="math notranslate nohighlight">\(\rho^{(t)}\)</span> is the current density field,</p></li>
@@ -167,7 +166,20 @@
 <li><p><span class="math notranslate nohighlight">\(\lambda_v\)</span> is the derivative of the volume penalty,</p></li>
 <li><p><span class="math notranslate nohighlight">\(\eta\)</span> is a step size or learning rate.</p></li>
 </ul>
-<p>This approach improves numerical stability and ensures that the density remains positive throughout the optimization process.</p>
+<p>This approach improves numerical stability and ensures that the density remains positive throughout the optimization process. Importantly, this means the optimization behaves <strong>multiplicatively</strong> rather than additively.</p>
+<p>In this multiplicative regime, using a simple linear average to smooth the dual variable <span class="math notranslate nohighlight">\(\lambda_v\)</span> can lead to instability or a misrepresentation of the underlying dynamics. Instead, the <strong>Exponential Moving Average (EMA)</strong> is more appropriate because:</p>
+<ul class="simple">
+<li><p>EMA applies a <strong>multiplicative-style memory</strong>, giving more weight to recent changes while still preserving the trend of past updates.</p></li>
+<li><p>It provides a <strong>smooth yet responsive</strong> estimate of the dual variable, crucial for stable convergence.</p></li>
+<li><p>It avoids sharp oscillations that may occur when <span class="math notranslate nohighlight">\(\lambda_v\)</span> changes abruptly, which could cause large exponential shifts in the density update.</p></li>
+</ul>
+<p>The EMA of the dual variable is computed as:</p>
+<div class="math notranslate nohighlight">
+\[\lambda_v^{(t)} = \lambda_\text{decay} \cdot \lambda_v^{(t-1)} + (1 - \lambda_\text{decay}) \mu_{p} \cdot \hat{\lambda}_v^{(t)}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\hat{\lambda}_v^{(t)}\)</span> is the current value (e.g., based on volume constraint violation) and <span class="math notranslate nohighlight">\(\lambda_\text{decay} \in (0, 1]\)</span> is the smoothing factor.</p>
+<p>Since MOC operates in a <strong>logarithmic or ratio-based update regime</strong>, EMA naturally complements this behavior by ensuring the dual variable evolves in a similarly smooth and proportional manner.</p>
+<p>The objective function and the original constraint remain unchanged in the formulation:</p>
+<p>However, in the implementation of MOC with EMA, the control of the dual variable <span class="math notranslate nohighlight">\(\lambda_v^{(t)}\)</span> is based on a <strong>relative (ratio-based) constraint violation</strong>, rather than an absolute difference.</p>
 <p><strong>Advantages</strong>:</p>
 <ul class="simple">
 <li><p>Efficient in-place update suitable for large-scale problems.</p></li>
