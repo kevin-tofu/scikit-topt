@@ -46,7 +46,7 @@ class LogMOC_Config(common.SensitivityConfig):
 
     interpolation: Literal["SIMP"] = "SIMP"
     mu_p: float = 300.0
-    lambda_v: float = 0.1
+    lambda_v: float = 10.0
     lambda_decay: float = 0.90
 
 
