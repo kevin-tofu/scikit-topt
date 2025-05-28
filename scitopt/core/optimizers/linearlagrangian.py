@@ -88,15 +88,6 @@ def kkt_update(
     - tmp_lower, tmp_upper, scaling_rate: work arrays (same shape as rho)
     """
 
-    # eps = 1e-8
-    # Compute dL = dC + lambda_v
-    # np.copyto(scaling_rate, dC)
-    # scaling_rate += lambda_v
-    # norm = np.percentile(np.abs(scaling_rate), percentile) + 1e-8
-    # scaling_rate /= norm
-
-    # Normalize: subtract mean
-    # print(f"interpolation: {interpolation}")
     np.copyto(scaling_rate, dC)
     if percentile > 0:
         if interpolation == "SIMP":
@@ -117,7 +108,6 @@ def kkt_update(
 
     clip_range = 1.0
     scaling_rate += lambda_v  # = ∂C/∂ρ + λ ∂g/∂ρ
-    clip_range = 1.0
     np.clip(scaling_rate, -clip_range, clip_range, out=scaling_rate)
 
     tmp_lower = np.maximum(rho - move_limit, rho_min)
@@ -206,31 +196,31 @@ class LinearLagrangian_Optimizer(common.SensitivityAnalysis):
         cfg = self.cfg
         tsk = self.tsk
 
-        # vol_error = np.sum(
-        #     rho_projected[tsk.design_elements] * elements_volume_design
-        # ) / elements_volume_design_sum - vol_frac
-        # penalty = cfg.mu_p * vol_error
-        # self.lambda_v = cfg.lambda_decay * self.lambda_v + \
-        #     penalty if iter_loop > 1 else penalty
-        # self.lambda_v = np.clip(
-        #     self.lambda_v, cfg.lambda_lower, cfg.lambda_upper
-        # )
+        vol_error = np.sum(
+            rho_projected[tsk.design_elements] * elements_volume_design
+        ) / elements_volume_design_sum - vol_frac
+        penalty = cfg.mu_p * vol_error
+        self.lambda_v = cfg.lambda_decay * self.lambda_v + \
+            penalty if iter_loop > 1 else penalty
+        self.lambda_v = np.clip(
+            self.lambda_v, cfg.lambda_lower, cfg.lambda_upper
+        )
 
         # Volume Penalty
-        volume = np.sum(
-            rho_projected[tsk.design_elements] * elements_volume_design
-        ) / elements_volume_design_sum
-        volume_ratio = volume / vol_frac  # Target = 1.0
+        # volume = np.sum(
+        #     rho_projected[tsk.design_elements] * elements_volume_design
+        # ) / elements_volume_design_sum
+        # volume_ratio = volume / vol_frac  # Target = 1.0
 
-        # error in volume ratio ( without log)
-        vol_error = volume_ratio - 1.0  # >0: over, <0: under
+        # # error in volume ratio ( without log)
+        # vol_error = volume_ratio - 1.0  # >0: over, <0: under
 
-        # Averaging with EMA
-        temp = cfg.lambda_decay * self.lambda_v
-        temp += (1 - cfg.lambda_decay) * cfg.mu_p * vol_error
-        if cfg.lambda_lower > 0.0:
-            self.lambda_v = max(self.lambda_v, 0.0)
-
+        # # Averaging with EMA
+        # temp = cfg.lambda_decay * self.lambda_v
+        # temp += (1 - cfg.lambda_decay) * cfg.mu_p * vol_error
+        self.lambda_v = np.clip(
+            self.lambda_v, cfg.lambda_lower, cfg.lambda_upper
+        )
         self.recorder.feed_data("lambda_v", self.lambda_v)
         self.recorder.feed_data("vol_error", vol_error)
         self.recorder.feed_data("dC", dC_drho_ave)
