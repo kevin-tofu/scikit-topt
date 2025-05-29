@@ -76,15 +76,15 @@ def toy_base(
         mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
         e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=3)
-    dirichlet_points = utils.get_point_indices_in_range(
+    dirichlet_nodes = utils.get_nodes_indices_in_range(
         basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
     )
-    dirichlet_nodes = basis.get_dofs(dirichlet_points).all()
-    F_points = utils.get_point_indices_in_range(
+    dirichlet_dofs = basis.get_dofs(dirichlet_nodes).all()
+    F_nodes = utils.get_nodes_indices_in_range(
         basis,
         (x_len - eps, x_len+0.1), (y_len*2/5, y_len*3/5), (z_len-eps, z_len)
     )
-    F_nodes = basis.get_dofs(nodes=F_points).nodal['u^3']
+    F_dofs = basis.get_dofs(nodes=F_nodes).nodal['u^3']
     design_elements = utils.get_elements_in_box(
         mesh,
         # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
@@ -98,10 +98,10 @@ def toy_base(
         E0,
         0.30,
         basis,
-        dirichlet_points,
         dirichlet_nodes,
-        F_points,
+        dirichlet_dofs,
         F_nodes,
+        F_dofs,
         F,
         design_elements
     )
@@ -140,19 +140,19 @@ def toy2():
     mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=2)
-    dirichlet_points_0 = utils.get_point_indices_in_range(
+    dirichlet_nodes_0 = utils.get_nodes_indices_in_range(
         basis, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
-    dirichlet_points = dirichlet_points_0
-    dirichlet_nodes = basis.get_dofs(nodes=dirichlet_points).all()
-    F_points_0 = utils.get_point_indices_in_range(
+    dirichlet_nodes = dirichlet_nodes_0
+    dirichlet_dofs = basis.get_dofs(nodes=dirichlet_nodes).all()
+    F_nodes_0 = utils.get_nodes_indices_in_range(
         basis, (x_len, x_len), (y_len, y_len), (0, z_len)
     )
-    F_nodes_0 = basis.get_dofs(nodes=F_points_0).nodal["u^2"]
-    F_points_1 = utils.get_point_indices_in_range(
+    F_dofs_0 = basis.get_dofs(nodes=F_nodes_0).nodal["u^2"]
+    F_nodes_1 = utils.get_nodes_indices_in_range(
         basis, (x_len, x_len), (0, 0), (0, z_len)
     )
-    F_nodes_1 = basis.get_dofs(nodes=F_points_1).nodal["u^2"]
+    F_dofs_1 = basis.get_dofs(nodes=F_nodes_1).nodal["u^2"]
     design_elements = utils.get_elements_in_box(
         mesh,
         # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
@@ -167,10 +167,10 @@ def toy2():
         E0,
         0.30,
         basis,
-        dirichlet_points,
         dirichlet_nodes,
-        [F_points_0, F_points_1],
+        dirichlet_dofs,
         [F_nodes_0, F_nodes_1],
+        [F_dofs_0, F_dofs_1],
         F,
         design_elements
     )
@@ -226,13 +226,13 @@ def toy_msh(
     basis = skfem.Basis(mesh, e, intorder=3)
     # basis = skfem.Basis(mesh, e, intorder=4)
     # basis = skfem.Basis(mesh, e, intorder=5)
-    print("dirichlet_points")
-    dirichlet_points = utils.get_point_indices_in_range(
+    print("dirichlet_nodes")
+    dirichlet_nodes = utils.get_nodes_indices_in_range(
         basis, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
-    dirichlet_nodes = basis.get_dofs(nodes=dirichlet_points).all()
+    dirichlet_dofs = basis.get_dofs(nodes=dirichlet_nodes).all()
     if task_name == "down":
-        F_points = utils.get_point_indices_in_range(
+        F_nodes = utils.get_nodes_indices_in_range(
             basis,
             (x_len-eps, x_len+0.05),
             (y_len/2-eps, y_len/2+eps),
@@ -240,10 +240,10 @@ def toy_msh(
             # (y_len*2/5, y_len*3/5),
             # (z_len*2/5, z_len*3/5)
         )
-        F_nodes = basis.get_dofs(nodes=F_points).nodal["u^3"]
+        F_dofs = basis.get_dofs(nodes=F_nodes).nodal["u^3"]
         F = -800
     if task_name == "down_box":
-        F_points = utils.get_point_indices_in_range(
+        F_nodes = utils.get_nodes_indices_in_range(
             basis,
             (x_len-eps, x_len+0.05),
             (0, y_len),
@@ -251,25 +251,25 @@ def toy_msh(
             # (y_len*2/5, y_len*3/5),
             # (z_len*2/5, z_len*3/5)
         )
-        F_nodes = basis.get_dofs(nodes=F_points).nodal["u^3"]
+        F_dofs = basis.get_dofs(nodes=F_nodes).nodal["u^3"]
         F = -800
     elif task_name == "pull":
-        F_points = utils.get_point_indices_in_range(
+        F_nodes = utils.get_nodes_indices_in_range(
             basis,
             (x_len-eps, x_len+0.05),
             (y_len*2/5, y_len*3/5),
             (z_len*2/5, z_len*3/5)
         )
-        F_nodes = basis.get_dofs(nodes=F_points).nodal["u^1"]
+        F_dofs = basis.get_dofs(nodes=F_nodes).nodal["u^1"]
         F = 1200.0
     elif task_name == "pull_2":
-        F_points = utils.get_point_indices_in_range(
+        F_nodes = utils.get_nodes_indices_in_range(
             basis,
             (x_len-eps, x_len+0.05),
             (y_len/2.0-eps, y_len/2+eps),
             (z_len*2/5, z_len*3/5)
         )
-        F_nodes = basis.get_dofs(nodes=F_points).nodal["u^1"]
+        F_dofs = basis.get_dofs(nodes=F_nodes).nodal["u^1"]
         F = 200.0
     design_elements = utils.get_elements_in_box(
         mesh,
@@ -287,16 +287,16 @@ def toy_msh(
     print("generate config")
     E0 = 210e9
     print("F:", F)
-    print("F_points:", F_points.shape)
     print("F_nodes:", F_nodes.shape)
+    print("F_dofs:", F_dofs.shape)
     return task.TaskConfig.from_defaults(
         E0,
         0.30,
         basis,
-        dirichlet_points,
         dirichlet_nodes,
-        F_points,
+        dirichlet_dofs,
         F_nodes,
+        F_dofs,
         F,
         design_elements
     )
@@ -310,7 +310,7 @@ if __name__ == '__main__':
     p = 3.0
     compliance, u = solver.compute_compliance_basis_numba(
         tsk.basis,
-        tsk.free_nodes, tsk.dirichlet_nodes, tsk.force,
+        tsk.free_dofs, tsk.dirichlet_dofs, tsk.force,
         tsk.E0, tsk.Emin, p, tsk.nu0, rho
     )
     print("compliance: ", compliance)

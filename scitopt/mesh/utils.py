@@ -357,7 +357,7 @@ def in_box(
     )
 
 
-def get_point_indices_in_range(
+def get_nodes_indices_in_range(
     basis: skfem.Basis, x_range: tuple, y_range: tuple, z_range: tuple
 ) -> np.ndarray:
     """

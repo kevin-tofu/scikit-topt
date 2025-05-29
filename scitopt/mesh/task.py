@@ -64,10 +64,8 @@ class TaskConfig():
     E: float
     nu: float
     basis: skfem.Basis
-    # dirichlet_points: np.ndarray
     dirichlet_dofs: np.ndarray
     dirichlet_elements: np.ndarray
-    # force_points: np.ndarray | list[np.ndarray]
     force_dofs: np.ndarray | list[np.ndarray]
     force_elements: np.ndarray
     force: np.ndarray | list[np.ndarray]
@@ -89,9 +87,9 @@ class TaskConfig():
         E: float,
         nu: float,
         basis: skfem.Basis,
-        dirichlet_points: np.ndarray,
+        dirichlet_nodes: np.ndarray,
         dirichlet_dofs: np.ndarray,
-        force_points: np.ndarray | list[np.ndarray],
+        force_nodes: np.ndarray | list[np.ndarray],
         force_dofs: np.ndarray | list[np.ndarray],
         force_value: float | list[float],
         design_elements: np.ndarray,
@@ -112,12 +110,12 @@ class TaskConfig():
         basis : skfem.Basis
             Basis object from scikit-fem representing the finite element \
                 space.
-        dirichlet_points : np.ndarray
+        dirichlet_nodes : np.ndarray
             Coordinates used to determine which elements are subject to \
                 Dirichlet boundary conditions.
         dirichlet_dofs : np.ndarray
             Degrees of freedom fixed under Dirichlet boundary conditions.
-        force_points : np.ndarray or list of np.ndarray
+        force_nodes : np.ndarray or list of np.ndarray
             Coordinates used to determine which elements are subject to \
                 external forces.
         force_dofs : np.ndarray or list of np.ndarray
@@ -143,18 +141,18 @@ class TaskConfig():
         # Dirichlet
         #
         dirichlet_elements = utils.get_elements_with_points_fast(
-            basis.mesh, [dirichlet_points]
+            basis.mesh, [dirichlet_nodes]
         )
         #
         # Force
         #
-        if isinstance(force_points, np.ndarray):
+        if isinstance(force_nodes, np.ndarray):
             force_elements = utils.get_elements_with_points_fast(
-                basis.mesh, [force_points]
+                basis.mesh, [force_nodes]
             )
         else:
             force_elements = utils.get_elements_with_points_fast(
-                basis.mesh, force_points
+                basis.mesh, force_nodes
             )
         if force_elements.shape[0] == 0:
             raise ValueError("force_elements has not been set.")
