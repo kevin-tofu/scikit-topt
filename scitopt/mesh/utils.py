@@ -126,7 +126,7 @@ def fix_elements_orientation(mesh):
         raise ValueError("")
 
 
-def get_elements_with_points(
+def get_elements_with_nodes(
     mesh: skfem.mesh, target_nodes_list: list[np.ndarray]
 ) -> np.ndarray:
     """
@@ -136,7 +136,7 @@ def get_elements_with_points(
     return np.where(mask)[0]
 
 
-def get_elements_without_points(
+def get_elements_without_nodes(
     mesh: skfem.mesh, excluded_nodes_list: list[np.ndarray]
 ):
     """
@@ -187,19 +187,19 @@ def get_adjacent_elements(mesh, element_indices):
     return sorted(neighbors)
 
 
-def get_elements_with_points_fast(mesh, target_nodes):
-    if not hasattr(get_elements_with_points_fast, "_cache"):
-        get_elements_with_points_fast._cache = {}
+def get_elements_with_nodes_fast(mesh, target_nodes):
+    if not hasattr(get_elements_with_nodes_fast, "_cache"):
+        get_elements_with_nodes_fast._cache = {}
 
     mesh_id = id(mesh)
-    if mesh_id not in get_elements_with_points_fast._cache:
+    if mesh_id not in get_elements_with_nodes_fast._cache:
         node_to_elements = defaultdict(set)
         for e, nodes in enumerate(mesh.t.T):
             for n in nodes:
                 node_to_elements[n].add(e)
-        get_elements_with_points_fast._cache[mesh_id] = node_to_elements
+        get_elements_with_nodes_fast._cache[mesh_id] = node_to_elements
 
-    node_to_elements = get_elements_with_points_fast._cache[mesh_id]
+    node_to_elements = get_elements_with_nodes_fast._cache[mesh_id]
 
     all_target_nodes = np.unique(np.concatenate(target_nodes))
     elems = set()

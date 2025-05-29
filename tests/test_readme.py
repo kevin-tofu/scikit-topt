@@ -14,10 +14,10 @@ def test_define_task():
     basis = skfem.Basis(mesh, e, intorder=3)
 
     # Specify Dirichlet Boundary Conditions
-    dirichlet_points = scitopt.mesh.utils.get_nodes_indices_in_range(
+    dirichlet_nodes = scitopt.mesh.utils.get_nodes_indices_in_range(
         basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
     )
-    dirichlet_nodes = basis.get_dofs(nodes=dirichlet_points).all()
+    dirichlet_dofs = basis.get_dofs(nodes=dirichlet_nodes).all()
 
     # Specify Force Vector
     F_points = scitopt.mesh.utils.get_nodes_indices_in_range(
@@ -38,8 +38,8 @@ def test_define_task():
         210e9,
         0.30,
         basis,
-        dirichlet_points,
         dirichlet_nodes,
+        dirichlet_dofs,
         F_points,
         F_nodes,
         F,
@@ -73,6 +73,7 @@ def loglagrangian_optimize(tsk):
     cfg.record_times = 1
 
     optimizer = scitopt.core.LogLagrangian_Optimizer(cfg, tsk)
+    tsk.export_info_on_mesh(cfg.dst_path)
     optimizer.parameterize()
     optimizer.optimize()
 

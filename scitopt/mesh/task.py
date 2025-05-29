@@ -64,8 +64,10 @@ class TaskConfig():
     E: float
     nu: float
     basis: skfem.Basis
+    dirichlet_nodes: np.ndarray
     dirichlet_dofs: np.ndarray
     dirichlet_elements: np.ndarray
+    force_nodes: np.ndarray | list[np.ndarray] 
     force_dofs: np.ndarray | list[np.ndarray]
     force_elements: np.ndarray
     force: np.ndarray | list[np.ndarray]
@@ -140,18 +142,18 @@ class TaskConfig():
         #
         # Dirichlet
         #
-        dirichlet_elements = utils.get_elements_with_points_fast(
+        dirichlet_elements = utils.get_elements_with_nodes_fast(
             basis.mesh, [dirichlet_nodes]
         )
         #
         # Force
         #
         if isinstance(force_nodes, np.ndarray):
-            force_elements = utils.get_elements_with_points_fast(
+            force_elements = utils.get_elements_with_nodes_fast(
                 basis.mesh, [force_nodes]
             )
         else:
-            force_elements = utils.get_elements_with_points_fast(
+            force_elements = utils.get_elements_with_nodes_fast(
                 basis.mesh, force_nodes
             )
         if force_elements.shape[0] == 0:
@@ -171,7 +173,7 @@ class TaskConfig():
             [dirichlet_elements, force_elements]
         )
         free_dofs = setdiff1d(np.arange(basis.N), dirichlet_dofs)
-        free_elements = utils.get_elements_with_points_fast(
+        free_elements = utils.get_elements_with_nodes_fast(
             basis.mesh, [free_dofs]
         )
         if isinstance(force_dofs, np.ndarray):
@@ -204,8 +206,10 @@ class TaskConfig():
             E,
             nu,
             basis,
+            dirichlet_nodes,
             dirichlet_dofs,
             dirichlet_elements,
+            force_nodes,
             force_dofs,
             force_elements,
             force,
@@ -217,6 +221,49 @@ class TaskConfig():
             dirichlet_force_elements,
             elements_volume
         )
+
+    @property
+    def force_nodes_all(self) -> np.ndarray:
+        if isinstance(self.force_nodes, list):
+            return np.unique(np.concatenate(self.force_nodes))
+        else:
+            return self.force_nodes
+
+    def export_info_on_mesh(
+        self, dst_path: str
+    ):
+        import meshio
+        mesh = self.basis.mesh
+        if isinstance(mesh, skfem.MeshTet):
+            cell_type = "tetra"
+        elif isinstance(mesh, skfem.MeshHex):
+            cell_type = "hexahedron"
+        else:
+            raise ValueError("Unsupported mesh type for VTU export.")
+
+        # Points (shape: [n_nodes, dim])
+        points = mesh.p.T
+        node_colors_df = np.zeros(mesh.p.shape[1], dtype=int)
+        node_colors_df[self.force_nodes_all] = 1
+        node_colors_df[self.dirichlet_nodes] = 2
+        point_outputs = dict()
+        point_outputs["node_color"] = node_colors_df
+
+        # Elements
+        element_colors_df = np.zeros(mesh.nelements, dtype=int)
+        element_colors_df[self.free_elements] = 1
+        element_colors_df[self.fixed_elements] = 2
+        cells = [(cell_type, mesh.t.T)]
+        cell_outputs = dict()
+        cell_outputs["condition"] = [element_colors_df]
+
+        meshio_mesh = meshio.Mesh(
+            points=points,
+            cells=cells,
+            point_data=point_outputs,
+            cell_data=cell_outputs
+        )
+        meshio_mesh.write(f"{dst_path}/condition.vtu")
 
     def exlude_dirichlet_from_design(self):
         self.design_elements = setdiff1d(
