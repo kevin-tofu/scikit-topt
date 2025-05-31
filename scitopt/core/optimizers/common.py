@@ -9,6 +9,7 @@ import scitopt
 from scitopt import tools
 from scitopt.core import derivatives, projection
 from scitopt.core import visualization
+from scitopt.mesh import visualization as visualization_mesh
 from scitopt.fea import solver
 from scitopt import filter
 from scitopt.fea import composer
@@ -683,7 +684,7 @@ class SensitivityAnalysis():
             rho[tsk.design_elements],
             f"{self.cfg.dst_path}/mesh_rho/last.jpg"
         )
-        visualization.export_submesh(
+        visualization_mesh.export_submesh(
             tsk, rho, 0.5, f"{cfg.dst_path}/cubic_top.vtu"
         )
         self.recorder.export_histories("histories.npz")

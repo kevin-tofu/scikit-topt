@@ -12,29 +12,6 @@ import matplotlib.pyplot as plt
 import scitopt
 
 
-def rank_scale_0_1(dc: np.ndarray) -> np.ndarray:
-    """
-    Scale dC to range [0.0, 1.0] based on rank (by absolute value).
-
-    Parameters
-    ----------
-    dc : np.ndarray
-        Sensitivity array (1D)
-
-    Returns
-    -------
-    scaled : np.ndarray
-        Ranked and scaled array with values in [0.0, 1.0]
-    """
-    abs_dc = np.abs(dc)
-    ranks = np.argsort(np.argsort(abs_dc))  # rank: 0 (min) → n-1 (max)
-
-    n = len(dc)
-    scaled = ranks / (n - 1 + 1e-8)  # avoid divide-by-zero
-
-    return scaled
-
-
 def save_info_on_mesh(
     tsk,
     rho: np.ndarray,
@@ -131,32 +108,6 @@ def save_info_on_mesh(
         )
         plotter.screenshot(dC_image_path)
         plotter.close()
-
-
-def export_submesh(
-    tsk: scitopt.mesh.TaskConfig,
-    rho_projected: np.ndarray,
-    threshold: float,
-    dst_path: str
-):
-    mesh = tsk.mesh
-    remove_elements = tsk.design_elements[
-        rho_projected[tsk.design_elements] <= threshold
-    ]
-    kept_elements = scitopt.mesh.task.setdiff1d(
-        tsk.all_elements, remove_elements
-    )
-    kept_t = mesh.t[:, kept_elements]
-    unique_vertex_indices = np.unique(kept_t)
-    new_points = np.ascontiguousarray(mesh.p[:, unique_vertex_indices])
-    index_map = {
-        old: new for new, old in enumerate(unique_vertex_indices)
-    }
-    new_elements = np.vectorize(index_map.get)(kept_t)
-    new_elements = np.ascontiguousarray(new_elements)
-    meshtype = type(mesh)
-    submesh = meshtype(new_points, new_elements)
-    submesh.save(dst_path)
 
 
 def rho_histo_plot(
