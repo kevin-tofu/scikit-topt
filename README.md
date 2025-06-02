@@ -71,14 +71,21 @@ poetry add scitopt
 ```
 
 
-### How to define a task from mesh structure (or .msh file)
+### How to define a task
 
+### Load Mesh file from file.
 ```Python
-import pathlib
 import skfem
 import scitopt
 
-# Load or Creat a mesh model
+mesh_path = "./data/model.msh"
+basis = scitopt.mesh.loader.basis_from_file(
+  mesh_path, intorder=3
+)
+```
+
+#### Create Mesh.
+```Python
 x_len, y_len, z_len = 1.0, 1.0, 1.0
 element_size = 0.1
 e = skfem.ElementVector(skfem.ElementHex1())
@@ -86,8 +93,17 @@ e = skfem.ElementVector(skfem.ElementHex1())
 # mesh = skfem.MeshHex.load(pathlib.Path(msh_path))
 
 # define basis
-mesh = scitopt.mesh.toy_problem.create_box_hex(x_len, y_len, z_len, element_size)
+mesh = scitopt.mesh.toy_problem.create_box_hex(
+  x_len, y_len, z_len, element_size
+)
 basis = skfem.Basis(mesh, e, intorder=3)
+```
+
+#### Set BCs and Force, and define task
+```Python
+import pathlib
+import skfem
+import scitopt
 
 # Specify Dirichlet Boundary Conditions
 dirichlet_points = scitopt.mesh.utils.get_point_indices_in_range(
