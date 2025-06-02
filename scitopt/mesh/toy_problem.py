@@ -61,7 +61,8 @@ def create_box_tet(x_len, y_len, z_len, mesh_size):
 
 
 def toy_base(
-    mesh_size: float
+    mesh_size: float,
+    intorder: int = 2
 ):
     x_len = 8.0
     y_len = 6.0
@@ -75,7 +76,7 @@ def toy_base(
     else:
         mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
         e = skfem.ElementVector(skfem.ElementHex1())
-    basis = skfem.Basis(mesh, e, intorder=3)
+    basis = skfem.Basis(mesh, e, intorder=intorder)
     dirichlet_nodes = utils.get_nodes_indices_in_range(
         basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
     )
