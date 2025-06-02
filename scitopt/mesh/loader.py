@@ -6,7 +6,7 @@ import skfem
 from skfem.models.elasticity import linear_elasticity
 
 
-def mesh_from_file(
+def basis_from_file(
     mesh_path: str,
     intorder: int = 2
 ) -> skfem.Basis:
@@ -25,7 +25,7 @@ def mesh_from_file(
 
     basis = skfem.Basis(
         mesh_skfem, element,
-        intorder=3
+        intorder=intorder
     )
     return basis
 
