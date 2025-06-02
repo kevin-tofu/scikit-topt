@@ -43,7 +43,7 @@ Shape modeling and its basis function
     basis = skfem.Basis(mesh, e, intorder=3)
 
 
-Load Model File 
+Load Basis from Model File 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python

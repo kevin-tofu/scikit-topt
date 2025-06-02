@@ -35,7 +35,7 @@ def load_stiffness_matrix(
     E: float = 1.0,
     nu: float = 0.3
 ) -> np.ndarray:
-    basis = mesh_from_file(mesh_path)
+    basis = basis_from_file(mesh_path)
     stiffness_mat = skfem.asm(linear_elasticity(E, nu), basis)
     return stiffness_mat
 
