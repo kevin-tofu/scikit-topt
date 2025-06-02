@@ -31,16 +31,28 @@ Shape modeling and its basis function
 
 .. code-block:: python
 
-   import skfem
-   import scitopt
+    import skfem
+    import scitopt
 
-   x_len, y_len, z_len = 1.0, 1.0, 1.0
+    x_len, y_len, z_len = 1.0, 1.0, 1.0
     element_size = 0.1
     e = skfem.ElementVector(skfem.ElementHex1())
     mesh = scitopt.mesh.toy_problem.create_box_hex(
-        x_len, y_len, z_len, element_size
+       x_len, y_len, z_len, element_size
     )
     basis = skfem.Basis(mesh, e, intorder=3)
+
+
+Load Model File 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    import skfem
+    import scitopt
+
+    mesh_path = "./data/model.msh"
+    basis = scitopt.mesh.loader.basis_from_file(mesh_path, intorder=3)
 
 
 Task Configuration
