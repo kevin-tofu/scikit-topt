@@ -363,6 +363,39 @@ def strain_energy_skfem(
     return elem_energy
 
 
+def strain_energy_skfem_multi(
+    basis: skfem.Basis,
+    rho: np.ndarray,
+    U: np.ndarray,  # shape: (n_dof, n_loads)
+    E0: float, Emin: float, p: float, nu: float,
+    elem_func: Callable = simp_interpolation
+) -> np.ndarray:
+    """
+    Compute strain energy density for multiple displacement fields.
+
+    Returns:
+        elem_energy_all: (n_elements, n_loads)
+    """
+    n_dof, n_loads = U.shape
+    n_elements = basis.mesh.nelements
+
+    E_elem = elem_func(rho, E0, Emin, p)
+    lam_elem, mu_elem = lame_parameters(E_elem, nu)
+    n_qp = basis.X.shape[1]
+    lam_elem = np.tile(lam_elem, (n_qp, 1))  # (n_qp, n_elements)
+    mu_elem = np.tile(mu_elem, (n_qp, 1))
+
+    elem_energy_all = np.zeros((n_elements, n_loads))
+    for i in range(n_loads):
+        uh = basis.interpolate(U[:, i])  # scalar/vector field per load case
+        elem_energy = _strain_energy_density_.elemental(
+            basis, uh=uh, lam_elem=lam_elem, mu_elem=mu_elem
+        )
+        elem_energy_all[:, i] = elem_energy
+
+    return elem_energy_all  # shape: (n_elements, n_loads)
+
+
 @Functional
 def compute_element_stress_tensor(w):
     """

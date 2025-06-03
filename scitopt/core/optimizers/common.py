@@ -565,22 +565,22 @@ class SensitivityAnalysis():
                 elem_func=density_interpolation,
                 solver=solver_option
             )
+            strain_energy = composer.strain_energy_skfem_multi(
+                tsk.basis, rho_projected, u_dofs,
+                cfg.E0, cfg.E_min, p, tsk.nu,
+                elem_func=density_interpolation
+            )
             for force_loop, force in enumerate(force_list):
                 dH[:] = 0.0
                 u_max.append(np.abs(u_dofs[:, force_loop]).max())
-
-                strain_energy = composer.strain_energy_skfem(
-                    tsk.basis, rho_projected, u_dofs[:, force_loop],
-                    cfg.E0, cfg.E_min, p, tsk.nu,
-                    elem_func=density_interpolation
-                )
-                strain_energy_ave += strain_energy
+                strain_energy_ave += strain_energy[:, force_loop]
 
                 np.copyto(
                     dC_drho_projected,
                     dC_drho_func(
                         rho_projected,
-                        strain_energy, cfg.E0, cfg.E_min, p
+                        strain_energy[:, force_loop],
+                        cfg.E0, cfg.E_min, p
                     )
                 )
                 projection.heaviside_projection_derivative_inplace(
