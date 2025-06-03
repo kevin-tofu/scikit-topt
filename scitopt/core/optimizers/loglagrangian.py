@@ -221,6 +221,7 @@ class LogLagrangian_Optimizer(common.SensitivityAnalysis):
         rho_candidate: np.ndarray,
         rho_projected: np.ndarray,
         dC_drho_ave: np.ndarray,
+        u_dofs: np.ndarray,
         strain_energy_ave: np.ndarray,
         scaling_rate: np.ndarray,
         move_limit: float,

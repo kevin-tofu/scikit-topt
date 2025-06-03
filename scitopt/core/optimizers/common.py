@@ -497,6 +497,7 @@ class SensitivityAnalysis():
         tmp_lower = np.empty_like(rho[tsk.design_elements])
         tmp_upper = np.empty_like(rho[tsk.design_elements])
         force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
+        u_dofs = np.zeros((tsk.basis.N, len(force_list)))
         filter_radius_prev = cfg.filter_radius_init \
             if cfg.filter_radius_step > 0 else cfg.filter_radius
         self.helmholz_solver.update_radius(
@@ -555,26 +556,26 @@ class SensitivityAnalysis():
             strain_energy_ave[:] = 0.0
             compliance_avg = 0.0
             u_max = list()
-            for force in force_list:
-                dH[:] = 0.0
-                compliance, u = solver.compute_compliance_basis(
-                    tsk.basis, tsk.free_dofs, tsk.dirichlet_dofs, force,
-                    cfg.E0, cfg.E_min, p, tsk.nu,
-                    rho_projected,
-                    elem_func=density_interpolation,
-                    solver=solver_option
-                )
 
-                u_max.append(np.abs(u).max())
-                compliance_avg += compliance
+            compliance_avg = solver.compute_compliance_basis_pyamg(
+                tsk.basis, tsk.free_dofs, tsk.dirichlet_dofs, force_list,
+                cfg.E0, cfg.E_min, p, tsk.nu,
+                rho_projected,
+                u_dofs,
+                elem_func=density_interpolation,
+                # solver=solver_option
+            )
+            for force_loop, force in enumerate(force_list):
+                dH[:] = 0.0
+                u_max.append(np.abs(u_dofs[:, force_loop]).max())
+
                 strain_energy = composer.strain_energy_skfem(
-                    tsk.basis, rho_projected, u,
+                    tsk.basis, rho_projected, u_dofs[:, force_loop],
                     cfg.E0, cfg.E_min, p, tsk.nu,
                     elem_func=density_interpolation
                 )
                 strain_energy_ave += strain_energy
 
-                # rho_safe = np.clip(rho_filtered, 1e-3, 1.0)
                 np.copyto(
                     dC_drho_projected,
                     dC_drho_func(
@@ -586,13 +587,9 @@ class SensitivityAnalysis():
                     rho_filtered,
                     beta=beta, eta=cfg.beta_eta, out=dH
                 )
-                # dH[:] = projection.heaviside_projection_derivative(
-                #     rho_filtered, beta=beta, eta=cfg.beta_eta
-                # )
                 np.multiply(dC_drho_projected, dH, out=grad_filtered)
                 dC_drho_full[:] += self.helmholz_solver.gradient(grad_filtered)
-                # dC_drho_ave[:] += dC_drho_full[tsk.design_elements]
-                # dC_drho_dirichlet[:] += dC_drho_full[tsk.dirichlet_elements]
+
             dC_drho_full /= len(force_list)
             strain_energy_ave /= len(force_list)
             compliance_avg /= len(force_list)
@@ -612,6 +609,7 @@ class SensitivityAnalysis():
                 rho_candidate,
                 rho_projected,
                 dC_drho_ave,
+                u_dofs,
                 strain_energy_ave,
                 scaling_rate,
                 move_limit,
@@ -695,6 +693,7 @@ class SensitivityAnalysis():
         rho_candidate: np.ndarray,
         rho_projected: np.ndarray,
         dC_drho_ave: np.ndarray,
+        u_dofs: np.ndarray,
         strain_energy_ave: np.ndarray,
         scaling_rate: np.ndarray,
         move_limit: float,

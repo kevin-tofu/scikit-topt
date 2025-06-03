@@ -128,6 +128,49 @@ def compute_compliance_basis(
     return (float(compliance), u)
 
 
+def compute_compliance_basis_pyamg(
+    basis, free_dofs, dirichlet_dofs, force_list,
+    E0, Emin, p, nu0,
+    rho,
+    u_all: np.ndarray,
+    elem_func: Callable = composer.simp_interpolation,
+    rtol: float = 1e-5,
+    maxiter: int = None,
+) -> tuple:
+    n_dof = basis.N
+    assert u_all.shape == (n_dof, len(force_list))
+    K = composer.assemble_stiffness_matrix(
+        basis, rho, E0, Emin, p, nu0, elem_func
+    )
+    _maxiter = min(
+        1000, max(300, n_dof // 5)
+    ) if maxiter is None else maxiter
+    K_csr = K.tocsr()
+
+    all_dofs = np.arange(K_csr.shape[0])
+    free_dofs = np.setdiff1d(all_dofs, dirichlet_dofs, assume_unique=True)
+    K_c = K_csr[free_dofs, :][:, free_dofs]
+
+    ml = pyamg.smoothed_aggregation_solver(K_c)
+    M = ml.aspreconditioner()
+    compliance_total = 0.0
+    u_all[:, :] = 0.0
+    for i, force in enumerate(force_list):
+        F_c = force[free_dofs]
+        u_all[free_dofs, i], info = scipy.sparse.linalg.cg(
+            A=K_c, b=F_c, M=M, rtol=rtol, maxiter=_maxiter
+        )
+        if info != 0:
+            logger.info(
+                f"[warn] CG did not converge for load case {i}: info = {info}"
+            )
+
+        compliance_temp = F_c @ u_all[free_dofs, i]
+        # compliance_temp = force @ u_all[:, i]
+        compliance_total += compliance_temp
+    return float(compliance_total)
+
+
 def compute_compliance_basis_numba(
     basis, free_dofs, dirichlet_dofs, force,
     E0, Emin, p, nu0,
