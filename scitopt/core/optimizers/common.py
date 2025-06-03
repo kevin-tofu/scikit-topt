@@ -557,13 +557,13 @@ class SensitivityAnalysis():
             compliance_avg = 0.0
             u_max = list()
 
-            compliance_avg = solver.compute_compliance_basis_pyamg(
+            compliance_avg = solver.compute_compliance_basis_multi_load(
                 tsk.basis, tsk.free_dofs, tsk.dirichlet_dofs, force_list,
                 cfg.E0, cfg.E_min, p, tsk.nu,
                 rho_projected,
                 u_dofs,
                 elem_func=density_interpolation,
-                # solver=solver_option
+                solver=solver_option
             )
             for force_loop, force in enumerate(force_list):
                 dH[:] = 0.0
