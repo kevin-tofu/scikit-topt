@@ -219,6 +219,21 @@ class SensitivityConfig():
             return None
 
 
+def interpolation_funcs(cfg: SensitivityConfig):
+    if cfg.interpolation == "SIMP":
+        # vol_frac = cfg.vol_frac_init
+        return [
+            composer.simp_interpolation, derivatives.dC_drho_simp
+        ]
+    elif cfg.interpolation == "RAMP":
+        # vol_frac = 0.4
+        return [
+            composer.ramp_interpolation, derivatives.dC_drho_ramp
+        ]
+    else:
+        raise ValueError("Interpolation method must be SIMP or RAMP.")
+
+
 class SensitivityAnalysis():
     """
     Base class for sensitivity-based topology optimization routines.
@@ -428,23 +443,10 @@ class SensitivityAnalysis():
             f"{self.cfg.dst_path}/data"
         )
 
-    def optimize(self):
+    def initialize_density(self):
         tsk = self.tsk
         cfg = self.cfg
-        if cfg.interpolation == "SIMP":
-            density_interpolation = composer.simp_interpolation
-            dC_drho_func = derivatives.dC_drho_simp
-            val_init = cfg.vol_frac_init
-        elif cfg.interpolation == "RAMP":
-            density_interpolation = composer.ramp_interpolation
-            dC_drho_func = derivatives.dC_drho_ramp
-            val_init = 0.4
-        else:
-            raise ValueError("should be SIMP/RAMP")
-
-        elements_volume_design = tsk.elements_volume[tsk.design_elements]
-        elements_volume_design_sum = np.sum(elements_volume_design)
-
+        val_init = cfg.vol_frac_init
         rho = np.zeros_like(tsk.all_elements, dtype=np.float64)
         iter_begin = 1
         if cfg.restart is True:
@@ -479,7 +481,12 @@ class SensitivityAnalysis():
         else:
             rho[tsk.dirichlet_force_elements] = 1.0
         rho[tsk.fixed_elements] = 1.0
-        self.init_schedulers()
+        return rho, iter_begin, iter_end
+
+    def initialize_params(self):
+        tsk = self.tsk
+        cfg = self.cfg
+        rho, iter_begin, iter_end = self.initialize_density()
         rho_prev = np.zeros_like(rho)
         rho_filtered = np.zeros_like(rho)
         rho_projected = np.zeros_like(rho)
@@ -487,9 +494,6 @@ class SensitivityAnalysis():
         grad_filtered = np.empty_like(rho)
         dC_drho_projected = np.empty_like(rho)
         strain_energy_ave = np.zeros_like(rho)
-        dH = np.zeros_like(rho)
-
-        # dC_drho_ave = np.zeros_like(rho)
         dC_drho_full = np.zeros_like(rho)
         dC_drho_ave = np.zeros_like(rho[tsk.design_elements])
         scaling_rate = np.empty_like(rho[tsk.design_elements])
@@ -500,57 +504,90 @@ class SensitivityAnalysis():
         u_dofs = np.zeros((tsk.basis.N, len(force_list)))
         filter_radius_prev = cfg.filter_radius_init \
             if cfg.filter_radius_step > 0 else cfg.filter_radius
+        return (
+            iter_begin,
+            iter_end,
+            rho,
+            rho_prev,
+            rho_filtered,
+            rho_projected,
+            dH,
+            grad_filtered,
+            dC_drho_projected,
+            strain_energy_ave,
+            dC_drho_full,
+            dC_drho_ave,
+            scaling_rate,
+            rho_candidate,
+            tmp_lower,
+            tmp_upper,
+            force_list,
+            u_dofs,
+            filter_radius_prev
+        )
+
+    def optimize(self):
+        tsk = self.tsk
+        cfg = self.cfg
+        self.init_schedulers()
+        density_interpolation, dC_drho_func = interpolation_funcs(cfg)
+        (
+            iter_begin,
+            iter_end,
+            rho,
+            rho_prev,
+            rho_filtered,
+            rho_projected,
+            dH,
+            grad_filtered,
+            dC_drho_projected,
+            strain_energy_ave,
+            dC_drho_full,
+            dC_drho_ave,
+            scaling_rate,
+            rho_candidate,
+            tmp_lower,
+            tmp_upper,
+            force_list,
+            u_dofs,
+            filter_radius_prev
+        ) = self.initialize_params()
+        elements_volume_design = tsk.elements_volume[tsk.design_elements]
+        elements_volume_design_sum = np.sum(elements_volume_design)
         self.helmholz_solver.update_radius(
             tsk.mesh, filter_radius_prev, solver_option=cfg.solver_option
         )
         for iter_loop, iter in enumerate(range(iter_begin, iter_end)):
             logger.info(f"iterations: {iter} / {iter_end - 1}")
-            p, vol_frac, beta, move_limit, eta, percentile, filter_radius = (
-                self.schedulers.values(iter)[k] for k in [
+            (
+                p,
+                vol_frac,
+                beta,
+                move_limit,
+                eta, percentile, filter_radius
+            ) = self.schedulers.values_as_list(
+                iter,
+                [
                     'p', 'vol_frac', 'beta', 'move_limit',
                     'eta', 'percentile', 'filter_radius'
-                ]
+                ],
+                export_log=True,
+                precision=6
             )
-            # if iter_loop == 0:
-            #     solver_option = dict(
-            #         solver="spsolve"
-            #     )
-            # else:
-            #     solver_option = dict(
-            #         solver="pyamg"
-            #     )
-            # solver_option = dict(
-            #     solver="spsolve"
-            # )
-            # solver_option = dict(
-            #     solver="pyamg"
-            # )
-            solver_option = cfg.solver_option
 
             if filter_radius_prev != filter_radius:
-                logger.info("Filter Update")
+                logger.info("!!! Filter Update")
                 self.helmholz_solver.update_radius(
                     tsk.mesh, filter_radius, cfg.solver_option
                 )
-            logger.info(
-                f"p {p:.4f}, vol_frac {vol_frac:.4f}"
-            )
-            logger.info(
-                f"beta {beta:.4f}, move_limit {move_limit:.4f}"
-            )
-            logger.info(
-                f"eta {eta:.4f}, percentile {percentile:.4f}"
-            )
-            logger.info(
-                f"filter_radius {filter_radius:.4f}"
-            )
-            logger.info("project and filter")
+
+            logger.info("!!! project and filter")
             rho_prev[:] = rho[:]
             rho_filtered[:] = self.helmholz_solver.filter(rho)
             projection.heaviside_projection_inplace(
                 rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
             )
-            logger.info("compute compliance")
+            logger.info("!!! compute compliance")
             dC_drho_ave[:] = 0.0
             dC_drho_full[:] = 0.0
             strain_energy_ave[:] = 0.0
@@ -563,7 +600,7 @@ class SensitivityAnalysis():
                 rho_projected,
                 u_dofs,
                 elem_func=density_interpolation,
-                solver=solver_option
+                solver=cfg.solver_option
             )
             strain_energy = composer.strain_energy_skfem_multi(
                 tsk.basis, rho_projected, u_dofs,
@@ -597,12 +634,12 @@ class SensitivityAnalysis():
             message += f"max:{dC_drho_full.max()}"
             logger.info(message)
             if cfg.sensitivity_filter:
-                logger.info("sensitivity filter")
+                logger.info("!!! sensitivity filter")
                 filtered = self.helmholz_solver.filter(dC_drho_full)
                 np.copyto(dC_drho_full, filtered)
             dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
             rho_candidate[:] = rho[tsk.design_elements]
-            logger.info("update density")
+            logger.info("!!! update density")
             self.rho_update(
                 # iter_loop,
                 iter,
@@ -629,17 +666,8 @@ class SensitivityAnalysis():
                 rho[tsk.dirichlet_force_elements] = 1.0
 
             filter_radius_prev = filter_radius
-            message = f"{scaling_rate.min()} {scaling_rate.mean()} "
-            message += f"{scaling_rate.max()}"
-            logger.info(
-                f"scaling_rate min/mean/max {message}"
-            )
-            message = f"{scaling_rate.min()} {scaling_rate.mean()} "
-            message += f"{scaling_rate.max()}"
-            logger.info(
-                f"scaling_rate min/mean/max {message}"
-            )
-            # self.recorder.feed_data("rho", rho[tsk.design_elements])
+
+            # 
             self.recorder.feed_data(
                 "rho_projected", rho_projected[tsk.design_elements]
             )

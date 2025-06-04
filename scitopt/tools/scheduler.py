@@ -4,6 +4,9 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
+from scitopt.tools.logconf import mylogger
+logger = mylogger(__name__)
+
 
 def schedule_exp_slowdown(it, total, start=1.0, target=0.4, rate=10.0):
     if total <= 0:
@@ -270,10 +273,24 @@ class Schedulers():
         self.scheduler_list = []
         self.dst_path = dst_path
 
-    def values(self, iter: int):
+    def values_as_dict(self, iter: int) -> dict:
         ret = dict()
         for sche in self.scheduler_list:
             ret[sche.name] = sche.value(iter)
+        return ret
+
+    def values_as_list(
+        self, iter: int, order: list[str],
+        export_log: bool = True,
+        precision: int = 4
+    ) -> list:
+        values_dic = self.values_as_dict(iter)
+        ret = [
+            values_dic[k] for k in order
+        ]
+        if export_log is True:
+            for key, value in zip(order, ret):
+                logger.info(f"{key} {value:.{precision}f}")
         return ret
 
     def add_object(
