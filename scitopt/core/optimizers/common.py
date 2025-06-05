@@ -555,7 +555,7 @@ class SensitivityAnalysis():
         elements_volume_design = tsk.elements_volume[tsk.design_elements]
         elements_volume_design_sum = np.sum(elements_volume_design)
         self.helmholz_solver.update_radius(
-            tsk.mesh, filter_radius_prev, solver_option=cfg.solver_option
+            tsk.mesh, filter_radius_prev, solver_option="pyamg"
         )
         for iter_loop, iter in enumerate(range(iter_begin, iter_end)):
             logger.info(f"iterations: {iter} / {iter_end - 1}")
@@ -578,7 +578,7 @@ class SensitivityAnalysis():
             if filter_radius_prev != filter_radius:
                 logger.info("!!! Filter Update")
                 self.helmholz_solver.update_radius(
-                    tsk.mesh, filter_radius, cfg.solver_option
+                    tsk.mesh, filter_radius, "pyamg"
                 )
 
             logger.info("!!! project and filter")
@@ -630,9 +630,6 @@ class SensitivityAnalysis():
             dC_drho_full /= len(force_list)
             strain_energy_ave /= len(force_list)
             compliance_avg /= len(force_list)
-            message = f"dC_drho_full- min:{dC_drho_full.min()} "
-            message += f"max:{dC_drho_full.max()}"
-            logger.info(message)
             if cfg.sensitivity_filter:
                 logger.info("!!! sensitivity filter")
                 filtered = self.helmholz_solver.filter(dC_drho_full)

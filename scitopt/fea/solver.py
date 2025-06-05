@@ -99,32 +99,28 @@ def compute_compliance_basis(
 
     _maxiter = min(1000, max(300, n_dof // 5)) if maxiter is None else maxiter
     K_csr = K.tocsr()
-    # condense
-    # K_c, F_c, U_c, I = skfem.condense(K_csr, force, D=dirichlet_dofs)
-    # U_c[I] = solve_u(
-    #     K_c, F_c, chosen_solver=chosen_solver,
-    #     rtol=rtol, maxiter=_maxiter
-    # )
-    # U_c[dirichlet_dofs] = 0.0
-    # u = U_c
-    # enforce
-    # K_e, F_e = skfem.enforce(K_csr, force, D=dirichlet_dofs)
-    # u = solve_u(
-    #     K_e, F_e , chosen_solver=chosen_solver,
-    #     rtol=rtol, maxiter=_maxiter
-    # )
     all_dofs = np.arange(K_csr.shape[0])
     free_dofs = np.setdiff1d(all_dofs, dirichlet_dofs, assume_unique=True)
 
-    K_c = K_csr[free_dofs, :][:, free_dofs]
-    F_c = force[free_dofs]
-    u_free = solve_u(
-        K_c, F_c, chosen_solver=chosen_solver, rtol=rtol, maxiter=_maxiter
+    # enforce
+    K_e, F_e = skfem.enforce(K_csr, force, D=dirichlet_dofs)
+    u = solve_u(
+        K_e, F_e, chosen_solver=chosen_solver,
+        rtol=rtol, maxiter=_maxiter
     )
-    u = np.zeros_like(force)
-    u[free_dofs] = u_free
-    f_free = force[free_dofs]
-    compliance = f_free @ u[free_dofs]
+
+    # condense
+    # K_c, F_c, U_c, I = skfem.condense(K, F, D=fixed_dofs)
+    # K_c = K_csr[free_dofs, :][:, free_dofs]
+    # F_c = force[free_dofs]
+    # u_free = solve_u(
+    #     K_c, F_c, chosen_solver=chosen_solver, rtol=rtol, maxiter=_maxiter
+    # )
+    # u = np.zeros_like(force)
+    # u[free_dofs] = u_free
+    # f_free = force[free_dofs]
+    # compliance = f_free @ u[free_dofs]
+    compliance = F_e[free_dofs] @ u[free_dofs]
     return (float(compliance), u)
 
 
@@ -147,50 +143,65 @@ def compute_compliance_basis_multi_load(
     _maxiter = min(1000, max(300, n_dof // 5)) if maxiter is None else maxiter
     K_csr = K.tocsr()
 
-    all_dofs = np.arange(n_dof)
-    free_dofs = np.setdiff1d(all_dofs, dirichlet_dofs, assume_unique=True)
-    K_c = K_csr[free_dofs, :][:, free_dofs]
-
+    # all_dofs = np.arange(n_dof)
+    # free_dofs = np.setdiff1d(all_dofs, dirichlet_dofs, assume_unique=True)
+    # K_e = K_csr[free_dofs, :][:, free_dofs]
+    # K_e, _ = skfem.enforce(
+    #     K_csr[free_dofs, :][:, free_dofs], force_list[0],
+    #     D=dirichlet_dofs
+    # )
+    # K_c, _, _, _ = skfem.condense(K_csr, force_list[0], D=dirichlet_dofs)
+    K_e, _ = skfem.enforce(K_csr, force_list[0], D=dirichlet_dofs)
+    F_stack = np.column_stack([
+        skfem.enforce(K_csr, f, D=dirichlet_dofs)[1] for f in force_list
+    ])
     compliance_total = 0.0
     u_all[:, :] = 0.0
     if solver == 'spsolve':
-        n_loads = len(force_list)
+        # n_loads = len(force_list)
         # prepare RHS stacked for spsolve (n_dof_reduced, n_loads)
-        F_stack = np.column_stack([f[free_dofs] for f in force_list])
+        # F_stack = np.column_stack([f[free_dofs] for f in force_list])
+        # F_stack = np.column_stack([
+        #     skfem.condense(K_csr, f, D=dirichlet_dofs)[1] for f in force_list
+        # ])
         # solve all at once
-        U_c = scipy.sparse.linalg.spsolve(K_c, F_stack)
-        if U_c.ndim == 1:
-            U_c = U_c[:, np.newaxis]
-        u_all[free_dofs, :] = U_c
-        for i in range(n_loads):
-            compliance_total += F_stack[:, i] @ U_c[:, i]
+        # u_all = scipy.sparse.linalg.spsolve(K_e, F_stack)
+        lu = scipy.sparse.linalg.splu(K_e.tocsc())
+        u_all[:, :] = np.column_stack(
+            [lu.solve(F_stack[:, i]) for i in range(F_stack.shape[1])]
+        )
+        # if u_all.ndim == 1:
+        #     u_all = u_all[:, np.newaxis]
 
     else:
         # choose preconditioner if needed
         if solver == 'cg':
-            M_diag = K_c.diagonal()
+            M_diag = K_e.diagonal()
             M_inv = 1.0 / M_diag
-            M = LinearOperator(K_c.shape, matvec=lambda x: M_inv * x)
+            M = LinearOperator(K_e.shape, matvec=lambda x: M_inv * x)
         elif solver == 'pyamg':
-            ml = pyamg.smoothed_aggregation_solver(K_c)
+            ml = pyamg.smoothed_aggregation_solver(K_e)
             M = ml.aspreconditioner()
         else:
             raise ValueError(f"Unknown solver: {solver}")
 
-        for i, force in enumerate(force_list):
-            F_c = force[free_dofs]
-            u_c, info = scipy.sparse.linalg.cg(
-                K_c, F_c, M=M, rtol=rtol, maxiter=_maxiter
+        for i, _ in enumerate(force_list):
+            F_e = F_stack[:, i]
+            # _, F_e = skfem.enforce(K_csr, force, D=dirichlet_dofs)
+            u_e, info = scipy.sparse.linalg.cg(
+                K_e, F_e, M=M, rtol=rtol, maxiter=_maxiter
             )
             if info != 0:
                 logger.info(
-                    f"[warn] CG did not converge for load case {i}: info = {info}"
+                    f"[warning] \
+                        CG did not converge for load case {i}: info = {info}"
                 )
-            u_all[free_dofs, i] = u_c
-            compliance_total += F_c @ u_c
+            u_all[:, i] = u_e
+            # compliance_total += F_e[free_dofs] @ u_e[free_dofs]
 
+    compliance_total = np.sum(np.einsum('ij,ij->j', F_stack, u_all))
+    print("compliance_total:", compliance_total)
     return float(compliance_total)
-
 
 
 def compute_compliance_basis_numba(
