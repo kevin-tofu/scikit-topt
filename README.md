@@ -192,7 +192,7 @@ OMP_NUM_THREADS=3 OPENBLAS_NUM_THREADS=3 MKL_NUM_THREADS=3 PYTHONPATH=./ python 
  --export_img true \
  --sensitivity_filter false \
  --task_name down_box \
- --solver_option pyamg \
+ --solver_option spsolve \
  --rho_min 1e-2 \
  --E0 210e9 \
  --E_min 210e5 \
