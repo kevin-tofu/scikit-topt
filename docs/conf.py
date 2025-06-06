@@ -38,10 +38,10 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 html_extra_path = ["extra"]
 html_meta = {
-    "description": "scitopt is a scientific topology optimization library in Python.",
+    "description": "scikit-topt(scitopt) is a scientific topology optimization library in Python.",
     "keywords": "topology optimization, FEM, Python, scientific computing",
     "author": "Kohei Watanabe",
     "robots": "index, follow",
 }
 
-html_baseurl = 'https://kevin-tofu.github.io/scitopt/'
+html_baseurl = 'https://kevin-tofu.github.io/scikit-topt/'
