@@ -657,9 +657,9 @@ if __name__ == '__main__':
 
         # U1_e = scipy.sparse.linalg.spsolve(K1_e, F1_e)
         # U2_e = scipy.sparse.linalg.spsolve(K2_e, F2_e)
-        U0_e = scitopt.fea.solver.solve_u(K0_e, F0_e, chosen_solver="pyamg")
-        # U1_e = scitopt.fea.solver.solve_u(K1_e, F1_e, chosen_solver="pyamg")
-        U2_e = scitopt.fea.solver.solve_u(K2_e, F2_e, chosen_solver="pyamg")
+        U0_e = scitopt.fea.solver.solve_u(K0_e, F0_e, chosen_solver="cg_pyamg")
+        # U1_e = scitopt.fea.solver.solve_u(K1_e, F1_e, chosen_solver="cg_pyamg")
+        U2_e = scitopt.fea.solver.solve_u(K2_e, F2_e, chosen_solver="cg_pyamg")
 
         print("U0_e ave :", np.average(U0_e))
         # print("U1_e ave :", np.average(U1_e))
@@ -756,7 +756,7 @@ if __name__ == '__main__':
         )
         _F = tsk.force
         K_e, F_e = skfem.enforce(K0, _F, D=tsk.dirichlet_nodes)
-        u = scitopt.fea.solver.solve_u(K_e, F_e, chosen_solver="pyamg")
+        u = scitopt.fea.solver.solve_u(K_e, F_e, chosen_solver="cg_pyamg")
         print(
             "np.sum(u[tsk.dirichlet_nodes]):", np.sum(u[tsk.dirichlet_nodes])
         )

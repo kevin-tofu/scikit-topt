@@ -29,12 +29,12 @@ def compute_compliance_simp_basis(
 def solve_u(
     K_cond: scipy.sparse.csc_matrix,
     F_cond: np.ndarray,
-    chosen_solver: Literal['cg', 'spsolve', 'pyamg'] = 'auto',
+    chosen_solver: Literal['cg_jacobi', 'spsolve', 'cg_pyamg'] = 'auto',
     rtol: float = 1e-8,
     maxiter: int = None,
 ) -> np.ndarray:
     try:
-        if chosen_solver == 'cg':
+        if chosen_solver == 'cg_jacobi':
             M_diag = K_cond.diagonal()
             M_inv = 1.0 / M_diag
             M = LinearOperator(K_cond.shape, matvec=lambda x: M_inv * x)
@@ -44,7 +44,7 @@ def solve_u(
             )
             logger.info(f"CG (diag preconditioner) solver info: {info}")
 
-        elif chosen_solver == 'pyamg':
+        elif chosen_solver == 'cg_pyamg':
             ml = pyamg.smoothed_aggregation_solver(K_cond)
             M = ml.aspreconditioner()
 
@@ -76,7 +76,7 @@ def compute_compliance_basis(
     E0, Emin, p, nu0,
     rho,
     elem_func: Callable = composer.simp_interpolation,
-    solver: Literal['auto', 'cg', 'spsolve', 'pyamg'] = 'auto',
+    solver: Literal['auto', 'cg_jacobi', 'spsolve', 'cg_pyamg'] = 'auto',
     rtol: float = 1e-5,
     maxiter: int = None,
 ) -> tuple:
@@ -89,11 +89,11 @@ def compute_compliance_basis(
         if n_dof < 1000:
             chosen_solver = 'spsolve'
         elif n_dof < 30000:
-            # chosen_solver = 'cg'
-            chosen_solver = 'pyamg'
+            # chosen_solver = 'cg_jacobi'
+            chosen_solver = 'cg_pyamg'
         else:
-            chosen_solver = 'pyamg'
-            # chosen_solver = 'cg'
+            chosen_solver = 'cg_pyamg'
+            # chosen_solver = 'cg_jacobi'
     else:
         chosen_solver = solver
 
@@ -129,11 +129,12 @@ def compute_compliance_basis_multi_load(
     E0, Emin, p, nu0,
     rho,
     u_all: np.ndarray,
-    solver: Literal['auto', 'cg', 'spsolve', 'pyamg'] = 'auto',
+    solver: Literal['auto', 'cg_jacobi', 'spsolve', 'cg_pyamg'] = 'auto',
     elem_func: Callable = composer.simp_interpolation,
     rtol: float = 1e-5,
     maxiter: int = None,
 ) -> float:
+    solver = 'spsolve' if solver == 'auto' else solver
     n_dof = basis.N
     assert u_all.shape == (n_dof, len(force_list))
 
@@ -175,11 +176,11 @@ def compute_compliance_basis_multi_load(
 
     else:
         # choose preconditioner if needed
-        if solver == 'cg':
+        if solver == 'cg_jacobi':
             M_diag = K_e.diagonal()
             M_inv = 1.0 / M_diag
             M = LinearOperator(K_e.shape, matvec=lambda x: M_inv * x)
-        elif solver == 'pyamg':
+        elif solver == 'cg_pyamg':
             ml = pyamg.smoothed_aggregation_solver(K_e)
             M = ml.aspreconditioner()
         else:
@@ -209,7 +210,7 @@ def compute_compliance_basis_numba(
     E0, Emin, p, nu0,
     rho,
     elem_func: Callable = composer.simp_interpolation_numba,
-    solver: Literal['auto', 'cg', 'spsolve', 'pyamg'] = 'auto',
+    solver: Literal['auto', 'cg_jacobi', 'spsolve', 'cg_pyamg'] = 'auto',
     rtol: float = 1e-8,
     maxiter: int = None,
 ) -> tuple:
@@ -224,10 +225,10 @@ def compute_compliance_basis_numba(
         if n_dof < 5000:
             chosen_solver = 'spsolve'
         elif n_dof < 30000:
-            chosen_solver = 'cg'
+            chosen_solver = 'cg_jacobi'
         else:
-            chosen_solver = 'pyamg'
-            # chosen_solver = 'cg'
+            chosen_solver = 'cg_pyamg'
+            # chosen_solver = 'cg_jacobi'
     else:
         chosen_solver = solver
 

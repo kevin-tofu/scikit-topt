@@ -128,8 +128,8 @@ class SensitivityConfig():
     sensitivity_filter : bool
         If True, applies filtering to the sensitivity field.
 
-    solver_option : {"spsolve", "pyamg"}
-        Linear solver to be used in analysis. `"pyamg"` enables multigrid
+    solver_option : {"spsolve", "cg_pyamg"}
+        Linear solver to be used in analysis. `"cg_pyamg"` enables multigrid
         acceleration.
 
     scaling : bool
@@ -176,7 +176,7 @@ class SensitivityConfig():
     lambda_lower: float = 1e-7
     lambda_upper: float = 1e+7
     sensitivity_filter: bool = False
-    solver_option: Literal["spsolve", "pyamg"] = "pyamg"
+    solver_option: Literal["spsolve", "cg_pyamg"] = "cg_pyamg"
     scaling: bool = False
 
     @classmethod
@@ -433,7 +433,7 @@ class SensitivityAnalysis():
         self.helmholz_solver = filter.HelmholtzFilter.from_defaults(
             self.tsk.mesh,
             self.cfg.filter_radius,
-            solver_option="pyamg",
+            solver_option="cg_pyamg",
             # solver_option=self.cfg.solver_option,
             dst_path=f"{self.cfg.dst_path}/data",
         )
@@ -555,7 +555,7 @@ class SensitivityAnalysis():
         elements_volume_design = tsk.elements_volume[tsk.design_elements]
         elements_volume_design_sum = np.sum(elements_volume_design)
         self.helmholz_solver.update_radius(
-            tsk.mesh, filter_radius_prev, solver_option="pyamg"
+            tsk.mesh, filter_radius_prev, solver_option="cg_pyamg"
         )
         for iter_loop, iter in enumerate(range(iter_begin, iter_end)):
             logger.info(f"iterations: {iter} / {iter_end - 1}")
@@ -578,7 +578,7 @@ class SensitivityAnalysis():
             if filter_radius_prev != filter_radius:
                 logger.info("!!! Filter Update")
                 self.helmholz_solver.update_radius(
-                    tsk.mesh, filter_radius, "pyamg"
+                    tsk.mesh, filter_radius, "cg_pyamg"
                 )
 
             logger.info("!!! project and filter")

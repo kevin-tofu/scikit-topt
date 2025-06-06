@@ -472,7 +472,7 @@ class HelmholtzFilter():
     A: csc_matrix
     V: csc_matrix
     dst_path: Optional[str] = None
-    solver_option: Literal["spsolve", "cg", "pyamg"] = "cg"
+    solver_option: Literal["spsolve", "cg_jacobi", "cg_pyamg"] = "cg_jacobi"
     A_solver: Optional[scipy.sparse.linalg.SuperLU] = None
     M: Optional[LinearOperator] = None
     pyamg_solver: Optional[pyamg.multilevel.MultilevelSolver] = None
@@ -484,7 +484,7 @@ class HelmholtzFilter():
         mesh: skfem.Mesh,
         radius: float,
         design_mask: Optional[np.ndarray] = None,
-        solver_option="pyamg"
+        solver_option="cg_pyamg"
     ):
         self.A, self.V = _update_radius(
             mesh=mesh,
@@ -499,7 +499,8 @@ class HelmholtzFilter():
         cls,
         mesh: skfem.Mesh,
         radius: float,
-        solver_option: Literal["spsolve", "cg", "pyamg"] = "pyamg",
+        solver_option: Literal[
+            "spsolve", "cg_jacobi", "cg_pyamg"] = "cg_pyamg",
         dst_path: Optional[str] = None,
         design_mask: Optional[np.ndarray] = None,
     ):
@@ -530,13 +531,13 @@ class HelmholtzFilter():
             return apply_helmholtz_filter_lu(
                 rho_element, self.A_solver, self.V
             )
-        elif self.solver_option == "cg":
+        elif self.solver_option == "cg_jacobi":
             return apply_helmholtz_filter_cg(
                 rho_element, self.A, self.V, M=self.M,
                 rtol=self.rtol,
                 maxiter=self.maxiter
             )
-        elif self.solver_option == "pyamg":
+        elif self.solver_option == "cg_pyamg":
             return apply_helmholtz_filter_amg(
                 rho_element, self.V, self.pyamg_solver,
                 tol=self.rtol
@@ -545,14 +546,14 @@ class HelmholtzFilter():
     def gradient(self, v: np.ndarray):
         if self.solver_option == "spsolve":
             return apply_filter_gradient_lu(v, self.A_solver, self.V)
-        elif self.solver_option == "cg":
+        elif self.solver_option == "cg_jacobi":
             return apply_filter_gradient_cg(
                 v, self.A, self.V,
                 M=self.M,
                 rtol=self.rtol,
                 maxiter=self.maxiter
             )
-        elif self.solver_option == "pyamg":
+        elif self.solver_option == "cg_pyamg":
             return apply_filter_gradient_amg(
                 v, self.V,
                 self.pyamg_solver,
@@ -566,14 +567,14 @@ class HelmholtzFilter():
         solver_option: Optional[str] = None
     ):
         if isinstance(solver_option, str):
-            if solver_option in ["cg", "pyamg", "spsolve"]:
+            if solver_option in ["cg_jacobi", "cg_pyamg", "spsolve"]:
                 self.solver_option = solver_option
             else:
                 raise ValueError("should be cg/pyamg/spsolve")
 
-        if self.solver_option == "pyamg":
+        if self.solver_option == "cg_pyamg":
             self.create_amgsolver()
-        elif self.solver_option == "cg":
+        elif self.solver_option == "cg_jacobi":
             self.create_LinearOperator()
         elif self.solver_option == "spsolve":
             self.create_solver()
