@@ -298,7 +298,6 @@ class SensitivityAnalysis():
         if not os.path.exists(self.cfg.dst_path):
             os.makedirs(self.cfg.dst_path)
         self.cfg.export(self.cfg.dst_path)
-        # self.tsk.nodes_and_elements_stats(self.cfg.dst_path)
 
         if cfg.design_dirichlet is False:
             self.tsk.exlude_dirichlet_from_design()
@@ -312,10 +311,7 @@ class SensitivityAnalysis():
             if not os.path.exists(f"{self.cfg.dst_path}/data"):
                 os.makedirs(f"{self.cfg.dst_path}/data")
 
-            # self.parameterize(cfg.solver_option)
-
         self.recorder = tools.HistoriesLogger(self.cfg.dst_path)
-        # self.recorder.add("rho", plot_type="min-max-mean-std")
         self.recorder.add("rho_projected", plot_type="min-max-mean-std")
         self.recorder.add("strain_energy", plot_type="min-max-mean-std")
         self.recorder.add("vol_error")
@@ -325,8 +321,6 @@ class SensitivityAnalysis():
             self.recorder.add("u_max")
         self.recorder.add("compliance", ylog=True)
         self.recorder.add("scaling_rate", plot_type="min-max-mean-std")
-        # self.recorder.add("dC", plot_type="min-max-mean-std")
-        # self.recorder.add("lambda_v", ylog=False) # True
         self.schedulers = tools.Schedulers(self.cfg.dst_path)
 
     def scale(self):
@@ -367,15 +361,6 @@ class SensitivityAnalysis():
             cfg.vol_frac_step,
             cfg.max_iters
         )
-        # print(move_init)
-        # print(cfg.move_limit, cfg.move_limit_step)
-        # self.schedulers.add(
-        #     "move_limit",
-        #     move_limit_init,
-        #     cfg.move_limit,
-        #     cfg.move_limit_step,
-        #     cfg.max_iters
-        # )
         self.schedulers.add_object(
             tools.SchedulerSawtoothDecay(
                 "move_limit",
@@ -393,7 +378,6 @@ class SensitivityAnalysis():
                 cfg.beta_step,
                 cfg.max_iters,
                 cfg.beta_curvature,
-                # 5.0
             )
         )
         self.schedulers.add(
@@ -467,11 +451,6 @@ class SensitivityAnalysis():
             rho[tsk.design_elements] = data["rho_design_elements"]
             del data
         else:
-            # _vol_frac = cfg.vol_frac \
-            #     if cfg.vol_frac_step < 0 else cfg.vol_frac_init
-            # rho += _vol_frac + \
-            #     0.1 * (np.random.rand(len(tsk.all_elements)) - 0.5)
-            # rho += _vol_frac + 0.15
             rho += val_init
             np.clip(rho, cfg.rho_min, cfg.rho_max, out=rho)
             iter_end = cfg.max_iters + 1
@@ -529,6 +508,8 @@ class SensitivityAnalysis():
     def optimize(self):
         tsk = self.tsk
         cfg = self.cfg
+        tsk.export_analysis_condition_on_mesh(cfg.dst_path)
+        logger.info(f"dst_path : {cfg.dst_path}")
         self.init_schedulers()
         density_interpolation, dC_drho_func = interpolation_funcs(cfg)
         (
@@ -557,7 +538,7 @@ class SensitivityAnalysis():
         self.helmholz_solver.update_radius(
             tsk.mesh, filter_radius_prev, solver_option="cg_pyamg"
         )
-        for iter_loop, iter in enumerate(range(iter_begin, iter_end)):
+        for iter_loop, iter in enumerate(range(iter_begin, iter_end)): # 1 -
             logger.info(f"iterations: {iter} / {iter_end - 1}")
             (
                 p,
@@ -664,7 +645,6 @@ class SensitivityAnalysis():
 
             filter_radius_prev = filter_radius
 
-            # 
             self.recorder.feed_data(
                 "rho_projected", rho_projected[tsk.design_elements]
             )
@@ -680,25 +660,31 @@ class SensitivityAnalysis():
             ):
                 logger.info(f"Saving at iteration {iter}")
                 self.recorder.print()
-                # self.recorder_params.print()
                 self.recorder.export_progress()
-                visualization.save_info_on_mesh(
-                    tsk,
-                    rho_projected, rho_prev, strain_energy_ave,
-                    cfg.vtu_path(iter),
-                    cfg.image_path(iter, "rho"),
-                    f"Iteration : {iter}",
-                    cfg.image_path(iter, "strain_energy"),
-                    f"Iteration : {iter}",
-                    cfg.export_img_opaque
+                
+                visualization.export_mesh_with_info(
+                    tsk.mesh,
+                    cell_data_names=["rho_projected", "strain_energy"],
+                    cell_data_values=[rho_projected, strain_energy_ave],
+                    filepath=cfg.vtu_path(iter)
                 )
-                # visualization.export_submesh(
-                #     tsk, rho, 0.5, f"{cfg.dst_path}/sub_mesh.vtu"
-                # )
+                visualization.write_mesh_with_info_as_image(
+                    mesh_path=cfg.vtu_path(iter),
+                    mesh_scalar_name="rho_projected",
+                    clim=(0.0, 1.0),
+                    image_path=cfg.image_path(iter, "rho_projected"),
+                    image_title=f"Iteration : {iter}"
+                )
+                visualization.write_mesh_with_info_as_image(
+                    mesh_path=cfg.vtu_path(iter),
+                    mesh_scalar_name="strain_energy",
+                    clim=(0.0, np.max(strain_energy)),
+                    image_path=cfg.image_path(iter, "strain_energy"),
+                    image_title=f"Iteration : {iter}"
+                )
                 np.savez_compressed(
                     f"{cfg.dst_path}/data/{str(iter).zfill(6)}-rho.npz",
-                    rho_design_elements=rho[tsk.design_elements],
-                    # compliance=compliance
+                    rho_design_elements=rho[tsk.design_elements]
                 )
 
         if cfg.scaling is True:
@@ -710,7 +696,7 @@ class SensitivityAnalysis():
         visualization_mesh.export_submesh(
             tsk, rho, 0.5, f"{cfg.dst_path}/cubic_top.vtu"
         )
-        self.recorder.export_histories("histories.npz")
+        self.recorder.export_histories(fname="histories.npz")
 
     def rho_update(
         self,

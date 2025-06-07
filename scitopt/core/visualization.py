@@ -1,113 +1,136 @@
 import os
 import glob
-
 from typing import Optional
-import imageio.v2 as imageio
 
 import numpy as np
+import imageio.v2 as imageio
 import skfem
 import meshio
 import pyvista as pv
 import matplotlib.pyplot as plt
-import scitopt
 
 
-def save_info_on_mesh(
-    tsk,
-    rho: np.ndarray,
-    rho_prev: np.ndarray,
-    dC: Optional[np.ndarray] = None,
-    mesh_path: str = 'mesh.vtu',
-    rho_image_path: Optional[str] = None,
-    rho_image_title: Optional[str] = None,
-    dC_image_path: Optional[str] = None,
-    dC_image_title: Optional[str] = None,
-    opaque: bool = True
+def export_mesh_with_info(
+    mesh: skfem.Mesh,
+    point_data_values: Optional[list[np.ndarray]] = None,
+    point_data_names: Optional[list[str]] = None,
+    cell_data_values: Optional[list[np.ndarray]] = None,
+    cell_data_names: Optional[list[str]] = None,
+    filepath: str = "output.vtu"
 ):
-    if isinstance(tsk.mesh, skfem.MeshTet):
-        mesh_type = "tetra"
-    elif isinstance(tsk.mesh, skfem.MeshHex):
-        mesh_type = "hexahedron"
+    """
+    Export a skfem.Mesh object and its data to a VTU file via meshio.
+
+    Parameters
+    ----------
+    mesh : skfem.Mesh
+        The finite element mesh object (MeshTet, MeshTri, MeshHex, etc.).
+    
+    point_data_values : list of np.ndarray, optional
+        List of arrays of point-wise data (length = n_nodes).
+    
+    point_data_names : list of str, optional
+        Names for each point-wise data array.
+    
+    cell_data_values : list of np.ndarray, optional
+        List of arrays of cell-wise data (length = n_elements).
+    
+    cell_data_names : list of str, optional
+        Names for each cell-wise data array.
+    
+    filepath : str
+        Output filename (e.g., "result.vtu").
+    """
+    # Determine element type
+    if isinstance(mesh, skfem.MeshTet):
+        cell_type = "tetra"
+    elif isinstance(mesh, skfem.MeshHex):
+        cell_type = "hexahedron"
     else:
-        raise ValueError("")
-    mesh = tsk.mesh
-    dirichlet_ele = tsk.dirichlet_elements
-    F_ele = tsk.force_elements
-    element_colors_df1 = np.zeros(mesh.nelements, dtype=int)
-    element_colors_df2 = np.zeros(mesh.nelements, dtype=int)
-    element_colors_df1[tsk.design_elements] = 1
-    element_colors_df1[tsk.fixed_elements] = 2
-    element_colors_df2[dirichlet_ele] = 1
-    element_colors_df2[F_ele] = 2
+        raise ValueError(f"Unsupported mesh type: {type(mesh)}")
 
-    # rho_projected = techniques.heaviside_projection(
-    #     rho, beta=beta, eta=eta
-    # )
-    cell_outputs = dict()
-    cell_outputs["rho"] = [rho]
-    cell_outputs["rho-diff"] = [rho - rho_prev]
-    if dC is not None:
-        # dC[tsk.fixed_elements] = 0.0
-        # dC_ranked = rank_scale_0_1(dC)
-        cell_outputs["strain_energy"] = [dC]
-    # cell_outputs["rho_projected"] = [rho_projected]
-    cell_outputs["desing-fixed"] = [element_colors_df1]
-    cell_outputs["condition"] = [element_colors_df2]
-    # if sigma_v is not None:
-    #     cell_outputs["sigma_v"] = [sigma_v]
+    # Convert skfem's (dim, n) shape to meshio format
+    points = mesh.p.T
+    # cells = [(cell_type, mesh.t.T)]
 
+    # Point data
+    point_data = {}
+    if point_data_values and point_data_names:
+        for name, val in zip(point_data_names, point_data_values):
+            point_data[name] = val
+
+    # Cell data (wrap in a list for each cell block)
+    cell_data = {}
+    if cell_data_values and cell_data_names:
+        for name, val in zip(cell_data_names, cell_data_values):
+            cell_data[name] = [val]
+
+    # Build and write meshio.Mesh
     meshio_mesh = meshio.Mesh(
-        points=mesh.p.T,
-        cells=[(mesh_type, mesh.t.T)],
-        cell_data=cell_outputs
+        points=points,
+        cells=[meshio.CellBlock(cell_type, mesh.t.T)],
+        point_data=point_data,
+        cell_data=cell_data
     )
-    meshio.write(mesh_path, meshio_mesh)
+    meshio_mesh.write(filepath)
 
-    if isinstance(rho_image_path, str):
+
+def write_mesh_with_info_as_image(
+    mesh_path: str,
+    mesh_scalar_name: str,
+    clim: tuple,
+    image_path: str,
+    image_title: str
+):
+    """
+    Render a scalar field on a VTU mesh and save it as an image using PyVista.
+
+    Parameters
+    ----------
+    mesh_path : str
+        Path to the VTU mesh file to be read.
+
+    mesh_scalar_name : str
+        The name of the scalar field stored in the mesh to be visualized (must match one of the scalar field names in the file).
+
+    clim : tuple of float
+        Color limits (min, max) for the scalar colormap.
+
+    image_path : str
+        File path where the rendered image (e.g., PNG) will be saved.
+
+    image_title : str
+        Title text to display in the upper left corner of the image.
+
+    Notes
+    -----
+    - Requires the `pyvista` package.
+    - Works in headless environments by starting an off-screen xvfb session.
+    - Assumes the scalar field is stored in cell data or point data with the specified name.
+    """
+    if os.path.exists(mesh_path):
         pv.start_xvfb()
         mesh = pv.read(mesh_path)
-        # scalar_names = list(mesh.cell_data.keys())
-        scalar_name = "rho"
         plotter = pv.Plotter(off_screen=True)
         add_mesh_params = dict(
-            scalars=scalar_name,
+            scalars=mesh_scalar_name,
             cmap="cividis",
-            clim=(0, 1),
+            clim=clim,
             show_edges=True,
-            scalar_bar_args={"title": scalar_name}
+            scalar_bar_args={"title": mesh_scalar_name}
         )
-        if opaque is True:
-            add_mesh_params["opacity"] = (rho > 1e-1).astype(float)
+        # if opaque is True:
+        #     add_mesh_params["opacity"] = (rho > 1e-1).astype(float)
         plotter.add_mesh(
             mesh, **add_mesh_params
         )
         plotter.add_text(
-            rho_image_title, position="upper_left", font_size=12, color="black"
+            image_title, position="upper_left", font_size=12, color="black"
         )
-        plotter.screenshot(rho_image_path)
+        plotter.screenshot(image_path)
         plotter.close()
-
-    if isinstance(dC_image_path, str):
-        pv.start_xvfb()
-        mesh = pv.read(mesh_path)
-        # scalar_names = list(mesh.cell_data.keys())
-        scalar_name = "strain_energy"
-        plotter = pv.Plotter(off_screen=True)
-        plotter.add_mesh(
-            mesh,
-            scalars=scalar_name,
-            cmap="turbo",
-            clim=(0, np.max(dC)),
-            opacity=0.3,
-            show_edges=False,
-            lighting=False,
-            scalar_bar_args={"title": scalar_name}
-        )
-        plotter.add_text(
-            dC_image_title, position="upper_left", font_size=12, color="black"
-        )
-        plotter.screenshot(dC_image_path)
-        plotter.close()
+    else:
+        raise ValueError(f"mesh: {mesh_path} does not exist.")
 
 
 def rho_histo_plot(

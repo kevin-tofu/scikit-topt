@@ -229,7 +229,7 @@ class TaskConfig():
         else:
             return self.force_nodes
 
-    def export_info_on_mesh(
+    def export_analysis_condition_on_mesh(
         self, dst_path: str
     ):
         import meshio

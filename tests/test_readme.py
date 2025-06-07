@@ -73,7 +73,6 @@ def loglagrangian_optimize(tsk):
     cfg.record_times = 1
 
     optimizer = scitopt.core.LogLagrangian_Optimizer(cfg, tsk)
-    tsk.export_info_on_mesh(cfg.dst_path)
     optimizer.parameterize()
     optimizer.optimize()
 
