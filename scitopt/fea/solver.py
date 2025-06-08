@@ -159,20 +159,10 @@ def compute_compliance_basis_multi_load(
     compliance_total = 0.0
     u_all[:, :] = 0.0
     if solver == 'spsolve':
-        # n_loads = len(force_list)
-        # prepare RHS stacked for spsolve (n_dof_reduced, n_loads)
-        # F_stack = np.column_stack([f[free_dofs] for f in force_list])
-        # F_stack = np.column_stack([
-        #     skfem.condense(K_csr, f, D=dirichlet_dofs)[1] for f in force_list
-        # ])
-        # solve all at once
-        # u_all = scipy.sparse.linalg.spsolve(K_e, F_stack)
         lu = scipy.sparse.linalg.splu(K_e.tocsc())
         u_all[:, :] = np.column_stack(
             [lu.solve(F_stack[:, i]) for i in range(F_stack.shape[1])]
         )
-        # if u_all.ndim == 1:
-        #     u_all = u_all[:, np.newaxis]
 
     else:
         # choose preconditioner if needed
@@ -201,7 +191,6 @@ def compute_compliance_basis_multi_load(
             # compliance_total += F_e[free_dofs] @ u_e[free_dofs]
 
     compliance_total = np.sum(np.einsum('ij,ij->j', F_stack, u_all))
-    print("compliance_total:", compliance_total)
     return float(compliance_total)
 
 

@@ -572,7 +572,6 @@ class SensitivityAnalysis():
             dC_drho_ave[:] = 0.0
             dC_drho_full[:] = 0.0
             strain_energy_ave[:] = 0.0
-            compliance_avg = 0.0
             u_max = list()
 
             compliance_avg = solver.compute_compliance_basis_multi_load(
