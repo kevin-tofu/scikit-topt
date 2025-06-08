@@ -108,19 +108,19 @@ import skfem
 import scitopt
 
 # Specify Dirichlet Boundary Conditions
-dirichlet_points = scitopt.mesh.utils.get_point_indices_in_range(
+dirichlet_nodes = scitopt.mesh.utils.get_nodes_indices_in_range(
     basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
 )
-dirichlet_nodes = basis.get_dofs(nodes=dirichlet_points).all()
+dirichlet_dofs = basis.get_dofs(nodes=dirichlet_nodes).all()
 
 # Define Force Vector
-F_points = scitopt.mesh.utils.get_point_indices_in_range(
+F_nodes = scitopt.mesh.utils.get_nodes_indices_in_range(
     basis,
     (x_len, x_len),
     (y_len*2/5, y_len*3/5),
     (z_len*2/5, z_len*3/5)
 )
-F_nodes = basis.get_dofs(nodes=F_points).nodal["u^1"]
+F_dofs = basis.get_dofs(nodes=F_nodes).nodal["u^1"]
 F = 100
 
 # Specify Design Field
@@ -134,10 +134,10 @@ tsk = scitopt.mesh.task.TaskConfig.from_defaults(
     210e9,
     0.30,
     basis,
-    dirichlet_points,
     dirichlet_nodes,
-    F_points,
+    dirichlet_dofs,
     F_nodes,
+    F_dofs,
     F,
     design_elements
 )
