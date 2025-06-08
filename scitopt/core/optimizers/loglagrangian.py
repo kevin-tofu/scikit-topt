@@ -7,7 +7,7 @@ logger = mylogger(__name__)
 
 
 @dataclass
-class LogLagrangian_Config(common.SensitivityConfig):
+class LogLagrangian_Config(common.DensityMethodConfig):
     """
     Configuration for Log-space Lagrangian Gradient Update method.
 
@@ -157,7 +157,7 @@ def kkt_log_update(
     np.clip(rho, rho_min, rho_max, out=rho)
 
 
-class LogLagrangian_Optimizer(common.SensitivityAnalysis):
+class LogLagrangian_Optimizer(common.DensityMethod):
     """
     Topology optimization solver using log-space Lagrangian gradient descent.
 
@@ -189,7 +189,7 @@ class LogLagrangian_Optimizer(common.SensitivityAnalysis):
         Configuration object specifying optimization parameters such as mu_p,
         lambda_v, decay schedules, and filtering strategies.
 
-    mesh, basis, etc. : inherited from common.SensitivityAnalysis
+    mesh, basis, etc. : inherited from common.DensityMethod
         Core finite element components required for stiffness evaluation,
         boundary conditions, and optimization loop execution.
 

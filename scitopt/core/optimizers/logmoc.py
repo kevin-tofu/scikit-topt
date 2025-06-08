@@ -9,7 +9,7 @@ logger = mylogger(__name__)
 
 
 @dataclass
-class LogMOC_Config(common.SensitivityConfig):
+class LogMOC_Config(common.DensityMethodConfig):
     """
     Configuration for log-space gradient update with optional mean-centering.
 
@@ -106,7 +106,7 @@ def moc_log_update_logspace(
 
 
 # Lagrangian Dual MOC
-class LogMOC_Optimizer(common.SensitivityAnalysis):
+class LogMOC_Optimizer(common.DensityMethod):
     """
     Topology optimization solver using log-space Lagrangian gradient descent.
 
@@ -147,7 +147,7 @@ class LogMOC_Optimizer(common.SensitivityAnalysis):
         Configuration object specifying parameters such as mu_p, lambda_v,
         decay schedules, and interpolation settings (currently SIMP only).
 
-    mesh, basis, etc. : inherited from common.SensitivityAnalysis
+    mesh, basis, etc. : inherited from common.DensityMethod
         FEM components used to evaluate sensitivities and apply boundary conditions.
     """
     def __init__(

@@ -10,7 +10,7 @@ logger = mylogger(__name__)
 
 
 @dataclass
-class OC_Config(common.SensitivityConfig):
+class OC_Config(common.DensityMethodConfig):
     interpolation: Literal["SIMP"] = "SIMP"
     eta_init: float = 0.1
     eta: float = 0.5
@@ -64,7 +64,7 @@ def bisection_with_projection(
     return lmid, vol_error
 
 
-class OC_Optimizer(common.SensitivityAnalysis):
+class OC_Optimizer(common.DensityMethod):
     """
     Topology optimization solver using the classic Optimality Criteria (OC) method.
     This class implements the standard OC algorithm for compliance minimization problems.
@@ -89,11 +89,11 @@ class OC_Optimizer(common.SensitivityAnalysis):
     Attributes
     ----------
 
-    config : SensitivityConfig
+    config : DensityMethodConfig
         Configuration object specifying the interpolation method, volume fraction,
         continuation settings, filter radius, and other numerical parameters.
 
-    mesh, basis, etc. : inherited from common.SensitivityAnalysis
+    mesh, basis, etc. : inherited from common.DensityMethod
         FEM components required for simulation, including boundary conditions and loads.
 
     """

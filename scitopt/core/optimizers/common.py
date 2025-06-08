@@ -19,7 +19,7 @@ logger = mylogger(__name__)
 
 
 @dataclass
-class SensitivityConfig():
+class DensityMethodConfig():
     """
     Configuration class for controlling parameters in topology optimization.
 
@@ -187,7 +187,7 @@ class SensitivityConfig():
         return cls(**filtered_args)
 
     @classmethod
-    def import_from(cls, path: str) -> 'SensitivityConfig':
+    def import_from(cls, path: str) -> 'DensityMethodConfig':
         import json
         with open(f"{path}/cfg.json", "r") as f:
             data = json.load(f)
@@ -219,7 +219,7 @@ class SensitivityConfig():
             return None
 
 
-def interpolation_funcs(cfg: SensitivityConfig):
+def interpolation_funcs(cfg: DensityMethodConfig):
     if cfg.interpolation == "SIMP":
         # vol_frac = cfg.vol_frac_init
         return [
@@ -234,7 +234,7 @@ def interpolation_funcs(cfg: SensitivityConfig):
         raise ValueError("Interpolation method must be SIMP or RAMP.")
 
 
-class SensitivityAnalysis():
+class DensityMethod():
     """
     Base class for sensitivity-based topology optimization routines.
 
@@ -279,7 +279,7 @@ class SensitivityAnalysis():
     ----------
     tsk : TaskConfig
         Contains FEM mesh, basis, boundary condition data, and load vectors.
-    config : SensitivityConfig
+    config : DensityMethodConfig
         Holds numerical and algorithmic settings like filtering radius,
         penalization power, projection beta, etc.
 
@@ -287,7 +287,7 @@ class SensitivityAnalysis():
 
     def __init__(
         self,
-        cfg: SensitivityConfig,
+        cfg: DensityMethodConfig,
         tsk: scitopt.mesh.TaskConfig,
     ):
         self.cfg = cfg
