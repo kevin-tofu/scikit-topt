@@ -13,7 +13,7 @@
 - [scikit-fem](https://github.com/kinnala/scikit-fem)
 
 ## Documentation
-[Scikit-topt Documentation] (https://kevin-tofu.github.io/scikit-topt/)
+[Scikit-topt Documentation](https://scikit-topt.readthedocs.io/en/latest/)
 
 ## Examples and Fieatures
 ### Example 1 : Single Load Condition
