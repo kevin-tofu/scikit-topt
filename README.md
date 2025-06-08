@@ -228,7 +228,5 @@ Scikit-Topt is standing on the shoulders of proverbial giants. In particular, I 
 
 
 ## ToDo
-- Make workflow for multi-load cases efficient
 - Set break point from the optimization loop
-- Organize documentation
-- Add LevelSet
+- Add other optimizers
