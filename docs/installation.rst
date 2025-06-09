@@ -2,7 +2,7 @@ Installation
 ============
 
 SciTopt is a Python package that can be installed using pip or poetry.  
-It is compatible with Python 3.7 and later versions. To install SciTopt, follow these steps:
+It is compatible with Python 3.11 and later versions. To install SciTopt, follow these steps:
 
 **Install SciTopt**:  
 Open your terminal or command prompt and run one of the following commands:

@@ -24,7 +24,7 @@
 
 ### Example 2 : Multiple Load Condition
 <p align="center">
-  <img src="paper/figures/ex-multi-load-condition.png" alt="multi-load-condition" width="400" style="margin-right: 20px;">
+  <img src="paper/figures/ex-multi-load-condition.jpg" alt="multi-load-condition" width="400" style="margin-right: 20px;">
   <img src="paper/figures/ex-multi-load-v-50.jpg" alt="multi-load-condition-distribution" width="400">
 </p>
 

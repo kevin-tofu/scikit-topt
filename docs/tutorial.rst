@@ -101,7 +101,7 @@ Results and Visualization
 The results of the optimization are stored in the directory specified by cfg.dst_path.
 For example, it contains visualizations of the density distribution, as well as graphs showing the evolution of various parameters during the optimization process, such as the density field, volume fraction, and sensitivity values.
 
-.. image:: https://eye.kohei-kevin.com/wp-content/uploads/2025/05/image-4-1024x512.png
+.. image:: "paper/figures/ex-multi-load-condition.jpg"
    :alt: Alternative text
    :width: 400px
    :align: center
