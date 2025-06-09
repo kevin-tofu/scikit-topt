@@ -125,7 +125,7 @@ However, in the implementation of MOC with EMA, the control of the dual variable
 - Does not enforce volume constraints exactly—relies on penalty balancing.
 - Convergence behavior may vary depending on the problem and filter.
 
-2. Linear-Space Update Method (Not Implemented yet)
+2. Linear-Space Update Method
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This variant formulates the update as an explicit increment :math:`\Delta \rho` added to the current density. The update is defined as:
