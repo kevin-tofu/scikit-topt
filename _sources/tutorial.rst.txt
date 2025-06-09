@@ -103,7 +103,7 @@ For example, it contains visualizations of the density distribution, as well as 
 
 .. image:: "paper/figures/ex-multi-load-condition.jpg"
    :alt: Alternative text
-   :width: 400px
+   :width: 420px
    :align: center
 
 .. .. image:: https://eye.kohei-kevin.com/wp-content/uploads/2025/05/ex-pull-down-1-768x576.jpg
