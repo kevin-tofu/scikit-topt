@@ -103,12 +103,12 @@ For example, it contains visualizations of the density distribution, as well as 
 
 .. image:: _static/ex-multi-load-condition.jpg
    :alt: multi-load-condition
-   :width: 200px
+   :width: 400px
    :align: center
 
 .. image:: _static/ex-multi-load-v-50.jpg
    :alt: Multi-Load-condition-Density-Distribution
-   :width: 200px
+   :width: 400px
    :align: center
 
 .. .. image:: https://eye.kohei-kevin.com/wp-content/uploads/2025/05/ex-pull-down-1-768x576.jpg
