@@ -176,7 +176,7 @@ class DensityMethodConfig():
     lambda_lower: float = 1e-7
     lambda_upper: float = 1e+7
     sensitivity_filter: bool = False
-    solver_option: Literal["spsolve", "cg_pyamg"] = "cg_pyamg"
+    solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve"
     scaling: bool = False
 
     @classmethod
@@ -654,7 +654,7 @@ class DensityMethod():
             self.recorder.feed_data("u_max", u_max)
 
             if any(
-                (iter % (cfg.max_iters // self.cfg.record_times) == 0,
+                (iter % (cfg.max_iters // cfg.record_times) == 0,
                  iter == 1)
             ):
                 logger.info(f"Saving at iteration {iter}")

@@ -2,7 +2,7 @@ import scitopt
 # import pytest
 
 
-def test_define_task():
+def test_define_task() -> scitopt.mesh.task.TaskConfig:
 
     import skfem
     x_len, y_len, z_len = 1.0, 1.0, 1.0
@@ -34,7 +34,7 @@ def test_define_task():
         mesh,
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
-    _ = scitopt.mesh.task.TaskConfig.from_defaults(
+    return scitopt.mesh.task.TaskConfig.from_defaults(
         210e9,
         0.30,
         basis,
@@ -89,14 +89,15 @@ def loglagrangian_optimize(tsk):
 
 
 def test_optimizers():
-    tsk = scitopt.mesh.toy_problem.toy_test()
-    oc_ramp_optimize(tsk)
-    logmoc_optimize(tsk)
-    loglagrangian_optimize(tsk)
+    tsk1 = scitopt.mesh.toy_problem.toy_test()
+    oc_ramp_optimize(tsk1)
+    logmoc_optimize(tsk1)
+    loglagrangian_optimize(tsk1)
 
-    test_define_task()
-
+    tsk2 = test_define_task()
+    logmoc_optimize(tsk2)
 
 if __name__ == "__main__":
-    tsk = scitopt.mesh.toy_problem.toy_test()
-    loglagrangian_optimize(tsk)
+
+    tsk2 = test_define_task()
+    loglagrangian_optimize(tsk2)

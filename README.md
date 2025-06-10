@@ -92,7 +92,7 @@ basis = scitopt.mesh.loader.basis_from_file(
 ```Python
 x_len, y_len, z_len = 1.0, 1.0, 1.0
 element_size = 0.1
-e = skfem.ElementVector(skfem.ElementHex1())
+
 # import pathlib
 # msh_path = "model.msh"
 # mesh = skfem.MeshHex.load(pathlib.Path(msh_path))
@@ -101,6 +101,7 @@ e = skfem.ElementVector(skfem.ElementHex1())
 mesh = scitopt.mesh.toy_problem.create_box_hex(
   x_len, y_len, z_len, element_size
 )
+e = skfem.ElementVector(skfem.ElementHex1())
 basis = skfem.Basis(mesh, e, intorder=3)
 ```
 
