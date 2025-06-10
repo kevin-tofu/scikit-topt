@@ -93,6 +93,7 @@ basis = scitopt.mesh.loader.basis_from_file(
 x_len, y_len, z_len = 1.0, 1.0, 1.0
 element_size = 0.1
 e = skfem.ElementVector(skfem.ElementHex1())
+# import pathlib
 # msh_path = "model.msh"
 # mesh = skfem.MeshHex.load(pathlib.Path(msh_path))
 
@@ -105,9 +106,6 @@ basis = skfem.Basis(mesh, e, intorder=3)
 
 #### Set BCs and Force, and define task
 ```Python
-import pathlib
-import skfem
-import scitopt
 
 # Specify Dirichlet Boundary Conditions
 dirichlet_nodes = scitopt.mesh.utils.get_nodes_indices_in_range(
@@ -198,13 +196,7 @@ Scikit-Topt is standing on the shoulders of proverbial giants. In particular, I 
  - PyVista
  - Topology Optimization Community
 
-
-
-## Documentation
-
-- [Scikit-Topt](https://kevin-tofu.github.io/scitopt/)
-
-
 ## ToDo
 - Set break point from the optimization loop
 - Add other optimizers
+- Add Multiple BC Conditions
