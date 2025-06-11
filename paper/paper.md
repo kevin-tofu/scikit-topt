@@ -11,7 +11,7 @@ authors:
 affiliations:
  - name: AI Technology Office, Data Analytics R&D Dept, JTEKT
    index: 1
-date: 17 May 2025
+date: 10 Jun 2025
 bibliography: paper.bib
 ---
 
@@ -55,7 +55,6 @@ Scikit-topt avoids these issues by not including compiled code and depending onl
 For finite element matrix assembly, it uses Scikit-FEM[@skfem], which also contains no compiled components.
 
 Furthermore, Scikit-topt visualizes parameter transitions and material density evolution through Matplotlib[@hunter2007] and PyVista[@sullivan2019pyvista].
-This makes it easy to conduct parameter studies and compare optimization algorithms—potentially making it useful for integration with modern approaches involving machine learning.
 
 Scikit-topt implements topology optimization algorithms based on the density method, and currently supports the following features:
 
@@ -120,3 +119,5 @@ An example is shown below. The left figure shows the boundary conditions, while 
 ![Topology optimization setup under multiple load cases (left) and resulting optimized density distribution (right)](figures/ex-multi-load.jpg){ width=80% }
 
 ![Parameter progression during optimization](figures/ex-multi-load-v-progress.jpg){ width=80% }
+
+As an extensible and open framework, Scikit-topt aims to facilitate reproducible experimentation and accelerate the development of new topology optimization strategies.

@@ -200,4 +200,8 @@ Scikit-Topt is standing on the shoulders of proverbial giants. In particular, I 
 ## ToDo
 - Set break point from the optimization loop
 - Add other optimizers
+  - Evolutionary Algorithms
+  - Level Set
+  - Phase Field
+  - MMA
 - Add Multiple BC Conditions
