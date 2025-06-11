@@ -94,10 +94,8 @@ def test_optimizers():
     logmoc_optimize(tsk1)
     loglagrangian_optimize(tsk1)
 
-    tsk2 = test_define_task()
-    logmoc_optimize(tsk2)
 
 if __name__ == "__main__":
 
-    tsk2 = test_define_task()
-    loglagrangian_optimize(tsk2)
+    tsk = test_define_task()
+    loglagrangian_optimize(tsk)

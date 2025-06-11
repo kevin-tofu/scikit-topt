@@ -111,14 +111,9 @@ For example, it contains visualizations of the density distribution, as well as 
    :width: 400px
    :align: center
 
-.. .. image:: https://eye.kohei-kevin.com/wp-content/uploads/2025/05/ex-pull-down-1-768x576.jpg
-..    :alt: Alternative text
-..    :width: 400px
-..    :align: center
-
 .. raw:: html
 
    <video width="640" height="360" controls>
-     <source src="https://eye.kohei-kevin.com/wp-content/uploads/2025/05/animation-box-rho.mp4" type="video/mp4">
+     <source src="_static/animation-box-rho.mp4" type="video/mp4">
      Your browser does not support the video tag.
    </video>

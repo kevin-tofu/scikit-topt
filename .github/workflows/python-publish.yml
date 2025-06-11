@@ -24,6 +24,9 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-root
 
+      - name: Run tests
+        run: PYTHONPATH=. poetry run pytest
+
       - name: Build with Poetry
         run: poetry build
 
