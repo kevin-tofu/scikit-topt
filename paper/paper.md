@@ -1,5 +1,5 @@
 ---
-title: 'scikit-topt: A Python library for topology optimization'
+title: 'Scikit-Topt: A Python Library for Algorithm Development in Topology Optimization'
 tags:
   - Python
   - topology optimization
