@@ -65,6 +65,15 @@ def logmoc_optimize(tsk):
     optimizer.optimize()
 
 
+# def linearmoc_optimize(tsk):
+#     cfg = scitopt.core.optimizers.LinearMOC_Config()
+#     cfg.max_iters = 1
+#     cfg.record_times = 1
+#     optimizer = scitopt.core.LinearMOC_Optimizer(cfg, tsk)
+#     optimizer.parameterize()
+#     optimizer.optimize()
+
+
 def loglagrangian_optimize(tsk):
     cfg = scitopt.core.optimizers.LogLagrangian_Config(
         dst_path="./result/pytests"

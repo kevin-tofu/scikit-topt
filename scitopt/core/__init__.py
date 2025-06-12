@@ -2,6 +2,8 @@ from scitopt.core.optimizers.oc import OC_Config
 from scitopt.core.optimizers.oc import OC_Optimizer
 from scitopt.core.optimizers.logmoc import LogMOC_Config
 from scitopt.core.optimizers.logmoc import LogMOC_Optimizer
+# from scitopt.core.optimizers.linearmoc import LinearMOC_Config
+# from scitopt.core.optimizers.linearmoc import LinearMOC_Optimizer
 from scitopt.core.optimizers.loglagrangian import LogLagrangian_Config
 from scitopt.core.optimizers.loglagrangian import LogLagrangian_Optimizer
 from scitopt.core.optimizers.linearlagrangian import LinearLagrangian_Config
@@ -13,6 +15,8 @@ __all__ = [
     "OC_Optimizer",
     "LogMOC_Config",
     "LogMOC_Optimizer",
+    # "LinearMOC_Config",
+    # "LinearMOC_Optimizer",
     "LogLagrangian_Config",
     "LogLagrangian_Optimizer",
     "LinearLagrangian_Config",
