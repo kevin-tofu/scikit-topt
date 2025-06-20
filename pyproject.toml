@@ -22,7 +22,7 @@ dependencies = [
 
 [tool.poetry]
 name = "scitopt"
-version = "0.1.4"
+version = "0.1.6"
 description = ""
 authors = ["Kevin-Tofu <koheitech001@gmail.com>"]
 readme = "README.md"
