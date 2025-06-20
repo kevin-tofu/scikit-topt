@@ -27,6 +27,9 @@ jobs:
       - name: Run tests
         run: PYTHONPATH=. poetry run pytest
 
+      - name: Remove old build artifacts
+        run: rm -rf dist/*
+
       - name: Build with Poetry
         run: poetry build
 
