@@ -196,7 +196,6 @@ def toy2():
     F_dofs_1 = basis.get_dofs(nodes=F_nodes_1).nodal["u^2"]
     design_elements = utils.get_elements_in_box(
         mesh,
-        # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
 
