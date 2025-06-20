@@ -205,3 +205,4 @@ Scikit-Topt is standing on the shoulders of proverbial giants. In particular, I 
   - Phase Field
   - MMA
 - Add Multiple BC Conditions
+- Add Constraint for Rotation

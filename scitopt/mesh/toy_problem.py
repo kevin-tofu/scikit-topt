@@ -60,7 +60,7 @@ def create_box_tet(x_len, y_len, z_len, mesh_size):
     return mesh_fixed
 
 
-def toy_base(
+def toy_base0(
     mesh_size: float,
     intorder: int = 2
 ):
@@ -103,6 +103,46 @@ def toy_base(
         dirichlet_dofs,
         F_nodes,
         F_dofs,
+        F,
+        design_elements
+    )
+
+
+def toy_base(
+    mesh_size: float,
+    intorder: int = 2
+):
+    x_len = 8.0
+    y_len = 6.0
+    z_len = 4.0
+    eps = 1.2
+
+    mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
+    e = skfem.ElementVector(skfem.ElementHex1())
+    basis = skfem.Basis(mesh, e, intorder=intorder)
+    dirichlet_nodes = utils.get_nodes_indices_in_range(
+        basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
+    )
+    F_nodes = utils.get_nodes_indices_in_range(
+        basis,
+        (x_len - eps, x_len+0.1), (y_len*2/5, y_len*3/5), (z_len-eps, z_len)
+    )
+    
+    design_elements = utils.get_elements_in_box(
+        mesh,
+        (0.0, x_len), (0.0, y_len), (0.0, z_len)
+    )
+    E0 = 210e9
+    F = -100.0
+
+    return task.TaskConfig.from_nodes(
+        E0,
+        0.30,
+        basis,
+        dirichlet_nodes,
+        "all",
+        F_nodes,
+        "u^3",
         F,
         design_elements
     )

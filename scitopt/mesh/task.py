@@ -1,3 +1,4 @@
+from typing import Literal
 from dataclasses import dataclass
 import numpy as np
 import skfem
@@ -11,6 +12,10 @@ def setdiff1d(a, b):
     mask = ~np.isin(a, b)
     a = a[mask]
     return np.ascontiguousarray(a)
+
+
+_lit_bc = Literal['u^1', 'u^2', 'u^3', 'all']
+_lit_force = Literal['u^1', 'u^2', 'u^3']
 
 
 @dataclass
@@ -82,6 +87,55 @@ class TaskConfig():
     @property
     def mesh(self):
         return self.basis.mesh
+    
+    
+    @classmethod
+    def from_nodes(
+        cls,
+        E: float,
+        nu: float,
+        basis: skfem.Basis,
+        dirichlet_nodes: np.ndarray | list[np.ndarray],
+        dirichlet_dir: _lit_bc | list[_lit_bc],
+        force_nodes: np.ndarray | list[np.ndarray],
+        force_dir: _lit_force | list[_lit_force],
+        force_value: float | list[float],
+        design_elements: np.ndarray,
+    ):
+        if isinstance(dirichlet_nodes, list):
+            dirichlet_dofs = [
+                basis.get_dofs(nodes=nodes).all() if direction == 'all'
+                else basis.get_dofs(nodes=nodes).nodal[direction]
+                for nodes, direction in zip(dirichlet_nodes, dirichlet_dir)
+            ]
+            dirichlet_dofs = np.concatenate(dirichlet_dofs)
+            dirichlet_nodes = np.concatenate(dirichlet_nodes)
+        elif isinstance(dirichlet_nodes, np.ndarray):
+            dofs = basis.get_dofs(nodes=dirichlet_nodes)
+            dirichlet_dofs = dofs.all() if dirichlet_dir == 'all' \
+                else dofs.nodal[dirichlet_dir]
+        else:
+            raise ValueError("dirichlet_nodes is not np.ndarray or of list")        
+        
+        if isinstance(force_nodes, list):
+            force_dofs = [
+                basis.get_dofs(nodes=n_loop).nodal[dir_loop]
+                for n_loop, dir_loop in zip(
+                    force_nodes, force_dir
+                )
+            ]
+        elif isinstance(force_nodes, np.ndarray):
+            force_dofs = basis.get_dofs(nodes=force_nodes).nodal[force_dir]
+        else:
+            raise ValueError("force_nodes is not np.ndarray or of list")        
+        
+        return cls.from_defaults(
+            E, nu, basis,
+            dirichlet_nodes, dirichlet_dofs,
+            force_nodes, force_dofs, force_value,
+            design_elements
+        )
+
 
     @classmethod
     def from_defaults(
