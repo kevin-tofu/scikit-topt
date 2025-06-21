@@ -70,8 +70,8 @@ If you use Scikit Topt in your research or software, please cite it as:
 ## Usage
 ### Install Package
 ```bash
-pip install scikit-topt
-poetry add scikit-topt
+pip install sktopt
+poetry add sktopt
 ```
 
 
