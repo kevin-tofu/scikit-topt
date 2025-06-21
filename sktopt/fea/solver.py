@@ -4,8 +4,8 @@ import scipy
 from scipy.sparse.linalg import LinearOperator
 import skfem
 import pyamg
-from scitopt.fea import composer
-from scitopt.tools.logconf import mylogger
+from sktopt.fea import composer
+from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 
 
@@ -280,7 +280,7 @@ def compute_compliance_batch(
 
 
 if __name__ == '__main__':
-    from scitopt.mesh import toy_problem
+    from sktopt.mesh import toy_problem
     tsk = toy_problem.toy_msh("plate-0.2.msh")
     rho = np.ones(tsk.all_elements.shape)
     p = 1.0

@@ -1,7 +1,7 @@
-scitopt.mesh.task
+sktopt.mesh.task
 ==============================
 
-.. automodule:: scitopt.mesh.task
+.. automodule:: sktopt.mesh.task
    :members:
    :no-index:
    :undoc-members:

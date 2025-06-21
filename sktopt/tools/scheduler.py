@@ -4,7 +4,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-from scitopt.tools.logconf import mylogger
+from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 
 

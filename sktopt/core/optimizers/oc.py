@@ -1,11 +1,11 @@
 from typing import Literal
 from dataclasses import dataclass
 import numpy as np
-import scitopt
-from scitopt.core import projection
-from scitopt.core import misc
-from scitopt.core.optimizers import common
-from scitopt.tools.logconf import mylogger
+import sktopt
+from sktopt.core import projection
+from sktopt.core import misc
+from sktopt.core.optimizers import common
+from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 
 
@@ -101,7 +101,7 @@ class OC_Optimizer(common.DensityMethod):
     def __init__(
         self,
         cfg: OC_Config,
-        tsk: scitopt.mesh.TaskConfig,
+        tsk: sktopt.mesh.TaskConfig,
     ):
         assert cfg.lambda_lower < cfg.lambda_upper
         super().__init__(cfg, tsk)
@@ -183,7 +183,7 @@ class OC_Optimizer(common.DensityMethod):
 if __name__ == '__main__':
 
     import argparse
-    from scitopt.mesh import toy_problem
+    from sktopt.mesh import toy_problem
 
     parser = argparse.ArgumentParser(
         description=''

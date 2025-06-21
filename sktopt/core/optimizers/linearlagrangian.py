@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 import numpy as np
-import scitopt
-from scitopt.core.optimizers import common
-from scitopt.tools.logconf import mylogger
+import sktopt
+from sktopt.core.optimizers import common
+from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 
 
 @dataclass
-class LogLagrangian_Config(common.DensityMethodConfig):
+class LinearLagrangian_Config(common.DensityMethodConfig):
     """
     Configuration for Log-space Lagrangian Gradient Update method.
 
@@ -64,7 +64,7 @@ class LogLagrangian_Config(common.DensityMethodConfig):
 # log(x) = +0.4   →   x ≈ 1.492
 
 
-def kkt_log_update(
+def kkt_update(
     rho,
     dC, lambda_v, scaling_rate,
     eta, move_limit,
@@ -88,15 +88,6 @@ def kkt_log_update(
     - tmp_lower, tmp_upper, scaling_rate: work arrays (same shape as rho)
     """
 
-    # eps = 1e-8
-    # Compute dL = dC + lambda_v
-    # np.copyto(scaling_rate, dC)
-    # scaling_rate += lambda_v
-    # norm = np.percentile(np.abs(scaling_rate), percentile) + 1e-8
-    # scaling_rate /= norm
-
-    # Normalize: subtract mean
-    # print(f"interpolation: {interpolation}")
     np.copyto(scaling_rate, dC)
     if percentile > 0:
         if interpolation == "SIMP":
@@ -116,48 +107,17 @@ def kkt_log_update(
         pass
 
     clip_range = 1.0
-    # np.copyto(scaling_rate, dC)
-    # np.clip(scaling_rate, -clip_range, clip_range, out=scaling_rate)
-    scaling_rate += lambda_v
+    scaling_rate += lambda_v  # = ∂C/∂ρ + λ ∂g/∂ρ
     np.clip(scaling_rate, -clip_range, clip_range, out=scaling_rate)
 
-    # Ensure rho is in [rho_min, 1.0] before log
-    np.clip(rho, rho_min, 1.0, out=rho)
-
-    # tmp_lower = log(rho)
-    np.log(rho, out=tmp_lower)
-
-    # tmp_upper = exp(log(rho)) = rho
-    np.exp(tmp_lower, out=tmp_upper)
-
-    # tmp_upper = log(1 + move / rho)
-    np.divide(move_limit, tmp_upper, out=tmp_upper)
-    np.add(tmp_upper, 1.0, out=tmp_upper)
-    np.log(tmp_upper, out=tmp_upper)
-
-    # tmp_lower = lower bound in log-space
-    np.subtract(tmp_lower, tmp_upper, out=tmp_lower)
-
-    # tmp_upper = upper bound in log-space
-    np.add(tmp_lower, 2.0 * tmp_upper, out=tmp_upper)
-
-    # rho = log(rho)
-    np.log(rho, out=rho)
-
-    # Update in log-space
+    tmp_lower = np.maximum(rho - move_limit, rho_min)
+    tmp_upper = np.minimum(rho + move_limit, rho_max)
     rho -= eta * scaling_rate
-
-    # Apply move limits
     np.clip(rho, tmp_lower, tmp_upper, out=rho)
-
-    # Convert back to real space
-    np.exp(rho, out=rho)
-
-    # Final clipping
     np.clip(rho, rho_min, rho_max, out=rho)
 
 
-class LogLagrangian_Optimizer(common.DensityMethod):
+class LinearLagrangian_Optimizer(common.DensityMethod):
     """
     Topology optimization solver using log-space Lagrangian gradient descent.
 
@@ -205,8 +165,8 @@ class LogLagrangian_Optimizer(common.DensityMethod):
 
     def __init__(
         self,
-        cfg: LogLagrangian_Config,
-        tsk: scitopt.mesh.TaskConfig,
+        cfg: LinearLagrangian_Config,
+        tsk: sktopt.mesh.TaskConfig,
     ):
         assert cfg.lambda_lower < 0
         assert cfg.lambda_upper > 0
@@ -246,11 +206,27 @@ class LogLagrangian_Optimizer(common.DensityMethod):
         self.lambda_v = np.clip(
             self.lambda_v, cfg.lambda_lower, cfg.lambda_upper
         )
+
+        # Volume Penalty
+        # volume = np.sum(
+        #     rho_projected[tsk.design_elements] * elements_volume_design
+        # ) / elements_volume_design_sum
+        # volume_ratio = volume / vol_frac  # Target = 1.0
+
+        # # error in volume ratio ( without log)
+        # vol_error = volume_ratio - 1.0  # >0: over, <0: under
+
+        # # Averaging with EMA
+        # temp = cfg.lambda_decay * self.lambda_v
+        # temp += (1 - cfg.lambda_decay) * cfg.mu_p * vol_error
+        self.lambda_v = np.clip(
+            self.lambda_v, cfg.lambda_lower, cfg.lambda_upper
+        )
         self.recorder.feed_data("lambda_v", self.lambda_v)
         self.recorder.feed_data("vol_error", vol_error)
         self.recorder.feed_data("dC", dC_drho_ave)
 
-        kkt_log_update(
+        kkt_update(
             rho=rho_candidate,
             dC=dC_drho_ave,
             lambda_v=self.lambda_v, scaling_rate=scaling_rate,
@@ -265,8 +241,8 @@ class LogLagrangian_Optimizer(common.DensityMethod):
 
 if __name__ == '__main__':
     import argparse
-    from scitopt.mesh import toy_problem
-    from scitopt.core import misc
+    from sktopt.mesh import toy_problem
+    from sktopt.core import misc
 
     parser = argparse.ArgumentParser(
         description=''
@@ -294,12 +270,12 @@ if __name__ == '__main__':
 
     print("load toy problem")
     print("generate LogLagrangian_Config")
-    cfg = LogLagrangian_Config.from_defaults(
+    cfg = LinearLagrangian_Config.from_defaults(
         **vars(args)
     )
 
     print("optimizer")
-    optimizer = LogLagrangian_Optimizer(cfg, tsk)
+    optimizer = LinearLagrangian_Optimizer(cfg, tsk)
     print("parameterize")
     optimizer.parameterize()
     # optimizer.parameterize(preprocess=False)

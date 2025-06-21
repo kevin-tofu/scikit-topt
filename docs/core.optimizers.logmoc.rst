@@ -1,7 +1,7 @@
-scitopt.core.optimizers.logmoc
+sktopt.core.optimizers.logmoc
 ==============================
 
-.. automodule:: scitopt.core.optimizers.logmoc
+.. automodule:: sktopt.core.optimizers.logmoc
    :members:
    :no-index:
    :undoc-members:

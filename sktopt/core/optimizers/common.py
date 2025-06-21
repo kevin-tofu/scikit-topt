@@ -5,16 +5,16 @@ import shutil
 import json
 from dataclasses import dataclass, asdict
 import numpy as np
-import scitopt
-from scitopt import tools
-from scitopt.core import derivatives, projection
-from scitopt.core import visualization
-from scitopt.mesh import visualization as visualization_mesh
-from scitopt.fea import solver
-from scitopt import filter
-from scitopt.fea import composer
-from scitopt.core import misc
-from scitopt.tools.logconf import mylogger
+import sktopt
+from sktopt import tools
+from sktopt.core import derivatives, projection
+from sktopt.core import visualization
+from sktopt.mesh import visualization as visualization_mesh
+from sktopt.fea import solver
+from sktopt import filter
+from sktopt.fea import composer
+from sktopt.core import misc
+from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 
 
@@ -288,7 +288,7 @@ class DensityMethod():
     def __init__(
         self,
         cfg: DensityMethodConfig,
-        tsk: scitopt.mesh.TaskConfig,
+        tsk: sktopt.mesh.TaskConfig,
     ):
         self.cfg = cfg
         self.tsk = tsk

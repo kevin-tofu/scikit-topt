@@ -480,7 +480,7 @@ if __name__ == '__main__':
 
     @profile
     def test_1():
-        from scitopt.mesh import toy_problem
+        from sktopt.mesh import toy_problem
 
         tsk = toy_problem.toy_msh("plate-0.2.msh")
         rho = np.ones(tsk.all_elements.shape)
@@ -595,7 +595,7 @@ if __name__ == '__main__':
     @profile
     def test_2():
         import time
-        from scitopt.mesh import toy_problem
+        from sktopt.mesh import toy_problem
         # tsk = toy_problem.toy1()
         tsk = toy_problem.toy_msh("plate-0.2.msh")
         rho = np.ones(tsk.all_elements.shape)
@@ -627,8 +627,8 @@ if __name__ == '__main__':
 
     @profile
     def test_3():
-        import scitopt
-        from scitopt.mesh import toy_problem
+        import sktopt
+        from sktopt.mesh import toy_problem
 
         tsk = toy_problem.toy_msh("plate-0.2.msh")
         rho = np.ones(tsk.all_elements.shape)
@@ -657,9 +657,9 @@ if __name__ == '__main__':
 
         # U1_e = scipy.sparse.linalg.spsolve(K1_e, F1_e)
         # U2_e = scipy.sparse.linalg.spsolve(K2_e, F2_e)
-        U0_e = scitopt.fea.solver.solve_u(K0_e, F0_e, chosen_solver="cg_pyamg")
-        # U1_e = scitopt.fea.solver.solve_u(K1_e, F1_e, chosen_solver="cg_pyamg")
-        U2_e = scitopt.fea.solver.solve_u(K2_e, F2_e, chosen_solver="cg_pyamg")
+        U0_e = sktopt.fea.solver.solve_u(K0_e, F0_e, chosen_solver="cg_pyamg")
+        # U1_e = sktopt.fea.solver.solve_u(K1_e, F1_e, chosen_solver="cg_pyamg")
+        U2_e = sktopt.fea.solver.solve_u(K2_e, F2_e, chosen_solver="cg_pyamg")
 
         print("U0_e ave :", np.average(U0_e))
         # print("U1_e ave :", np.average(U1_e))
@@ -688,7 +688,7 @@ if __name__ == '__main__':
         # U1_e = scipy.sparse.linalg.spsolve(K1_e, F1_e)
         # u = U1_e
         # u = tsk.basis.interpolate(U0_e)
-        compliance, u_compliance = scitopt.fea.solver.compute_compliance_basis(
+        compliance, u_compliance = sktopt.fea.solver.compute_compliance_basis(
             tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, _F,
             tsk.E0, tsk.Emin, 1.0, tsk.nu0,
             rho,
@@ -745,8 +745,8 @@ if __name__ == '__main__':
     @profile
     def test_4():
         from skfem.helpers import ddot
-        import scitopt
-        from scitopt.mesh import toy_problem
+        import sktopt
+        from sktopt.mesh import toy_problem
 
         tsk = toy_problem.toy_msh("plate-0.2.msh")
         rho = np.ones(tsk.all_elements.shape)
@@ -756,7 +756,7 @@ if __name__ == '__main__':
         )
         _F = tsk.force
         K_e, F_e = skfem.enforce(K0, _F, D=tsk.dirichlet_nodes)
-        u = scitopt.fea.solver.solve_u(K_e, F_e, chosen_solver="cg_pyamg")
+        u = sktopt.fea.solver.solve_u(K_e, F_e, chosen_solver="cg_pyamg")
         print(
             "np.sum(u[tsk.dirichlet_nodes]):", np.sum(u[tsk.dirichlet_nodes])
         )

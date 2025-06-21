@@ -3,8 +3,8 @@ import numpy as np
 import skfem
 from skfem import MeshTet
 import meshio
-from scitopt.mesh import task
-from scitopt.mesh import utils
+from sktopt.mesh import task
+from sktopt.mesh import utils
 
 
 def create_box_hex(x_len, y_len, z_len, mesh_size):
@@ -344,7 +344,7 @@ def toy_msh(
 
 if __name__ == '__main__':
 
-    from scitopt.fea import solver
+    from sktopt.fea import solver
     tsk = toy1()
     rho = np.ones_like(tsk.design_elements)
     p = 3.0

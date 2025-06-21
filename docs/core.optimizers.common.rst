@@ -1,7 +1,7 @@
-scitopt.core.optimizers.common
+sktopt.core.optimizers.common
 ==============================
 
-.. automodule:: scitopt.core.optimizers.common
+.. automodule:: sktopt.core.optimizers.common
    :members:
    :no-index:
    :undoc-members:

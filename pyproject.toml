@@ -1,5 +1,5 @@
 [project]
-name = "scitopt"
+name = "sktopt"
 version = "0.1.6"
 description = ""
 authors = [
@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [tool.poetry]
-name = "scitopt"
+name = "sktopt"
 version = "0.1.6"
 description = ""
 authors = ["Kevin-Tofu <koheitech001@gmail.com>"]

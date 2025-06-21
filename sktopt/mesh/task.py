@@ -4,8 +4,8 @@ import numpy as np
 import skfem
 from scipy.spatial import cKDTree
 import matplotlib.pyplot as plt
-from scitopt.mesh import utils
-from scitopt.fea import composer
+from sktopt.mesh import utils
+from sktopt.fea import composer
 
 
 def setdiff1d(a, b):

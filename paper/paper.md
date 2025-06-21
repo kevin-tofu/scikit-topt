@@ -90,21 +90,21 @@ Then, `OC_Config` sets the optimization parameters such as volume fraction and i
 
 ```python
 
-import skfem, scitopt
+import skfem, sktopt
 
 mesh_path = "./data/model.msh"
-basis = scitopt.mesh.loader.basis_from_file(mesh_path, intorder=2)
+basis = sktopt.mesh.loader.basis_from_file(mesh_path, intorder=2)
 
-task = scitopt.mesh.task.TaskConfig.from_defaults(
+task = sktopt.mesh.task.TaskConfig.from_defaults(
     210e9, 0.30, basis, dirichlet_nodes...
 )
-cfg = scitopt.core.OC_Config(
+cfg = sktopt.core.OC_Config(
     dst_path="./result",
     vol_frac=0.4,
     max_iter=100...
 )
 
-optimizer = scitopt.core.OC_Optimizer(cfg, task)
+optimizer = sktopt.core.OC_Optimizer(cfg, task)
 
 optimizer.parameterize()
 optimizer.optimize()
