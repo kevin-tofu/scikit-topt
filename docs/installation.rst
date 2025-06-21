@@ -9,11 +9,11 @@ Open your terminal or command prompt and run one of the following commands:
 
 - Using pip::
 
-      pip install sktopt
+      pip install scikit-topt
 
 - Using poetry::
 
-      poetry add sktopt
+      poetry add scikit-topt
 
 **Verify the installation**:  
 After the installation is complete, you can verify that sktopt is installed correctly by running the following command::
