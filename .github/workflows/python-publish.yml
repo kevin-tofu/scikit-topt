@@ -3,10 +3,14 @@ name: Upload Python Package
 on:
   release:
     types: [published]
+  
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./scikit-topt
 
     steps:
       - uses: actions/checkout@v4
