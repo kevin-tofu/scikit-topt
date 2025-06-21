@@ -25,14 +25,17 @@ jobs:
       - name: Set up Poetry
         uses: abatilo/actions-poetry@v2
         with:
-          poetry-version: "2.1.2"
+          poetry-version: "1.8.3"
       
       - name: Show structure
         run: tree -L 3
+        
+      - name: Remove old build artifacts
+        run: rm -rf dist/*
 
       - name: Install dependencies
         run: poetry install --no-root
-
+        
       - name: Run tests
         run: PYTHONPATH=scikit-topt poetry run pytest
 
