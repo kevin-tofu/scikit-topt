@@ -1,6 +1,6 @@
 [project]
 name = "sktopt"
-version = "0.1.6"
+version = "0.1.7"
 description = ""
 authors = [
     { name = "Kevin-Tofu", email = "koheitech001@gmail.com" }
@@ -22,7 +22,7 @@ dependencies = [
 
 [tool.poetry]
 name = "sktopt"
-version = "0.1.6"
+version = "0.1.7"
 description = ""
 authors = ["Kevin-Tofu <koheitech001@gmail.com>"]
 readme = "README.md"
