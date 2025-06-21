@@ -1,8 +1,8 @@
-[![PyPI version](https://img.shields.io/pypi/v/scitopt.svg?cacheSeconds=60)](https://pypi.org/project/scitopt/)
+[![PyPI version](https://img.shields.io/pypi/v/sktopt.svg?cacheSeconds=60)](https://pypi.org/project/sktopt/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![DOI](https://zenodo.org/badge/957674835.svg)](https://doi.org/10.5281/zenodo.15441499)
-[![Python Version](https://img.shields.io/pypi/pyversions/scitopt.svg)](https://pypi.org/project/scitopt/)
-[![PyPI Downloads](https://static.pepy.tech/badge/scitopt)](https://pepy.tech/projects/scitopt)
+[![Python Version](https://img.shields.io/pypi/pyversions/sktopt.svg)](https://pypi.org/project/sktopt/)
+[![PyPI Downloads](https://static.pepy.tech/badge/sktopt)](https://pepy.tech/projects/sktopt)
 ![CI](https://github.com/kevin-tofu/scikit-topt/actions/workflows/python-tests.yml/badge.svg)
 ![CI](https://github.com/kevin-tofu/scikit-topt/actions/workflows/sphinx.yml/badge.svg)
 
@@ -70,8 +70,8 @@ If you use Scikit Topt in your research or software, please cite it as:
 ## Usage
 ### Install Package
 ```bash
-pip install scitopt
-poetry add scitopt
+pip install sktopt
+poetry add sktopt
 ```
 
 
@@ -80,10 +80,10 @@ poetry add scitopt
 ### Load Mesh file from file.
 ```Python
 import skfem
-import scitopt
+import sktopt
 
 mesh_path = "./data/model.msh"
-basis = scitopt.mesh.loader.basis_from_file(
+basis = sktopt.mesh.loader.basis_from_file(
   mesh_path, intorder=3
 )
 ```
@@ -98,7 +98,7 @@ element_size = 0.1
 # mesh = skfem.MeshHex.load(pathlib.Path(msh_path))
 
 # define basis
-mesh = scitopt.mesh.toy_problem.create_box_hex(
+mesh = sktopt.mesh.toy_problem.create_box_hex(
   x_len, y_len, z_len, element_size
 )
 e = skfem.ElementVector(skfem.ElementHex1())
@@ -109,36 +109,36 @@ basis = skfem.Basis(mesh, e, intorder=3)
 ```Python
 
 # Specify Dirichlet Boundary Conditions
-dirichlet_nodes = scitopt.mesh.utils.get_nodes_indices_in_range(
+dirichlet_nodes = sktopt.mesh.utils.get_nodes_indices_in_range(
     basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
 )
-dirichlet_dofs = basis.get_dofs(nodes=dirichlet_nodes).all()
+dirichlet_dir = "all"
 
 # Define Force Vector
-F_nodes = scitopt.mesh.utils.get_nodes_indices_in_range(
+F_nodes = sktopt.mesh.utils.get_nodes_indices_in_range(
     basis,
     (x_len, x_len),
     (y_len*2/5, y_len*3/5),
     (z_len*2/5, z_len*3/5)
 )
-F_dofs = basis.get_dofs(nodes=F_nodes).nodal["u^1"]
+F_dir = "u^1"
 F = 100
 
 # Specify Design Field
-design_elements = scitopt.mesh.utils.get_elements_in_box(
+design_elements = sktopt.mesh.utils.get_elements_in_box(
     mesh,
     (0.0, x_len), (0.0, y_len), (0.0, z_len)
 )
 
 # Define it as a task
-tsk = scitopt.mesh.task.TaskConfig.from_defaults(
+tsk = sktopt.mesh.task.TaskConfig.from_nodes(
     210e9,
     0.30,
     basis,
     dirichlet_nodes,
-    dirichlet_dofs,
+    dirichlet_dir,
     F_nodes,
-    F_dofs,
+    F_dir,
     F,
     design_elements
 )
@@ -148,12 +148,12 @@ tsk = scitopt.mesh.task.TaskConfig.from_defaults(
 ### Optimize Toy Problem with Python Script
 
 ```Python
-import scitopt
+import sktopt
 
-tsk = scitopt.mesh.toy_problem.toy1()
-cfg = scitopt.core.LogMOC_Config()
+tsk = sktopt.mesh.toy_problem.toy1()
+cfg = sktopt.core.LogMOC_Config()
 
-optimizer = scitopt.core.LogMOC_Optimizer(cfg, tsk)
+optimizer = sktopt.core.LogMOC_Optimizer(cfg, tsk)
 
 optimizer.parameterize()
 optimizer.optimize()
@@ -162,7 +162,7 @@ optimizer.optimize()
 
 ### Optimize Toy Problem with command line.
 ```bash
-OMP_NUM_THREADS=3 OPENBLAS_NUM_THREADS=3 MKL_NUM_THREADS=3 PYTHONPATH=./ python ./scitopt/core/optimizer/logmoc.py \
+OMP_NUM_THREADS=3 OPENBLAS_NUM_THREADS=3 MKL_NUM_THREADS=3 PYTHONPATH=./ python ./sktopt/core/optimizer/logmoc.py \
  --dst_path ./result/base_moc_down \
  --interpolation SIMP \
  --vol_frac 0.40 \
