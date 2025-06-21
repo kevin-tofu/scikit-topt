@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>scitopt.mesh.task &mdash; scikit-topt 0.1.6 documentation</title>
+  <title>sktopt.mesh.task &mdash; scikit-topt 0.1.7 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -14,14 +14,14 @@
     <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/mesh.task.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=6e0256f3"></script>
+      <script src="_static/documentation_options.js?v=ca7ad2ea"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="scitopt.mesh.utils" href="mesh.utils.html" />
-    <link rel="prev" title="scitopt.core.optimizers.loglagrangian" href="core.optimizers.loglagrangian.html" /> 
+    <link rel="next" title="sktopt.mesh.utils" href="mesh.utils.html" />
+    <link rel="prev" title="sktopt.core.optimizers.loglagrangian" href="core.optimizers.loglagrangian.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -50,12 +50,12 @@
 <li class="toctree-l1"><a class="reference internal" href="theory.html">Topology Optimization Algorithm Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization Algorithms in Density-Based Topology Optimization</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="api.html">API Reference</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="core.optimizers.common.html">scitopt.core.optimizers.common</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.optimizers.oc.html">scitopt.core.optimizers.oc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.optimizers.logmoc.html">scitopt.core.optimizers.logmoc</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core.optimizers.loglagrangian.html">scitopt.core.optimizers.loglagrangian</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">scitopt.mesh.task</a></li>
-<li class="toctree-l2"><a class="reference internal" href="mesh.utils.html">scitopt.mesh.utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.optimizers.common.html">sktopt.core.optimizers.common</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.optimizers.oc.html">sktopt.core.optimizers.oc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.optimizers.logmoc.html">sktopt.core.optimizers.logmoc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core.optimizers.loglagrangian.html">sktopt.core.optimizers.loglagrangian</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">sktopt.mesh.task</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mesh.utils.html">sktopt.mesh.utils</a></li>
 </ul>
 </li>
 </ul>
@@ -75,7 +75,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="api.html">API Reference</a></li>
-      <li class="breadcrumb-item active">scitopt.mesh.task</li>
+      <li class="breadcrumb-item active">sktopt.mesh.task</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/mesh.task.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -85,11 +85,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="scitopt-mesh-task">
-<h1>scitopt.mesh.task<a class="headerlink" href="#scitopt-mesh-task" title="Link to this heading"></a></h1>
+  <section id="sktopt-mesh-task">
+<h1>sktopt.mesh.task<a class="headerlink" href="#sktopt-mesh-task" title="Link to this heading"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scitopt.mesh.task.</span></span><span class="sig-name descname"><span class="pre">TaskConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">E</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nu</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CellBasis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirichlet_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirichlet_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirichlet_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">free_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">free_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirichlet_force_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elements_volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.mesh.task.</span></span><span class="sig-name descname"><span class="pre">TaskConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">E</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nu</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CellBasis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirichlet_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirichlet_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirichlet_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">free_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">free_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirichlet_force_elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elements_volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Container for storing finite element and optimization-related data
 used in topology optimization tasks.</p>
@@ -421,7 +421,7 @@ filters out non-designable elements, and constructs force vectors.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">scitopt.mesh.task.</span></span><span class="sig-name descname"><span class="pre">setdiff1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span></dt>
+<span class="sig-prename descclassname"><span class="pre">sktopt.mesh.task.</span></span><span class="sig-name descname"><span class="pre">setdiff1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span></dt>
 <dd></dd></dl>
 
 </section>
@@ -430,8 +430,8 @@ filters out non-designable elements, and constructs force vectors.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="core.optimizers.loglagrangian.html" class="btn btn-neutral float-left" title="scitopt.core.optimizers.loglagrangian" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="mesh.utils.html" class="btn btn-neutral float-right" title="scitopt.mesh.utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="core.optimizers.loglagrangian.html" class="btn btn-neutral float-left" title="sktopt.core.optimizers.loglagrangian" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mesh.utils.html" class="btn btn-neutral float-right" title="sktopt.mesh.utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

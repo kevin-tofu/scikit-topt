@@ -13,15 +13,15 @@ Optimizer Configuration, and Run
 
 .. code-block:: python
 
-   import scitopt
+   import sktopt
 
-   cfg = scitopt.core.optimizers.LogMOC_Config(
+   cfg = sktopt.core.optimizers.LogMOC_Config(
         vol_frac=0.6,
         max_iters=40,
         record_times=40,
         export_img=True
     )
-    optimizer = scitopt.core.LogMOC_Optimizer(cfg, mytask)
+    optimizer = sktopt.core.LogMOC_Optimizer(cfg, mytask)
     optimizer.parameterize()
     optimizer.optimize()
 
@@ -36,14 +36,14 @@ Shape modeling and its basis function
 .. code-block:: python
 
     import skfem
-    import scitopt
+    import sktopt
 
     x_len = 8.0
     y_len = 8.0
     z_len = 1.0
     mesh_size = 0.2
 
-    mesh = scitopt.mesh.toy_problem.create_box_hex(
+    mesh = sktopt.mesh.toy_problem.create_box_hex(
         x_len, y_len, z_len, mesh_size
     )
     e = skfem.ElementVector(skfem.ElementHex1())
@@ -56,10 +56,10 @@ Load Basis from Model File
 .. code-block:: python
 
     import skfem
-    import scitopt
+    import sktopt
 
     mesh_path = "./data/model.msh"
-    basis = scitopt.mesh.loader.basis_from_file(mesh_path, intorder=3)
+    basis = sktopt.mesh.loader.basis_from_file(mesh_path, intorder=3)
 
 
 Task Configuration
@@ -67,26 +67,26 @@ Task Configuration
 
 .. code-block:: python
 
-    dirichlet_nodes = scitopt.mesh.utils.get_nodes_indices_in_range(
+    dirichlet_nodes = sktopt.mesh.utils.get_nodes_indices_in_range(
         basis, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
     dirichlet_dir = "all"
 
-    F_nodes_0 = scitopt.mesh.utils.get_nodes_indices_in_range(
+    F_nodes_0 = sktopt.mesh.utils.get_nodes_indices_in_range(
         basis, (x_len, x_len), (y_len, y_len), (0, z_len)
     )
-    F_nodes_1 = scitopt.mesh.utils.get_nodes_indices_in_range(
+    F_nodes_1 = sktopt.mesh.utils.get_nodes_indices_in_range(
         basis, (x_len, x_len), (0, 0), (0, z_len)
     )
     F_nodes = [F_nodes_0, F_nodes_1]
     F_dir = ["u^2", "u^2"]
     F = [-100, 100]
-    design_elements = scitopt.mesh.utils.get_elements_in_box(
+    design_elements = sktopt.mesh.utils.get_elements_in_box(
         mesh,
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
 
-    mytask = scitopt.mesh.task.TaskConfig.from_nodes(
+    mytask = sktopt.mesh.task.TaskConfig.from_nodes(
         E0,
         nu,
         basis,

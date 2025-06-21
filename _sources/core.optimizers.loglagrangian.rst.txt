@@ -1,7 +1,7 @@
-scitopt.core.optimizers.loglagrangian
+sktopt.core.optimizers.loglagrangian
 ========================================
 
-.. automodule:: scitopt.core.optimizers.loglagrangian
+.. automodule:: sktopt.core.optimizers.loglagrangian
    :members:
    :no-index:
    :undoc-members:
