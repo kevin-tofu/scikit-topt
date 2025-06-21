@@ -28,7 +28,7 @@ authors = ["Kevin-Tofu <koheitech001@gmail.com>"]
 readme = "README.md"
 license = "Apache-2.0"
 packages = [
-    { include = "sktopt" }
+  { include = "sktopt", from = "scikit-topt" }
 ]
 
 [tool.poetry.dependencies]
