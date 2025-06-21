@@ -1,8 +1,8 @@
-[![PyPI version](https://img.shields.io/pypi/v/sktopt.svg?cacheSeconds=60)](https://pypi.org/project/sktopt/)
+[![PyPI version](https://img.shields.io/pypi/v/scikit-topt.svg?cacheSeconds=60)](https://pypi.org/project/scikit-topt/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![DOI](https://zenodo.org/badge/957674835.svg)](https://doi.org/10.5281/zenodo.15441499)
-[![Python Version](https://img.shields.io/pypi/pyversions/sktopt.svg)](https://pypi.org/project/sktopt/)
-[![PyPI Downloads](https://static.pepy.tech/badge/sktopt)](https://pepy.tech/projects/sktopt)
+[![Python Version](https://img.shields.io/pypi/pyversions/scikit-topt.svg)](https://pypi.org/project/scikit-topt/)
+[![PyPI Downloads](https://static.pepy.tech/badge/scikit-topt)](https://pepy.tech/projects/scikit-topt)
 ![CI](https://github.com/kevin-tofu/scikit-topt/actions/workflows/python-tests.yml/badge.svg)
 ![CI](https://github.com/kevin-tofu/scikit-topt/actions/workflows/sphinx.yml/badge.svg)
 
@@ -70,8 +70,8 @@ If you use Scikit Topt in your research or software, please cite it as:
 ## Usage
 ### Install Package
 ```bash
-pip install sktopt
-poetry add sktopt
+pip install scikit-topt
+poetry add scikit-topt
 ```
 
 
@@ -162,7 +162,7 @@ optimizer.optimize()
 
 ### Optimize Toy Problem with command line.
 ```bash
-OMP_NUM_THREADS=3 OPENBLAS_NUM_THREADS=3 MKL_NUM_THREADS=3 PYTHONPATH=./ python ./sktopt/core/optimizer/logmoc.py \
+OMP_NUM_THREADS=3 OPENBLAS_NUM_THREADS=3 MKL_NUM_THREADS=3 PYTHONPATH=./scikit-topt python ./sktopt/core/optimizer/logmoc.py \
  --dst_path ./result/base_moc_down \
  --interpolation SIMP \
  --vol_frac 0.40 \

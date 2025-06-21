@@ -1,6 +1,7 @@
 import pathlib
 import re
-from sktopt import mesh, core, fea, tools
+# from sktopt import mesh, core, fea, tools
+from . import mesh, core, fea, tools
 
 
 try:
@@ -32,7 +33,8 @@ def get_version(package_name):
         return read_version_from_pyproject()
 
 
-__version__ = get_version("sktopt")
+# __version__ = get_version("sktopt")
+__version__ = get_version("scikit-topt")
 # print(f"sktopt version: {__version__}")
 
 
