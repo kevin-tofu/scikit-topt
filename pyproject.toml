@@ -1,6 +1,6 @@
 [project]
 name = "scikit-topt"
-version = "0.1.8"
+version = "0.2.0"
 description = ""
 authors = [
     { name = "Kevin-Tofu", email = "koheitech001@gmail.com" }
@@ -22,7 +22,7 @@ dependencies = [
 
 [tool.poetry]
 name = "scikit-topt"
-version = "0.1.8"
+version = "0.2.0"
 description = ""
 authors = ["Kevin-Tofu <koheitech001@gmail.com>"]
 readme = "README.md"
