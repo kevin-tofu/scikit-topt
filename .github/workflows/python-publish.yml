@@ -25,7 +25,7 @@ jobs:
         run: poetry install --no-root
 
       - name: Run tests
-        run: PYTHONPATH=. poetry run pytest
+        run: PYTHONPATH=scikit-topt poetry run pytest
 
       - name: Remove old build artifacts
         run: rm -rf dist/*
