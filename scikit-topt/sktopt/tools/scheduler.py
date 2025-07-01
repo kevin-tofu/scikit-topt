@@ -273,6 +273,11 @@ class Schedulers():
         self.scheduler_list = []
         self.dst_path = dst_path
 
+    def value_on_a_scheduler(self, key: str, iter: int) -> float:
+        return self.values_as_list(
+            iter, [key], export_log=False
+        )[0]
+
     def values_as_dict(self, iter: int) -> dict:
         ret = dict()
         for sche in self.scheduler_list:

@@ -7,7 +7,7 @@ logger = mylogger(__name__)
 
 
 @dataclass
-class LogLagrangian_Config(common.DensityMethodConfig):
+class LogLagrangian_Config(common.DensityMethodLagrangianConfig):
     """
     Configuration for Log-space Lagrangian Gradient Update method.
 
@@ -211,6 +211,7 @@ class LogLagrangian_Optimizer(common.DensityMethod):
         assert cfg.lambda_lower < 0
         assert cfg.lambda_upper > 0
         super().__init__(cfg, tsk)
+        self.recorder = self.add_recorder(tsk)
         self.recorder.add("dC", plot_type="min-max-mean-std")
         self.recorder.add("lambda_v", ylog=False)
         self.lambda_v = cfg.lambda_v

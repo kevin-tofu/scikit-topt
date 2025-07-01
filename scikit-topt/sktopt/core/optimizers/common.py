@@ -18,6 +18,7 @@ from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 
 
+
 @dataclass
 class DensityMethodConfig():
     """
@@ -99,14 +100,6 @@ class DensityMethodConfig():
     rho_max : float
         Maximum density value (usually 1.0 for full material).
 
-    move_limit_init : float
-        Initial move limit for density update.
-    move_limit : float
-        Final move limit.
-    move_limit_step : int
-        Number of continuation steps for move limit.
-        If negative, move limit is fixed.
-
     restart : bool
         Whether to resume optimization from an existing state.
     restart_from : int
@@ -119,11 +112,6 @@ class DensityMethodConfig():
 
     design_dirichlet : bool
         If True, Dirichlet boundary elements are included in the design domain.
-
-    lambda_lower : float
-        Lower bound for the Lagrange multiplier in constrained optimization.
-    lambda_upper : float
-        Upper bound for the Lagrange multiplier.
 
     sensitivity_filter : bool
         If True, applies filtering to the sensitivity field.
@@ -154,33 +142,24 @@ class DensityMethodConfig():
     beta_curvature: float = 2.0
     beta_eta: float = 0.50
     eta: float = 0.6
-    percentile_init: float = 60
-    percentile: float = -90
-    percentile_step: int = -1
     filter_radius_init: float = 2.0
     filter_radius: float = 1.20
     filter_radius_step: int = -3
-    # mu_p: float = 200.0
     E0: float = 210e9
     E_min: float = 210e6
     rho_min: float = 1e-2
     rho_max: float = 1.0
-    move_limit_init: float = 0.3
-    move_limit: float = 0.10
-    move_limit_step: int = -3
     restart: bool = False
     restart_from: int = -1
     export_img: bool = False
     export_img_opaque: bool = False
     design_dirichlet: bool = False
-    lambda_lower: float = 1e-7
-    lambda_upper: float = 1e+7
     sensitivity_filter: bool = False
     solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve"
     scaling: bool = False
 
     @classmethod
-    def from_defaults(cls, **args):
+    def from_defaults(cls, **args) -> 'DensityMethodConfig':
         sig = inspect.signature(cls)
         valid_keys = sig.parameters.keys()
         filtered_args = {k: v for k, v in args.items() if k in valid_keys}
@@ -217,6 +196,50 @@ class DensityMethodConfig():
             return f"{self.dst_path}/mesh_rho/info_{prefix}-{iter:08d}.jpg"
         else:
             return None
+
+
+@dataclass
+class DensityMethodLagrangianConfig(DensityMethodConfig):
+    """
+    Configuration class for controlling parameters in topology optimization.
+
+    This class defines optimization parameters, filtering and projection settings,
+    continuation schedules, and numerical solver options. It is designed to support
+    sensitivity-based topology optimization algorithms such as SIMP and RAMP.
+
+    Attributes
+    ----------
+
+    percentile_init : float
+        Initial percentile used to scale sensitivity fields.
+    percentile : float
+        Final percentile value. If set to a negative value,
+        percentile-based scaling is disabled, resulting in a
+        more "exact" optimization behavior.
+    percentile_step : int
+        Number of continuation steps for the percentile value.
+        If negative, fixed at percentile_init.
+    move_limit_init : float
+        Initial move limit for density update.
+    move_limit : float
+        Final move limit.
+    move_limit_step : int
+        Number of continuation steps for move limit.
+        If negative, move limit is fixed.
+    lambda_lower : float
+        Lower bound for the Lagrange multiplier in constrained optimization.
+    lambda_upper : float
+        Upper bound for the Lagrange multiplier.
+
+    """
+    percentile_init: float = 60
+    percentile: float = -90
+    percentile_step: int = -1
+    move_limit_init: float = 0.3
+    move_limit: float = 0.10
+    move_limit_step: int = -3
+    lambda_lower: float = 1e-7
+    lambda_upper: float = 1e+7
 
 
 def interpolation_funcs(cfg: DensityMethodConfig):
@@ -311,17 +334,23 @@ class DensityMethod():
             if not os.path.exists(f"{self.cfg.dst_path}/data"):
                 os.makedirs(f"{self.cfg.dst_path}/data")
 
-        self.recorder = tools.HistoriesLogger(self.cfg.dst_path)
-        self.recorder.add("rho_projected", plot_type="min-max-mean-std")
-        self.recorder.add("strain_energy", plot_type="min-max-mean-std")
-        self.recorder.add("vol_error")
-        if isinstance(tsk.force, list):
-            self.recorder.add("u_max", plot_type="min-max-mean-std")
-        else:
-            self.recorder.add("u_max")
-        self.recorder.add("compliance", ylog=True)
-        self.recorder.add("scaling_rate", plot_type="min-max-mean-std")
+        # self.recorder = self.add_recorder(tsk)
         self.schedulers = tools.Schedulers(self.cfg.dst_path)
+
+    def add_recorder(
+        self, tsk: sktopt.mesh.TaskConfig
+    ) -> tools.HistoriesLogger:
+        recorder = tools.HistoriesLogger(self.cfg.dst_path)
+        recorder.add("rho_projected", plot_type="min-max-mean-std")
+        recorder.add("strain_energy", plot_type="min-max-mean-std")
+        recorder.add("vol_error")
+        if isinstance(tsk.force, list):
+            recorder.add("u_max", plot_type="min-max-mean-std")
+        else:
+            recorder.add("u_max")
+        recorder.add("compliance", ylog=True)
+        recorder.add("scaling_rate", plot_type="min-max-mean-std")
+        return recorder
 
     def scale(self):
         bbox = np.ptp(self.tsk.mesh.p, axis=1)
@@ -481,7 +510,7 @@ class DensityMethod():
         tmp_upper = np.empty_like(rho[tsk.design_elements])
         force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
         u_dofs = np.zeros((tsk.basis.N, len(force_list)))
-        filter_radius_prev = cfg.filter_radius_init \
+        filter_radius = cfg.filter_radius_init \
             if cfg.filter_radius_step > 0 else cfg.filter_radius
         return (
             iter_begin,
@@ -502,7 +531,7 @@ class DensityMethod():
             tmp_upper,
             force_list,
             u_dofs,
-            filter_radius_prev
+            filter_radius
         )
 
     def optimize(self):
@@ -531,14 +560,16 @@ class DensityMethod():
             tmp_upper,
             force_list,
             u_dofs,
-            filter_radius_prev
+            filter_radius
         ) = self.initialize_params()
         elements_volume_design = tsk.elements_volume[tsk.design_elements]
         elements_volume_design_sum = np.sum(elements_volume_design)
         self.helmholz_solver.update_radius(
-            tsk.mesh, filter_radius_prev, solver_option="cg_pyamg"
+            tsk.mesh, filter_radius, solver_option="cg_pyamg"
         )
-        for iter_loop, iter in enumerate(range(iter_begin, iter_end)): # 1 -
+
+        # Loop 1 - N
+        for iter_loop, iter in enumerate(range(iter_begin, iter_end)):
             logger.info(f"iterations: {iter} / {iter_end - 1}")
             (
                 p,
@@ -556,7 +587,8 @@ class DensityMethod():
                 precision=6
             )
 
-            if filter_radius_prev != filter_radius:
+            if filter_radius != self.helmholz_solver.radius:
+            # if filter_radius_prev != filter_radius:
                 logger.info("!!! Filter Update")
                 self.helmholz_solver.update_radius(
                     tsk.mesh, filter_radius, "cg_pyamg"
@@ -642,8 +674,6 @@ class DensityMethod():
             else:
                 rho[tsk.dirichlet_force_elements] = 1.0
 
-            filter_radius_prev = filter_radius
-
             self.recorder.feed_data(
                 "rho_projected", rho_projected[tsk.design_elements]
             )
@@ -660,7 +690,7 @@ class DensityMethod():
                 logger.info(f"Saving at iteration {iter}")
                 self.recorder.print()
                 self.recorder.export_progress()
-                
+
                 visualization.export_mesh_with_info(
                     tsk.mesh,
                     cell_data_names=["rho_projected", "strain_energy"],

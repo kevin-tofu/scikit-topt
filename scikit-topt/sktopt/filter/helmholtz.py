@@ -387,9 +387,7 @@ def apply_helmholtz_filter_amg(
     """
     rhs = V @ rho_element
     # rho_filtered = ml.solve(rhs, tol=tol)
-    rho_filtered = ml.solve(rhs, tol=tol)
-
-    return rho_filtered
+    return ml.solve(rhs, tol=tol)
 
 
 def apply_filter_gradient_cg(
@@ -444,8 +442,8 @@ def apply_filter_gradient_amg(
         Result of applying the Helmholtz filter's Jacobian to `vec`.
     """
     rhs = V @ vec
-    result = ml.solve(rhs, tol=tol)
-    return result
+    # result = ml.solve(rhs, tol=tol)
+    return ml.solve(rhs, tol=tol)
 
 
 def _update_radius(
@@ -471,6 +469,7 @@ def _update_radius(
 class HelmholtzFilter():
     A: csc_matrix
     V: csc_matrix
+    radius: float
     dst_path: Optional[str] = None
     solver_option: Literal["spsolve", "cg_jacobi", "cg_pyamg"] = "cg_jacobi"
     A_solver: Optional[scipy.sparse.linalg.SuperLU] = None
@@ -486,6 +485,7 @@ class HelmholtzFilter():
         design_mask: Optional[np.ndarray] = None,
         solver_option="cg_pyamg"
     ):
+        self.radius = radius
         self.A, self.V = _update_radius(
             mesh=mesh,
             radius=radius,
@@ -498,7 +498,7 @@ class HelmholtzFilter():
     def from_defaults(
         cls,
         mesh: skfem.Mesh,
-        radius: float,
+        radius: float=1.0,
         solver_option: Literal[
             "spsolve", "cg_jacobi", "cg_pyamg"] = "cg_pyamg",
         dst_path: Optional[str] = None,
@@ -511,7 +511,7 @@ class HelmholtzFilter():
             design_mask=design_mask
         )
         ret = cls(
-            A=A, V=V, dst_path=dst_path,
+            A=A, V=V, radius=radius, dst_path=dst_path,
             solver_option=solver_option
         )
         print(f"preprocess : {solver_option}")
@@ -524,7 +524,7 @@ class HelmholtzFilter():
         V = scipy.sparse.load_npz(f"{dst_path}/V.npz")
         A = scipy.sparse.load_npz(f"{dst_path}/A.npz")
         # A_solver = splu(A)
-        return cls(A, V)
+        return cls(A, V, radius=-1)
 
     def filter(self, rho_element: np.ndarray):
         if self.solver_option == "spsolve":

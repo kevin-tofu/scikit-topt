@@ -137,7 +137,7 @@ def add_common_arguments(
         '--mesh_path', '-MP', type=str, default="plate.msh", help=''
     )
     parser.add_argument(
-        '--export_img', '-EI', type=str2bool, default=False, help=''
+        '--export_img', '-EI', type=str2bool, default=True, help=''
     )
     parser.add_argument(
         '--design_dirichlet', '-DD', type=str2bool, default=True, help=''
@@ -146,6 +146,6 @@ def add_common_arguments(
         '--sensitivity_filter', '-SF', type=str2bool, default=True, help=''
     )
     parser.add_argument(
-        '--solver_option', '-SO', type=str, default="pyamg", help=''
+        '--solver_option', '-SO', type=str, default="spsolve", help=''
     )
     return parser

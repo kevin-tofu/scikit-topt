@@ -9,7 +9,7 @@ logger = mylogger(__name__)
 
 
 @dataclass
-class LogMOC_Config(common.DensityMethodConfig):
+class LogMOC_Config(common.DensityMethodLagrangianConfig):
     """
     Configuration for log-space gradient update with optional mean-centering.
 
@@ -157,6 +157,7 @@ class LogMOC_Optimizer(common.DensityMethod):
     ):
         assert cfg.lambda_lower < cfg.lambda_upper
         super().__init__(cfg, tsk)
+        self.recorder = self.add_recorder(tsk)
         ylog_dC = True if cfg.percentile > 0.0 else False
         ylog_lambda_v = True if cfg.lambda_lower > 0.0 else False
         self.recorder.add("-dC", plot_type="min-max-mean-std", ylog=ylog_dC)

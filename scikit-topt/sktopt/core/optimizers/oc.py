@@ -10,7 +10,7 @@ logger = mylogger(__name__)
 
 
 @dataclass
-class OC_Config(common.DensityMethodConfig):
+class OC_Config(common.DensityMethodLagrangianConfig):
     interpolation: Literal["SIMP"] = "SIMP"
     eta_init: float = 0.1
     eta: float = 0.5
@@ -105,6 +105,7 @@ class OC_Optimizer(common.DensityMethod):
     ):
         assert cfg.lambda_lower < cfg.lambda_upper
         super().__init__(cfg, tsk)
+        self.recorder = self.add_recorder(tsk)
         self.recorder.add("-dC", plot_type="min-max-mean-std", ylog=True)
         self.recorder.add("lmid", ylog=True)
         self.running_scale = 0
