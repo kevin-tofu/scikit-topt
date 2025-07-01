@@ -113,7 +113,7 @@ An example is shown below. The left figure shows the boundary conditions, while 
 
 ![Topology optimization setup under multiple load cases (left) and resulting optimized density distribution (right)](figures/ex-multi-load.jpg){ width=80% }  
 
-![Parameter progression during optimization](figures/ex-multi-load-v-progress.jpg){ width=80% }. 
+![Parameter progression during optimization](figures/ex-multi-load-v-progress.jpg){ width=80% }  
 
 As an extensible and open framework, Scikit-topt aims to facilitate reproducible experimentation and accelerate the development of new topology optimization strategies.
 
