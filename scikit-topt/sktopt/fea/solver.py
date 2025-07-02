@@ -194,6 +194,56 @@ def compute_compliance_basis_multi_load(
     return float(compliance_total)
 
 
+
+def compute_compliance_list_basis_multi_load(
+    basis, free_dofs, dirichlet_dofs, force_list,
+    E0, Emin, p, nu0,
+    rho_list,
+    solver: Literal['spsolve'] = 'spsolve',
+    elem_func: Callable = composer.simp_interpolation,
+    rtol: float = 1e-5,
+    maxiter: int = None,
+    n_joblib: int = 4
+) -> list[float]:
+    from joblib import Parallel, delayed
+
+    n_dof = basis.N
+    assert solver == 'spsolve'
+
+    # def solve_system(K_loop, F_stack: np.ndarray):
+    #     return scipy.sparse.linalg.spsolve(K_loop, F_stack)
+
+    def solve_system(K_loop, F_stack):
+        lu = scipy.sparse.linalg.splu(K_loop)
+        return lu.solve(F_stack)   
+
+
+    K_list = list()
+    for rho in rho_list:
+        K = composer.assemble_stiffness_matrix(
+            basis, rho, E0, Emin, p, nu0, elem_func
+        )
+        K_csr = K.tocsr()
+        K_e, _ = skfem.enforce(K_csr, force_list[0], D=dirichlet_dofs)
+        K_list.append(K_e.tocsc())
+    _maxiter = min(1000, max(300, n_dof // 5)) if maxiter is None else maxiter
+
+    F_stack = np.column_stack([
+        skfem.enforce(K_csr, f, D=dirichlet_dofs)[1] for f in force_list
+    ])
+    
+    u_solutions_list = Parallel(n_jobs=n_joblib)(
+        delayed(solve_system)(K_loop, F_stack) for K_loop in K_list
+    )
+    # compliance_list = np.sum(np.einsum('ij,ij->j', F_stack, u_all))
+    compliance_list = [
+        float(
+            np.sum(np.einsum('ij,ij->j', F_stack, u_loop))
+        ) for u_loop in u_solutions_list
+    ]
+    return compliance_list, u_solutions_list
+
+
 def compute_compliance_basis_numba(
     basis, free_dofs, dirichlet_dofs, force,
     E0, Emin, p, nu0,
