@@ -257,7 +257,70 @@ def interpolation_funcs(cfg: DensityMethodConfig):
         raise ValueError("Interpolation method must be SIMP or RAMP.")
 
 
-class DensityMethod():
+from abc import ABC, abstractmethod
+
+class DensityMethodBase(ABC):
+    @abstractmethod
+    def add_recorder(self):
+        pass
+    
+    @abstractmethod
+    def scale(self):
+        pass
+    
+    @abstractmethod
+    def unscale(self):
+        pass
+    
+    @abstractmethod
+    def init_schedulers(self, export: bool = True):
+        pass
+    
+    @abstractmethod
+    def parameterize(self):
+        pass
+    
+    @abstractmethod
+    def load_parameters(self):
+        pass
+    
+    @abstractmethod
+    def initialize_density(self):
+        pass
+    
+    @abstractmethod
+    def initialize_params(self):
+        pass
+    
+    @abstractmethod
+    def optimize(self):
+        pass
+    
+    @abstractmethod
+    def rho_update(
+        self,
+        iter_loop: int,
+        rho_candidate: np.ndarray,
+        rho_projected: np.ndarray,
+        dC_drho_ave: np.ndarray,
+        u_dofs: np.ndarray,
+        strain_energy_ave: np.ndarray,
+        scaling_rate: np.ndarray,
+        move_limit: float,
+        eta: float,
+        tmp_lower: np.ndarray,
+        tmp_upper: np.ndarray,
+        lambda_lower: float,
+        lambda_upper: float,
+        percentile: float,
+        elements_volume_design: np.ndarray,
+        elements_volume_design_sum: float,
+        vol_frac: float
+    ):
+        pass
+    
+
+class DensityMethod(DensityMethodBase):
     """
     Base class for sensitivity-based topology optimization routines.
 
