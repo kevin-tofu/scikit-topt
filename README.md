@@ -195,6 +195,7 @@ Scikit-Topt is standing on the shoulders of proverbial giants. In particular, I 
  - MeshIO
  - Matplotlib
  - PyVista
+ - Joblib
  - Topology Optimization Community
 
 ## ToDo
