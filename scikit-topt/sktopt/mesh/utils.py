@@ -358,7 +358,7 @@ def in_box(
 
 
 def get_nodes_indices_in_range(
-    basis: skfem.Basis, x_range: tuple, y_range: tuple, z_range: tuple
+    mesh: skfem.mesh, x_range: tuple, y_range: tuple, z_range: tuple
 ) -> np.ndarray:
     """
     Get the indices of mesh nodes that lie within a specified 3D bounding box.
@@ -379,7 +379,7 @@ def get_nodes_indices_in_range(
     np.ndarray
         Array of indices corresponding to mesh nodes inside the given box.
     """
-    mask = in_box(basis.mesh.p, x_range, y_range, z_range)
+    mask = in_box(mesh.p, x_range, y_range, z_range)
     return np.flatnonzero(mask)
 
 
