@@ -68,15 +68,15 @@ Task Configuration
 .. code-block:: python
 
     dirichlet_nodes = sktopt.mesh.utils.get_nodes_indices_in_range(
-        basis, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
+        basis.mesh, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
     dirichlet_dir = "all"
 
     F_nodes_0 = sktopt.mesh.utils.get_nodes_indices_in_range(
-        basis, (x_len, x_len), (y_len, y_len), (0, z_len)
+        basis.mesh, (x_len, x_len), (y_len, y_len), (0, z_len)
     )
     F_nodes_1 = sktopt.mesh.utils.get_nodes_indices_in_range(
-        basis, (x_len, x_len), (0, 0), (0, z_len)
+        basis.mesh, (x_len, x_len), (0, 0), (0, z_len)
     )
     F_nodes = [F_nodes_0, F_nodes_1]
     F_dir = ["u^2", "u^2"]
