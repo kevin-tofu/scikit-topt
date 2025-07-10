@@ -133,6 +133,7 @@ def compute_compliance_basis_multi_load(
     elem_func: Callable = composer.simp_interpolation,
     rtol: float = 1e-5,
     maxiter: int = None,
+    n_joblib: int = 1
 ) -> float:
     solver = 'spsolve' if solver == 'auto' else solver
     n_dof = basis.N
@@ -159,10 +160,24 @@ def compute_compliance_basis_multi_load(
     compliance_total = 0.0
     u_all[:, :] = 0.0
     if solver == 'spsolve':
-        lu = scipy.sparse.linalg.splu(K_e.tocsc())
-        u_all[:, :] = np.column_stack(
-            [lu.solve(F_stack[:, i]) for i in range(F_stack.shape[1])]
-        )
+        if n_joblib > 1:
+            from joblib import Parallel, delayed, parallel_backend
+            lu = scipy.sparse.linalg.splu(K_e.tocsc())
+            def solve_system(F_stack):
+                return lu.solve(F_stack)
+            
+            with parallel_backend("threading"):
+                u_all[:, :] = np.column_stack(
+                    Parallel(n_jobs=n_joblib)(
+                        delayed(solve_system)(F_stack[:, i]) for i in range(F_stack.shape[1])
+                    )
+                )
+
+        else:
+            lu = scipy.sparse.linalg.splu(K_e.tocsc())
+            u_all[:, :] = np.column_stack(
+                [lu.solve(F_stack[:, i]) for i in range(F_stack.shape[1])]
+            )
 
     else:
         # choose preconditioner if needed
@@ -194,7 +209,6 @@ def compute_compliance_basis_multi_load(
     return float(compliance_total)
 
 
-
 def compute_compliance_list_basis_multi_load(
     basis, free_dofs, dirichlet_dofs, force_list,
     E0, Emin, p, nu0,
@@ -215,7 +229,7 @@ def compute_compliance_list_basis_multi_load(
 
     def solve_system(K_loop, F_stack):
         lu = scipy.sparse.linalg.splu(K_loop)
-        return lu.solve(F_stack)   
+        return lu.solve(F_stack) 
 
 
     K_list = list()

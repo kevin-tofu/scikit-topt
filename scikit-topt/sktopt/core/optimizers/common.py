@@ -157,6 +157,7 @@ class DensityMethodConfig():
     sensitivity_filter: bool = False
     solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve"
     scaling: bool = False
+    n_joblib: int = 1
 
     @classmethod
     def from_defaults(cls, **args) -> 'DensityMethodConfig':
@@ -675,7 +676,8 @@ class DensityMethod(DensityMethodBase):
                 rho_projected,
                 u_dofs,
                 elem_func=density_interpolation,
-                solver=cfg.solver_option
+                solver=cfg.solver_option,
+                n_joblib=cfg.n_joblib
             )
             strain_energy = composer.strain_energy_skfem_multi(
                 tsk.basis, rho_projected, u_dofs,
