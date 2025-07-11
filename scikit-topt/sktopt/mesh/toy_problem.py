@@ -32,14 +32,9 @@ def create_box_hex(x_len, y_len, z_len, mesh_size):
     z = np.linspace(0, z_len, nz + 1)
 
     mesh = skfem.MeshHex.init_tensor(x, y, z)
-
-    print("Before mesh.t fix:", mesh.t[:, 0])
     t_fixed = utils.fix_hexahedron_orientation(mesh.t, mesh.p)
-    print("After fix        :", t_fixed[:, 0])
     mesh_fixed = skfem.MeshHex(mesh.p, t_fixed)
-    print("Mesh fixed .t    :", mesh_fixed.t[:, 0])
-
-    return mesh
+    return mesh_fixed
 
 
 def create_box_tet(x_len, y_len, z_len, mesh_size):
@@ -49,14 +44,8 @@ def create_box_tet(x_len, y_len, z_len, mesh_size):
     scale = np.array([x_len, y_len, z_len])
     mesh = mesh.scaled(scale)
 
-    print("Before mesh.t fix:", mesh.t[:, 0])
     t_fixed = utils.fix_tetrahedron_orientation(mesh.t, mesh.p)
-    # t_fixed = utils.fix_tetrahedron_orientation_numba(mesh.t, mesh.p)
-
-    print("After fix        :", t_fixed[:, 0])
     mesh_fixed = MeshTet(mesh.p, t_fixed)
-    print("Mesh fixed .t    :", mesh_fixed.t[:, 0])
-    # composer._get_elements_volume(mesh_fixed.t, mesh_fixed.p)
     return mesh_fixed
 
 
