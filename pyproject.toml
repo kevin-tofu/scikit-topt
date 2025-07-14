@@ -23,7 +23,7 @@ dependencies = [
 
 [tool.poetry]
 name = "scikit-topt"
-version = "0.2.2"
+version = "0.2.3"
 description = "A lightweight, flexible Python library for topology optimization built on top of Scikit Libraries"
 authors = ["Kevin-Tofu <koheitech001@gmail.com>"]
 readme = "README.md"
