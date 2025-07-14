@@ -102,7 +102,7 @@ mesh = sktopt.mesh.toy_problem.create_box_hex(
   x_len, y_len, z_len, element_size
 )
 e = skfem.ElementVector(skfem.ElementHex1())
-basis = skfem.Basis(mesh, e, intorder=3)
+basis = skfem.Basis(mesh, e, intorder=2)
 ```
 
 #### Set BCs and Force, and define task
