@@ -15,13 +15,13 @@ def define_task() -> sktopt.mesh.task.TaskConfig:
 
     # Specify Dirichlet Boundary Conditions
     dirichlet_nodes = sktopt.mesh.utils.get_nodes_indices_in_range(
-        basis, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
+        basis.mesh, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
     )
     dirichlet_dofs = basis.get_dofs(nodes=dirichlet_nodes).all()
 
     # Specify Force Vector
     F_points = sktopt.mesh.utils.get_nodes_indices_in_range(
-        basis,
+        basis.mesh,
         (x_len, x_len),
         (y_len*2/5, y_len*3/5),
         (z_len*2/5, z_len*3/5)
