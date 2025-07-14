@@ -65,13 +65,13 @@ def logmoc_optimize(tsk):
     optimizer.optimize()
 
 
-# def linearmoc_optimize(tsk):
-#     cfg = sktopt.core.optimizers.LinearMOC_Config()
-#     cfg.max_iters = 1
-#     cfg.record_times = 1
-#     optimizer = sktopt.core.LinearMOC_Optimizer(cfg, tsk)
-#     optimizer.parameterize()
-#     optimizer.optimize()
+def linearmoc_optimize(tsk):
+    cfg = sktopt.core.optimizers.LinearMOC_Config()
+    cfg.max_iters = 1
+    cfg.record_times = 1
+    optimizer = sktopt.core.LinearMOC_Optimizer(cfg, tsk)
+    optimizer.parameterize()
+    optimizer.optimize()
 
 
 def loglagrangian_optimize(tsk):
@@ -102,6 +102,7 @@ def test_optimizers():
     oc_ramp_optimize(tsk1)
     logmoc_optimize(tsk1)
     loglagrangian_optimize(tsk1)
+    linearmoc_optimize(tsk1)
 
 
 if __name__ == "__main__":
