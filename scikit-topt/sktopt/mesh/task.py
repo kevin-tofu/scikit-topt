@@ -87,8 +87,8 @@ class TaskConfig():
     @property
     def mesh(self):
         return self.basis.mesh
-    
-    
+
+
     @classmethod
     def from_nodes(
         cls,
@@ -116,7 +116,7 @@ class TaskConfig():
                 else dofs.nodal[dirichlet_dir]
         else:
             raise ValueError("dirichlet_nodes is not np.ndarray or of list")        
-        
+
         if isinstance(force_nodes, list):
             force_dofs = [
                 basis.get_dofs(nodes=n_loop).nodal[dir_loop]
@@ -128,14 +128,13 @@ class TaskConfig():
             force_dofs = basis.get_dofs(nodes=force_nodes).nodal[force_dir]
         else:
             raise ValueError("force_nodes is not np.ndarray or of list")        
-        
+
         return cls.from_defaults(
             E, nu, basis,
             dirichlet_nodes, dirichlet_dofs,
             force_nodes, force_dofs, force_value,
             design_elements
         )
-
 
     @classmethod
     def from_defaults(
@@ -307,6 +306,7 @@ class TaskConfig():
         element_colors_df = np.zeros(mesh.nelements, dtype=int)
         element_colors_df[self.free_elements] = 1
         element_colors_df[self.fixed_elements] = 2
+        element_colors_df[self.design_elements] = 3
         cells = [(cell_type, mesh.t.T)]
         cell_outputs = dict()
         cell_outputs["condition"] = [element_colors_df]
