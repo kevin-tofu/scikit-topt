@@ -17,201 +17,113 @@ Optimality Criteria
 Optimality Criteria Method (OC)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The Optimality Criteria (OC) method is a widely used algorithm in density-based topology optimization due to its simplicity and effectiveness. It provides a closed-form update rule for the design variables based on the optimality conditions derived from the Lagrangian of the problem.
+The Optimality Criteria (OC) method is a widely used algorithm in density-based topology optimization due to its simplicity and effectiveness. 
+It provides a closed-form multiplicative update rule for the design variables, derived from the Karush–Kuhn–Tucker (KKT) optimality conditions of the compliance minimization problem.
 
 Assume the goal is to minimize compliance :math:`C(\rho)` subject to a volume constraint:
 
 .. math::
 
    \min_{\rho} \quad C(\rho) = \mathbf{f}^T \mathbf{u}(\rho) \\
-   \text{subject to} \quad \sum_e \rho_e v_e \leq V_{\text{max}}, \quad \rho_{\text{min}} \leq \rho_e \leq 1
+   \text{subject to} \quad \sum_e \rho_e v_e \leq V_{\text{max}}, 
+   \quad \rho_{\text{min}} \leq \rho_e \leq 1.
 
-The KKT conditions yield an optimality criterion involving the derivative of the objective function and a Lagrange multiplier :math:`\lambda`. Based on this, the OC method defines the update rule for each element :math:`e` as:
+The KKT conditions lead to an element-wise update rule involving the compliance sensitivity and a Lagrange multiplier :math:`\lambda`:
 
 .. math::
 
    \rho_e^{(t+1)} = \text{clip}\left(
-   \rho_e^{(t)} \cdot \left( \frac{-\partial C / \partial \rho_e}{\lambda} \right)^{\eta},\ 
+   \rho_e^{(t)} \cdot 
+   \left( \frac{-\partial C / \partial \rho_e}{\lambda} \right)^{\eta},\ 
    \rho_{\text{min}},\ 1
-   \right)
+   \right).
 
-where:
+Here:
 
 - :math:`\partial C / \partial \rho_e` is the sensitivity of compliance with respect to the design variable,
-- :math:`\lambda` is chosen to satisfy the volume constraint (e.g., by bisection),
+- :math:`\lambda` is a Lagrange multiplier chosen (typically by bisection) to satisfy the volume constraint,
 - :math:`\eta` is a numerical damping or scaling factor (commonly :math:`\eta = 1`),
-- `clip` ensures the updated value stays within allowable bounds.
+- ``clip`` ensures the updated density stays within prescribed bounds,
+- optional move limits may also be enforced to restrict the maximum per-iteration change in :math:`\rho_e`.
 
-The OC update rule is applied iteratively, and move limits may also be enforced to restrict the change in :math:`\rho_e` between iterations.
+The OC method requires only element-wise sensitivities and a scalar multiplier update, 
+and therefore avoids reliance on general-purpose gradient-based optimizers such as MMA or SQP.
 
 Advantages
 ^^^^^^^^^^
 
 - **Simplicity**: Easy to implement and understand.
 - **Efficiency**: Fast convergence in practice for compliance minimization.
-- **No gradient solver needed**: Only objective sensitivities are required, not the full gradient descent machinery.
+- **Closed-form updates**: Only sensitivities and a scalar Lagrange multiplier search are required, no external optimization solver.
 
 Disadvantages
 ^^^^^^^^^^^^^
 
-- **Not general-purpose**: Hard to extend to problems with multiple constraints or noncompliance objectives.
-- **Heuristic parameters**: Requires tuning of parameters like damping factor, move limits.
-- **Volume constraint enforcement**: Inexact unless a Lagrange multiplier search is properly implemented.
-- **Limited to multiplicative updates**: Cannot easily incorporate modern optimization strategies (e.g., trust regions or line search).
+- **Not general-purpose**: Difficult to extend to multiple constraints or noncompliance objectives.
+- **Heuristic parameters**: Requires tuning of damping factors and move limits for stability.
+- **Constraint enforcement**: The volume constraint is enforced only up to the accuracy of the multiplier search.
+- **Restricted update form**: Limited to multiplicative updates, which makes integration with modern trust-region or line-search strategies nontrivial.
 
-Despite its limitations, the OC method remains popular for compliance-based problems, especially when a quick and robust heuristic method is desired for early prototyping or academic demonstration.
+Despite these limitations, the OC method remains one of the most popular approaches for compliance-based topology optimization, 
+especially when a robust and lightweight heuristic is sufficient for prototyping or academic demonstration.
 
 
 Modified Optimality Criteria (MOC) Variants
 -------------------------------------------
 
-In density-based topology optimization, the Modified Optimality Criteria (MOC) method can be implemented in several ways. I implemented two variants: a log-space update and a direct additive update. These differ in how they incorporate sensitivity information and handle volume constraints.
+In density-based topology optimization, the Modified Optimality Criteria (MOC) method can be implemented in several ways. 
+One common idea is to reformulate the OC update in **log-space**, which improves numerical stability while preserving its multiplicative structure.
 
 1. Log-space Update Method
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This method modifies the OC update by applying it in **log-space**. Instead of directly updating the density :math:`\rho`, it updates :math:`\log \rho`, promoting better numerical stability and capturing multiplicative behavior.
-
-The Lagrangian gradient :math:`dL` is computed as the sum of the compliance sensitivity :math:`dC` and a volume penalty term :math:`\lambda_v`. The update is then applied in log-space:
+This variant applies the OC update to the logarithm of the density rather than the density itself:
 
 .. math::
 
-   \log \rho^{(t+1)} = \log \rho^{(t)} + \eta \cdot \log \left( \frac{-dC}{\lambda_v} \right)
+   \log \rho_e^{(t+1)} 
+   = \log \rho_e^{(t)} 
+   + \eta \cdot \log\!\left(\frac{-\partial C / \partial \rho_e}{\lambda_v}\right).
 
-The updated density is then recovered via exponentiation:
+After exponentiation, the update is equivalent to the standard multiplicative OC rule:
 
 .. math::
 
-   \rho^{(t+1)} = \rho^{(t)} \cdot \left( \frac{-dC}{\lambda_v} \right)^{\eta}
+   \rho_e^{(t+1)} 
+   = \rho_e^{(t)} 
+   \left( \frac{-\partial C / \partial \rho_e}{\lambda_v} \right)^{\eta}.
 
 Here:
 
-- :math:`\rho^{(t)}` is the current density field,
-- :math:`dC` is the sensitivity of the compliance with respect to density,
-- :math:`\lambda_v` is the derivative of the volume penalty,
-- :math:`\eta` is a step size or learning rate.
+- :math:`\rho_e^{(t)}` is the current density,
+- :math:`\partial C / \partial \rho_e` is the compliance sensitivity,
+- :math:`\lambda_v` is a constraint-related parameter (e.g., a Lagrange multiplier chosen by bisection, or a penalty-based approximation),
+- :math:`\eta` is a damping or learning-rate parameter.
 
-This approach improves numerical stability and ensures that the density remains positive throughout the optimization process. Importantly, this means the optimization behaves **multiplicatively** rather than additively.
+This log-space formulation guarantees positivity of :math:`\rho` and improves numerical robustness by working in an additive domain for what is fundamentally a multiplicative update.
 
-In this multiplicative regime, using a simple linear average to smooth the dual variable :math:`\lambda_v` can lead to instability or a misrepresentation of the underlying dynamics. Instead, the **Exponential Moving Average (EMA)** is more appropriate because:
+**Smoothing of the dual/penalty parameter**
 
-- EMA applies a **multiplicative-style memory**, giving more weight to recent changes while still preserving the trend of past updates.
-- It provides a **smooth yet responsive** estimate of the dual variable, crucial for stable convergence.
-- It avoids sharp oscillations that may occur when :math:`\lambda_v` changes abruptly, which could cause large exponential shifts in the density update.
-
-The EMA of the dual variable is computed as:
+Because the update is multiplicative, instabilities can arise if the constraint-related parameter :math:`\lambda_v` changes too abruptly. 
+To mitigate this, a smoothing strategy such as an **Exponential Moving Average (EMA)** can be applied:
 
 .. math::
 
-   \lambda_v^{(t)} = \lambda_\text{decay} \cdot \lambda_v^{(t-1)} + (1 - \lambda_\text{decay}) \mu_{p} \cdot \hat{\lambda}_v^{(t)}
+   \lambda_v^{(t)} 
+   = \lambda_\text{decay} \, \lambda_v^{(t-1)} 
+   + (1 - \lambda_\text{decay}) \, \hat{\lambda}_v^{(t)},
 
-where :math:`\hat{\lambda}_v^{(t)}` is the current value (e.g., based on volume constraint violation) and :math:`\lambda_\text{decay} \in (0, 1]` is the smoothing factor.
-
-Since MOC operates in a **logarithmic or ratio-based update regime**, EMA naturally complements this behavior by ensuring the dual variable evolves in a similarly smooth and proportional manner.
-
-The objective function and the original constraint remain unchanged in the formulation:
-
-However, in the implementation of MOC with EMA, the control of the dual variable :math:`\lambda_v^{(t)}` is based on a **relative (ratio-based) constraint violation**, rather than an absolute difference.
+where :math:`\hat{\lambda}_v^{(t)}` is the current estimate (e.g., from the volume constraint violation) and :math:`\lambda_\text{decay} \in (0, 1]` is a smoothing factor.  
+This is not part of the classical OC method but can improve stability in practical implementations.
 
 **Advantages**:
 
-- Efficient in-place update suitable for large-scale problems.
-- Ensures positivity of design variables automatically.
-- Straightforward to implement using standard vector operations.
+- Guarantees :math:`\rho > 0` automatically.
+- Preserves the multiplicative structure of OC while improving numerical stability.
+- Easy to implement in a vectorized, in-place fashion.
 
 **Disadvantages**:
 
-- Requires careful tuning of :math:`\eta` and :math:`\lambda_v`.
-- Does not enforce volume constraints exactly—relies on penalty balancing.
-- Convergence behavior may vary depending on the problem and filter.
-
-2. Linear-Space Update Method
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This variant formulates the update as an explicit increment :math:`\Delta \rho` added to the current density. The update is defined as:
-
-.. math::
-
-   \rho^{(t+1)} = \rho^{(t)} + \Delta \rho
-
-where:
-
-.. math::
-
-   \Delta \rho = -\eta \cdot (dC + \lambda_v)
-
-This form is structurally simpler and better suited for integration with additional constraint handling mechanisms. The update increment :math:`\Delta \rho` may be further clipped to enforce move limits or bound constraints.
-
-**Advantages**:
-
-- Direct control over the update magnitude.
-- Easier to incorporate projection, filtering, or move limits.
-- Simple to interpret and modify in algorithmic experiments.
-
-**Disadvantages**:
-
-- Can violate positivity if not carefully bounded.
-- Volume constraint is only approximately satisfied unless post-processing is added.
-- Requires stabilization strategies (e.g., clipping or damping) for robust performance.
-
-Summary
-~~~~~~~
-
-Both update strategies aim to descend along the objective gradient while respecting volume constraints and maintaining stability. The choice depends on implementation goals:
-
-- Use the log-space update when prioritizing positivity and multiplicative structure.
-- Use the additive update when flexibility, constraint control, or custom damping is desired.
-
-Log-space Lagrangian Method
------------------------------------
-
-Log-space Lagrangian Method
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This method is a variant of the Modified Optimality Criteria (MOC) approach that performs density updates in **log-space** rather than directly in the physical domain. The goal is to improve numerical stability and ensure that the updated density field remains strictly positive.
-
-Instead of updating the density :math:`\rho` directly, the update is applied to its logarithm :math:`\log \rho`. This transforms the multiplicative update behavior into an additive one in log-space.
-
-The method computes the Lagrangian gradient :math:`dL` as the sum of the compliance sensitivity :math:`dC` and the derivative of the volume penalty term :math:`\lambda_v`. The update rule is:
-
-.. math::
-
-   \log \rho^{(t+1)} = \log \rho^{(t)} - \eta \cdot (dC + \lambda_v)
-
-The density is then recovered by exponentiation:
-
-.. math::
-
-   \rho^{(t+1)} = \exp\left( \log \rho^{(t)} - \eta \cdot (dC + \lambda_v) \right)
-               = \rho^{(t)} \cdot \exp\left( -\eta \cdot (dC + \lambda_v) \right)
-
-Here:
-
-- :math:`\rho^{(t)}` is the current density at iteration :math:`t`,
-- :math:`dC` is the derivative of compliance with respect to density,
-- :math:`\lambda_v` is the derivative of the volume constraint penalty,
-- :math:`\eta` is a scalar step size (analogous to a learning rate).
-
-Optional clipping is applied in log-space to limit excessive updates and preserve stability:
-
-.. math::
-
-   \log \rho^{(t+1)} = \text{clip}\left( \log \rho^{(t+1)},\ \log \rho_{\min},\ \log \rho_{\max} \right)
-
-Finally, move limits can also be enforced using:
-
-.. math::
-
-   \rho^{(t+1)} = \text{clip}\left( \rho^{(t+1)},\ \rho^{(t)} - \Delta \rho_{\max},\ \rho^{(t)} + \Delta \rho_{\max} \right)
-
-**Advantages**:
-
-- Naturally ensures :math:`\rho > 0` without additional constraints.
-- Suitable for in-place and vectorized computation in large-scale problems.
-- Converts multiplicative effects into additive updates, improving numerical robustness.
-
-**Disadvantages**:
-
-- Sensitive to step size :math:`\eta` and penalty weight :math:`\lambda_v`.
-- Volume constraints are only enforced implicitly via penalty.
-- Requires careful initialization and parameter tuning to ensure convergence.
+- Requires careful tuning of :math:`\eta` and the handling of :math:`\lambda_v`.
+- Volume constraint is not enforced exactly unless :math:`\lambda_v` is solved consistently (e.g., via bisection).
+- Convergence may be sensitive to filtering and parameter settings.
