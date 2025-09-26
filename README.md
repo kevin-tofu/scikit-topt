@@ -44,7 +44,6 @@ The currently supported features are as follows:
 - Topology optimization using the density method and its optimization algorithm
   - Optimality Criteria (OC) Method  
   - (Log-Space) Modified OC Method 
-  - Lagrangian Method
 - able to handle multiple force condition
 - High-performance computation using sparse matrices with Scipy and PyAMG  
 - has a function to monitor the transition of parameters.

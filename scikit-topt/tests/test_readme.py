@@ -65,47 +65,13 @@ def logmoc_optimize(tsk):
     optimizer.optimize()
 
 
-def linearmoc_optimize(tsk):
-    cfg = sktopt.core.optimizers.LinearMOC_Config()
-    cfg.max_iters = 1
-    cfg.record_times = 1
-    optimizer = sktopt.core.LinearMOC_Optimizer(cfg, tsk)
-    optimizer.parameterize()
-    optimizer.optimize()
-
-
-def loglagrangian_optimize(tsk):
-    cfg = sktopt.core.optimizers.LogLagrangian_Config(
-        dst_path="./result/pytests"
-    )
-    cfg.max_iters = 1
-    cfg.record_times = 1
-
-    optimizer = sktopt.core.LogLagrangian_Optimizer(cfg, tsk)
-    optimizer.parameterize()
-    optimizer.optimize()
-
-    cfg2 = sktopt.core.optimizers.LogLagrangian_Config(
-        dst_path="./result/pytests",
-        restart=True,
-        restart_from=1
-    )
-    cfg2.max_iters = 1
-    cfg2.record_times = 1
-    optimizer2 = sktopt.core.LogLagrangian_Optimizer(cfg2, tsk)
-    optimizer2.parameterize()
-    optimizer2.optimize()
-
-
 def test_optimizers():
     tsk1 = sktopt.mesh.toy_problem.toy_test()
     oc_ramp_optimize(tsk1)
     logmoc_optimize(tsk1)
-    loglagrangian_optimize(tsk1)
-    linearmoc_optimize(tsk1)
 
 
 if __name__ == "__main__":
 
     tsk = define_task()
-    loglagrangian_optimize(tsk)
+    logmoc_optimize(tsk)
