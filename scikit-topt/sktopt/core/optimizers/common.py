@@ -260,43 +260,44 @@ def interpolation_funcs(cfg: DensityMethodConfig):
 
 from abc import ABC, abstractmethod
 
+
 class DensityMethodBase(ABC):
     @abstractmethod
     def add_recorder(self):
         pass
-    
+
     @abstractmethod
     def scale(self):
         pass
-    
+
     @abstractmethod
     def unscale(self):
         pass
-    
+
     @abstractmethod
     def init_schedulers(self, export: bool = True):
         pass
-    
+
     @abstractmethod
     def parameterize(self):
         pass
-    
+
     @abstractmethod
     def load_parameters(self):
         pass
-    
+
     @abstractmethod
     def initialize_density(self):
         pass
-    
+
     @abstractmethod
     def initialize_params(self):
         pass
-    
+
     @abstractmethod
     def optimize(self):
         pass
-    
+
     @abstractmethod
     def rho_update(
         self,

@@ -68,7 +68,7 @@ def moc_log_update_logspace(
     tmp_lower, tmp_upper,
     rho_min, rho_max
 ):
-    eps = 1e-30
+    eps = 1e-10
     logger.info(f"dC: {dC.min()} {dC.max()}")
     np.negative(dC, out=scaling_rate)
     scaling_rate /= (lambda_v + eps)
@@ -198,17 +198,6 @@ class LogMOC_Optimizer(common.DensityMethod):
         else:
             pass
 
-        # Linear Averaging
-        # vol_error = np.sum(
-        #     rho_projected[tsk.design_elements] * elements_volume_design
-        # ) / elements_volume_design_sum - vol_frac
-        # penalty = cfg.mu_p * vol_error
-        # self.lambda_v = cfg.lambda_decay * self.lambda_v + \
-        #     penalty if iter_loop > 1 else penalty
-        # self.lambda_v = np.clip(
-        #     self.lambda_v, cfg.lambda_lower, cfg.lambda_upper
-        # )
-
         # EMA
         volume = np.sum(
             rho_projected[tsk.design_elements] * elements_volume_design
@@ -225,6 +214,8 @@ class LogMOC_Optimizer(common.DensityMethod):
         self.lambda_v = np.clip(
             self.lambda_v, cfg.lambda_lower, cfg.lambda_upper
         )
+        # lam_e = self.lambda_v * \
+        #     (elements_volume_design / (elements_volume_design_sum + 1e-10))
 
         self.recorder.feed_data("lambda_v", self.lambda_v)
         self.recorder.feed_data("vol_error", vol_error)
@@ -233,9 +224,11 @@ class LogMOC_Optimizer(common.DensityMethod):
         moc_log_update_logspace(
             rho_candidate,
             dC_drho_ave,
-            self.lambda_v, scaling_rate,
-            move_limit,
+            # lam_e,
+            self.lambda_v,
+            scaling_rate,
             eta,
+            move_limit,
             tmp_lower, tmp_upper,
             cfg.rho_min, 1.0,
         )
@@ -250,7 +243,7 @@ if __name__ == '__main__':
     )
     parser = misc.add_common_arguments(parser)
     parser.add_argument(
-        '--mu_p', '-MUP', type=float, default=100.0, help=''
+        '--mu_p', '-MUP', type=float, default=5000.0, help=''
     )
     parser.add_argument(
         '--lambda_v', '-LV', type=float, default=1.0, help=''

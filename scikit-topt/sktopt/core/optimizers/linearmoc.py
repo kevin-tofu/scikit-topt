@@ -53,7 +53,7 @@ class LinearMOC_Config(common.DensityMethodLagrangianConfig):
 def moc_linear_update_logspace(
     rho,
     dC, lambda_v, scaling_rate,
-    eta, move_limit,
+    move_limit, eta,
     tmp_lower, tmp_upper,
     rho_min, rho_max
 ):
