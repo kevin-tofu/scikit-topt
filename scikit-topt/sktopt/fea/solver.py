@@ -163,13 +163,16 @@ def compute_compliance_basis_multi_load(
         if n_joblib > 1:
             from joblib import Parallel, delayed, parallel_backend
             lu = scipy.sparse.linalg.splu(K_e.tocsc())
+
             def solve_system(F_stack):
                 return lu.solve(F_stack)
-            
+
             with parallel_backend("threading"):
                 u_all[:, :] = np.column_stack(
                     Parallel(n_jobs=n_joblib)(
-                        delayed(solve_system)(F_stack[:, i]) for i in range(F_stack.shape[1])
+                        delayed(solve_system)(F_stack[:, i]) for i in range(
+                            F_stack.shape[1]
+                        )
                     )
                 )
 
