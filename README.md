@@ -200,7 +200,6 @@ If you use Scikit Topt in your research or software, please cite it as:
 }
 ```
 
-
 ## ToDo
 - Set break point from the optimization loop
 - Add other optimizers
