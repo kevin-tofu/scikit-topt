@@ -50,22 +50,6 @@ The currently supported features are as follows:
 - has a function to monitor the transition of parameters.
 
 
-## 📖 Citation
-
-If you use Scikit Topt in your research or software, please cite it as:
-
-```bibtex
-@misc{scikit-topt2025,
-  author       = {Watanabe, Kohei},
-  title        = {Scikit-Topt: A Python Library for Algorithm Development in Topology Optimization},
-  year         = {2025},
-  publisher    = {Zenodo},
-  doi          = {10.5281/zenodo.15441499},
-  url          = {https://doi.org/10.5281/zenodo.15441499},
-  note         = {Version 0.2.5}
-}
-```
-
 
 ## Usage
 ### Install Package
@@ -197,6 +181,25 @@ Scikit-Topt is standing on the shoulders of proverbial giants. In particular, I 
  - PyVista
  - Joblib
  - Topology Optimization Community
+
+
+
+## 📖 Citation
+
+If you use Scikit Topt in your research or software, please cite it as:
+
+```bibtex
+@misc{scikit-topt2025,
+  author       = {Watanabe, Kohei},
+  title        = {Scikit-Topt: A Python Library for Algorithm Development in Topology Optimization},
+  year         = {2025},
+  publisher    = {Zenodo},
+  doi          = {10.5281/zenodo.15441499},
+  url          = {https://doi.org/10.5281/zenodo.15441499},
+  note         = {Version 0.2.5}
+}
+```
+
 
 ## ToDo
 - Set break point from the optimization loop
