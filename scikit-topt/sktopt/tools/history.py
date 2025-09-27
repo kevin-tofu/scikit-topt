@@ -54,10 +54,10 @@ class HistoryLogger():
         d = self.data[-1]
         if isinstance(d, list):
             logger.info(
-                f"{self.name}: min={d[0]:.3f}, mean={d[1]:.3f}, max={d[2]:.3f}"
+                f"{self.name}: min={d[0]:.8f}, mean={d[1]:.8f}, max={d[2]:.8f}"
             )
         else:
-            logger.info(f"{self.name}: {d:.3f}")
+            logger.info(f"{self.name}: {d:.8f}")
 
     def data_to_array(self) -> tuple[np.ndarray, list[str]]:
         if len(self.data) == 0:
