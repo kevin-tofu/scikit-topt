@@ -10,7 +10,7 @@ logger = mylogger(__name__)
 
 
 @dataclass
-class OC_Config(common.DensityMethodLagrangianConfig):
+class OC_Config(common.DensityMethod_OC_Config):
     interpolation: Literal["SIMP"] = "SIMP"
     eta_init: float = 0.1
     eta: float = 0.5
@@ -54,7 +54,7 @@ def bisection_with_projection(
             rho_candidate * elements_volume
         ) / elements_volume_sum - vol_frac
 
-        if abs(vol_error) < 1e-6:
+        if abs(vol_error) < 1e-4:
             break
         if vol_error > 0:
             l1 = lmid

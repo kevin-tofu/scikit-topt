@@ -9,7 +9,7 @@ logger = mylogger(__name__)
 
 
 @dataclass
-class LogMOC_Config(common.DensityMethodLagrangianConfig):
+class LogMOC_Config(common.DensityMethod_OC_Config):
     """
     Configuration for log-space gradient update with optional mean-centering.
 
@@ -45,9 +45,9 @@ class LogMOC_Config(common.DensityMethodLagrangianConfig):
     """
 
     interpolation: Literal["SIMP"] = "SIMP"
-    mu_p: float = 300.0
+    mu_p: float = 3000.0
     lambda_v: float = 10.0
-    lambda_decay: float = 0.90
+    lambda_decay: float = 0.70
 
 
 # log(x) = -0.4   →   x ≈ 0.670

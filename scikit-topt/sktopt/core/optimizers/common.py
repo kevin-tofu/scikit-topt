@@ -1,9 +1,11 @@
 import os
+from abc import ABC, abstractmethod
 from typing import Literal
 import inspect
 import shutil
 import json
 from dataclasses import dataclass, asdict
+
 import numpy as np
 import sktopt
 from sktopt import tools
@@ -16,7 +18,6 @@ from sktopt.fea import composer
 from sktopt.core import misc
 from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
-
 
 
 @dataclass
@@ -200,7 +201,7 @@ class DensityMethodConfig():
 
 
 @dataclass
-class DensityMethodLagrangianConfig(DensityMethodConfig):
+class DensityMethod_OC_Config(DensityMethodConfig):
     """
     Configuration class for controlling parameters in topology optimization.
 
@@ -258,7 +259,7 @@ def interpolation_funcs(cfg: DensityMethodConfig):
         raise ValueError("Interpolation method must be SIMP or RAMP.")
 
 
-from abc import ABC, abstractmethod
+
 
 
 class DensityMethodBase(ABC):
