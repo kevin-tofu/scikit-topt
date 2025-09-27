@@ -115,7 +115,7 @@ class TaskConfig():
             dirichlet_dofs = dofs.all() if dirichlet_dir == 'all' \
                 else dofs.nodal[dirichlet_dir]
         else:
-            raise ValueError("dirichlet_nodes is not np.ndarray or of list")        
+            raise ValueError("dirichlet_nodes is not np.ndarray or of list")
 
         if isinstance(force_nodes, list):
             force_dofs = [

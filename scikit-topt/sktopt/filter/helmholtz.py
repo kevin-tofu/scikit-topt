@@ -268,30 +268,7 @@ def prepare_helmholtz_filter(
     Precompute and return the matrices and solver for Helmholtz filter.
     """
     laplacian, volumes = element_to_element_laplacian(mesh, radius)
-    if False:
-        centroids = np.mean(mesh.p[:, mesh.t], axis=1).T
-        tree = scipy.spatial.cKDTree(centroids)
-        n_elements = mesh.t.shape[1]
-        valid_mask = np.zeros(n_elements, dtype=bool)
-
-        for i in range(n_elements):
-            idx = tree.query_ball_point(centroids[i], r=radius)
-            if np.any(design_elements_mask[idx]):
-                valid_mask[i] = True
-
-        laplacian = laplacian.tolil()
-        for i in range(n_elements):
-            if not valid_mask[i]:
-                laplacian.rows[i] = []
-                laplacian.data[i] = []
-        laplacian = laplacian.tocsc()
-
-        mean_volume = np.mean(volumes[valid_mask]) if np.any(valid_mask) \
-            else 1.0
-        volumes_normalized = volumes / mean_volume
-        volumes_normalized[~valid_mask] = 0.0
-    else:
-        volumes_normalized = volumes / np.mean(volumes)
+    volumes_normalized = volumes / np.mean(volumes)
     # V = csc_matrix(np.diag(volumes_normalized))
     V = scipy.sparse.diags(volumes_normalized, format="csc")
     A = V + radius**2 * laplacian

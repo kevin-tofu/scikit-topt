@@ -25,19 +25,19 @@ def export_mesh_with_info(
     ----------
     mesh : skfem.Mesh
         The finite element mesh object (MeshTet, MeshTri, MeshHex, etc.).
-    
+
     point_data_values : list of np.ndarray, optional
         List of arrays of point-wise data (length = n_nodes).
-    
+
     point_data_names : list of str, optional
         Names for each point-wise data array.
-    
+
     cell_data_values : list of np.ndarray, optional
         List of arrays of cell-wise data (length = n_elements).
-    
+
     cell_data_names : list of str, optional
         Names for each cell-wise data array.
-    
+
     filepath : str
         Output filename (e.g., "result.vtu").
     """

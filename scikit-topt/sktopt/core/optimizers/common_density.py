@@ -600,7 +600,7 @@ class DensityMethod(DensityMethodBase):
             force_vec_list : list of ndarray
                 List of external force vectors, one for each load case.
             u_dofs : ndarray of shape (ndof, n_load_cases)
-                Displacement field solutions for each degree of freedom 
+                Displacement field solutions for each degree of freedom
                 and each load case.
             filter_radius : float
                 Initial radius of the density filter. Determined either from 
