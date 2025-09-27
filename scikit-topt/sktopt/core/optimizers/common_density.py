@@ -190,12 +190,12 @@ class DensityMethodConfig():
     #         data = yaml.safe_load(f)
     #     return OC_Config(**data)
 
-    def vtu_path(self, iter: int):
-        return f"{self.dst_path}/mesh_rho/info_mesh-{iter:08d}.vtu"
+    def vtu_path(self, iter_num: int):
+        return f"{self.dst_path}/mesh_rho/info_mesh-{iter_num:08d}.vtu"
 
-    def image_path(self, iter: int, prefix: str):
+    def image_path(self, iter_num: int, prefix: str):
         if self.export_img:
-            return f"{self.dst_path}/mesh_rho/info_{prefix}-{iter:08d}.jpg"
+            return f"{self.dst_path}/mesh_rho/info_{prefix}-{iter_num:08d}.jpg"
         else:
             return None
 
@@ -533,11 +533,11 @@ class DensityMethod(DensityMethodBase):
                 data = np.load(data_path)
                 iter_begin = cfg.restart_from + 1
             else:
-                iter, data_path = misc.find_latest_iter_file(
+                iter_num, data_path = misc.find_latest_iter_file(
                     f"{cfg.dst_path}/data"
                 )
                 data = np.load(data_path)
-                iter_begin = iter + 1
+                iter_begin = iter_num + 1
             iter_end = cfg.max_iters + 1
             self.recorder.import_histories()
             rho[tsk.design_elements] = data["rho_design_elements"]
@@ -556,9 +556,61 @@ class DensityMethod(DensityMethodBase):
 
     def initialize_params(self):
         """
-        To take advantage of in-place computation and improve execution speed 
-        by avoiding repeated memory allocations,
-        memory regions are preallocated and reused across iterations
+            Initialize parameters and preallocate work arrays for density-based topology 
+            optimization using the SIMP method.
+
+            This function prepares all arrays required for iterative optimization. 
+            By preallocating memory and reusing arrays in-place, repeated allocations 
+            are avoided and execution speed is improved.
+
+            Returns
+            -------
+            iter_begin : int
+                Starting iteration index.
+            iter_end : int
+                Final iteration index.
+            rho : ndarray of shape (n_elements,)
+                Current element-wise design density variables.
+            rho_prev : ndarray of shape (n_elements,)
+                Copy of densities from the previous iteration.
+            rho_filtered : ndarray of shape (n_elements,)
+                Densities after applying the density filter (e.g., Helmholtz filter).
+            rho_projected : ndarray of shape (n_elements,)
+                Densities after applying the projection function (e.g., Heaviside projection).
+            dH_drho : ndarray of shape (n_elements,)
+                Derivative of the projection function with respect to the filtered densities.
+            grad_filtered : ndarray of shape (n_elements,)
+                Gradient field after combining sensitivity with projection derivative.
+            dC_drho_projected : ndarray of shape (n_elements,)
+                Compliance sensitivities with respect to the projected densities.
+            strain_energy_mean : ndarray of shape (n_elements,)
+                Average element strain energy over all load cases.
+            dC_drho_full : ndarray of shape (n_elements,)
+                Compliance sensitivities mapped back to the full set of elements.
+            dC_drho_design_eles : ndarray of shape (n_design_elements,)
+                Compliance sensitivities restricted to design elements only.
+            scaling_rate : ndarray of shape (n_design_elements,)
+                Scaling factors used in the update scheme (e.g., MOC/OC update).
+            rho_design_eles : ndarray of shape (n_design_elements,)
+                Subset of densities corresponding to design elements only.
+            rho_clip_lower : ndarray of shape (n_design_elements,)
+                Lower clipping bounds for density updates.
+            rho_clip_upper : ndarray of shape (n_design_elements,)
+                Upper clipping bounds for density updates.
+            force_vec_list : list of ndarray
+                List of external force vectors, one for each load case.
+            u_dofs : ndarray of shape (ndof, n_load_cases)
+                Displacement field solutions for each degree of freedom 
+                and each load case.
+            filter_radius : float
+                Initial radius of the density filter. Determined either from 
+                a fixed value or from a scheduled update.
+
+            Notes
+            -----
+            - This setup is specific to density-based SIMP topology optimization.
+            - Arrays are reused in-place across iterations to minimize memory 
+            allocation overhead.
         """
         tsk = self.tsk
         cfg = self.cfg
@@ -638,8 +690,8 @@ class DensityMethod(DensityMethodBase):
         )
 
         # Loop 1 - N
-        for iter in range(iter_begin, iter_end):
-            logger.info(f"iterations: {iter} / {iter_end - 1}")
+        for iter_num in range(iter_begin, iter_end):
+            logger.info(f"iterations: {iter_num} / {iter_end - 1}")
             (
                 p,
                 vol_frac,
@@ -647,7 +699,7 @@ class DensityMethod(DensityMethodBase):
                 move_limit,
                 eta, percentile, filter_radius
             ) = self.schedulers.values_as_list(
-                iter,
+                iter_num,
                 [
                     'p', 'vol_frac', 'beta', 'move_limit',
                     'eta', 'percentile', 'filter_radius'
@@ -688,11 +740,11 @@ class DensityMethod(DensityMethodBase):
                 cfg.E0, cfg.E_min, p, tsk.nu,
                 elem_func=density_interpolation
             )
-            for force_loop, force in enumerate(force_vec_list):
-                dH_drho[:] = 0.0
-                u_max.append(np.abs(u_dofs[:, force_loop]).max())
-                strain_energy_mean += strain_energy[:, force_loop]
+            strain_energy_mean = strain_energy.mean(axis=1)
+            for force_loop, _ in enumerate(force_vec_list):
 
+                u_max.append(np.abs(u_dofs[:, force_loop]).max())
+                dH_drho[:] = 0.0
                 np.copyto(
                     dC_drho_projected,
                     dC_drho_func(
@@ -709,8 +761,6 @@ class DensityMethod(DensityMethodBase):
                 dC_drho_full[:] += self.helmholz_solver.gradient(grad_filtered)
 
             dC_drho_full /= len(force_vec_list)
-            strain_energy_mean /= len(force_vec_list)
-            compliance_avg /= len(force_vec_list)
             if cfg.sensitivity_filter:
                 logger.info("--- sensitivity filter ---")
                 filtered = self.helmholz_solver.filter(dC_drho_full)
@@ -720,7 +770,7 @@ class DensityMethod(DensityMethodBase):
             logger.info("--- update density ---")
             self.rho_update(
                 # iter_num,
-                iter,
+                iter_num,
                 rho_design_eles,
                 rho_projected,
                 dC_drho_design_eles,
@@ -753,10 +803,10 @@ class DensityMethod(DensityMethodBase):
             self.recorder.feed_data("u_max", u_max)
 
             if any(
-                (iter % (cfg.max_iters // cfg.record_times) == 0,
-                 iter == 1)
+                (iter_num % (cfg.max_iters // cfg.record_times) == 0,
+                 iter_num == 1)
             ):
-                logger.info(f"Saving at iteration {iter}")
+                logger.info(f"Saving at iteration {iter_num}")
                 self.recorder.print()
                 self.recorder.export_progress()
 
@@ -764,24 +814,24 @@ class DensityMethod(DensityMethodBase):
                     tsk.mesh,
                     cell_data_names=["rho_projected", "strain_energy"],
                     cell_data_values=[rho_projected, strain_energy_mean],
-                    filepath=cfg.vtu_path(iter)
+                    filepath=cfg.vtu_path(iter_num)
                 )
                 visualization.write_mesh_with_info_as_image(
-                    mesh_path=cfg.vtu_path(iter),
+                    mesh_path=cfg.vtu_path(iter_num),
                     mesh_scalar_name="rho_projected",
                     clim=(0.0, 1.0),
-                    image_path=cfg.image_path(iter, "rho_projected"),
-                    image_title=f"Iteration : {iter}"
+                    image_path=cfg.image_path(iter_num, "rho_projected"),
+                    image_title=f"Iteration : {iter_num}"
                 )
                 visualization.write_mesh_with_info_as_image(
-                    mesh_path=cfg.vtu_path(iter),
+                    mesh_path=cfg.vtu_path(iter_num),
                     mesh_scalar_name="strain_energy",
                     clim=(0.0, np.max(strain_energy)),
-                    image_path=cfg.image_path(iter, "strain_energy"),
-                    image_title=f"Iteration : {iter}"
+                    image_path=cfg.image_path(iter_num, "strain_energy"),
+                    image_title=f"Iteration : {iter_num}"
                 )
                 np.savez_compressed(
-                    f"{cfg.dst_path}/data/{str(iter).zfill(6)}-rho.npz",
+                    f"{cfg.dst_path}/data/{str(iter_num).zfill(6)}-rho.npz",
                     rho_design_elements=rho[tsk.design_elements]
                 )
 
