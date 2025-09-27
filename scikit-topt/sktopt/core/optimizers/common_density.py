@@ -682,7 +682,7 @@ class DensityMethod(DensityMethodBase):
                 elem_func=density_interpolation,
                 solver=cfg.solver_option,
                 n_joblib=cfg.n_joblib
-            )
+            ).mean()
             strain_energy = composer.strain_energy_skfem_multi(
                 tsk.basis, rho_projected, u_dofs,
                 cfg.E0, cfg.E_min, p, tsk.nu,
