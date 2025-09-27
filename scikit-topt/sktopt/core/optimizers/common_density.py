@@ -259,9 +259,6 @@ def interpolation_funcs(cfg: DensityMethodConfig):
         raise ValueError("Interpolation method must be SIMP or RAMP.")
 
 
-
-
-
 class DensityMethodBase(ABC):
     @abstractmethod
     def add_recorder(self):
@@ -302,17 +299,17 @@ class DensityMethodBase(ABC):
     @abstractmethod
     def rho_update(
         self,
-        iter_loop: int,
-        rho_candidate: np.ndarray,
+        iter_num: int,
+        rho_design_eles: np.ndarray,
         rho_projected: np.ndarray,
-        dC_drho_ave: np.ndarray,
+        dC_drho_design_eles: np.ndarray,
         u_dofs: np.ndarray,
-        strain_energy_ave: np.ndarray,
+        strain_energy_mean: np.ndarray,
         scaling_rate: np.ndarray,
         move_limit: float,
         eta: float,
-        tmp_lower: np.ndarray,
-        tmp_upper: np.ndarray,
+        rho_clip_lower: np.ndarray,
+        rho_clip_upper: np.ndarray,
         lambda_lower: float,
         lambda_upper: float,
         percentile: float,
@@ -321,7 +318,7 @@ class DensityMethodBase(ABC):
         vol_frac: float
     ):
         pass
-    
+
 
 class DensityMethod(DensityMethodBase):
     """
@@ -558,24 +555,30 @@ class DensityMethod(DensityMethodBase):
         return rho, iter_begin, iter_end
 
     def initialize_params(self):
+        """
+        To take advantage of in-place computation and improve execution speed 
+        by avoiding repeated memory allocations,
+        memory regions are preallocated and reused across iterations
+        """
         tsk = self.tsk
         cfg = self.cfg
         rho, iter_begin, iter_end = self.initialize_density()
         rho_prev = np.zeros_like(rho)
         rho_filtered = np.zeros_like(rho)
         rho_projected = np.zeros_like(rho)
-        dH = np.empty_like(rho)
+        dH_drho = np.empty_like(rho)
         grad_filtered = np.empty_like(rho)
         dC_drho_projected = np.empty_like(rho)
-        strain_energy_ave = np.zeros_like(rho)
+        strain_energy_mean = np.zeros_like(rho)
         dC_drho_full = np.zeros_like(rho)
-        dC_drho_ave = np.zeros_like(rho[tsk.design_elements])
+        dC_drho_design_eles = np.zeros_like(rho[tsk.design_elements])
         scaling_rate = np.empty_like(rho[tsk.design_elements])
-        rho_candidate = np.empty_like(rho[tsk.design_elements])
-        tmp_lower = np.empty_like(rho[tsk.design_elements])
-        tmp_upper = np.empty_like(rho[tsk.design_elements])
-        force_list = tsk.force if isinstance(tsk.force, list) else [tsk.force]
-        u_dofs = np.zeros((tsk.basis.N, len(force_list)))
+        rho_design_eles = np.empty_like(rho[tsk.design_elements])
+        rho_clip_lower = np.empty_like(rho[tsk.design_elements])
+        rho_clip_upper = np.empty_like(rho[tsk.design_elements])
+        force_vec_list = tsk.force \
+            if isinstance(tsk.force, list) else [tsk.force]
+        u_dofs = np.zeros((tsk.basis.N, len(force_vec_list)))
         filter_radius = cfg.filter_radius_init \
             if cfg.filter_radius_step > 0 else cfg.filter_radius
         return (
@@ -585,17 +588,17 @@ class DensityMethod(DensityMethodBase):
             rho_prev,
             rho_filtered,
             rho_projected,
-            dH,
+            dH_drho,
             grad_filtered,
             dC_drho_projected,
-            strain_energy_ave,
+            strain_energy_mean,
             dC_drho_full,
-            dC_drho_ave,
+            dC_drho_design_eles,
             scaling_rate,
-            rho_candidate,
-            tmp_lower,
-            tmp_upper,
-            force_list,
+            rho_design_eles,
+            rho_clip_lower,
+            rho_clip_upper,
+            force_vec_list,
             u_dofs,
             filter_radius
         )
@@ -614,17 +617,17 @@ class DensityMethod(DensityMethodBase):
             rho_prev,
             rho_filtered,
             rho_projected,
-            dH,
+            dH_drho,
             grad_filtered,
             dC_drho_projected,
-            strain_energy_ave,
+            strain_energy_mean,
             dC_drho_full,
-            dC_drho_ave,
+            dC_drho_design_eles,
             scaling_rate,
-            rho_candidate,
-            tmp_lower,
-            tmp_upper,
-            force_list,
+            rho_design_eles,
+            rho_clip_lower,
+            rho_clip_upper,
+            force_vec_list,
             u_dofs,
             filter_radius
         ) = self.initialize_params()
@@ -635,7 +638,7 @@ class DensityMethod(DensityMethodBase):
         )
 
         # Loop 1 - N
-        for iter_loop, iter in enumerate(range(iter_begin, iter_end)):
+        for iter in range(iter_begin, iter_end):
             logger.info(f"iterations: {iter} / {iter_end - 1}")
             (
                 p,
@@ -654,26 +657,25 @@ class DensityMethod(DensityMethodBase):
             )
 
             if filter_radius != self.helmholz_solver.radius:
-            # if filter_radius_prev != filter_radius:
-                logger.info("!!! Filter Update")
+                logger.info("--- Filter Update ---")
                 self.helmholz_solver.update_radius(
                     tsk.mesh, filter_radius, "cg_pyamg"
                 )
 
-            logger.info("!!! project and filter")
+            logger.info("--- project and filter ---")
             rho_prev[:] = rho[:]
             rho_filtered[:] = self.helmholz_solver.filter(rho)
             projection.heaviside_projection_inplace(
                 rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
             )
-            logger.info("!!! compute compliance")
-            dC_drho_ave[:] = 0.0
+            logger.info("--- compute compliance ---")
+            dC_drho_design_eles[:] = 0.0
             dC_drho_full[:] = 0.0
-            strain_energy_ave[:] = 0.0
+            strain_energy_mean[:] = 0.0
             u_max = list()
 
             compliance_avg = solver.compute_compliance_basis_multi_load(
-                tsk.basis, tsk.free_dofs, tsk.dirichlet_dofs, force_list,
+                tsk.basis, tsk.free_dofs, tsk.dirichlet_dofs, force_vec_list,
                 cfg.E0, cfg.E_min, p, tsk.nu,
                 rho_projected,
                 u_dofs,
@@ -686,10 +688,10 @@ class DensityMethod(DensityMethodBase):
                 cfg.E0, cfg.E_min, p, tsk.nu,
                 elem_func=density_interpolation
             )
-            for force_loop, force in enumerate(force_list):
-                dH[:] = 0.0
+            for force_loop, force in enumerate(force_vec_list):
+                dH_drho[:] = 0.0
                 u_max.append(np.abs(u_dofs[:, force_loop]).max())
-                strain_energy_ave += strain_energy[:, force_loop]
+                strain_energy_mean += strain_energy[:, force_loop]
 
                 np.copyto(
                     dC_drho_projected,
@@ -701,41 +703,41 @@ class DensityMethod(DensityMethodBase):
                 )
                 projection.heaviside_projection_derivative_inplace(
                     rho_filtered,
-                    beta=beta, eta=cfg.beta_eta, out=dH
+                    beta=beta, eta=cfg.beta_eta, out=dH_drho
                 )
-                np.multiply(dC_drho_projected, dH, out=grad_filtered)
+                np.multiply(dC_drho_projected, dH_drho, out=grad_filtered)
                 dC_drho_full[:] += self.helmholz_solver.gradient(grad_filtered)
 
-            dC_drho_full /= len(force_list)
-            strain_energy_ave /= len(force_list)
-            compliance_avg /= len(force_list)
+            dC_drho_full /= len(force_vec_list)
+            strain_energy_mean /= len(force_vec_list)
+            compliance_avg /= len(force_vec_list)
             if cfg.sensitivity_filter:
-                logger.info("!!! sensitivity filter")
+                logger.info("--- sensitivity filter ---")
                 filtered = self.helmholz_solver.filter(dC_drho_full)
                 np.copyto(dC_drho_full, filtered)
-            dC_drho_ave[:] = dC_drho_full[tsk.design_elements]
-            rho_candidate[:] = rho[tsk.design_elements]
-            logger.info("!!! update density")
+            dC_drho_design_eles[:] = dC_drho_full[tsk.design_elements]
+            rho_design_eles[:] = rho[tsk.design_elements]
+            logger.info("--- update density ---")
             self.rho_update(
-                # iter_loop,
+                # iter_num,
                 iter,
-                rho_candidate,
+                rho_design_eles,
                 rho_projected,
-                dC_drho_ave,
+                dC_drho_design_eles,
                 u_dofs,
-                strain_energy_ave,
+                strain_energy_mean,
                 scaling_rate,
                 move_limit,
                 eta,
                 beta,
-                tmp_lower,
-                tmp_upper,
+                rho_clip_lower,
+                rho_clip_upper,
                 percentile,
                 elements_volume_design,
                 elements_volume_design_sum,
                 vol_frac
             )
-            rho[tsk.design_elements] = rho_candidate
+            rho[tsk.design_elements] = rho_design_eles
             if cfg.design_dirichlet is True:
                 rho[tsk.force_elements] = 1.0
             else:
@@ -744,7 +746,7 @@ class DensityMethod(DensityMethodBase):
             self.recorder.feed_data(
                 "rho_projected", rho_projected[tsk.design_elements]
             )
-            self.recorder.feed_data("strain_energy", strain_energy_ave)
+            self.recorder.feed_data("strain_energy", strain_energy_mean)
             self.recorder.feed_data("compliance", compliance_avg)
             self.recorder.feed_data("scaling_rate", scaling_rate)
             u_max = u_max[0] if len(u_max) == 1 else np.array(u_max)
@@ -761,7 +763,7 @@ class DensityMethod(DensityMethodBase):
                 visualization.export_mesh_with_info(
                     tsk.mesh,
                     cell_data_names=["rho_projected", "strain_energy"],
-                    cell_data_values=[rho_projected, strain_energy_ave],
+                    cell_data_values=[rho_projected, strain_energy_mean],
                     filepath=cfg.vtu_path(iter)
                 )
                 visualization.write_mesh_with_info_as_image(
@@ -796,17 +798,17 @@ class DensityMethod(DensityMethodBase):
 
     def rho_update(
         self,
-        iter_loop: int,
-        rho_candidate: np.ndarray,
+        iter_num: int,
+        rho_design_eles: np.ndarray,
         rho_projected: np.ndarray,
-        dC_drho_ave: np.ndarray,
+        dC_drho_design_eles: np.ndarray,
         u_dofs: np.ndarray,
-        strain_energy_ave: np.ndarray,
+        strain_energy_mean: np.ndarray,
         scaling_rate: np.ndarray,
         move_limit: float,
         eta: float,
-        tmp_lower: np.ndarray,
-        tmp_upper: np.ndarray,
+        rho_clip_lower: np.ndarray,
+        rho_clip_upper: np.ndarray,
         lambda_lower: float,
         lambda_upper: float,
         percentile: float,

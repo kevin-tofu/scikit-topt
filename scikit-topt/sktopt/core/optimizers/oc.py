@@ -4,13 +4,13 @@ import numpy as np
 import sktopt
 from sktopt.core import projection
 from sktopt.core import misc
-from sktopt.core.optimizers import common
+from sktopt.core.optimizers import common_density
 from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 
 
 @dataclass
-class OC_Config(common.DensityMethod_OC_Config):
+class OC_Config(common_density.DensityMethod_OC_Config):
     interpolation: Literal["SIMP"] = "SIMP"
     eta_init: float = 0.1
     eta: float = 0.5
@@ -21,8 +21,8 @@ def bisection_with_projection(
     dC, rho_e, rho_min, rho_max, move_limit,
     eta, eps, vol_frac,
     beta, beta_eta,
-    scaling_rate, rho_candidate,
-    tmp_lower, tmp_upper,
+    scaling_rate, rho_design_eles,
+    rho_clip_lower, rho_clip_upper,
     elements_volume, elements_volume_sum,
     max_iter: int = 100,
     tolerance: float = 1e-4,
@@ -32,6 +32,7 @@ def bisection_with_projection(
     # for _ in range(100):
     # while abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
     # while abs(l2 - l1) > tolerance * (l1 + l2) / 2.0:
+    iter_num = 0
     while abs(l2 - l1) > tolerance:
         lmid = 0.5 * (l1 + l2)
         np.negative(dC, out=scaling_rate)
@@ -40,22 +41,29 @@ def bisection_with_projection(
 
         # Clip
         np.clip(scaling_rate, 0.8, 1.2, out=scaling_rate)
-        np.multiply(rho_e, scaling_rate, out=rho_candidate)
-        np.maximum(rho_e - move_limit, rho_min, out=tmp_lower)
-        np.minimum(rho_e + move_limit, rho_max, out=tmp_upper)
-        np.clip(rho_candidate, tmp_lower, tmp_upper, out=rho_candidate)
-
-        projection.heaviside_projection_inplace(
-            rho_candidate, beta=beta, eta=beta_eta, out=rho_candidate
+        np.multiply(rho_e, scaling_rate, out=rho_design_eles)
+        np.maximum(rho_e - move_limit, rho_min, out=rho_clip_lower)
+        np.minimum(rho_e + move_limit, rho_max, out=rho_clip_upper)
+        np.clip(
+            rho_design_eles, rho_clip_lower, rho_clip_upper,
+            out=rho_design_eles
         )
 
-        # vol_error = np.mean(rho_candidate) - vol_frac
+        projection.heaviside_projection_inplace(
+            rho_design_eles, beta=beta, eta=beta_eta, out=rho_design_eles
+        )
+
+        # vol_error = np.mean(rho_design_eles) - vol_frac
         vol_error = np.sum(
-            rho_candidate * elements_volume
+            rho_design_eles * elements_volume
         ) / elements_volume_sum - vol_frac
 
         if abs(vol_error) < 1e-4:
             break
+
+        if iter_num >= max_iter:
+            break
+
         if vol_error > 0:
             l1 = lmid
         else:
@@ -64,7 +72,7 @@ def bisection_with_projection(
     return lmid, vol_error
 
 
-class OC_Optimizer(common.DensityMethod):
+class OC_Optimizer(common_density.DensityMethod):
     """
     Topology optimization solver using the classic Optimality Criteria (OC) method.
     This class implements the standard OC algorithm for compliance minimization problems.
@@ -93,7 +101,7 @@ class OC_Optimizer(common.DensityMethod):
         Configuration object specifying the interpolation method, volume fraction,
         continuation settings, filter radius, and other numerical parameters.
 
-    mesh, basis, etc. : inherited from common.DensityMethod
+    mesh, basis, etc. : inherited from common_density.DensityMethod
         FEM components required for simulation, including boundary conditions and loads.
 
     """
@@ -124,18 +132,18 @@ class OC_Optimizer(common.DensityMethod):
 
     def rho_update(
         self,
-        iter_loop: int,
-        rho_candidate: np.ndarray,
+        iter_num: int,
+        rho_design_eles: np.ndarray,
         rho_projected: np.ndarray,
-        dC_drho_ave: np.ndarray,
+        dC_drho_design_eles: np.ndarray,
         u_dofs: np.ndarray,
-        strain_energy_ave: np.ndarray,
+        strain_energy_mean: np.ndarray,
         scaling_rate: np.ndarray,
         move_limit: float,
         eta: float,
         beta: float,
-        tmp_lower: np.ndarray,
-        tmp_upper: np.ndarray,
+        rho_clip_lower: np.ndarray,
+        rho_clip_upper: np.ndarray,
         percentile: float,
         elements_volume_design: np.ndarray,
         elements_volume_design_sum: float,
@@ -145,26 +153,26 @@ class OC_Optimizer(common.DensityMethod):
         # tsk = self.tsk
         eps = 1e-6
         if percentile > 0:
-            scale = np.percentile(np.abs(dC_drho_ave), percentile)
-            # scale = max(scale, np.mean(np.abs(dC_drho_ave)), 1e-4)
+            scale = np.percentile(np.abs(dC_drho_design_eles), percentile)
+            # scale = max(scale, np.mean(np.abs(dC_drho_design_eles)), 1e-4)
             # scale = np.median(np.abs(dC_drho_full[tsk.design_elements]))
             self.running_scale = 0.6 * self.running_scale + \
-                (1 - 0.6) * scale if iter_loop > 1 else scale
-            dC_drho_ave /= (self.running_scale + eps)
+                (1 - 0.6) * scale if iter_num > 1 else scale
+            dC_drho_design_eles /= (self.running_scale + eps)
         else:
             pass
 
         # rho_e = rho_projected[tsk.design_elements]
         # rho_e = rho[tsk.design_elements]
-        rho_e = rho_candidate.copy()
+        rho_e = rho_design_eles.copy()
 
         lmid, vol_error = bisection_with_projection(
-            dC_drho_ave,
+            dC_drho_design_eles,
             rho_e, cfg.rho_min, cfg.rho_max, move_limit,
             eta, eps, vol_frac,
             beta, cfg.beta_eta,
-            scaling_rate, rho_candidate,
-            tmp_lower, tmp_upper,
+            scaling_rate, rho_design_eles,
+            rho_clip_lower, rho_clip_upper,
             elements_volume_design, elements_volume_design_sum,
             max_iter=1000, tolerance=1e-5,
             l1=cfg.lambda_lower,
@@ -172,13 +180,13 @@ class OC_Optimizer(common.DensityMethod):
         )
         l_str = f"λ: {lmid:.4e}"
         vol_str = f"vol_error: {vol_error:.4f}"
-        rho_str = f"mean(rho): {np.mean(rho_candidate):.4f}"
+        rho_str = f"mean(rho): {np.mean(rho_design_eles):.4f}"
         message = f"{l_str}, {vol_str}, {rho_str}"
 
         logger.info(message)
         self.recorder.feed_data("lmid", lmid)
         self.recorder.feed_data("vol_error", vol_error)
-        self.recorder.feed_data("-dC", -dC_drho_ave)
+        self.recorder.feed_data("-dC", -dC_drho_design_eles)
 
 
 if __name__ == '__main__':

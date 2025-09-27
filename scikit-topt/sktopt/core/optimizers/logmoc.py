@@ -3,13 +3,13 @@ from dataclasses import dataclass
 import numpy as np
 import sktopt
 from sktopt.core import misc
-from sktopt.core.optimizers import common
+from sktopt.core.optimizers import common_density
 from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 
 
 @dataclass
-class LogMOC_Config(common.DensityMethod_OC_Config):
+class LogMOC_Config(common_density.DensityMethod_OC_Config):
     """
     Configuration for log-space gradient update with optional mean-centering.
 
@@ -65,7 +65,7 @@ def moc_log_update_logspace(
     rho,
     dC, lambda_v, scaling_rate,
     eta, move_limit,
-    tmp_lower, tmp_upper,
+    rho_clip_lower, rho_clip_upper,
     rho_min, rho_max
 ):
     eps = 1e-10
@@ -76,20 +76,20 @@ def moc_log_update_logspace(
     np.log(scaling_rate, out=scaling_rate)
     np.clip(scaling_rate, -0.50, 0.50, out=scaling_rate)
     np.clip(rho, rho_min, 1.0, out=rho)
-    np.log(rho, out=tmp_lower)
+    np.log(rho, out=rho_clip_lower)
 
-    # tmp_upper = exp(tmp_lower) = rho (real space)
-    np.exp(tmp_lower, out=tmp_upper)
-    # tmp_upper = log(1 + move_limit / rho)
-    np.divide(move_limit, tmp_upper, out=tmp_upper)
-    np.add(tmp_upper, 1.0, out=tmp_upper)
-    np.log(tmp_upper, out=tmp_upper)
+    # rho_clip_upper = exp(rho_clip_lower) = rho (real space)
+    np.exp(rho_clip_lower, out=rho_clip_upper)
+    # rho_clip_upper = log(1 + move_limit / rho)
+    np.divide(move_limit, rho_clip_upper, out=rho_clip_upper)
+    np.add(rho_clip_upper, 1.0, out=rho_clip_upper)
+    np.log(rho_clip_upper, out=rho_clip_upper)
 
-    # tmp_lower = lower bound = log(rho) - log_move_limit
-    np.subtract(tmp_lower, tmp_upper, out=tmp_lower)
+    # rho_clip_lower = lower bound = log(rho) - log_move_limit
+    np.subtract(rho_clip_lower, rho_clip_upper, out=rho_clip_lower)
 
-    # tmp_upper = upper bound = log(rho) + log_move_limit
-    np.add(tmp_lower, 2 * tmp_upper, out=tmp_upper)
+    # rho_clip_upper = upper bound = log(rho) + log_move_limit
+    np.add(rho_clip_lower, 2 * rho_clip_upper, out=rho_clip_upper)
 
     # rho = log(rho)
     np.log(rho, out=rho)
@@ -98,7 +98,7 @@ def moc_log_update_logspace(
     rho += eta * scaling_rate
 
     # clip in log-space
-    np.clip(rho, tmp_lower, tmp_upper, out=rho)
+    np.clip(rho, rho_clip_lower, rho_clip_upper, out=rho)
 
     # back to real space
     np.exp(rho, out=rho)
@@ -106,7 +106,7 @@ def moc_log_update_logspace(
 
 
 # Lagrangian Dual MOC
-class LogMOC_Optimizer(common.DensityMethod):
+class LogMOC_Optimizer(common_density.DensityMethod):
     """
     Topology optimization solver using log-space Lagrangian gradient descent.
 
@@ -147,7 +147,7 @@ class LogMOC_Optimizer(common.DensityMethod):
         Configuration object specifying parameters such as mu_p, lambda_v,
         decay schedules, and interpolation settings (currently SIMP only).
 
-    mesh, basis, etc. : inherited from common.DensityMethod
+    mesh, basis, etc. : inherited from common_density.DensityMethod
         FEM components used to evaluate sensitivities and apply boundary conditions.
     """
     def __init__(
@@ -168,18 +168,18 @@ class LogMOC_Optimizer(common.DensityMethod):
 
     def rho_update(
         self,
-        iter_loop: int,
-        rho_candidate: np.ndarray,
+        iter_num: int,
+        rho_design_eles: np.ndarray,
         rho_projected: np.ndarray,
-        dC_drho_ave: np.ndarray,
+        dC_drho_design_eles: np.ndarray,
         u_dofs: np.ndarray,
-        strain_energy_ave: np.ndarray,
+        strain_energy_mean: np.ndarray,
         scaling_rate: np.ndarray,
         move_limit: float,
         eta: float,
         beta: float,
-        tmp_lower: np.ndarray,
-        tmp_upper: np.ndarray,
+        rho_clip_lower: np.ndarray,
+        rho_clip_upper: np.ndarray,
         percentile: float,
         elements_volume_design: np.ndarray,
         elements_volume_design_sum: float,
@@ -189,12 +189,12 @@ class LogMOC_Optimizer(common.DensityMethod):
         tsk = self.tsk
         eps = 1e-8
         if percentile > 0:
-            scale = np.percentile(np.abs(dC_drho_ave), percentile)
-            self.recorder.feed_data("-dC", -dC_drho_ave)
+            scale = np.percentile(np.abs(dC_drho_design_eles), percentile)
+            self.recorder.feed_data("-dC", -dC_drho_design_eles)
             self.running_scale = 0.2 * self.running_scale + \
-                (1 - 0.2) * scale if iter_loop > 1 else scale
+                (1 - 0.2) * scale if iter_num > 1 else scale
             logger.info(f"running_scale: {self.running_scale}")
-            dC_drho_ave = dC_drho_ave / (self.running_scale + eps)
+            dC_drho_design_eles = dC_drho_design_eles / (self.running_scale + eps)
         else:
             pass
 
@@ -219,17 +219,17 @@ class LogMOC_Optimizer(common.DensityMethod):
 
         self.recorder.feed_data("lambda_v", self.lambda_v)
         self.recorder.feed_data("vol_error", vol_error)
-        self.recorder.feed_data("-dC", -dC_drho_ave)
+        self.recorder.feed_data("-dC", -dC_drho_design_eles)
 
         moc_log_update_logspace(
-            rho_candidate,
-            dC_drho_ave,
+            rho_design_eles,
+            dC_drho_design_eles,
             # lam_e,
             self.lambda_v,
             scaling_rate,
             eta,
             move_limit,
-            tmp_lower, tmp_upper,
+            rho_clip_lower, rho_clip_upper,
             cfg.rho_min, 1.0,
         )
 
