@@ -96,14 +96,17 @@ dirichlet_nodes = sktopt.mesh.utils.get_nodes_indices_in_range(
 dirichlet_dir = "all"
 
 # Define Force Vector
-F_nodes = sktopt.mesh.utils.get_nodes_indices_in_range(
-    basis.mesh,
-    (x_len, x_len),
-    (y_len*2/5, y_len*3/5),
-    (z_len*2/5, z_len*3/5)
+
+in_range = sktopt.utils.get_facets_in_range(
+  (x_len, x_len),
+  (y_len*2/5, y_len*3/5),
+  (z_len*2/5, z_len*3/5)
 )
-F_dir = "u^1"
-F = 100
+force_facets = basis.mesh.facets_satisfying(
+  in_range, boundaries_only=True
+)
+force_dir = "u^1"
+force_value = 100
 
 # Specify Design Field
 design_elements = sktopt.mesh.utils.get_elements_in_box(
@@ -118,9 +121,9 @@ tsk = sktopt.mesh.task.TaskConfig.from_nodes(
     basis,
     dirichlet_nodes,
     dirichlet_dir,
-    F_nodes,
-    F_dir,
-    F,
+    force_facets,
+    force_dir,
+    force_value,
     design_elements
 )
 ```
@@ -193,7 +196,7 @@ If you use Scikit Topt in your research or software, please cite it as:
   publisher    = {Zenodo},
   doi          = {10.5281/zenodo.15441499},
   url          = {https://doi.org/10.5281/zenodo.15441499},
-  note         = {Version 0.2.6}
+  note         = {Version 0.2.7}
 }
 ```
 

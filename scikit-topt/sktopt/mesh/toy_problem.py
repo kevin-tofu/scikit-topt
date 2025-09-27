@@ -7,6 +7,7 @@ from sktopt.mesh import task
 from sktopt.mesh import utils
 
 
+
 def create_box_hex(x_len, y_len, z_len, mesh_size):
     """
     Create a hexahedral mesh box with given dimensions and element size.
@@ -112,11 +113,11 @@ def toy_base(
     dirichlet_nodes = utils.get_nodes_indices_in_range(
         basis.mesh, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
     )
-    F_nodes = utils.get_nodes_indices_in_range(
-        basis.mesh,
+    in_range = utils.get_facets_in_range(
         (x_len - eps, x_len+0.1), (y_len*2/5, y_len*3/5), (z_len-eps, z_len)
     )
-    
+    force_facets = basis.mesh.facets_satisfying(in_range)
+
     design_elements = utils.get_elements_in_box(
         mesh,
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
@@ -130,7 +131,7 @@ def toy_base(
         basis,
         dirichlet_nodes,
         "all",
-        F_nodes,
+        force_facets,
         "u^3",
         F,
         design_elements
@@ -175,32 +176,38 @@ def toy2():
     )
     dirichlet_nodes = dirichlet_nodes_0
     dirichlet_dofs = basis.get_dofs(nodes=dirichlet_nodes).all()
-    F_nodes_0 = utils.get_nodes_indices_in_range(
-        basis.mesh, (x_len, x_len), (y_len, y_len), (0, z_len)
+
+    eps = mesh_size
+    in_range_0 = utils.get_facets_in_range(
+        (x_len - eps, x_len), (y_len - eps, y_len), (0, z_len)
     )
-    F_dofs_0 = basis.get_dofs(nodes=F_nodes_0).nodal["u^2"]
-    F_nodes_1 = utils.get_nodes_indices_in_range(
-        basis.mesh, (x_len, x_len), (0, 0), (0, z_len)
+    in_range_1 = utils.get_facets_in_range(
+        (x_len - eps, x_len), (0, 0), (0, z_len - eps)
     )
-    F_dofs_1 = basis.get_dofs(nodes=F_nodes_1).nodal["u^2"]
+    force_facets_0 = basis.mesh.facets_satisfying(
+        in_range_0, boundaries_only=True
+    )
+    force_facets_1 = basis.mesh.facets_satisfying(
+        in_range_1, boundaries_only=True
+    )
+    force_dir_type = ["u^2", "u^2"]
+    force_value = [-300, 300]
     design_elements = utils.get_elements_in_box(
         mesh,
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
 
-    print("generate config")
     E0 = 210e9
-    F = [-300, 300]
-    print("F:", F)
+    print("F:", force_value)
     return task.TaskConfig.from_defaults(
         E0,
         0.30,
         basis,
         dirichlet_nodes,
         dirichlet_dofs,
-        [F_nodes_0, F_nodes_1],
-        [F_dofs_0, F_dofs_1],
-        F,
+        [force_facets_0, force_facets_1],
+        force_dir_type,
+        force_value,
         design_elements
     )
 
@@ -261,45 +268,33 @@ def toy_msh(
     )
     dirichlet_dofs = basis.get_dofs(nodes=dirichlet_nodes).all()
     if task_name == "down":
-        F_nodes = utils.get_nodes_indices_in_range(
-            basis.mesh,
-            (x_len-eps, x_len+0.05),
-            (y_len/2-eps, y_len/2+eps),
-            (0.0, eps)
-            # (y_len*2/5, y_len*3/5),
-            # (z_len*2/5, z_len*3/5)
-        )
-        F_dofs = basis.get_dofs(nodes=F_nodes).nodal["u^3"]
-        F = -800
+        x_range = (x_len-eps, x_len+0.05)
+        y_range = (y_len/2-eps, y_len/2+eps)
+        z_range = (0.0, eps)
+        force_dir_type = "u^3"
+        force_value = -800
     if task_name == "down_box":
-        F_nodes = utils.get_nodes_indices_in_range(
-            basis.mesh,
-            (x_len-eps, x_len+0.05),
-            (0, y_len),
-            (0.0, eps)
-            # (y_len*2/5, y_len*3/5),
-            # (z_len*2/5, z_len*3/5)
-        )
-        F_dofs = basis.get_dofs(nodes=F_nodes).nodal["u^3"]
-        F = -800
+        x_range = (x_len-eps, x_len+0.05)
+        y_range = (0, y_len)
+        z_range = (0.0, eps)
+        force_dir_type = "u^3"
+        force_value = -800
+
     elif task_name == "pull":
-        F_nodes = utils.get_nodes_indices_in_range(
-            basis.mesh,
-            (x_len-eps, x_len+0.05),
-            (y_len*2/5, y_len*3/5),
-            (z_len*2/5, z_len*3/5)
-        )
-        F_dofs = basis.get_dofs(nodes=F_nodes).nodal["u^1"]
-        F = 1200.0
+        x_range = (x_len-eps, x_len+0.05),
+        y_range = (y_len*2/5, y_len*3/5)
+        z_range = (z_len*2/5, z_len*3/5)
+        force_dir_type = "u^1"
+        force_value = 1200.0
     elif task_name == "pull_2":
-        F_nodes = utils.get_nodes_indices_in_range(
-            basis.mesh,
-            (x_len-eps, x_len+0.05),
-            (y_len/2.0-eps, y_len/2+eps),
-            (z_len*2/5, z_len*3/5)
-        )
-        F_dofs = basis.get_dofs(nodes=F_nodes).nodal["u^1"]
-        F = 200.0
+        x_range = (x_len-eps, x_len+0.05),
+        y_range = (y_len/2.0-eps, y_len/2+eps),
+        z_range = (z_len*2/5, z_len*3/5)
+        force_dir_type = "u^1"
+        force_value = 200.0
+
+    in_range = utils.get_facets_in_range(x_range, y_range, z_range)
+    force_facets = basis.mesh.facets_satisfying(in_range)
     design_elements = utils.get_elements_in_box(
         mesh,
         # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
@@ -315,7 +310,7 @@ def toy_msh(
 
     print("generate config")
     E0 = 210e9
-    print("F:", F)
+    print("FF:", force_value)
     print("F_nodes:", F_nodes.shape)
     print("F_dofs:", F_dofs.shape)
     return task.TaskConfig.from_defaults(
@@ -324,9 +319,9 @@ def toy_msh(
         basis,
         dirichlet_nodes,
         dirichlet_dofs,
-        F_nodes,
-        F_dofs,
-        F,
+        force_facets,
+        force_dir_type,
+        force_value,
         design_elements
     )
 

@@ -5,6 +5,16 @@ from numba import njit, prange
 import skfem
 
 
+def get_facets_in_range(x_rng, y_rng, z_rng):
+    def in_range(x):
+        return (
+            (x[0] >= x_rng[0]) & (x[0] <= x_rng[1]) &
+            (x[1] >= y_rng[0]) & (x[1] <= y_rng[1]) &
+            (x[2] >= z_rng[0]) & (x[2] <= z_rng[1])
+        )
+    return in_range
+
+
 def fix_hexahedron_orientation(t, p):
     """
     Ensures that each hexahedral element in the mesh has positive volume

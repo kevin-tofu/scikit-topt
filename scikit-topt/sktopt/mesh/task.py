@@ -1,7 +1,10 @@
-from typing import Literal
+from typing import Union, List, Literal
 from dataclasses import dataclass
+
 import numpy as np
 import skfem
+
+from skfem import FacetBasis, asm, LinearForm
 from scipy.spatial import cKDTree
 import matplotlib.pyplot as plt
 from sktopt.mesh import utils
@@ -16,6 +19,67 @@ def setdiff1d(a, b):
 
 _lit_bc = Literal['u^1', 'u^2', 'u^3', 'all']
 _lit_force = Literal['u^1', 'u^2', 'u^3']
+
+
+def assemble_surface_forces(
+    basis,
+    force_facets: Union[np.ndarray, List[np.ndarray]],
+    force_dir_type: Union[str, List[str]],
+    force_value: Union[float, List[float]],
+    *,
+    treat_value_as_total_force: bool = True,
+):
+    def _to_list(x):
+        return x if isinstance(x, list) else [x]
+
+    def _dir_to_comp(s: str) -> int:
+        if not (isinstance(s, str) and s.startswith('u^') and s[2:].isdigit()):
+            raise ValueError(f"force_dir_type must be like 'u^1','u^2','u^3', got: {s}")
+        c = int(s[2:]) - 1
+        if c < 0:
+            raise ValueError(f"Invalid component index parsed from {s}")
+        return c
+
+    facets_list = _to_list(force_facets)
+    dirs_list = _to_list(force_dir_type)
+    vals_list = _to_list(force_value)
+
+    if not (len(facets_list) == len(dirs_list) == len(vals_list)):
+        raise ValueError(
+            "Lengths of force_facets, force_dir_type, and force_value must match when lists."
+        )
+
+    @LinearForm
+    def l_one(v, w):
+        return 1.0
+
+    F_list = []
+
+    for facets, dir_s, val in zip(facets_list, dirs_list, vals_list):
+        comp = _dir_to_comp(dir_s)
+        fb = FacetBasis(basis.mesh, basis.elem, facets=np.asarray(facets, dtype=int))
+
+        A_arr = asm(l_one, fb)
+        A = float(np.sum(A_arr))  # sum up all contributions to get scalar area
+
+        if A <= 0.0:
+            raise ValueError(
+                "Selected facets have zero total area; check facet indices or geometry."
+            )
+
+        if treat_value_as_total_force:
+            p = float(val) / A
+        else:
+            p = float(val)
+
+        @LinearForm
+        def l_comp(v, w):
+            return p * v[comp]
+
+        F = asm(l_comp, fb)
+        F_list.append(F)
+
+    return F_list[0] if (len(F_list) == 1) else F_list
 
 
 @dataclass
@@ -41,9 +105,6 @@ class TaskConfig():
         Degrees of freedom constrained by Dirichlet (displacement) boundary conditions.
     dirichlet_elements : np.ndarray
         Elements that contain Dirichlet boundary points.
-    force_dofs : np.ndarray or list of np.ndarray
-        Degrees of freedom where external forces are applied.
-        Can be a list for multiple load cases.
     force_elements : np.ndarray
         Elements that contain the force application points.
     force : np.ndarray or list of np.ndarray
@@ -73,7 +134,6 @@ class TaskConfig():
     dirichlet_dofs: np.ndarray
     dirichlet_elements: np.ndarray
     force_nodes: np.ndarray | list[np.ndarray] 
-    force_dofs: np.ndarray | list[np.ndarray]
     force_elements: np.ndarray
     force: np.ndarray | list[np.ndarray]
     design_elements: np.ndarray
@@ -88,7 +148,6 @@ class TaskConfig():
     def mesh(self):
         return self.basis.mesh
 
-
     @classmethod
     def from_nodes(
         cls,
@@ -97,8 +156,8 @@ class TaskConfig():
         basis: skfem.Basis,
         dirichlet_nodes: np.ndarray | list[np.ndarray],
         dirichlet_dir: _lit_bc | list[_lit_bc],
-        force_nodes: np.ndarray | list[np.ndarray],
-        force_dir: _lit_force | list[_lit_force],
+        force_facets: np.ndarray | list[np.ndarray],
+        force_dir_type: str | list[str],
         force_value: float | list[float],
         design_elements: np.ndarray,
     ):
@@ -117,22 +176,22 @@ class TaskConfig():
         else:
             raise ValueError("dirichlet_nodes is not np.ndarray or of list")
 
-        if isinstance(force_nodes, list):
-            force_dofs = [
-                basis.get_dofs(nodes=n_loop).nodal[dir_loop]
-                for n_loop, dir_loop in zip(
-                    force_nodes, force_dir
-                )
-            ]
-        elif isinstance(force_nodes, np.ndarray):
-            force_dofs = basis.get_dofs(nodes=force_nodes).nodal[force_dir]
-        else:
-            raise ValueError("force_nodes is not np.ndarray or of list")        
+        # if isinstance(force_nodes, list):
+        #     force_dofs = [
+        #         basis.get_dofs(nodes=n_loop).nodal[dir_loop]
+        #         for n_loop, dir_loop in zip(
+        #             force_nodes, force_dir
+        #         )
+        #     ]
+        # elif isinstance(force_nodes, np.ndarray):
+        #     force_dofs = basis.get_dofs(nodes=force_nodes).nodal[force_dir]
+        # else:
+        #     raise ValueError("force_nodes is not np.ndarray or of list")        
 
         return cls.from_defaults(
             E, nu, basis,
             dirichlet_nodes, dirichlet_dofs,
-            force_nodes, force_dofs, force_value,
+            force_facets, force_dir_type, force_value,
             design_elements
         )
 
@@ -144,8 +203,8 @@ class TaskConfig():
         basis: skfem.Basis,
         dirichlet_nodes: np.ndarray,
         dirichlet_dofs: np.ndarray,
-        force_nodes: np.ndarray | list[np.ndarray],
-        force_dofs: np.ndarray | list[np.ndarray],
+        force_facets: np.ndarray | list[np.ndarray],
+        force_dir_type: str | list[str],
         force_value: float | list[float],
         design_elements: np.ndarray,
     ) -> 'TaskConfig':
@@ -173,8 +232,6 @@ class TaskConfig():
         force_nodes : np.ndarray or list of np.ndarray
             Coordinates used to determine which elements are subject to \
                 external forces.
-        force_dofs : np.ndarray or list of np.ndarray
-            Degrees of freedom where external forces are applied.
         force_value : float or list of float
             Magnitude(s) of the external force(s). If multiple load cases \
                 are used, provide a list.
@@ -191,6 +248,17 @@ class TaskConfig():
         ValueError
             If no force elements are found or if design elements are empty after filtering.
         """
+
+        force_facets_ids = np.concatenate(force_facets) \
+            if isinstance(force_facets, list) else force_facets
+        facets = basis.mesh.facets                  # facet→node 接続
+        force_nodes = np.unique(facets[:, force_facets_ids].ravel())
+        force = assemble_surface_forces(
+            basis,
+            force_facets=force_facets,
+            force_dir_type=force_dir_type,
+            force_value=force_value
+        )
 
         #
         # Dirichlet
@@ -229,24 +297,6 @@ class TaskConfig():
         free_elements = utils.get_elements_with_nodes_fast(
             basis.mesh, [free_dofs]
         )
-        if isinstance(force_dofs, np.ndarray):
-            if isinstance(force_value, (float, int)):
-                force = np.zeros(basis.N)
-                force[force_dofs] = force_value / len(force_dofs)
-            elif isinstance(force_value, list):
-                force = list()
-                for fv in force_value:
-                    print("fv", fv)
-                    f_temp = np.zeros(basis.N)
-                    f_temp[force_dofs] = fv / len(force_dofs)
-                    force.append(f_temp)
-        elif isinstance(force_dofs, list):
-            force = list()
-            for fn_loop, fv in zip(force_dofs, force_value):
-                f_temp = np.zeros(basis.N)
-                f_temp[fn_loop] = fv / len(fn_loop)
-                force.append(f_temp)
-
         elements_volume = composer.get_elements_volume(basis.mesh)
         print(
             f"all_elements: {all_elements.shape}",
@@ -263,7 +313,6 @@ class TaskConfig():
             dirichlet_dofs,
             dirichlet_elements,
             force_nodes,
-            force_dofs,
             force_elements,
             force,
             design_elements,
