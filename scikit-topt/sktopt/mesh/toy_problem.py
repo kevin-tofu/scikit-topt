@@ -201,7 +201,7 @@ def toy2():
         in_range_1, boundaries_only=True
     )
     force_dir_type = ["u^2", "u^2"]
-    force_value = [-300, 300]
+    force_value = [-100, 100]
     design_elements = utils.get_elements_in_box(
         mesh,
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
