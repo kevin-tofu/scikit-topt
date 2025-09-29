@@ -187,12 +187,12 @@ def toy2():
         dirichlet_in_range, boundaries_only=True
     )
 
-    eps = mesh_size
+    eps = mesh_size / 3
     in_range_0 = utils.get_facets_in_range(
         (x_len - eps, x_len), (y_len - eps, y_len), (0, z_len)
     )
     in_range_1 = utils.get_facets_in_range(
-        (x_len - eps, x_len), (0, 0), (0, z_len - eps)
+        (x_len - eps, x_len), (0, eps), (0, z_len - eps)
     )
     force_facets_0 = basis.mesh.facets_satisfying(
         in_range_0, boundaries_only=True

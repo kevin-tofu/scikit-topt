@@ -45,10 +45,9 @@ def assemble_surface_forces(
     vals_list = _to_list(force_value)
 
     if not (len(facets_list) == len(dirs_list) == len(vals_list)):
-        
-        print("len(facets_list) : ", len(facets_list))
-        print("len(dirs_list) : ", len(dirs_list))
-        print("len(vals_list) : ", len(vals_list))
+        # print("len(facets_list) : ", len(facets_list))
+        # print("len(dirs_list) : ", len(dirs_list))
+        # print("len(vals_list) : ", len(vals_list))
         raise ValueError(
             "Lengths of force_facets_ids, force_dir_type, and force_value must match when lists."
         )
@@ -384,12 +383,9 @@ class TaskConfig():
                 "dirichlet_facets_ids should be list[np.ndarray] or np.ndarray"
             )
 
-        print("force_facets_ids: ", len(force_facets_ids), type(force_facets_ids))
         force_facets_ids_concat = np.concatenate(force_facets_ids) \
             if isinstance(force_facets_ids, list) else force_facets_ids
         force_nodes = np.unique(facets[:, force_facets_ids_concat].ravel())
-
-        print("force_facets_ids: ", len(force_facets_ids), type(force_facets_ids))
         force = assemble_surface_forces(
             basis,
             force_facets_ids=force_facets_ids,
@@ -403,6 +399,10 @@ class TaskConfig():
             force_nodes, force,
             design_elements
         )
+        
+    @classmethod
+    def from_json(self, path: str):
+        raise NotImplementedError("not implmented yet")
 
     @property
     def force_nodes_all(self) -> np.ndarray:
