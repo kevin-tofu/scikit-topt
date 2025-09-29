@@ -70,7 +70,7 @@ def toy_base0(
     dirichlet_nodes = utils.get_nodes_indices_in_range(
         basis.mesh, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
     )
-    dirichlet_dofs = basis.get_dofs(dirichlet_nodes).all()
+
     F_nodes = utils.get_nodes_indices_in_range(
         basis.mesh,
         (x_len - eps, x_len+0.1), (y_len*2/5, y_len*3/5), (z_len-eps, z_len)
@@ -78,7 +78,6 @@ def toy_base0(
     F_dofs = basis.get_dofs(nodes=F_nodes).nodal['u^3']
     design_elements = utils.get_elements_in_box(
         mesh,
-        # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
 
@@ -90,7 +89,7 @@ def toy_base0(
         0.30,
         basis,
         dirichlet_nodes,
-        dirichlet_dofs,
+        "all",
         F_nodes,
         F_dofs,
         F,
@@ -110,9 +109,14 @@ def toy_base(
     mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=intorder)
-    dirichlet_nodes = utils.get_nodes_indices_in_range(
-        basis.mesh, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
+    
+    dirichlet_in_range = utils.get_facets_in_range(
+        (0.0, 0.03), (0.0, y_len), (0.0, z_len)
     )
+    dirichlet_facets = basis.mesh.facets_satisfying(dirichlet_in_range)
+    # dirichlet_nodes = utils.get_nodes_indices_in_range(
+    #     basis.mesh, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
+    # )
     in_range = utils.get_facets_in_range(
         (x_len - eps, x_len+0.1), (y_len*2/5, y_len*3/5), (z_len-eps, z_len)
     )
@@ -125,11 +129,11 @@ def toy_base(
     E0 = 210e9
     F = -100.0
 
-    return task.TaskConfig.from_nodes(
+    return task.TaskConfig.from_facets(
         E0,
         0.30,
         basis,
-        dirichlet_nodes,
+        dirichlet_facets,
         "all",
         force_facets,
         "u^3",
@@ -171,11 +175,17 @@ def toy2():
     mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=2)
-    dirichlet_nodes_0 = utils.get_nodes_indices_in_range(
-        basis.mesh, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
+    # dirichlet_nodes_0 = utils.get_nodes_indices_in_range(
+    #     basis.mesh, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
+    # )
+    # dirichlet_nodes = dirichlet_nodes_0
+    # dirichlet_dofs = basis.get_dofs(nodes=dirichlet_nodes).all()
+    dirichlet_in_range = utils.get_facets_in_range(
+        (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
-    dirichlet_nodes = dirichlet_nodes_0
-    dirichlet_dofs = basis.get_dofs(nodes=dirichlet_nodes).all()
+    dirichlet_facets = basis.mesh.facets_satisfying(
+        dirichlet_in_range, boundaries_only=True
+    )
 
     eps = mesh_size
     in_range_0 = utils.get_facets_in_range(
@@ -199,12 +209,12 @@ def toy2():
 
     E0 = 210e9
     print("F:", force_value)
-    return task.TaskConfig.from_defaults(
+    return task.TaskConfig.from_facets(
         E0,
         0.30,
         basis,
-        dirichlet_nodes,
-        dirichlet_dofs,
+        dirichlet_facets,
+        "all",
         [force_facets_0, force_facets_1],
         force_dir_type,
         force_value,
@@ -262,11 +272,13 @@ def toy_msh(
     basis = skfem.Basis(mesh, e, intorder=3)
     # basis = skfem.Basis(mesh, e, intorder=4)
     # basis = skfem.Basis(mesh, e, intorder=5)
-    print("dirichlet_nodes")
-    dirichlet_nodes = utils.get_nodes_indices_in_range(
-        basis.mesh, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
-    )
-    dirichlet_dofs = basis.get_dofs(nodes=dirichlet_nodes).all()
+    # print("dirichlet_nodes")
+    # dirichlet_nodes = utils.get_nodes_indices_in_range(
+    #     basis.mesh, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
+    # )
+    # dirichlet_dofs = basis.get_dofs(nodes=dirichlet_nodes).all()
+    dirichlet_in_range = utils.get_facets_in_range((0.0, 0.05), (0.0, y_len), (0.0, z_len))
+    dirichlet_facets = basis.mesh.facets_satisfying(dirichlet_in_range)
     if task_name == "down":
         x_range = (x_len-eps, x_len+0.05)
         y_range = (y_len/2-eps, y_len/2+eps)
@@ -293,8 +305,8 @@ def toy_msh(
         force_dir_type = "u^1"
         force_value = 200.0
 
-    in_range = utils.get_facets_in_range(x_range, y_range, z_range)
-    force_facets = basis.mesh.facets_satisfying(in_range)
+    force_in_range = utils.get_facets_in_range(x_range, y_range, z_range)
+    force_facets = basis.mesh.facets_satisfying(force_in_range)
     design_elements = utils.get_elements_in_box(
         mesh,
         # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
@@ -310,15 +322,12 @@ def toy_msh(
 
     print("generate config")
     E0 = 210e9
-    print("FF:", force_value)
-    print("F_nodes:", F_nodes.shape)
-    print("F_dofs:", F_dofs.shape)
-    return task.TaskConfig.from_defaults(
+    return task.TaskConfig.from_facets(
         E0,
         0.30,
         basis,
-        dirichlet_nodes,
-        dirichlet_dofs,
+        dirichlet_facets,
+        "all",
         force_facets,
         force_dir_type,
         force_value,

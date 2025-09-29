@@ -197,29 +197,6 @@ def get_adjacent_elements(mesh, element_indices):
     return sorted(neighbors)
 
 
-def get_elements_with_nodes_fast(mesh, target_nodes):
-    if not hasattr(get_elements_with_nodes_fast, "_cache"):
-        get_elements_with_nodes_fast._cache = {}
-
-    mesh_id = id(mesh)
-    if mesh_id not in get_elements_with_nodes_fast._cache:
-        node_to_elements = defaultdict(set)
-        for e, nodes in enumerate(mesh.t.T):
-            for n in nodes:
-                node_to_elements[n].add(e)
-        get_elements_with_nodes_fast._cache[mesh_id] = node_to_elements
-
-    node_to_elements = get_elements_with_nodes_fast._cache[mesh_id]
-
-    all_target_nodes = np.unique(np.concatenate(target_nodes))
-    elems = set()
-    for node in all_target_nodes:
-        elems.update(node_to_elements.get(node, []))
-
-    # return np.array(sorted(elems), dtype=np.int32)
-    return np.ascontiguousarray(np.array(sorted(elems), dtype=np.int32))
-
-
 def get_elements_with_nodes_fast(
     mesh: skfem.Mesh, target_nodes: np.ndarray | list[np.ndarray]
 ) -> np.ndarray:

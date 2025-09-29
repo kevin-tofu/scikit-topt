@@ -23,7 +23,7 @@ _lit_force = Literal['u^1', 'u^2', 'u^3']
 
 def assemble_surface_forces(
     basis,
-    force_facets: Union[np.ndarray, List[np.ndarray]],
+    force_facets_ids: Union[np.ndarray, List[np.ndarray]],
     force_dir_type: Union[str, List[str]],
     force_value: Union[float, List[float]],
     *,
@@ -40,13 +40,13 @@ def assemble_surface_forces(
             raise ValueError(f"Invalid component index parsed from {s}")
         return c
 
-    facets_list = _to_list(force_facets)
+    facets_list = _to_list(force_facets_ids)
     dirs_list = _to_list(force_dir_type)
     vals_list = _to_list(force_value)
 
     if not (len(facets_list) == len(dirs_list) == len(vals_list)):
         raise ValueError(
-            "Lengths of force_facets, force_dir_type, and force_value must match when lists."
+            "Lengths of force_facets_ids, force_dir_type, and force_value must match when lists."
         )
 
     @LinearForm
@@ -154,13 +154,79 @@ class TaskConfig():
         E: float,
         nu: float,
         basis: skfem.Basis,
-        dirichlet_nodes: np.ndarray | list[np.ndarray],
+        dirichlet_nodes: np.ndarray,
         dirichlet_dir: _lit_bc | list[_lit_bc],
-        force_facets: np.ndarray | list[np.ndarray],
-        force_dir_type: str | list[str],
-        force_value: float | list[float],
+        force_nodes: np.ndarray,
+        force: np.ndarray | list[np.ndarray],
         design_elements: np.ndarray,
-    ):
+    ) -> 'TaskConfig':
+        """
+        Create a TaskConfig from material parameters and boundary-condition
+        specifications expressed by **node-index** sets.
+
+        This constructor:
+          - Resolves Dirichlet DOFs from `dirichlet_nodes` and `dirichlet_dir`.
+          - Identifies Dirichlet/Neumann (force) **elements** that touch those nodes.
+          - Builds load vector(s) from `force` and filters out non-designable elements.
+          - Derives sets such as free DOFs/elements and fixed/design elements.
+          - Precomputes per-element volumes.
+
+        Parameters
+        ----------
+        E : float
+            Young's modulus.
+        nu : float
+            Poisson's ratio.
+        basis : skfem.Basis
+            Finite-element space (provides mesh, DOFs, etc.).
+        dirichlet_nodes : np.ndarray or list[np.ndarray]
+            Global **node indices** that define Dirichlet boundaries.
+            If a list is provided, it must align one-to-one with `dirichlet_dir`.
+        dirichlet_dir : _lit_bc or list[_lit_bc]
+            Direction specifier(s) for Dirichlet constraints.  
+            `_lit_bc = Literal['u^1', 'u^2', 'u^3', 'all']`  
+            Use `'all'` to fix all components, or `'u^1'|'u^2'|'u^3'` to fix a
+            single component (compatible with `basis.get_dofs(...).nodal[...]`).
+            When `dirichlet_nodes` is a list, this must be a list of equal length.
+        force_nodes : np.ndarray or list[np.ndarray]
+            Global **node indices** where Neumann (external) loads are applied.
+            A list denotes multiple load regions (load cases).
+        force : np.ndarray or list[np.ndarray]
+            Load vector(s) associated with `force_nodes`. Provide a list to match
+            multiple regions/cases. Each vector should already be assembled in the
+            global DOF ordering expected by the solver.
+        design_elements : np.ndarray
+            Element indices initially considered designable. Elements touching
+            `force_nodes` are removed from this set.
+
+        Returns
+        -------
+        TaskConfig
+            A fully initialized configuration containing:
+              - material parameters (`E`, `nu`)
+              - mesh/basis
+              - `dirichlet_nodes`, `dirichlet_dofs`, `dirichlet_elements`
+              - `force_nodes`, `force_elements`, `force`
+              - filtered `design_elements`
+              - `free_dofs`, `free_elements`
+              - `all_elements`, `fixed_elements`, `dirichlet_force_elements`
+              - `elements_volume`
+
+        Notes
+        -----
+        - Element sets are computed via `utils.get_elements_with_nodes_fast(...)`,
+          i.e., elements **touching** the provided node sets.
+        - `free_dofs` = all DOFs \ `dirichlet_dofs`; `free_elements` are elements
+          touching `free_dofs` (convenience for downstream assembly/solves).
+        - If you prefer facet-based specification (with direction literals for
+          surface forces, e.g., `_lit_force = Literal['u^1','u^2','u^3']`),
+          consider using `TaskConfig.from_facets(...)` which will assemble
+          surface loads internally.
+        """
+
+        #
+        # Dirichlet
+        #
         if isinstance(dirichlet_nodes, list):
             dirichlet_dofs = [
                 basis.get_dofs(nodes=nodes).all() if direction == 'all'
@@ -176,93 +242,6 @@ class TaskConfig():
         else:
             raise ValueError("dirichlet_nodes is not np.ndarray or of list")
 
-        # if isinstance(force_nodes, list):
-        #     force_dofs = [
-        #         basis.get_dofs(nodes=n_loop).nodal[dir_loop]
-        #         for n_loop, dir_loop in zip(
-        #             force_nodes, force_dir
-        #         )
-        #     ]
-        # elif isinstance(force_nodes, np.ndarray):
-        #     force_dofs = basis.get_dofs(nodes=force_nodes).nodal[force_dir]
-        # else:
-        #     raise ValueError("force_nodes is not np.ndarray or of list")        
-
-        return cls.from_defaults(
-            E, nu, basis,
-            dirichlet_nodes, dirichlet_dofs,
-            force_facets, force_dir_type, force_value,
-            design_elements
-        )
-
-    @classmethod
-    def from_defaults(
-        cls,
-        E: float,
-        nu: float,
-        basis: skfem.Basis,
-        dirichlet_nodes: np.ndarray,
-        dirichlet_dofs: np.ndarray,
-        force_facets: np.ndarray | list[np.ndarray],
-        force_dir_type: str | list[str],
-        force_value: float | list[float],
-        design_elements: np.ndarray,
-    ) -> 'TaskConfig':
-        """Create a TaskConfig instance using basic material parameters and \
-        boundary conditions.
-
-        This method automatically computes the sets of Dirichlet and \
-            Neumann (force) elements,
-        filters out non-designable elements, and constructs force vectors.
-
-        Parameters
-        ----------
-        E : float
-            Young's modulus of the material.
-        nu : float
-            Poisson's ratio of the material.
-        basis : skfem.Basis
-            Basis object from scikit-fem representing the finite element \
-                space.
-        dirichlet_nodes : np.ndarray
-            Coordinates used to determine which elements are subject to \
-                Dirichlet boundary conditions.
-        dirichlet_dofs : np.ndarray
-            Degrees of freedom fixed under Dirichlet boundary conditions.
-        force_nodes : np.ndarray or list of np.ndarray
-            Coordinates used to determine which elements are subject to \
-                external forces.
-        force_value : float or list of float
-            Magnitude(s) of the external force(s). If multiple load cases \
-                are used, provide a list.
-        design_elements : np.ndarray
-            Initial set of element indices considered designable.
-
-        Returns
-        -------
-        TaskConfig
-            A fully initialized TaskConfig object containing mesh, boundary condition, and load data.
-
-        Raises
-        ------
-        ValueError
-            If no force elements are found or if design elements are empty after filtering.
-        """
-
-        force_facets_ids = np.concatenate(force_facets) \
-            if isinstance(force_facets, list) else force_facets
-        facets = basis.mesh.facets                  # facet→node 接続
-        force_nodes = np.unique(facets[:, force_facets_ids].ravel())
-        force = assemble_surface_forces(
-            basis,
-            force_facets=force_facets,
-            force_dir_type=force_dir_type,
-            force_value=force_value
-        )
-
-        #
-        # Dirichlet
-        #
         dirichlet_elements = utils.get_elements_with_nodes_fast(
             basis.mesh, [dirichlet_nodes]
         )
@@ -322,6 +301,100 @@ class TaskConfig():
             fixed_elements,
             dirichlet_force_elements,
             elements_volume
+        )
+
+    @classmethod
+    def from_facets(
+        cls,
+        E: float,
+        nu: float,
+        basis: skfem.Basis,
+        dirichlet_facets_ids: np.ndarray | list[np.ndarray],
+        dirichlet_dir: _lit_bc | list[_lit_bc],
+        force_facets_ids: np.ndarray | list[np.ndarray],
+        force_dir_type: str | list[str],
+        force_value: float | list[float],
+        design_elements: np.ndarray,
+    ):
+        """
+        Create a TaskConfig from facet-based boundary-condition specifications.
+
+        This constructor allows you to specify Dirichlet and Neumann boundaries
+        directly via facet indices (rather than node indices). It will internally:
+
+        - Convert `dirichlet_facets_ids` into the corresponding Dirichlet node set.
+        - Resolve Dirichlet DOFs from those nodes and `dirichlet_dir`.
+        - Convert `force_facets_ids` into the corresponding force node set.
+        - Assemble the Neumann (surface) load vector(s) using
+            `assemble_surface_forces`.
+        - Forward all data to `TaskConfig.from_nodes` to build the final config.
+
+        Parameters
+        ----------
+        E : float
+            Young's modulus.
+        nu : float
+            Poisson's ratio.
+        basis : skfem.Basis
+            Finite-element space providing mesh and DOFs.
+        dirichlet_facets_ids : np.ndarray or list[np.ndarray]
+            Indices of facets subject to Dirichlet boundary conditions. If a list
+            is given, each entry corresponds to a boundary region.
+        dirichlet_dir : _lit_bc or list[_lit_bc]
+            Direction specifier(s) for Dirichlet constraints.  
+            `_lit_bc = Literal['u^1', 'u^2', 'u^3', 'all']`  
+            - `'all'` fixes all displacement components.  
+            - `'u^1'`, `'u^2'`, `'u^3'` fix the respective component only.
+        force_facets_ids : np.ndarray or list[np.ndarray]
+            Indices of facets subject to Neumann (surface) forces. A list denotes
+            multiple load regions.
+        force_dir_type : str or list[str]
+            Direction specifier(s) for each force region.  
+            `_lit_force = Literal['u^1', 'u^2', 'u^3']`  
+            Indicates along which component the surface load is applied.
+        force_value : float or list[float]
+            Magnitude(s) of the surface forces, one per region if multiple.
+        design_elements : np.ndarray
+            Element indices initially considered designable. Force-touching
+            elements will be excluded downstream.
+
+        Returns
+        -------
+        TaskConfig
+            A fully initialized TaskConfig, equivalent to what
+            `TaskConfig.from_nodes` produces but constructed from facet-based
+            specifications.
+        """
+
+        facets = basis.mesh.facets
+        if isinstance(dirichlet_facets_ids, list):
+            dirichlet_nodes = list()
+            for dirichlet_facets_ids_loop in dirichlet_facets_ids:
+                dirichlet_nodes.append(
+                    np.unique(facets[:, dirichlet_facets_ids_loop].ravel())
+                )
+        elif isinstance(dirichlet_facets_ids, np.ndarray):
+            dirichlet_nodes = np.unique(facets[:, dirichlet_facets_ids].ravel())
+        else:
+            raise ValueError(
+                "dirichlet_facets_ids should be list[np.ndarray] or np.ndarray"
+            )
+
+        force_facets_ids = np.concatenate(force_facets_ids) \
+            if isinstance(force_facets_ids, list) else force_facets_ids
+        force_nodes = np.unique(facets[:, force_facets_ids].ravel())
+        force = assemble_surface_forces(
+            basis,
+            force_facets_ids=force_facets_ids,
+            force_dir_type=force_dir_type,
+            force_value=force_value
+        )
+
+        return cls.from_nodes(
+            E, nu, basis,
+            dirichlet_nodes, dirichlet_dir,
+            force_nodes, force,
+            design_elements
         )
 
     @property
