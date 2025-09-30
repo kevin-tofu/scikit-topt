@@ -1,6 +1,9 @@
+from dataclasses import dataclass
 from typing import Callable
 from typing import Optional
+from typing import Literal
 import math
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -8,7 +11,10 @@ from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 
 
-def schedule_exp_slowdown(it, total, start=1.0, target=0.4, rate=10.0):
+def schedule_exp_slowdown(
+    it: int, total: int,
+    start: float = 1.0, target: float = 0.4, rate: float = 10.0
+):
     if total <= 0:
         raise ValueError("total must be positive")
 
@@ -25,7 +31,8 @@ def schedule_exp_slowdown(it, total, start=1.0, target=0.4, rate=10.0):
 
 
 def schedule_exp_accelerate(
-    it, total: int, start=1.0, target=0.4, rate=10.0
+    it: int, total: int,
+    start: float = 1.0, target: float = 0.4, rate: float = 10.0
 ):
     t = it / total
     if start > target:
@@ -173,6 +180,21 @@ def schedule_sawtooth_decay(
     return (1 - alpha) * start + alpha * target
 
 
+_lit_schedulers = Literal['Step', 'StepAccelerating', 'SawtoothDecay']
+
+
+@dataclass
+class SchedulerConfig():
+    name: str
+    init_value: float
+    target_value: float
+    num_steps: float
+    iters_max: int
+    curvature: Optional[float] = None
+    scheduler_type: _lit_schedulers = "Step"
+    # func: Callable = schedule_step
+
+
 class Scheduler():
     def __init__(
         self,
@@ -191,6 +213,30 @@ class Scheduler():
         self.num_steps = num_steps
         self.curvature = curvature
         self.func = func
+
+    @classmethod
+    def from_config(cls, cfg: SchedulerConfig):
+
+        if cfg.scheduler_type == _lit_schedulers[0]:
+            func = schedule_step
+        elif cfg.scheduler_type == _lit_schedulers[1]:
+            func = schedule_step_accelerating
+        elif cfg.scheduler_type == _lit_schedulers[2]:
+            func = schedule_sawtooth_decay
+        else:
+            raise ValueError(
+                f"{cfg.scheduler_type} not in {_lit_schedulers}"
+            )
+
+        return cls(
+            cfg.name,
+            cfg.init_value,
+            cfg.target_value,
+            cfg.iters_max,
+            cfg.num_steps,
+            curvature=cfg.curvature,
+            func=func
+        )
 
     def value(self, iter: int | np.ndarray):
         if self.num_steps < 0 or iter >= self.iters_max:
