@@ -2,6 +2,8 @@ import os
 import argparse
 import re
 
+from sktopt import tools
+
 
 def find_latest_iter_file(dst_path: str):
     pattern = re.compile(r"(\d{6})-rho\.npz")
@@ -151,5 +153,45 @@ def add_common_arguments(
     parser.add_argument(
         '--n_joblib', '-NJ', type=int, default=2, help=''
     )
-    
+
     return parser
+
+
+def args2OC_Config_dict(args) -> dict:
+    # print(args, type(args))
+    ret = dict()
+    keyw_schedulers = [
+        "filter_radius", "move_limit", "vol_frac",
+        "p", "beta", "percentile",
+        # "eta"
+    ]
+    for keyw in keyw_schedulers:
+        curvature = args["beta_curvature"] if keyw == "beta" else None
+        if keyw == "move_limit":
+            stype = "SawtoothDecay"
+        elif keyw == "beta":
+            stype = "StepAccelerating"
+        else:
+            stype = "Step"
+
+        ret[keyw] = tools.SchedulerConfig(
+            keyw, args[f"{keyw}_init"],
+            args[keyw],
+            args[f"{keyw}_step"],
+            curvature=curvature,
+            scheduler_type=stype
+        )
+
+    for keyloop in args.keys():
+        match_kw = next(
+            (kw for kw in keyw_schedulers if keyloop.startswith(kw)), None
+        )
+        if keyloop == "beta_eta":
+            ret[keyloop] = args[keyloop]
+        if match_kw is not None:
+            # print(f"{keyloop} starts with {match_kw}")
+            continue
+
+        ret[keyloop] = args[keyloop]
+
+    return ret

@@ -1,5 +1,5 @@
 from typing import Literal
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import numpy as np
 import sktopt
 from sktopt.core import projection
@@ -12,9 +12,11 @@ logger = mylogger(__name__)
 @dataclass
 class OC_Config(common_density.DensityMethod_OC_Config):
     interpolation: Literal["SIMP"] = "SIMP"
-    eta_init: float = 0.1
-    eta: float = 0.5
-    eta_step: int = 3
+    eta: sktopt.tools.SchedulerConfig = field(
+        default_factory=sktopt.tools.SchedulerConfig(
+            "eta", 0.1, 0.5, 3, scheduler_type="Step"
+        )
+    )
 
 
 def bisection_with_projection(
@@ -120,13 +122,14 @@ class OC_Optimizer(common_density.DensityMethod):
 
     def init_schedulers(self, export: bool = True):
         super().init_schedulers(False)
-        self.schedulers.add(
-            "eta",
-            self.cfg.eta_init,
-            self.cfg.eta,
-            self.cfg.eta_step,
-            self.cfg.max_iters
-        )
+        # self.schedulers.add_object_from_config(cfg.eta)
+        # self.schedulers.add(
+        #     "eta",
+        #     self.cfg.eta_init,
+        #     self.cfg.eta,
+        #     self.cfg.eta_step,
+        #     self.cfg.max_iters
+        # )
         if export:
             self.schedulers.export()
 
@@ -218,8 +221,11 @@ if __name__ == '__main__':
 
     print("load toy problem")
     print("generate OC_Config")
+    # cfg = OC_Config.from_defaults(
+    #     **vars(args)
+    # )
     cfg = OC_Config.from_defaults(
-        **vars(args)
+        **misc.args2OC_Config_dict(vars(args))
     )
     print("optimizer")
     optimizer = OC_Optimizer(cfg, tsk)

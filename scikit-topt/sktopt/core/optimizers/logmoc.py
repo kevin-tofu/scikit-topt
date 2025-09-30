@@ -158,7 +158,7 @@ class LogMOC_Optimizer(common_density.DensityMethod):
         assert cfg.lambda_lower < cfg.lambda_upper
         super().__init__(cfg, tsk)
         self.recorder = self.add_recorder(tsk)
-        ylog_dC = True if cfg.percentile > 0.0 else False
+        ylog_dC = True if cfg.percentile.target_value > 0.0 else False
         ylog_lambda_v = True if cfg.lambda_lower > 0.0 else False
         self.recorder.add("-dC", plot_type="min-max-mean-std", ylog=ylog_dC)
         self.recorder.add(
@@ -264,8 +264,11 @@ if __name__ == '__main__':
 
     print("load toy problem")
     print("generate LogMOC_Config")
+    # cfg = LogMOC_Config.from_defaults(
+    #     **vars(args)
+    # )
     cfg = LogMOC_Config.from_defaults(
-        **vars(args)
+        **misc.args2OC_Config_dict(vars(args))
     )
 
     print("optimizer")

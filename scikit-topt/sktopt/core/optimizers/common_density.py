@@ -1,10 +1,12 @@
 import os
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from dataclasses import dataclass, asdict
 from typing import Literal
 import inspect
 import shutil
 import json
-from dataclasses import dataclass, asdict
+
 
 import numpy as np
 import sktopt
@@ -131,21 +133,31 @@ class DensityMethodConfig():
     interpolation: Literal["SIMP", "RAMP"] = "SIMP"
     record_times: int = 20
     max_iters: int = 200
-    p_init: float = 1.0
-    p: float = 3.0
-    p_step: int = -1
-    vol_frac_init: float = 0.8
-    vol_frac: float = 0.4
-    vol_frac_step: int = -3
-    beta_init: float = 1.0
-    beta: float = 2
-    beta_step: int = -1
-    beta_curvature: float = 2.0
     beta_eta: float = 0.50
     eta: float = 0.6
-    filter_radius_init: float = 2.0
-    filter_radius: float = 1.20
-    filter_radius_step: int = -3
+    p: tools.SchedulerConfig = field(
+        default_factory=tools.SchedulerConfig(
+            "p", 1.0, 3.0, -1, scheduler_type="Step"
+        )
+    )
+    vol_frac: tools.SchedulerConfig = field(
+        default_factory=tools.SchedulerConfig(
+            "vol_frac", 0.8, 0.4, -3, scheduler_type="Step"
+        )
+    )
+    beta: tools.SchedulerConfig = field(
+        default_factory=tools.SchedulerConfig(
+            "beta", 1.0, 2.0, -1,
+            curvature=2.0,
+            scheduler_type="StepAccelerating"
+        )
+    )
+    filter_radius: tools.SchedulerConfig = field(
+        default_factory=tools.SchedulerConfig(
+            "filter_radius", 2.0, 1.2, -3,
+            scheduler_type="Step"
+        )
+    )
     E0: float = 210e9
     E_min: float = 210e6
     rho_min: float = 1e-2
@@ -234,14 +246,20 @@ class DensityMethod_OC_Config(DensityMethodConfig):
         Upper bound for the Lagrange multiplier.
 
     """
-    percentile_init: float = 60
-    percentile: float = -90
-    percentile_step: int = -1
-    move_limit_init: float = 0.3
-    move_limit: float = 0.10
-    move_limit_step: int = -3
     lambda_lower: float = 1e-7
     lambda_upper: float = 1e+7
+    percentile: tools.SchedulerConfig = field(
+        default_factory=tools.SchedulerConfig(
+            "percentile", 60, -90, -1,
+            scheduler_type="Step"
+        )
+    )
+    move_limit: tools.SchedulerConfig = field(
+        default_factory=tools.SchedulerConfig(
+            "move_limit", 0.3, 0.1, -3,
+            scheduler_type="SawtoothDecay"
+        )
+    )
 
 
 def interpolation_funcs(cfg: DensityMethodConfig):
@@ -435,66 +453,17 @@ class DensityMethod(DensityMethodBase):
     def init_schedulers(self, export: bool = True):
 
         cfg = self.cfg
-        p_init = cfg.p_init
-        vol_frac_init = cfg.vol_frac_init
-        move_limit_init = cfg.move_limit_init
-        beta_init = cfg.beta_init
-        self.schedulers.add(
-            "p",
-            p_init,
-            cfg.p,
-            cfg.p_step,
-            cfg.max_iters
-        )
-        self.schedulers.add(
-            "vol_frac",
-            vol_frac_init,
-            cfg.vol_frac,
-            cfg.vol_frac_step,
-            cfg.max_iters
-        )
-        self.schedulers.add_object(
-            tools.SchedulerSawtoothDecay(
-                "move_limit",
-                move_limit_init,
-                cfg.move_limit,
-                cfg.move_limit_step,
-                cfg.max_iters
-            )
-        )
-        self.schedulers.add_object(
-            tools.SchedulerStepAccelerating(
-                "beta",
-                beta_init,
-                cfg.beta,
-                cfg.beta_step,
-                cfg.max_iters,
-                cfg.beta_curvature,
-            )
-        )
-        self.schedulers.add(
-            "percentile",
-            cfg.percentile_init,
-            cfg.percentile,
-            cfg.percentile_step,
-            cfg.max_iters
-        )
-        self.schedulers.add(
-            "filter_radius",
-            cfg.filter_radius_init,
-            cfg.filter_radius,
-            cfg.filter_radius_step,
-            cfg.max_iters
-        )
-        if "eta_init" in cfg.__dataclass_fields__:
-            self.schedulers.add(
-                "eta",
-                self.cfg.eta_init,
-                self.cfg.eta,
-                self.cfg.eta_step,
-                self.cfg.max_iters
-            )
+        self.schedulers.add_object_from_config(cfg.p)
+        self.schedulers.add_object_from_config(cfg.vol_frac)
+        self.schedulers.add_object_from_config(cfg.move_limit)
+        self.schedulers.add_object_from_config(cfg.beta)
+        self.schedulers.add_object_from_config(cfg.percentile)
+        self.schedulers.add_object_from_config(cfg.filter_radius)
+        # self.schedulers.add_object_from_config(cfg.eta)
+        if isinstance(cfg.eta, tools.SchedulerConfig):
+            self.schedulers.add_object_from_config(cfg.eta)
         else:
+            # constant
             self.schedulers.add(
                 "eta",
                 self.cfg.eta,
@@ -502,13 +471,31 @@ class DensityMethod(DensityMethodBase):
                 -1,
                 self.cfg.max_iters
             )
+        # if "eta_init" in cfg.__dataclass_fields__:
+        #     self.schedulers.add(
+        #         "eta",
+        #         self.cfg.eta_init,
+        #         self.cfg.eta,
+        #         self.cfg.eta_step,
+        #         self.cfg.max_iters
+        #     )
+        # else:
+        #     self.schedulers.add(
+        #         "eta",
+        #         self.cfg.eta,
+        #         self.cfg.eta,
+        #         -1,
+        #         self.cfg.max_iters
+        #     )
+        self.schedulers.set_iters_max(cfg.max_iters)
+
         if export:
             self.schedulers.export()
 
     def parameterize(self):
         self.helmholz_solver = filter.HelmholtzFilter.from_defaults(
             self.tsk.mesh,
-            self.cfg.filter_radius,
+            self.cfg.filter_radius.init_value,
             solver_option="cg_pyamg",
             # solver_option=self.cfg.solver_option,
             dst_path=f"{self.cfg.dst_path}/data",
@@ -522,7 +509,7 @@ class DensityMethod(DensityMethodBase):
     def initialize_density(self):
         tsk = self.tsk
         cfg = self.cfg
-        val_init = cfg.vol_frac_init
+        val_init = cfg.vol_frac.init_value
         rho = np.zeros_like(tsk.all_elements, dtype=np.float64)
         iter_begin = 1
         if cfg.restart is True:
@@ -631,8 +618,10 @@ class DensityMethod(DensityMethodBase):
         force_vec_list = tsk.force \
             if isinstance(tsk.force, list) else [tsk.force]
         u_dofs = np.zeros((tsk.basis.N, len(force_vec_list)))
-        filter_radius = cfg.filter_radius_init \
-            if cfg.filter_radius_step > 0 else cfg.filter_radius
+        filter_radius = cfg.filter_radius.init_value \
+            if cfg.filter_radius.num_steps > 0 else cfg.filter_radius.target_value
+        # filter_radius = cfg.filter_radius.init \
+        #     if cfg.filter_radius_step > 0 else cfg.filter_radius
         return (
             iter_begin,
             iter_end,
