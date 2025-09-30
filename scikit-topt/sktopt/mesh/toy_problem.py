@@ -7,7 +7,6 @@ from sktopt.mesh import task
 from sktopt.mesh import utils
 
 
-
 def create_box_hex(x_len, y_len, z_len, mesh_size):
     """
     Create a hexahedral mesh box with given dimensions and element size.
@@ -80,8 +79,6 @@ def toy_base0(
         mesh,
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
-
-    print("generate config")
     E0 = 210e9
     F = -100.0
     return task.TaskConfig.from_defaults(
@@ -109,7 +106,6 @@ def toy_base(
     mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=intorder)
-    
     dirichlet_in_range = utils.get_facets_in_range(
         (0.0, 0.03), (0.0, y_len), (0.0, z_len)
     )
@@ -187,12 +183,12 @@ def toy2():
         dirichlet_in_range, boundaries_only=True
     )
 
-    eps = mesh_size / 3
+    eps = mesh_size
     in_range_0 = utils.get_facets_in_range(
-        (x_len - eps, x_len), (y_len - eps, y_len), (0, z_len)
+        (x_len, x_len), (y_len-eps, y_len), (0, z_len)
     )
     in_range_1 = utils.get_facets_in_range(
-        (x_len - eps, x_len), (0, eps), (0, z_len - eps)
+        (x_len, x_len), (0, eps), (0, z_len)
     )
     force_facets_0 = basis.mesh.facets_satisfying(
         in_range_0, boundaries_only=True
@@ -200,6 +196,8 @@ def toy2():
     force_facets_1 = basis.mesh.facets_satisfying(
         in_range_1, boundaries_only=True
     )
+    print(f"force_facets_0 : {force_facets_0}")
+    print(f"force_facets_1 : {force_facets_1}")
     force_dir_type = ["u^2", "u^2"]
     force_value = [-100, 100]
     design_elements = utils.get_elements_in_box(
@@ -208,7 +206,6 @@ def toy2():
     )
 
     E0 = 210e9
-    print("F:", force_value)
     return task.TaskConfig.from_facets(
         E0,
         0.30,

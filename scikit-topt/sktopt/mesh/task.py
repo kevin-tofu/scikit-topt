@@ -34,7 +34,9 @@ def assemble_surface_forces(
 
     def _dir_to_comp(s: str) -> int:
         if not (isinstance(s, str) and s.startswith('u^') and s[2:].isdigit()):
-            raise ValueError(f"force_dir_type must be like 'u^1','u^2','u^3', got: {s}")
+            raise ValueError(
+                f"force_dir_type must be like 'u^1','u^2','u^3', got: {s}"
+            )
         c = int(s[2:]) - 1
         if c < 0:
             raise ValueError(f"Invalid component index parsed from {s}")
@@ -49,7 +51,8 @@ def assemble_surface_forces(
         # print("len(dirs_list) : ", len(dirs_list))
         # print("len(vals_list) : ", len(vals_list))
         raise ValueError(
-            "Lengths of force_facets_ids, force_dir_type, and force_value must match when lists."
+            "Lengths of force_facets_ids, force_dir_type, and force_value\
+                must match when lists."
         )
 
     @LinearForm
@@ -399,7 +402,7 @@ class TaskConfig():
             force_nodes, force,
             design_elements
         )
-        
+
     @classmethod
     def from_json(self, path: str):
         raise NotImplementedError("not implmented yet")
