@@ -189,7 +189,7 @@ class SchedulerConfig():
     init_value: float
     target_value: float
     num_steps: float
-    iters_max: int
+    iters_max: Optional[int] = None
     curvature: Optional[float] = None
     scheduler_type: _lit_schedulers = "Step"
     # func: Callable = schedule_step
@@ -202,7 +202,7 @@ class Scheduler():
         init_value: float,
         target_value: float,
         num_steps: float,
-        iters_max: int,
+        iters_max: Optional[int] = None,
         curvature: Optional[float] = None,
         func: Callable = schedule_step
     ):
@@ -217,23 +217,27 @@ class Scheduler():
     @classmethod
     def from_config(cls, cfg: SchedulerConfig):
 
-        if cfg.scheduler_type == _lit_schedulers[0]:
+        # 'Step', 'StepAccelerating', 'SawtoothDecay'
+        if cfg.scheduler_type == 'Step':
             func = schedule_step
-        elif cfg.scheduler_type == _lit_schedulers[1]:
+        elif cfg.scheduler_type == 'StepAccelerating':
             func = schedule_step_accelerating
-        elif cfg.scheduler_type == _lit_schedulers[2]:
+        elif cfg.scheduler_type == 'SawtoothDecay':
             func = schedule_sawtooth_decay
         else:
+            options = [
+                'Step', 'StepAccelerating', 'SawtoothDecay'
+            ]
             raise ValueError(
-                f"{cfg.scheduler_type} not in {_lit_schedulers}"
+                f"{cfg.scheduler_type} not in {options}"
             )
 
         return cls(
             cfg.name,
             cfg.init_value,
             cfg.target_value,
-            cfg.iters_max,
             cfg.num_steps,
+            iters_max=cfg.iters_max,
             curvature=cfg.curvature,
             func=func
         )
@@ -267,9 +271,9 @@ class SchedulerStep(Scheduler):
             init_value,
             target_value,
             num_steps,
-            iters_max,
-            None,
-            schedule_step
+            iters_max=iters_max,
+            curvature=None,
+            func=schedule_step
         )
 
 
@@ -280,17 +284,17 @@ class SchedulerStepAccelerating(Scheduler):
         init_value: float,
         target_value: float,
         num_steps: float,
-        iters_max: int,
-        curvature: float
+        iters_max: Optional[int] = None,
+        curvature: Optional[float] = None,
     ):
         super().__init__(
             name,
             init_value,
             target_value,
             num_steps,
-            iters_max,
-            curvature,
-            schedule_step_accelerating
+            iters_max=iters_max,
+            curvature=curvature,
+            func=schedule_step_accelerating
         )
 
 
@@ -301,15 +305,15 @@ class SchedulerSawtoothDecay(Scheduler):
         init_value: float,
         target_value: float,
         num_steps: float,
-        iters_max: int,
+        iters_max: Optional[int] = None,
     ):
         super().__init__(
             name,
             init_value,
             target_value,
             num_steps,
-            iters_max,
-            None,
+            iters_max=iters_max,
+            curvature=None,
             func=schedule_sawtooth_decay
         )
 
@@ -318,6 +322,10 @@ class Schedulers():
     def __init__(self, dst_path: str):
         self.scheduler_list = []
         self.dst_path = dst_path
+
+    def set_iters_max(self, iters_max: int):
+        for loop in self.scheduler_list:
+            loop.iters_max = iters_max
 
     def value_on_a_scheduler(self, key: str, iter: int) -> float:
         return self.values_as_list(
@@ -349,19 +357,26 @@ class Schedulers():
     ):
         self.scheduler_list.append(s)
 
+    def add_object_from_config(
+        self, cfg: SchedulerConfig
+    ):
+        self.add_object(
+            Scheduler.from_config(cfg)
+        )
+
     def add(
         self,
         name: str,
         init_value: float,
         target_value: float,
         num_steps: float,
-        iters_max: int,
+        iters_max: Optional[int] = None,
         curvature: Optional[float] = None,
         func: Callable = schedule_step
     ):
         s = Scheduler(
             name, init_value, target_value, num_steps,
-            iters_max, curvature, func
+            iters_max, curvature=curvature, func=func
         )
         # print(s.name)
         self.scheduler_list.append(s)
