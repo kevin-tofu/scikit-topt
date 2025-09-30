@@ -73,9 +73,6 @@ Scikit-topt implements topology optimization algorithms based on the density met
 * Support for multiple optimization algorithms
   - Optimality Criteria Method
   - Modified Optimality Criteria (MOC) Variants
-    - Log-space Update
-    - Linear-space Update
-  - Lagrangian Method
 
 
 # Usage Example
