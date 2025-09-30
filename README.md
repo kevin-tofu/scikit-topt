@@ -90,8 +90,11 @@ basis = skfem.Basis(mesh, e, intorder=2)
 ```Python
 
 # Specify Dirichlet Boundary Conditions
-dirichlet_nodes = sktopt.mesh.utils.get_nodes_indices_in_range(
-    basis.mesh, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
+dirichlet_in_range = sktopt.utils.get_facets_in_range(
+    (0.0, 0.03), (0.0, y_len), (0.0, z_len)
+)
+dirichlet_facets = basis.mesh.facets_satisfying(
+  dirichlet_in_range, boundaries_only=True
 )
 dirichlet_dir = "all"
 
@@ -115,11 +118,11 @@ design_elements = sktopt.mesh.utils.get_elements_in_box(
 )
 
 # Define it as a task
-tsk = sktopt.mesh.task.TaskConfig.from_nodes(
+tsk = sktopt.mesh.task.TaskConfig.from_facets(
     210e9,
     0.30,
     basis,
-    dirichlet_nodes,
+    dirichlet_facets,
     dirichlet_dir,
     force_facets,
     force_dir,
