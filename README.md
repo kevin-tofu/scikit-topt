@@ -149,20 +149,9 @@ optimizer.optimize()
 
 ### Optimize Toy Problem with command line.
 ```bash
-OMP_NUM_THREADS=3 OPENBLAS_NUM_THREADS=3  MKL_NUM_THREADS=3 PYTHONPATH=scikit-topt python ./scikit-topt/sktopt/core/optimizers/logmoc.py \
- --dst_path ./result/base_moc_down \
- --interpolation SIMP \
- --vol_frac 0.40 \
- --eta 0.8 \
- --record_times 100 \
- --max_iters 300 \
- --mu_p 5000 \
- --task_name down_box \
- --solver_option spsolve \
- --rho_min 1e-2 \
- --E0 210e9 \
- --E_min 210e5 \
- --design_dirichlet true
+OMP_NUM_THREADS=3 OPENBLAS_NUM_THREADS=3  MKL_NUM_THREADS=3 PYTHONPATH=scikit-topt python ./scikit-topt/sktopt/core/optimizers/logmoc.py --dst_path ./result/toy2_moc 
+ --interpolation SIMP  --vol_frac 0.40  --eta 0.8  --record_times 100  --max_iters 300  --mu_p 5  --task_name toy2  --solver_option spsolve  --rho_min 1e-2  --E0 210e9  --E_min 210e5  --design_dirichle
+t true
 ```
 
 
