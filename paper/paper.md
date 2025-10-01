@@ -88,12 +88,14 @@ import skfem, sktopt
 mesh_path = "./data/model.msh"
 basis = sktopt.mesh.loader.basis_from_file(mesh_path, intorder=2)
 
-task = sktopt.mesh.task.TaskConfig.from_defaults(
-    210e9, 0.30, basis, dirichlet_nodes...
+task = sktopt.mesh.task.TaskConfig.from_facets(
+    210e9, 0.30, basis, dirichlet_facets...
 )
 cfg = sktopt.core.OC_Config(
     dst_path="./result",
-    vol_frac=0.4,
+    vol_frac=vol_frac=sktopt.tools.SchedulerConfig(
+      target_value=0.6, scheduler_type="Step"
+    ),
     max_iter=100...
 )
 
