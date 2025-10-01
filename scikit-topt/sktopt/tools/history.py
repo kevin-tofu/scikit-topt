@@ -321,4 +321,3 @@ class HistoriesLogger():
 
         # Replace histories with updated ones
         self.histories = new_histories
-

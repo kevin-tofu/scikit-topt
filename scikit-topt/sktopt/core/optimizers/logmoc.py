@@ -158,7 +158,12 @@ class LogMOC_Optimizer(common_density.DensityMethod):
         assert cfg.lambda_lower < cfg.lambda_upper
         super().__init__(cfg, tsk)
         self.recorder = self.add_recorder(tsk)
-        ylog_dC = True if cfg.percentile.target_value > 0.0 else False
+        if isinstance(
+            cfg.percentile.target_value, float
+        ):
+            ylog_dC = True if cfg.percentile.target_value > 0 else False
+        else:
+            ylog_dC = True
         ylog_lambda_v = True if cfg.lambda_lower > 0.0 else False
         self.recorder.add("-dC", plot_type="min-max-mean-std", ylog=ylog_dC)
         self.recorder.add(
@@ -180,7 +185,7 @@ class LogMOC_Optimizer(common_density.DensityMethod):
         beta: float,
         rho_clip_lower: np.ndarray,
         rho_clip_upper: np.ndarray,
-        percentile: float,
+        percentile: float | None,
         elements_volume_design: np.ndarray,
         elements_volume_design_sum: float,
         vol_frac: float
@@ -188,7 +193,7 @@ class LogMOC_Optimizer(common_density.DensityMethod):
         cfg = self.cfg
         tsk = self.tsk
         eps = 1e-8
-        if percentile > 0:
+        if isinstance(percentile, float):
             scale = np.percentile(np.abs(dC_drho_design_eles), percentile)
             self.recorder.feed_data("-dC", -dC_drho_design_eles)
             self.running_scale = 0.2 * self.running_scale + \

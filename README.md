@@ -140,8 +140,13 @@ import sktopt
 tsk = sktopt.mesh.toy_problem.toy1()
 cfg = sktopt.core.optimizers.OC_Config(
   p=sktopt.tools.SchedulerConfig(
-    "p", 1.0, 3.0, -1, scheduler_type="Step"
-  )
+    init_value=1.0, target_value=3.0,
+    num_steps=3,
+    scheduler_type="Step"
+  ),
+  vol_frac=sktopt.tools.SchedulerConfig(
+    target_value=0.6, scheduler_type="Step"
+  ),
 )
 
 optimizer = sktopt.core.OC_Optimizer(cfg, tsk)

@@ -14,7 +14,7 @@ class OC_Config(common_density.DensityMethod_OC_Config):
     interpolation: Literal["SIMP"] = "SIMP"
     eta: sktopt.tools.SchedulerConfig = field(
         default_factory=lambda: sktopt.tools.SchedulerConfig(
-            "eta", 0.1, 0.5, 3, scheduler_type="Step"
+            "eta", 0.1, 0.5, None, scheduler_type="Step"
         )
     )
 
@@ -122,14 +122,6 @@ class OC_Optimizer(common_density.DensityMethod):
 
     def init_schedulers(self, export: bool = True):
         super().init_schedulers(False)
-        # self.schedulers.add_object_from_config(cfg.eta)
-        # self.schedulers.add(
-        #     "eta",
-        #     self.cfg.eta_init,
-        #     self.cfg.eta,
-        #     self.cfg.eta_step,
-        #     self.cfg.max_iters
-        # )
         if export:
             self.schedulers.export()
 
@@ -147,7 +139,7 @@ class OC_Optimizer(common_density.DensityMethod):
         beta: float,
         rho_clip_lower: np.ndarray,
         rho_clip_upper: np.ndarray,
-        percentile: float,
+        percentile: float | None,
         elements_volume_design: np.ndarray,
         elements_volume_design_sum: float,
         vol_frac: float
@@ -155,7 +147,7 @@ class OC_Optimizer(common_density.DensityMethod):
         cfg = self.cfg
         # tsk = self.tsk
         eps = 1e-6
-        if percentile > 0:
+        if isinstance(percentile, float):
             scale = np.percentile(np.abs(dC_drho_design_eles), percentile)
             # scale = max(scale, np.mean(np.abs(dC_drho_design_eles)), 1e-4)
             # scale = np.median(np.abs(dC_drho_full[tsk.design_elements]))

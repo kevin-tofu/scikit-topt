@@ -137,24 +137,24 @@ class DensityMethodConfig():
     eta: float = 0.6
     p: tools.SchedulerConfig = field(
         default_factory=lambda: tools.SchedulerConfig(
-            "p", 1.0, 3.0, -1, scheduler_type="Step"
+            "p", 1.0, 3.0, None, scheduler_type="Step"
         )
     )
     vol_frac: tools.SchedulerConfig = field(
         default_factory=lambda: tools.SchedulerConfig(
-            "vol_frac", 0.8, 0.4, -3, scheduler_type="Step"
+            "vol_frac", 0.8, 0.4, None, scheduler_type="Step"
         )
     )
     beta: tools.SchedulerConfig = field(
         default_factory=lambda: tools.SchedulerConfig(
-            "beta", 1.0, 2.0, -1,
+            "beta", 1.0, 2.0, None,
             curvature=2.0,
             scheduler_type="StepAccelerating"
         )
     )
     filter_radius: tools.SchedulerConfig = field(
         default_factory=lambda: tools.SchedulerConfig(
-            "filter_radius", 2.0, 1.2, -3,
+            "filter_radius", 2.0, 1.2, None,
             scheduler_type="Step"
         )
     )
@@ -250,13 +250,13 @@ class DensityMethod_OC_Config(DensityMethodConfig):
     lambda_upper: float = 1e+7
     percentile: tools.SchedulerConfig = field(
         default_factory=lambda: tools.SchedulerConfig(
-            "percentile", 60, -90, -1,
+            "percentile", None, None, None,
             scheduler_type="Step"
         )
     )
     move_limit: tools.SchedulerConfig = field(
         default_factory=lambda: tools.SchedulerConfig(
-            "move_limit", 0.3, 0.1, -3,
+            "move_limit", 0.3, 0.1, None,
             scheduler_type="SawtoothDecay"
         )
     )
@@ -330,7 +330,7 @@ class DensityMethodBase(ABC):
         rho_clip_upper: np.ndarray,
         lambda_lower: float,
         lambda_upper: float,
-        percentile: float,
+        percentile: float | None,
         elements_volume_design: np.ndarray,
         elements_volume_design_sum: float,
         vol_frac: float
@@ -453,15 +453,17 @@ class DensityMethod(DensityMethodBase):
     def init_schedulers(self, export: bool = True):
 
         cfg = self.cfg
-        self.schedulers.add_object_from_config(cfg.p)
-        self.schedulers.add_object_from_config(cfg.vol_frac)
-        self.schedulers.add_object_from_config(cfg.move_limit)
-        self.schedulers.add_object_from_config(cfg.beta)
-        self.schedulers.add_object_from_config(cfg.percentile)
-        self.schedulers.add_object_from_config(cfg.filter_radius)
+        self.schedulers.add_object_from_config(cfg.p, "p")
+        self.schedulers.add_object_from_config(cfg.vol_frac, "vol_frac")
+        self.schedulers.add_object_from_config(cfg.move_limit, "move_limit")
+        self.schedulers.add_object_from_config(cfg.beta, "beta")
+        self.schedulers.add_object_from_config(cfg.percentile, "percentile")
+        self.schedulers.add_object_from_config(
+            cfg.filter_radius, "filter_radius"
+        )
         # self.schedulers.add_object_from_config(cfg.eta)
         if isinstance(cfg.eta, tools.SchedulerConfig):
-            self.schedulers.add_object_from_config(cfg.eta)
+            self.schedulers.add_object_from_config(cfg.eta, "eta")
         else:
             # constant
             self.schedulers.add(
@@ -509,7 +511,8 @@ class DensityMethod(DensityMethodBase):
     def initialize_density(self):
         tsk = self.tsk
         cfg = self.cfg
-        val_init = cfg.vol_frac.init_value
+        val_init = cfg.vol_frac.init_value \
+            if cfg.vol_frac.init_value is not None else cfg.vol_frac.target_value
         rho = np.zeros_like(tsk.all_elements, dtype=np.float64)
         iter_begin = 1
         if cfg.restart is True:
@@ -619,7 +622,7 @@ class DensityMethod(DensityMethodBase):
             if isinstance(tsk.force, list) else [tsk.force]
         u_dofs = np.zeros((tsk.basis.N, len(force_vec_list)))
         filter_radius = cfg.filter_radius.init_value \
-            if cfg.filter_radius.num_steps > 0 else cfg.filter_radius.target_value
+            if isinstance(cfg.filter_radius.num_steps, (int, float)) else cfg.filter_radius.target_value
         # filter_radius = cfg.filter_radius.init \
         #     if cfg.filter_radius_step > 0 else cfg.filter_radius
         return (
@@ -850,7 +853,7 @@ class DensityMethod(DensityMethodBase):
         rho_clip_upper: np.ndarray,
         lambda_lower: float,
         lambda_upper: float,
-        percentile: float,
+        percentile: float | None,
         elements_volume_design: np.ndarray,
         elements_volume_design_sum: float,
         vol_frac: float

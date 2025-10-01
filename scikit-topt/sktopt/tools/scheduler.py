@@ -43,7 +43,8 @@ def schedule_exp_accelerate(
 
 def schedule_step(
     it: int, total: int,
-    start: float = 1.0, target: float = 0.4, num_steps: int = 10,
+    start: float = 1.0, target: float = 0.4,
+    num_steps: int = 10,
     **args
 ):
     """
@@ -185,12 +186,12 @@ _lit_schedulers = Literal['Step', 'StepAccelerating', 'SawtoothDecay']
 
 @dataclass
 class SchedulerConfig():
-    name: str
-    init_value: float
-    target_value: float
-    num_steps: Optional[float] = -1.0
-    iters_max: Optional[int] = None
-    curvature: Optional[float] = None
+    name: str | None = None
+    init_value: float | None = None
+    target_value: float | None = None
+    num_steps: int | None = None
+    iters_max: int | None = None
+    curvature: float | None = None
     scheduler_type: _lit_schedulers = "Step"
     # func: Callable = schedule_step
 
@@ -199,9 +200,9 @@ class Scheduler():
     def __init__(
         self,
         name: str,
-        init_value: float,
-        target_value: float,
-        num_steps: float,
+        init_value: float | None,
+        target_value: float | None,
+        num_steps: Optional[float] = None,
         iters_max: Optional[int] = None,
         curvature: Optional[float] = None,
         func: Callable = schedule_step
@@ -243,7 +244,16 @@ class Scheduler():
         )
 
     def value(self, iter: int | np.ndarray):
-        if self.num_steps < 0 or iter >= self.iters_max:
+
+        if self.target_value is None:
+            return None
+
+        if isinstance(self.num_steps, (int, float)):
+            if self.num_steps < 0:
+                return self.target_value
+        elif self.num_steps is None:
+            return self.target_value
+        if iter >= self.iters_max:
             return self.target_value
 
         ret = self.func(
@@ -349,7 +359,10 @@ class Schedulers():
         ]
         if export_log is True:
             for key, value in zip(order, ret):
-                logger.info(f"{key} {value:.{precision}f}")
+                value_precision = f"{value:.{precision}f}" \
+                    if value is not None else "None"
+                logger.info(f"{key} {value_precision}")
+
         return ret
 
     def add_object(
@@ -358,8 +371,13 @@ class Schedulers():
         self.scheduler_list.append(s)
 
     def add_object_from_config(
-        self, cfg: SchedulerConfig
+        self,
+        cfg: SchedulerConfig,
+        rewrite_name: str | None
     ):
+        if isinstance(rewrite_name, str):
+            cfg.name = rewrite_name
+
         self.add_object(
             Scheduler.from_config(cfg)
         )

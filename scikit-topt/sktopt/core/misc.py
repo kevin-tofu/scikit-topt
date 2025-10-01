@@ -33,6 +33,12 @@ def str2bool(value):
         raise argparse.ArgumentTypeError('Boolean values is expeted')
 
 
+def float_or_none(x: str) -> float | None:
+    if x.lower() in ("none", "null", "nan"):
+        return None
+    return float(x)
+
+
 def add_common_arguments(
     parser: argparse.ArgumentParser
 ) -> argparse.ArgumentParser:
@@ -73,7 +79,7 @@ def add_common_arguments(
         '--vol_frac', '-V', type=float, default=0.4, help=''
     )
     parser.add_argument(
-        '--vol_frac_step', '-VFT', type=int, default=2, help=''
+        '--vol_frac_step', '-VFT', type=float_or_none, default=None, help=''
     )
     parser.add_argument(
         '--p_init', '-PI', type=float, default=1.0, help=''
@@ -82,7 +88,7 @@ def add_common_arguments(
         '--p', '-P', type=float, default=3.0, help=''
     )
     parser.add_argument(
-        '--p_step', '-PRT', type=int, default=2, help=''
+        '--p_step', '-PRT', type=float_or_none, default=None, help=''
     )
     parser.add_argument(
         '--beta_init', '-BI', type=float, default=0.1, help=''
@@ -94,16 +100,16 @@ def add_common_arguments(
         '--beta_curvature', '-BC', type=float, default=5.0, help=''
     )
     parser.add_argument(
-        '--beta_step', '-BR', type=float, default=20.0, help=''
+        '--beta_step', '-BR', type=float_or_none, default=None, help=''
     )
     parser.add_argument(
-        '--percentile_init', '-PTI', type=float, default=60, help=''
+        '--percentile_init', '-PTI', type=float_or_none, default=None, help=''
     )
     parser.add_argument(
-        '--percentile_step', '-PTR', type=int, default=2, help=''
+        '--percentile_step', '-PTR', type=float_or_none, default=None, help=''
     )
     parser.add_argument(
-        '--percentile', '-PT', type=float, default=90, help=''
+        '--percentile', '-PT', type=float_or_none, default=None, help=''
     )
     parser.add_argument(
         '--rho_min', '-RhM', type=float, default=1e-1, help=''

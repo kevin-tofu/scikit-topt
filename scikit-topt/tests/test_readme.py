@@ -47,7 +47,7 @@ def define_task() -> sktopt.mesh.task.TaskConfig:
     )
 
 
-def oc_ramp_optimize(tsk):
+def oc_optimize(tsk):
     cfg = sktopt.core.optimizers.OC_Config()
     cfg.max_iters = 1
     cfg.record_times = 1
@@ -59,8 +59,13 @@ def oc_ramp_optimize(tsk):
 def logmoc_optimize(tsk):
     cfg = sktopt.core.optimizers.LogMOC_Config(
         p=sktopt.tools.SchedulerConfig(
-            "p", 1.0, 3.0, -1, scheduler_type="Step"
-        )
+            init_value=1.0, target_value=3.0,
+            num_steps=3,
+            scheduler_type="Step"
+        ),
+        vol_frac=sktopt.tools.SchedulerConfig(
+            target_value=0.6, scheduler_type="Step"
+        ),
     )
     cfg.max_iters = 1
     cfg.record_times = 1
@@ -71,11 +76,12 @@ def logmoc_optimize(tsk):
 
 def test_optimizers():
     tsk1 = sktopt.mesh.toy_problem.toy_test()
-    oc_ramp_optimize(tsk1)
+    oc_optimize(tsk1)
     logmoc_optimize(tsk1)
 
 
 if __name__ == "__main__":
 
-    tsk = define_task()
-    logmoc_optimize(tsk)
+    # tsk = define_task()
+    # logmoc_optimize(tsk)
+    test_optimizers
