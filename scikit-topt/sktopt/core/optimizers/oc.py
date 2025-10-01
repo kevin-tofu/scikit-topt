@@ -13,7 +13,7 @@ logger = mylogger(__name__)
 class OC_Config(common_density.DensityMethod_OC_Config):
     interpolation: Literal["SIMP"] = "SIMP"
     eta: sktopt.tools.SchedulerConfig = field(
-        default_factory=sktopt.tools.SchedulerConfig(
+        default_factory=lambda: sktopt.tools.SchedulerConfig(
             "eta", 0.1, 0.5, 3, scheduler_type="Step"
         )
     )

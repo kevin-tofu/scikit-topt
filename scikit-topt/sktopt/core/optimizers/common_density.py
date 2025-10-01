@@ -136,24 +136,24 @@ class DensityMethodConfig():
     beta_eta: float = 0.50
     eta: float = 0.6
     p: tools.SchedulerConfig = field(
-        default_factory=tools.SchedulerConfig(
+        default_factory=lambda: tools.SchedulerConfig(
             "p", 1.0, 3.0, -1, scheduler_type="Step"
         )
     )
     vol_frac: tools.SchedulerConfig = field(
-        default_factory=tools.SchedulerConfig(
+        default_factory=lambda: tools.SchedulerConfig(
             "vol_frac", 0.8, 0.4, -3, scheduler_type="Step"
         )
     )
     beta: tools.SchedulerConfig = field(
-        default_factory=tools.SchedulerConfig(
+        default_factory=lambda: tools.SchedulerConfig(
             "beta", 1.0, 2.0, -1,
             curvature=2.0,
             scheduler_type="StepAccelerating"
         )
     )
     filter_radius: tools.SchedulerConfig = field(
-        default_factory=tools.SchedulerConfig(
+        default_factory=lambda: tools.SchedulerConfig(
             "filter_radius", 2.0, 1.2, -3,
             scheduler_type="Step"
         )
@@ -249,13 +249,13 @@ class DensityMethod_OC_Config(DensityMethodConfig):
     lambda_lower: float = 1e-7
     lambda_upper: float = 1e+7
     percentile: tools.SchedulerConfig = field(
-        default_factory=tools.SchedulerConfig(
+        default_factory=lambda: tools.SchedulerConfig(
             "percentile", 60, -90, -1,
             scheduler_type="Step"
         )
     )
     move_limit: tools.SchedulerConfig = field(
-        default_factory=tools.SchedulerConfig(
+        default_factory=lambda: tools.SchedulerConfig(
             "move_limit", 0.3, 0.1, -3,
             scheduler_type="SawtoothDecay"
         )
