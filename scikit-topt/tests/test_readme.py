@@ -57,7 +57,11 @@ def oc_ramp_optimize(tsk):
 
 
 def logmoc_optimize(tsk):
-    cfg = sktopt.core.optimizers.LogMOC_Config()
+    cfg = sktopt.core.optimizers.LogMOC_Config(
+        p=sktopt.tools.SchedulerConfig(
+            "p", 1.0, 3.0, -1, scheduler_type="Step"
+        )
+    )
     cfg.max_iters = 1
     cfg.record_times = 1
     optimizer = sktopt.core.LogMOC_Optimizer(cfg, tsk)
