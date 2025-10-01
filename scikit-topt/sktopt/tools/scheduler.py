@@ -188,7 +188,7 @@ class SchedulerConfig():
     name: str
     init_value: float
     target_value: float
-    num_steps: float
+    num_steps: Optional[float] = -1.0
     iters_max: Optional[int] = None
     curvature: Optional[float] = None
     scheduler_type: _lit_schedulers = "Step"

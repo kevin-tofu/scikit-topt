@@ -138,9 +138,13 @@ tsk = sktopt.mesh.task.TaskConfig.from_facets(
 import sktopt
 
 tsk = sktopt.mesh.toy_problem.toy1()
-cfg = sktopt.core.LogMOC_Config()
+cfg = sktopt.core.optimizers.OC_Config(
+  p=sktopt.tools.SchedulerConfig(
+    "p", 1.0, 3.0, -1, scheduler_type="Step"
+  )
+)
 
-optimizer = sktopt.core.LogMOC_Optimizer(cfg, tsk)
+optimizer = sktopt.core.OC_Optimizer(cfg, tsk)
 
 optimizer.parameterize()
 optimizer.optimize()
