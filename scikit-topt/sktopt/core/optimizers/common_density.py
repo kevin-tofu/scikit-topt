@@ -136,26 +136,26 @@ class DensityMethodConfig():
     beta_eta: float = 0.50
     eta: float = 0.6
     p: tools.SchedulerConfig = field(
-        default_factory=lambda: tools.SchedulerConfig(
+        default_factory=lambda: tools.SchedulerConfig.from_defaults(
             "p", 1.0, 3.0, None, scheduler_type="Step"
         )
     )
     vol_frac: tools.SchedulerConfig = field(
-        default_factory=lambda: tools.SchedulerConfig(
+        default_factory=lambda: tools.SchedulerConfig.from_defaults(
             "vol_frac", 0.8, 0.4, None, scheduler_type="Step"
         )
     )
     beta: tools.SchedulerConfig = field(
-        default_factory=lambda: tools.SchedulerConfig(
+        default_factory=lambda: tools.SchedulerConfig.from_defaults(
             "beta", 1.0, 2.0, None,
             curvature=2.0,
             scheduler_type="StepAccelerating"
         )
     )
     filter_radius: tools.SchedulerConfig = field(
-        default_factory=lambda: tools.SchedulerConfig(
-            "filter_radius", 2.0, 1.2, None,
-            scheduler_type="Step"
+        default_factory=lambda: tools.SchedulerConfig.from_defaults(
+            target_value=1.2,
+            scheduler_type="Constant"
         )
     )
     E0: float = 210e9
@@ -622,7 +622,9 @@ class DensityMethod(DensityMethodBase):
             if isinstance(tsk.force, list) else [tsk.force]
         u_dofs = np.zeros((tsk.basis.N, len(force_vec_list)))
         filter_radius = cfg.filter_radius.init_value \
-            if isinstance(cfg.filter_radius.num_steps, (int, float)) else cfg.filter_radius.target_value
+            if isinstance(
+                cfg.filter_radius.num_steps, (int, float)
+            ) else cfg.filter_radius.target_value
         # filter_radius = cfg.filter_radius.init \
         #     if cfg.filter_radius_step > 0 else cfg.filter_radius
         return (

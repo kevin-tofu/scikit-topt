@@ -260,7 +260,8 @@ def compute_filter_gradient_matrix(mesh: skfem.Mesh, radius: float):
 
 
 def prepare_helmholtz_filter(
-    mesh: skfem.Mesh, radius: float,
+    mesh: skfem.Mesh,
+    radius: float,
     design_elements_mask: Optional[np.ndarray] = None,
     exclude_nonadjacent: bool = False,
 ):

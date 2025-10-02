@@ -13,7 +13,7 @@ logger = mylogger(__name__)
 
 def schedule_exp_slowdown(
     it: int, total: int,
-    start: float = 1.0, target: float = 0.4, rate: float = 10.0
+    initial_value: float = 1.0, target_value: float = 0.4, rate: float = 10.0
 ):
     if total <= 0:
         raise ValueError("total must be positive")
@@ -22,28 +22,58 @@ def schedule_exp_slowdown(
     decay = np.exp(-rate * t)
     final_decay = np.exp(-rate)
 
-    if start > target:
-        return target + \
-            (start - target) * (decay - final_decay) / (1 - final_decay)
+    if initial_value > target_value:
+        return target_value + \
+            (initial_value - target_value) * (decay - final_decay) / (1 - final_decay)
     else:
-        return target - \
-            (target - start) * (decay - final_decay) / (1 - final_decay)
+        return target_value - \
+            (target_value - initial_value) * (decay - final_decay) / (1 - final_decay)
 
 
 def schedule_exp_accelerate(
     it: int, total: int,
-    start: float = 1.0, target: float = 0.4, rate: float = 10.0
+    initial_value: float = 1.0, target_value: float = 0.4, rate: float = 10.0
 ):
     t = it / total
-    if start > target:
-        return target + (start - target) * (1 - np.exp(rate * (t - 1)))
+    if initial_value > target_value:
+        return target_value + (initial_value - target_value) * (1 - np.exp(rate * (t - 1)))
     else:
-        return target - (target - start) * (1 - np.exp(rate * (t - 1)))
+        return target_value - (target_value - initial_value) * (1 - np.exp(rate * (t - 1)))
+
+
+def schedule_constant(
+    it: int, total: int,
+    target_value: float = 0.4,
+    **args
+):
+    """
+    Step-function scheduler where each step value is used for
+    (approximately) equal number of iterations.
+
+    Parameters
+    ----------
+    it : int
+        Current iteration index.
+    total : int
+        Total number of iterations.
+    initial_value : float
+        Starting value.
+    target_value : float
+        Final target_value value.
+    num_steps : int
+        Number of discrete step values (including initial_value and target_value).
+
+    Returns
+    -------
+    float
+        Scheduled value for the given iteration.
+    """
+    return target_value
 
 
 def schedule_step(
     it: int, total: int,
-    start: float = 1.0, target: float = 0.4,
+    initial_value: float = 1.0, target_value: float = 0.4,
     num_steps: int = 10,
     **args
 ):
@@ -57,12 +87,12 @@ def schedule_step(
         Current iteration index.
     total : int
         Total number of iterations.
-    start : float
+    initial_value : float
         Starting value.
-    target : float
-        Final target value.
+    target_value : float
+        Final target_value value.
     num_steps : int
-        Number of discrete step values (including start and target).
+        Number of discrete step values (including initial_value and target_value).
 
     Returns
     -------
@@ -72,23 +102,23 @@ def schedule_step(
     if total <= 0:
         raise ValueError("total must be positive")
     if num_steps <= 1:
-        return target
+        return target_value
 
     # Determine which step this iteration belongs to
     step_length = total / num_steps
     step_index = min(int(it // step_length), num_steps - 1)
 
-    # Linearly divide values between start and target
+    # Linearly divide values between initial_value and target_value
     alpha = step_index / (num_steps - 1)
-    value = (1 - alpha) * start + alpha * target
+    value = (1 - alpha) * initial_value + alpha * target_value
     return value
 
 
 def schedule_step_accelerating(
     it: int,
     total: int,
-    start: float = 1.0,
-    target: float = 0.4,
+    initial_value: float = 1.0,
+    target_value: float = 0.4,
     num_steps: int = 10,
     curvature: float = 3.0,
     **args
@@ -105,12 +135,12 @@ def schedule_step_accelerating(
         Current iteration index.
     total : int
         Total number of iterations.
-    start : float
+    initial_value : float
         Starting value.
-    target : float
-        Final target value.
+    target_value : float
+        Final target_value value.
     num_steps : int
-        Number of steps (including start and target).
+        Number of steps (including initial_value and target_value).
     curvature : float
         Controls how quickly the steps accelerate (larger → more aggressive).
 
@@ -122,7 +152,7 @@ def schedule_step_accelerating(
     if total <= 0:
         raise ValueError("total must be positive")
     if num_steps <= 1:
-        return target
+        return target_value
 
     # Determine current step index
     step_length = total / num_steps
@@ -132,20 +162,20 @@ def schedule_step_accelerating(
     alpha = step_index / (num_steps - 1)
     nonlinear_alpha = alpha ** curvature
 
-    value = (1 - nonlinear_alpha) * start + nonlinear_alpha * target
+    value = (1 - nonlinear_alpha) * initial_value + nonlinear_alpha * target_value
     return value
 
 
 def schedule_sawtooth_decay(
     it: int,
     total: int,
-    start: float = 0.1,
-    target: float = 0.05,
+    initial_value: float = 0.1,
+    target_value: float = 0.05,
     num_steps: int = 6,
     **args
 ) -> float:
     """
-    Sawtooth-style scheduler: value decays linearly from `start` to `target`
+    Sawtooth-style scheduler: value decays linearly from `initial_value` to `target_value`
     in each step, and resets at each new step.
 
     Parameters
@@ -154,9 +184,9 @@ def schedule_sawtooth_decay(
         Current iteration index.
     total : int
         Total number of iterations.
-    start : float
+    initial_value : float
         Value at the beginning of each sawtooth step (e.g., high move_limit).
-    target : float
+    target_value : float
         Value at the end of each sawtooth step (e.g., low move_limit).
     num_steps : int
         Number of sawtooth cycles (typically same as vol_frac steps).
@@ -178,10 +208,12 @@ def schedule_sawtooth_decay(
     local_index = it0 - step_index * step_size
     alpha = min(local_index / step_size, 1.0)
 
-    return (1 - alpha) * start + alpha * target
+    return (1 - alpha) * initial_value + alpha * target_value
 
 
-_lit_schedulers = Literal['Step', 'StepAccelerating', 'SawtoothDecay']
+_lit_schedulers = Literal[
+    'Constant', 'Step', 'StepAccelerating', 'SawtoothDecay'
+]
 
 
 @dataclass
@@ -192,8 +224,36 @@ class SchedulerConfig():
     num_steps: int | None = None
     iters_max: int | None = None
     curvature: float | None = None
-    scheduler_type: _lit_schedulers = "Step"
+    scheduler_type: _lit_schedulers = "Constant"
     # func: Callable = schedule_step
+
+    @classmethod
+    def from_defaults(
+        cls,
+        name: str | None = None,
+        init_value: float | None = None,
+        target_value: float | None = None,
+        num_steps: int | None = None,
+        iters_max: int | None = None,
+        curvature: float | None = None,
+        scheduler_type: _lit_schedulers = "Constant"
+    ) -> 'SchedulerConfig':
+        # !! should add Exception Handling
+        if scheduler_type == "Constant":
+            init_value = target_value
+            iters_max = None
+            num_steps = None
+            curvature = None
+
+        return cls(
+            name=name,
+            init_value=init_value,
+            target_value=target_value,
+            num_steps=num_steps,
+            iters_max=iters_max,
+            curvature=curvature,
+            scheduler_type=scheduler_type,
+        )
 
 
 class Scheduler():
@@ -217,9 +277,15 @@ class Scheduler():
 
     @classmethod
     def from_config(cls, cfg: SchedulerConfig):
-
+            
         # 'Step', 'StepAccelerating', 'SawtoothDecay'
-        if cfg.scheduler_type == 'Step':
+        if cfg.scheduler_type == 'Constant':
+            func = schedule_constant
+            cfg.init_value = cfg.target_value
+            cfg.iters_max = None
+            cfg.num_steps = None
+            cfg.curvature = None
+        elif cfg.scheduler_type == 'Step':
             func = schedule_step
         elif cfg.scheduler_type == 'StepAccelerating':
             func = schedule_step_accelerating
@@ -227,6 +293,7 @@ class Scheduler():
             func = schedule_sawtooth_decay
         else:
             options = [
+                'Constant',
                 'Step', 'StepAccelerating', 'SawtoothDecay'
             ]
             raise ValueError(
@@ -259,8 +326,8 @@ class Scheduler():
         ret = self.func(
             it=iter,
             total=self.iters_max,
-            start=self.init_value,
-            target=self.target_value,
+            initial_value=self.init_value,
+            target_value=self.target_value,
             num_steps=self.num_steps,
             curvature=self.curvature,
         )
@@ -422,9 +489,9 @@ class Schedulers():
             keys = list(schedules.keys())
             # 2 rows on each page
             # 8 plots maximum on each page
-            start = page * cols * 2
-            end = min(start + cols * 2, len(keys))
-            n_graphs_this_page = end - start
+            initial_value = page * cols * 2
+            end = min(initial_value + cols * 2, len(keys))
+            n_graphs_this_page = end - initial_value
             rows = math.ceil(n_graphs_this_page / cols)
 
             fig, ax = plt.subplots(rows, cols, figsize=(16, 4 * rows))
@@ -432,10 +499,10 @@ class Schedulers():
             if ax.ndim == 1:
                 ax = np.reshape(ax, (rows, cols))
 
-            for i in range(start, end):
+            for i in range(initial_value, end):
                 k = keys[i]
                 h = schedules[k]
-                idx = i - start
+                idx = i - initial_value
                 p = idx // cols
                 q = idx % cols
 
@@ -446,7 +513,7 @@ class Schedulers():
                 ax[p, q].grid(True)
 
             total_slots = rows * cols
-            used_slots = end - start
+            used_slots = end - initial_value
             for j in range(used_slots, total_slots):
                 p = j // cols
                 q = j % cols

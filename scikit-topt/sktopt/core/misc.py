@@ -180,7 +180,7 @@ def args2OC_Config_dict(args) -> dict:
         else:
             stype = "Step"
 
-        ret[keyw] = tools.SchedulerConfig(
+        ret[keyw] = tools.SchedulerConfig.from_defaults(
             keyw, args[f"{keyw}_init"],
             args[keyw],
             args[f"{keyw}_step"],
