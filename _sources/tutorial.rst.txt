@@ -16,8 +16,8 @@ Optimizer Configuration, and Run
    import sktopt
 
    cfg = sktopt.core.optimizers.LogMOC_Config(
-        vol_frac=vol_frac=sktopt.tools.SchedulerConfig(
-            target_value=0.6, scheduler_type="Step"
+        vol_frac=vol_frac=sktopt.tools.SchedulerConfig.from_defaults(
+            target_value=0.6, scheduler_type="Constant"
         ),
         max_iters=40,
         record_times=40,
