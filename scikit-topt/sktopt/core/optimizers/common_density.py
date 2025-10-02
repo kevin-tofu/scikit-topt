@@ -114,26 +114,25 @@ class DensityMethodConfig():
     beta_eta: float = 0.50
     eta: float = 0.6
     p: tools.SchedulerConfig = field(
-        default_factory=lambda: tools.SchedulerConfig.from_defaults(
-            "p", 1.0, 3.0, None, scheduler_type="Step"
+        default_factory=lambda: tools.SchedulerConfig.step(
+            init_value=1.0, target_value=3.0, num_steps=3
         )
     )
     vol_frac: tools.SchedulerConfig = field(
-        default_factory=lambda: tools.SchedulerConfig.from_defaults(
-            "vol_frac", 0.8, 0.4, None, scheduler_type="Step"
+        default_factory=lambda: tools.SchedulerConfig.constant(
+            target_value=0.8
         )
     )
     beta: tools.SchedulerConfig = field(
-        default_factory=lambda: tools.SchedulerConfig.from_defaults(
-            "beta", 1.0, 2.0, None,
-            curvature=2.0,
-            scheduler_type="StepAccelerating"
+        default_factory=lambda: tools.SchedulerConfig.step_accelerating(
+            init_value=1.0, target_value=2.0,
+            num_steps=3,
+            curvature=2.0
         )
     )
     filter_radius: tools.SchedulerConfig = field(
-        default_factory=lambda: tools.SchedulerConfig.from_defaults(
-            target_value=1.2,
-            scheduler_type="Constant"
+        default_factory=lambda: tools.SchedulerConfig.constant(
+            target_value=1.2
         )
     )
     E0: float = 210e9
@@ -149,7 +148,6 @@ class DensityMethodConfig():
     solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve"
     scaling: bool = False
     n_joblib: int = 1
-
 
     @classmethod
     def from_defaults(cls, **args) -> 'DensityMethodConfig':
@@ -228,15 +226,11 @@ class DensityMethod_OC_Config(DensityMethodConfig):
     lambda_lower: float = 1e-7
     lambda_upper: float = 1e+7
     percentile: tools.SchedulerConfig = field(
-        default_factory=lambda: tools.SchedulerConfig(
-            "percentile", None, None, None,
-            scheduler_type="Step"
-        )
+        default_factory=lambda: tools.SchedulerConfig.none( )
     )
     move_limit: tools.SchedulerConfig = field(
-        default_factory=lambda: tools.SchedulerConfig(
-            "move_limit", 0.3, 0.1, None,
-            scheduler_type="SawtoothDecay"
+        default_factory=lambda: tools.SchedulerConfig.sawtooth_decay(
+            "move_limit", 0.3, 0.1, 3
         )
     )
 

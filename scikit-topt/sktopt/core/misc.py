@@ -177,13 +177,19 @@ def args2OC_Config_dict(args) -> dict:
             stype = "SawtoothDecay"
         elif keyw == "beta":
             stype = "StepAccelerating"
+        elif keyw == "percentile":
+            if args[keyw] is None:
+                stype = "None"
+            else:
+                stype = "Step"
         else:
             stype = "Step"
 
         ret[keyw] = tools.SchedulerConfig.from_defaults(
-            keyw, args[f"{keyw}_init"],
-            args[keyw],
-            args[f"{keyw}_step"],
+            name=keyw,
+            init_value=args[f"{keyw}_init"],
+            target_value=args[keyw],
+            num_steps=args[f"{keyw}_step"],
             curvature=curvature,
             scheduler_type=stype
         )

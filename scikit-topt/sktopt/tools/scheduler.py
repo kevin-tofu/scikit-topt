@@ -212,38 +212,168 @@ def schedule_sawtooth_decay(
 
 
 _lit_schedulers = Literal[
-    'Constant', 'Step', 'StepAccelerating', 'SawtoothDecay'
+    'Constant',
+    'Step', 'StepAccelerating', 'SawtoothDecay',
+    'None'
 ]
 
 
 @dataclass
-class SchedulerConfig():
-    name: str | None = None
-    init_value: float | None = None
-    target_value: float | None = None
-    num_steps: int | None = None
-    iters_max: int | None = None
-    curvature: float | None = None
+class SchedulerConfig:
+    """
+    Configuration for continuation and parameter scheduling.
+
+    Defines how a scalar parameter (e.g., penalization ``p``, projection
+    sharpness ``beta``, or volume fraction ``vol_frac``) evolves across
+    optimization iterations. Supports several scheduling strategies.
+
+    Attributes
+    ----------
+    name : str, optional
+        Identifier for the schedule (e.g., "p", "vol_frac").
+    init_value : float, optional
+        Starting value of the parameter.
+        - Required for Step, StepAccelerating, SawtoothDecay.
+        - Ignored if Constant.
+    target_value : float, optional
+        Final value of the parameter.
+        - Required for Step, StepAccelerating, SawtoothDecay.
+        - Used as fixed value if Constant.
+    num_steps : int, optional
+        Number of continuation steps or cycles.
+        - Step / StepAccelerating: number of increments between init and target.
+        - SawtoothDecay: number of sawtooth cycles (restarts).
+        - Ignored for Constant.
+    iters_max : int, optional
+        Maximum total number of iterations for which the schedule is defined.
+        - Used in SawtoothDecay to partition iterations into cycles.
+        - Typically equals the outer optimizer's max_iters.
+    curvature : float, optional
+        Shape parameter used in StepAccelerating.
+        - Example: curvature=2.0 accelerates change near the end.
+        - Ignored in other schedulers.
+    scheduler_type : {"Constant", "Step", "StepAccelerating", "SawtoothDecay"}
+        Scheduling strategy:
+          - **Constant**: fixed at ``target_value``.
+          - **Step**: discrete continuation from ``init_value`` → ``target_value`` in
+            ``num_steps`` increments.
+          - **StepAccelerating**: like Step but transition rate controlled by ``curvature``.
+          - **SawtoothDecay**: parameter decays linearly from ``init_value`` → ``target_value``
+            within each cycle (cycle length = iters_max/num_steps), then resets to
+            ``init_value`` at the start of the next cycle.
+    """
+
+    name: Optional[str] = None
+    init_value: Optional[float] = None
+    target_value: Optional[float] = None
+    num_steps: Optional[int] = None
+    iters_max: Optional[int] = None
+    curvature: Optional[float] = None
     scheduler_type: _lit_schedulers = "Constant"
-    # func: Callable = schedule_step
 
     @classmethod
     def from_defaults(
         cls,
-        name: str | None = None,
-        init_value: float | None = None,
-        target_value: float | None = None,
-        num_steps: int | None = None,
-        iters_max: int | None = None,
-        curvature: float | None = None,
+        name: Optional[str] = None,
+        init_value: Optional[float] = None,
+        target_value: Optional[float] = None,
+        num_steps: Optional[int] = None,
+        iters_max: Optional[int] = None,
+        curvature: Optional[float] = None,
         scheduler_type: _lit_schedulers = "Constant"
     ) -> 'SchedulerConfig':
+        """
+        Construct a :class:`SchedulerConfig` with validated defaults.
+
+        This helper ensures that each scheduler type receives the proper
+        parameters and fills in sensible defaults where possible.
+
+        Parameters
+        ----------
+        name : str, optional
+            Identifier for the schedule (e.g., "p", "vol_frac").
+        init_value : float, optional
+            Starting value of the parameter.
+            - Required for Step, StepAccelerating, SawtoothDecay.
+            - Ignored if Constant.
+        target_value : float, optional
+            Final value of the parameter.
+            - Required for Step, StepAccelerating, SawtoothDecay.
+            - Used as fixed value if Constant.
+        num_steps : int, optional
+            Number of continuation steps or cycles.
+            - Step / StepAccelerating: number of increments from init → target.
+            - SawtoothDecay: number of sawtooth cycles.
+            - Ignored if Constant.
+        iters_max : int, optional
+            Maximum number of iterations over which the schedule is defined.
+            - Used in SawtoothDecay to split iterations into cycles.
+            - Ignored otherwise.
+        curvature : float, optional
+            Shape parameter for StepAccelerating (default ≈ 2.0).
+            Controls acceleration of the step transition.
+            Ignored in other schedulers.
+        scheduler_type : {"Constant", "Step", "StepAccelerating", "SawtoothDecay"}, default="Constant"
+            Which scheduling strategy to use:
+              - **Constant**: fixed value at ``target_value``.
+              - **Step**: discrete continuation from ``init_value`` → ``target_value``
+                over ``num_steps`` stages.
+              - **StepAccelerating**: like Step, but interpolation biased by ``curvature``.
+              - **SawtoothDecay**: linear decay from ``init_value`` → ``target_value``
+                within each cycle, resetting each time; ``iters_max`` defines total length.
+
+        Returns
+        -------
+        SchedulerConfig
+            A validated configuration object ready to be used by the scheduler
+            functions.
+
+        Raises
+        ------
+        ValueError
+            If required parameters are missing or inconsistent with the chosen
+            ``scheduler_type``.
+
+        Notes
+        -----
+        - Iteration indices are assumed to be 1-based (``it=1`` is the first).
+        - For Constant, ``init_value`` is overridden by ``target_value``.
+        - Defaults may be auto-filled (e.g., curvature=2.0 if omitted).
+        """
+
         # !! should add Exception Handling
         if scheduler_type == "Constant":
-            init_value = target_value
-            iters_max = None
-            num_steps = None
-            curvature = None
+            if init_value is None:
+                init_value = target_value
+            if target_value is None:
+                raise ValueError("Should set target_value")
+        elif scheduler_type == "Step":
+            if init_value is None:
+                raise ValueError("Should set init_value")
+            if target_value is None:
+                raise ValueError("Should set target_value")
+            if num_steps is None:
+                raise ValueError("Should set num_steps")
+        elif scheduler_type == "StepAccelerating":
+            if init_value is None:
+                raise ValueError("Should set init_value")
+            if target_value is None:
+                raise ValueError("Should set target_value")
+            if num_steps is None:
+                raise ValueError("Should set num_steps")
+            if curvature is None:
+                raise ValueError("Should set curvature")
+        elif scheduler_type == "SawtoothDecay":
+            if init_value is None:
+                raise ValueError("Should set init_value")
+            if target_value is None:
+                raise ValueError("Should set target_value")
+            if num_steps is None:
+                raise ValueError("Should set num_steps")
+        elif scheduler_type == "None":
+            pass
+        else:
+            raise ValueError("")
 
         return cls(
             name=name,
@@ -253,6 +383,96 @@ class SchedulerConfig():
             iters_max=iters_max,
             curvature=curvature,
             scheduler_type=scheduler_type,
+        )
+
+    @classmethod
+    def none(
+        cls,
+    ) -> "SchedulerConfig":
+        return cls.from_defaults(scheduler_type="None")
+
+    @classmethod
+    def constant(
+        cls,
+        name: Optional[str] = None,
+        target_value: float = 1.0,
+    ) -> "SchedulerConfig":
+        """Factory for a Constant scheduler (always returns the same value)."""
+        return cls.from_defaults(
+            name=name,
+            init_value=target_value,
+            target_value=target_value,
+            num_steps=None,
+            iters_max=None,
+            curvature=None,
+            scheduler_type="Constant",
+        )
+
+    @classmethod
+    def step(
+        cls,
+        name: Optional[str] = None,
+        init_value: Optional[float] = None,
+        target_value: Optional[float] = None,
+        num_steps: Optional[int] = None,
+        iters_max: Optional[int] = None,
+    ) -> "SchedulerConfig":
+        """Factory for a Step scheduler (discrete continuation)."""
+        return cls.from_defaults(
+            name=name,
+            init_value=init_value,
+            target_value=target_value,
+            num_steps=num_steps,
+            iters_max=iters_max,
+            curvature=None,
+            scheduler_type="Step",
+        )
+
+    @classmethod
+    def step_accelerating(
+        cls,
+        name: Optional[str] = None,
+        init_value: Optional[float] = None,
+        target_value: Optional[float] = None,
+        num_steps: Optional[int] = None,
+        iters_max: Optional[int] = None,
+        curvature=None
+    ) -> "SchedulerConfig":
+        """Factory for a StepAccelerating scheduler (nonlinear continuation with curvature)."""
+        return cls.from_defaults(
+            name=name,
+            init_value=init_value,
+            target_value=target_value,
+            num_steps=num_steps,
+            iters_max=iters_max,
+            curvature=curvature,
+            scheduler_type="StepAccelerating",
+        )
+
+    @classmethod
+    def sawtooth_decay(
+        cls,
+        name: Optional[str] = None,
+        init_value: float = 0.1,
+        target_value: float = 0.05,
+        iters_max: int = 100,
+        num_steps: int = 6,
+    ) -> "SchedulerConfig":
+        """
+        Factory for a SawtoothDecay scheduler.
+
+        Parameter decays linearly from init_value to target_value
+        within each cycle, then resets. Total iterations = iters_max,
+        cycles = num_steps.
+        """
+        return cls(
+            name=name,
+            init_value=init_value,
+            target_value=target_value,
+            num_steps=num_steps,
+            iters_max=iters_max,
+            curvature=None,
+            scheduler_type="SawtoothDecay",
         )
 
 
@@ -291,10 +511,13 @@ class Scheduler():
             func = schedule_step_accelerating
         elif cfg.scheduler_type == 'SawtoothDecay':
             func = schedule_sawtooth_decay
+        elif cfg.scheduler_type == 'None':
+            func = None
         else:
             options = [
                 'Constant',
-                'Step', 'StepAccelerating', 'SawtoothDecay'
+                'Step', 'StepAccelerating', 'SawtoothDecay',
+                'None'
             ]
             raise ValueError(
                 f"{cfg.scheduler_type} not in {options}"

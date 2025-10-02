@@ -37,8 +37,8 @@ class OC_Config(common_density.DensityMethod_OC_Config):
     """
     interpolation: Literal["SIMP"] = "SIMP"
     eta: sktopt.tools.SchedulerConfig = field(
-        default_factory=lambda: sktopt.tools.SchedulerConfig.from_defaults(
-            target_value=0.5, scheduler_type="Constant"
+        default_factory=lambda: sktopt.tools.SchedulerConfig.constant(
+            target_value=0.5
         )
     )
 
