@@ -11,6 +11,30 @@ logger = mylogger(__name__)
 
 @dataclass
 class OC_Config(common_density.DensityMethod_OC_Config):
+    """
+    Optimality-Criteria (OC) configuration for density-based optimization.
+
+    This class specializes :class:`common_density.DensityMethod_OC_Config`
+    for OC-style updates. The material interpolation is fixed to SIMP, and
+    the projection threshold ``eta`` is controlled via a
+    :class:`sktopt.tools.SchedulerConfig`.
+
+    Attributes
+    ----------
+    interpolation : {"SIMP"}
+        Material interpolation model. Fixed to "SIMP" for OC.
+    eta : sktopt.tools.SchedulerConfig
+        Threshold (η) used in Heaviside projection / update logic.
+        The default keeps η constant at 0.5 using a ``Constant`` scheduler.
+        Pass a custom scheduler to run continuation (e.g., Step from 0.7 → 0.3).
+
+    Notes
+    -----
+    - Other continuation parameters (e.g., ``p``, ``beta``, ``vol_frac``,
+      ``filter_radius``) are inherited from the parent config if present there.
+    - To override ``eta`` from outside, provide a pre-built
+      :class:`SchedulerConfig` at construction time.
+    """
     interpolation: Literal["SIMP"] = "SIMP"
     eta: sktopt.tools.SchedulerConfig = field(
         default_factory=lambda: sktopt.tools.SchedulerConfig.from_defaults(

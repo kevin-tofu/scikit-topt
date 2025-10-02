@@ -25,108 +25,86 @@ logger = mylogger(__name__)
 @dataclass
 class DensityMethodConfig():
     """
-    Configuration class for controlling parameters in topology optimization.
+    Configuration for density-based topology optimization (SIMP/RAMP).
 
-    This class defines optimization parameters, filtering and projection settings,
-    continuation schedules, and numerical solver options. It is designed to support
-    sensitivity-based topology optimization algorithms such as SIMP and RAMP.
+    This configuration controls interpolation, continuation schedules via
+    `SchedulerConfig`, filtering/projection thresholds, and numerical options.
+    It targets sensitivity-based methods such as SIMP and RAMP.
+
+    Notes on continuation
+    ---------------------
+    Parameters that change during optimization are represented by
+    :class:`tools.SchedulerConfig`:
+      - ``p``: penalization power (e.g., 1.0 → 3.0)
+      - ``vol_frac``: volume fraction constraint (e.g., 0.8 → 0.4)
+      - ``beta``: Heaviside projection sharpness (e.g., 1.0 → 2.0)
+      - ``filter_radius``: filter radius (often constant)
+
+    Each scheduler defines how a value evolves (e.g., "Step", "StepAccelerating",
+    "Constant") and may include extra shape parameters (e.g., ``curvature`` for
+    accelerating schedules).
 
     Attributes
     ----------
     dst_path : str
-        Directory to which results and logs are saved.
+        Output directory for results and logs.
     interpolation : {"SIMP", "RAMP"}
-        Interpolation method for material penalization.
+        Material interpolation model for penalization.
     record_times : int
-        Number of snapshots to record during optimization.
+        Number of snapshots recorded during optimization.
     max_iters : int
         Maximum number of optimization iterations.
 
-    p_init : float
-        Initial penalization power in SIMP/RAMP interpolation.
-    p : float
-        Final value of the penalization power.
-    p_step : int
-        Number of steps to continue p from p_init to p.
-        If negative, p is fixed at p_init.
-
-    vol_frac_init : float
-        Initial volume fraction for continuation.
-    vol_frac : float
-        Final volume fraction constraint.
-    vol_frac_step : int
-        Number of continuation steps from vol_frac_init to vol_frac.
-        If negative, vol_frac is fixed at vol_frac_init.
-
-    beta_init : float
-        Initial sharpness parameter for Heaviside projection.
-    beta : float
-        Final beta value for projection.
-    beta_step : int
-        Number of continuation steps from beta_init to beta.
-        If negative, beta is fixed at beta_init.
-
-    beta_curvature : float
-        Controls the curvature of the Heaviside projection function.
     beta_eta : float
-        Threshold parameter for Heaviside projection; determines where
-        the projection function switches rapidly between 0 and 1.
-
+        Threshold parameter (η) for Heaviside projection; the density at which
+        the projection transitions sharply between 0 and 1.
     eta : float
-        Threshold density used in projection. Often used to define
-        intermediate region in Heaviside or filtering.
+        Threshold density used in projection or post-processing.
 
-    percentile_init : float
-        Initial percentile used to scale sensitivity fields.
-    percentile : float
-        Final percentile value. If set to a negative value,
-        percentile-based scaling is disabled, resulting in a
-        more "exact" optimization behavior.
-    percentile_step : int
-        Number of continuation steps for the percentile value.
-        If negative, fixed at percentile_init.
-
-    filter_radius_init : float
-        Initial radius of the sensitivity or density filter.
-    filter_radius : float
-        Final filter radius.
-    filter_radius_step : int
-        Number of continuation steps for filter radius.
-        If negative, filter_radius is fixed at initial value.
+    p : tools.SchedulerConfig
+        Continuation schedule for penalization power.
+        Default: Step from 1.0 to 3.0.
+    vol_frac : tools.SchedulerConfig
+        Continuation schedule for volume fraction constraint.
+        Default: Step from 0.8 to 0.4.
+    beta : tools.SchedulerConfig
+        Continuation schedule for Heaviside sharpness (β).
+        Default: StepAccelerating from 1.0 to 2.0 with ``curvature=2.0``.
+    filter_radius : tools.SchedulerConfig
+        Schedule for filter radius. Default: Constant (target_value=1.2).
 
     E0 : float
         Young's modulus of the solid material.
     E_min : float
-        Minimum Young's modulus (used for void regions).
+        Minimum Young's modulus for void regions.
     rho_min : float
-        Minimum density value (to avoid singular stiffness).
+        Minimum density clamp (avoids singular stiffness).
     rho_max : float
-        Maximum density value (usually 1.0 for full material).
+        Maximum density clamp (typically 1.0).
 
     restart : bool
-        Whether to resume optimization from an existing state.
+        If True, resume optimization from saved state.
     restart_from : int
-        Iteration index to restart from.
+        Iteration index to resume from (use -1 to auto-detect latest).
 
     export_img : bool
         Whether to export images during optimization.
     export_img_opaque : bool
-        If True, image export uses opaque rendering.
+        If True, use opaque rendering for exported images.
 
     design_dirichlet : bool
         If True, Dirichlet boundary elements are included in the design domain.
-
     sensitivity_filter : bool
-        If True, applies filtering to the sensitivity field.
+        If True, apply filtering to sensitivity fields.
 
     solver_option : {"spsolve", "cg_pyamg"}
-        Linear solver to be used in analysis. `"cg_pyamg"` enables multigrid
-        acceleration.
-
+        Linear solver for the state analysis. ``"cg_pyamg"`` enables multigrid
+        acceleration via PyAMG.
     scaling : bool
-        If True, length and force scaling are applied to normalize the mesh geometry and load magnitudes.
-        This helps improve numerical stability by making the system dimensionless or better conditioned.
-
+        If True, apply length/force scaling to normalize geometry and loads for
+        improved conditioning.
+    n_joblib : int
+        Number of parallel workers used in joblib-enabled sections.
     """
 
     dst_path: str = "./result/pytests"
@@ -171,6 +149,7 @@ class DensityMethodConfig():
     solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve"
     scaling: bool = False
     n_joblib: int = 1
+
 
     @classmethod
     def from_defaults(cls, **args) -> 'DensityMethodConfig':
