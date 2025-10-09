@@ -55,35 +55,50 @@ def assemble_surface_forces(
                 must match when lists."
         )
 
-    @LinearForm
-    def l_one(v, w):
+    @skfem.Functional
+    def l_one(w):
         return 1.0
 
-    F_list = []
-
+    F_list = list()
     for facets, dir_s, val in zip(facets_list, dirs_list, vals_list):
         comp = _dir_to_comp(dir_s)
-        fb = FacetBasis(basis.mesh, basis.elem, facets=np.asarray(facets, dtype=int))
+        fb = FacetBasis(
+            basis.mesh, basis.elem,
+            facets=np.asarray(facets, dtype=int)
+        )
 
-        A_arr = asm(l_one, fb)
-        A = float(np.sum(A_arr))  # sum up all contributions to get scalar area
-
+        A = asm(l_one, fb)
         if A <= 0.0:
             raise ValueError(
                 "Selected facets have zero total area; check facet indices or geometry."
             )
 
         if treat_value_as_total_force:
-            p = float(val) / A
+            pressure = float(val) / A
         else:
-            p = float(val)
+            pressure = float(val)
 
         @LinearForm
         def l_comp(v, w):
-            return p * v[comp]
+            # print(f"v.shape {v.shape}")
+            # print(f"w.n.shape {w.n.shape}")
+            # v.shape (3, 46, 16)
+            # w.n.shape (3, 46, 16)
+            # return pressure * skfem.helpers.dot(w.n, v)
+            return pressure * v[comp]
 
         F = asm(l_comp, fb)
         F_list.append(F)
+
+        # ndim = basis.mesh.dim()
+        # The order of F is [u1_x, u1_y, u1_z, u2_x, u2_y, u2_z, ...]
+        # F_blocks = np.vstack([
+        #     F[comp::ndim] for comp in range(ndim)
+        # ])
+
+        # print("x-block nonzero:", (abs(F_blocks[0]) > 1e-12).any())
+        # print("y-block nonzero:", (abs(F_blocks[1]) > 1e-12).any())
+        # print("z-block nonzero:", (abs(F_blocks[2]) > 1e-12).any())
 
     return F_list[0] if (len(F_list) == 1) else F_list
 
