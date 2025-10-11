@@ -445,6 +445,20 @@ class TaskConfig():
         design_elements = basis.mesh.subdomains["design"]
         dirichlet_facets_ids = basis.mesh.boundaries["dirichlet"]
         keys = basis.mesh.boundaries.keys()
+        # 
+        dirichlet_keys = sorted(
+            [k for k in keys if re.match(r"dirichlete_\d+$", k)],
+            key=lambda x: int(re.search(r"\d+$", x).group())
+        )
+        if dirichlet_keys:
+            force_facets_ids = [
+                basis.mesh.boundaries[k] for k in dirichlet_keys
+            ]
+        elif "dirichlet" in keys:
+            force_facets_ids = [basis.mesh.boundaries["dirichlet"]]
+        else:
+            force_facets_ids = np.array([])
+        # 
         force_keys = sorted(
             [k for k in keys if re.match(r"force_\d+$", k)],
             key=lambda x: int(re.search(r"\d+$", x).group())

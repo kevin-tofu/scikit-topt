@@ -93,41 +93,32 @@ basis = skfem.Basis(mesh, e, intorder=2)
 dirichlet_in_range = sktopt.mesh.utils.get_points_in_range(
     (0.0, 0.03), (0.0, y_len), (0.0, z_len)
 )
-dirichlet_facets = basis.mesh.facets_satisfying(
-  dirichlet_in_range, boundaries_only=True
-)
-dirichlet_dir = "all"
-
-# Define Force Vector
-
 force_in_range = sktopt.mesh.utils.get_points_in_range(
   (x_len, x_len),
   (y_len*2/5, y_len*3/5),
   (z_len*2/5, z_len*3/5)
 )
-force_facets = basis.mesh.facets_satisfying(
-  force_in_range, boundaries_only=True
-)
-force_dir = "u^1"
+boundaries = {
+    "dirichlet": dirichlet_in_range,
+    "force": force_in_range
+}
+mesh = mesh.with_boundaries(boundaries)
+subdomains = {"design": np.array(range(mesh.nelements))}
+
+mesh = mesh.with_subdomains(subdomains)
+e = skfem.ElementVector(skfem.ElementHex1())
+basis = skfem.Basis(mesh, e, intorder=2)
+dirichlet_dir = "all"
+force_dir_type = "u^1"
 force_value = 100
-
-# Specify Design Field
-design_in_range = sktopt.mesh.utils.get_points_in_range(
-    (0.0, x_len), (0.0, y_len), (0.0, z_len)
-)
-design_elements = mesh.elements_satisfying(design_in_range)
-
 # Define it as a task
 tsk = sktopt.mesh.task.TaskConfig.from_facets(
     210e9,
     0.30,
     basis,
-    dirichlet_facets,
     dirichlet_dir,
-    force_facets,
-    force_dir,
-    force_value,
-    design_elements
+    force_dir_type,
+    force_value
 )
 ```
 
