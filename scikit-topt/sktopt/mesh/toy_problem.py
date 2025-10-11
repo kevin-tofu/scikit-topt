@@ -62,23 +62,22 @@ def toy_base(
     else:
         mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
         e = skfem.ElementVector(skfem.ElementHex1())
-    e = skfem.ElementVector(skfem.ElementHex1())
-    basis = skfem.Basis(mesh, e, intorder=intorder)
     dirichlet_in_range = utils.get_points_in_range(
         (0.0, 0.03), (0.0, y_len), (0.0, z_len)
     )
-    dirichlet_facets = basis.mesh.facets_satisfying(dirichlet_in_range)
+    dirichlet_facets = mesh.facets_satisfying(dirichlet_in_range)
     force_in_range = utils.get_points_in_range(
         (x_len - eps, x_len+0.1), (y_len*2/5, y_len*3/5), (z_len-eps, z_len)
     )
-    force_facets = basis.mesh.facets_satisfying(force_in_range)
+    force_facets = mesh.facets_satisfying(force_in_range)
     desing_in_range = utils.get_points_in_range(
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
     design_elements = mesh.elements_satisfying(desing_in_range)
     E0 = 210e9
     F = -100.0
-
+    e = skfem.ElementVector(skfem.ElementHex1())
+    basis = skfem.Basis(mesh, e, intorder=2)
     return task.TaskConfig.from_facets(
         E0,
         0.30,
