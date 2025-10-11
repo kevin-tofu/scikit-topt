@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>sktopt.mesh.utils &mdash; scikit-topt 0.2.11 documentation</title>
+  <title>sktopt.mesh.utils &mdash; scikit-topt 0.2.12 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -14,7 +14,7 @@
     <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/mesh.utils.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=29c81e07"></script>
+      <script src="_static/documentation_options.js?v=1e30946d"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -185,62 +185,7 @@ that are adjacent (share at least one node) with any of them.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">sktopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_boundary_nodes_from_elements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elements</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mesh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dirichlet_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
-<dd><p>Given a set of element indices, return the indices of boundary (Dirichlet)
-nodes contained in those elements.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>elements</strong> (<em>np.ndarray</em>) – Array of element indices (e.g., bc_force_elements).</p></li>
-<li><p><strong>mesh</strong> (<em>skfem.Mesh</em>) – The skfem mesh object.</p></li>
-<li><p><strong>dirichlet_nodes</strong> (<em>np.ndarray</em>) – Global indices of nodes where
-Dirichlet boundary conditions are applied.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>boundary_nodes</strong> – Unique indices of boundary nodes contained in the specified elements.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>np.ndarray</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">sktopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_dofs_in_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CellBasis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">sktopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_elements_in_box</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
-<dd><p>Return indices of elements whose centroids lie within a given 3D bounding         box.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>mesh</strong> (<em>skfem.Mesh</em>) – The finite element mesh containing node and element connectivity data.</p></li>
-<li><p><strong>x_range</strong> (<em>tuple</em><em> of </em><em>float</em>) – (min, max) range specifying the bounds in the x-direction.</p></li>
-<li><p><strong>y_range</strong> (<em>tuple</em><em> of </em><em>float</em>) – (min, max) range specifying the bounds in the y-direction.</p></li>
-<li><p><strong>z_range</strong> (<em>tuple</em><em> of </em><em>float</em>) – (min, max) range specifying the bounds in the z-direction.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Array of element indices (integers) whose centroids are within             the specified box.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>np.ndarray</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">sktopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_elements_with_nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">mesh:</span> <span class="pre">&lt;module</span> <span class="pre">'skfem.mesh'</span> <span class="pre">from</span> <span class="pre">'/home/runner/.cache/pypoetry/virtualenvs/scikit-topt-t8TcnFm1-py3.11/lib/python3.11/site-packages/skfem/mesh/__init__.py'&gt;,</span> <span class="pre">target_nodes_list:</span> <span class="pre">list[~numpy.ndarray]</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">sktopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_elements_with_nodes_fast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
+<span class="sig-prename descclassname"><span class="pre">sktopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_elements_by_nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mesh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
 <dd><dl class="simple">
 <dt>Fast retrieval of element indices that</dt><dd><p>contain any of the given node indices.</p>
 </dd>
@@ -264,57 +209,8 @@ include any of the target nodes.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">sktopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_elements_without_nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">mesh:</span> <span class="pre">&lt;module</span> <span class="pre">'skfem.mesh'</span> <span class="pre">from</span> <span class="pre">'/home/runner/.cache/pypoetry/virtualenvs/scikit-topt-t8TcnFm1-py3.11/lib/python3.11/site-packages/skfem/mesh/__init__.py'&gt;,</span> <span class="pre">excluded_nodes_list:</span> <span class="pre">list[~numpy.ndarray]</span></em><span class="sig-paren">)</span></dt>
+<span class="sig-prename descclassname"><span class="pre">sktopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_points_in_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_rng</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_rng</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_rng</span></span></em><span class="sig-paren">)</span></dt>
 <dd></dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">sktopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_facets_in_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_rng</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_rng</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_rng</span></span></em><span class="sig-paren">)</span></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">sktopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">get_nodes_indices_in_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mesh:</span> <span class="pre">&lt;module</span> <span class="pre">'skfem.mesh'</span> <span class="pre">from</span> <span class="pre">'/home/runner/.cache/pypoetry/virtualenvs/scikit-topt-t8TcnFm1-py3.11/lib/python3.11/site-packages/skfem/mesh/__init__.py'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range:</span> <span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range:</span> <span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_range:</span> <span class="pre">tuple</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
-<dd><p>Get the indices of mesh nodes that lie within a specified 3D bounding box.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>basis</strong> (<em>skfem.Basis</em>) – Finite element basis object containing the mesh and node coordinates.</p></li>
-<li><p><strong>x_range</strong> (<em>tuple</em>) – (min, max) range for x-axis.</p></li>
-<li><p><strong>y_range</strong> (<em>tuple</em>) – (min, max) range for y-axis.</p></li>
-<li><p><strong>z_range</strong> (<em>tuple</em>) – (min, max) range for z-axis.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Array of indices corresponding to mesh nodes inside the given box.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>np.ndarray</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">sktopt.mesh.utils.</span></span><span class="sig-name descname"><span class="pre">in_box</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coords</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span></dt>
-<dd><p>Check whether 3D points lie within a given axis-aligned bounding box.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>coords</strong> (<em>np.ndarray</em><em>, </em><em>shape</em><em> (</em><em>3</em><em>, </em><em>N</em><em>)</em>) – Array of 3D coordinates where each column is a point (x, y, z).</p></li>
-<li><p><strong>x_range</strong> (<em>tuple</em>) – Tuple specifying the (min, max) bounds in the x-direction.</p></li>
-<li><p><strong>y_range</strong> (<em>tuple</em>) – Tuple specifying the (min, max) bounds in the y-direction.</p></li>
-<li><p><strong>z_range</strong> (<em>tuple</em>) – Tuple specifying the (min, max) bounds in the z-direction.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Boolean array of shape (N,) where True indicates the point is inside the box.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>np.ndarray of bool</p>
-</dd>
-</dl>
-</dd></dl>
 
 </section>
 

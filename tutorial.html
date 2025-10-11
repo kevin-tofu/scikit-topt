@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tutorial Page &mdash; scikit-topt 0.2.11 documentation</title>
+  <title>Tutorial Page &mdash; scikit-topt 0.2.12 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -14,7 +14,7 @@
     <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/tutorial.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=29c81e07"></script>
+      <script src="_static/documentation_options.js?v=1e30946d"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -150,44 +150,40 @@ This will run a compliance minimization with OC method.</p>
 </section>
 <section id="task-configuration">
 <h3>Task Configuration<a class="headerlink" href="#task-configuration" title="Link to this heading"></a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dirichlet_in_range</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">get_facets_in_range</span><span class="p">(</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dirichlet_in_range</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">get_points_in_range</span><span class="p">(</span>
     <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y_len</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">z_len</span><span class="p">)</span>
-<span class="p">)</span>
-<span class="n">dirichlet_facets</span> <span class="o">=</span> <span class="n">basis</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">facets_satisfying</span><span class="p">(</span>
-    <span class="n">dirichlet_in_range</span><span class="p">,</span> <span class="n">boundaries_only</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
 <span class="n">dirichlet_dir</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span>
 
 <span class="n">eps</span> <span class="o">=</span> <span class="n">mesh_size</span>
-<span class="n">in_range_0</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">get_facets_in_range</span><span class="p">(</span>
+<span class="n">force_in_range_0</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">get_points_in_range</span><span class="p">(</span>
     <span class="p">(</span><span class="n">x_len</span><span class="p">,</span> <span class="n">x_len</span><span class="p">),</span> <span class="p">(</span><span class="n">y_len</span><span class="o">-</span><span class="n">eps</span><span class="p">,</span> <span class="n">y_len</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">z_len</span><span class="p">)</span>
 <span class="p">)</span>
-<span class="n">in_range_1</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">get_facets_in_range</span><span class="p">(</span>
+<span class="n">force_in_range_1</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">get_points_in_range</span><span class="p">(</span>
     <span class="p">(</span><span class="n">x_len</span><span class="p">,</span> <span class="n">x_len</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">eps</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">z_len</span><span class="p">)</span>
-<span class="p">)</span>
-<span class="n">force_facets_0</span> <span class="o">=</span> <span class="n">basis</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">facets_satisfying</span><span class="p">(</span>
-    <span class="n">in_range_0</span><span class="p">,</span> <span class="n">boundaries_only</span><span class="o">=</span><span class="kc">True</span>
-<span class="p">)</span>
-<span class="n">force_facets_1</span> <span class="o">=</span> <span class="n">basis</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">facets_satisfying</span><span class="p">(</span>
-    <span class="n">in_range_1</span><span class="p">,</span> <span class="n">boundaries_only</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
 <span class="n">force_dir_type</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;u^2&quot;</span><span class="p">,</span> <span class="s2">&quot;u^2&quot;</span><span class="p">]</span>
 <span class="n">force_value</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">]</span>
-<span class="n">design_elements</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">meshutils</span><span class="o">.</span><span class="n">get_elements_in_box</span><span class="p">(</span>
-    <span class="n">mesh</span><span class="p">,</span>
-    <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">x_len</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y_len</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">z_len</span><span class="p">)</span>
-<span class="p">)</span>
+
+<span class="n">boundaries</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;dirichlet&quot;</span><span class="p">:</span> <span class="n">dirichlet_in_range</span><span class="p">,</span>
+    <span class="s2">&quot;force_0&quot;</span><span class="p">:</span> <span class="n">force_in_range_0</span><span class="p">,</span>
+    <span class="s2">&quot;force_1&quot;</span><span class="p">:</span> <span class="n">force_in_range_1</span>
+<span class="p">}</span>
+<span class="n">mesh</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">with_boundaries</span><span class="p">(</span><span class="n">boundaries</span><span class="p">)</span>
+<span class="n">subdomains</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;design&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">nelements</span><span class="p">))}</span>
+<span class="n">mesh</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">with_subdomains</span><span class="p">(</span><span class="n">subdomains</span><span class="p">)</span>
+
+<span class="n">e</span> <span class="o">=</span> <span class="n">skfem</span><span class="o">.</span><span class="n">ElementVector</span><span class="p">(</span><span class="n">skfem</span><span class="o">.</span><span class="n">ElementHex1</span><span class="p">())</span>
+<span class="n">basis</span> <span class="o">=</span> <span class="n">skfem</span><span class="o">.</span><span class="n">Basis</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">intorder</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 <span class="n">E0</span> <span class="o">=</span> <span class="mf">210e9</span>
-<span class="n">mytask</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">TaskConfig</span><span class="o">.</span><span class="n">from_facets</span><span class="p">(</span>
+<span class="n">mytask</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">TaskConfig</span><span class="o">.</span><span class="n">from_mesh_tags</span><span class="p">(</span>
     <span class="n">E0</span><span class="p">,</span>
-    <span class="n">nu</span><span class="p">,</span>
+    <span class="mf">0.30</span><span class="p">,</span>
     <span class="n">basis</span><span class="p">,</span>
-    <span class="n">dirichlet_facets</span><span class="p">,</span>
-    <span class="n">dirichlet_dir</span><span class="p">,</span>
-    <span class="p">[</span><span class="n">force_facets_0</span><span class="p">,</span> <span class="n">force_facets_1</span><span class="p">],</span>
+    <span class="s2">&quot;all&quot;</span><span class="p">,</span>
     <span class="n">force_dir_type</span><span class="p">,</span>
-    <span class="n">force_value</span><span class="p">,</span>
-    <span class="n">design_elements</span>
+    <span class="n">force_value</span>
 <span class="p">)</span>
 </pre></div>
 </div>
