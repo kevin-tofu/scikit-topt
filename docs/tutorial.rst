@@ -69,7 +69,7 @@ Task Configuration
 
 .. code-block:: python
 
-    dirichlet_in_range = sktopt.mesh.utils.get_facets_in_range(
+    dirichlet_in_range = sktopt.mesh.utils.get_points_in_range(
         (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
     dirichlet_facets = basis.mesh.facets_satisfying(
@@ -78,10 +78,10 @@ Task Configuration
     dirichlet_dir = "all"
 
     eps = mesh_size
-    in_range_0 = sktopt.mesh.utils.get_facets_in_range(
+    in_range_0 = sktopt.mesh.utils.get_points_in_range(
         (x_len, x_len), (y_len-eps, y_len), (0, z_len)
     )
-    in_range_1 = sktopt.mesh.utils.get_facets_in_range(
+    in_range_1 = sktopt.mesh.utils.get_points_in_range(
         (x_len, x_len), (0, eps), (0, z_len)
     )
     force_facets_0 = basis.mesh.facets_satisfying(
@@ -92,10 +92,11 @@ Task Configuration
     )
     force_dir_type = ["u^2", "u^2"]
     force_value = [-100, 100]
-    design_elements = sktopt.meshutils.get_elements_in_box(
-        mesh,
+    design_in_range = sktopt.mesh.utils.get_points_in_range(
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
+    design_elements = mesh.elements_satisfying(design_in_range)
+
     E0 = 210e9
     mytask = sktopt.mesh.task.TaskConfig.from_facets(
         E0,

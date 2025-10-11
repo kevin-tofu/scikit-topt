@@ -90,7 +90,7 @@ basis = skfem.Basis(mesh, e, intorder=2)
 ```Python
 
 # Specify Dirichlet Boundary Conditions
-dirichlet_in_range = sktopt.mesh.utils.get_facets_in_range(
+dirichlet_in_range = sktopt.mesh.utils.get_points_in_range(
     (0.0, 0.03), (0.0, y_len), (0.0, z_len)
 )
 dirichlet_facets = basis.mesh.facets_satisfying(
@@ -100,22 +100,22 @@ dirichlet_dir = "all"
 
 # Define Force Vector
 
-in_range = sktopt.mesh.utils.get_facets_in_range(
+force_in_range = sktopt.mesh.utils.get_points_in_range(
   (x_len, x_len),
   (y_len*2/5, y_len*3/5),
   (z_len*2/5, z_len*3/5)
 )
 force_facets = basis.mesh.facets_satisfying(
-  in_range, boundaries_only=True
+  force_in_range, boundaries_only=True
 )
 force_dir = "u^1"
 force_value = 100
 
 # Specify Design Field
-design_elements = sktopt.mesh.utils.get_elements_in_box(
-    mesh,
+design_in_range = sktopt.mesh.utils.get_points_in_range(
     (0.0, x_len), (0.0, y_len), (0.0, z_len)
 )
+design_elements = mesh.elements_satisfying(design_in_range)
 
 # Define it as a task
 tsk = sktopt.mesh.task.TaskConfig.from_facets(
