@@ -72,42 +72,37 @@ Task Configuration
     dirichlet_in_range = sktopt.mesh.utils.get_points_in_range(
         (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
-    dirichlet_facets = basis.mesh.facets_satisfying(
-        dirichlet_in_range, boundaries_only=True
-    )
     dirichlet_dir = "all"
 
     eps = mesh_size
-    in_range_0 = sktopt.mesh.utils.get_points_in_range(
+    force_in_range_0 = sktopt.mesh.utils.get_points_in_range(
         (x_len, x_len), (y_len-eps, y_len), (0, z_len)
     )
-    in_range_1 = sktopt.mesh.utils.get_points_in_range(
+    force_in_range_1 = sktopt.mesh.utils.get_points_in_range(
         (x_len, x_len), (0, eps), (0, z_len)
-    )
-    force_facets_0 = basis.mesh.facets_satisfying(
-        in_range_0, boundaries_only=True
-    )
-    force_facets_1 = basis.mesh.facets_satisfying(
-        in_range_1, boundaries_only=True
     )
     force_dir_type = ["u^2", "u^2"]
     force_value = [-100, 100]
-    design_in_range = sktopt.mesh.utils.get_points_in_range(
-        (0.0, x_len), (0.0, y_len), (0.0, z_len)
-    )
-    design_elements = mesh.elements_satisfying(design_in_range)
 
+    boundaries = {
+        "dirichlet": dirichlet_in_range,
+        "force_0": force_in_range_0,
+        "force_1": force_in_range_1
+    }
+    mesh = mesh.with_boundaries(boundaries)
+    subdomains = {"design": np.array(range(mesh.nelements))}
+    mesh = mesh.with_subdomains(subdomains)
+
+    e = skfem.ElementVector(skfem.ElementHex1())
+    basis = skfem.Basis(mesh, e, intorder=2)
     E0 = 210e9
-    mytask = sktopt.mesh.task.TaskConfig.from_facets(
+    mytask = task.TaskConfig.from_mesh_tags(
         E0,
-        nu,
+        0.30,
         basis,
-        dirichlet_facets,
-        dirichlet_dir,
-        [force_facets_0, force_facets_1],
+        "all",
         force_dir_type,
-        force_value,
-        design_elements
+        force_value
     )
 
 
