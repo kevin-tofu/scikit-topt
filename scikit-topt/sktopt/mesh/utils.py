@@ -177,7 +177,7 @@ def get_adjacent_elements(mesh, element_indices):
     return sorted(neighbors)
 
 
-def get_elements_with_nodes_fast(
+def get_elements_by_nodes(
     mesh: skfem.Mesh, target_nodes: np.ndarray | list[np.ndarray]
 ) -> np.ndarray:
     """
@@ -199,20 +199,20 @@ def get_elements_with_nodes_fast(
     """
 
     # Initialize cache once
-    if not hasattr(get_elements_with_nodes_fast, "_cache"):
-        get_elements_with_nodes_fast._cache = {}
+    if not hasattr(get_elements_by_nodes, "_cache"):
+        get_elements_by_nodes._cache = {}
 
     mesh_id = id(mesh)
-    if mesh_id not in get_elements_with_nodes_fast._cache:
+    if mesh_id not in get_elements_by_nodes._cache:
         # Build: node index → set of element indices
         node_to_elements = defaultdict(set)
         # mesh.t.T: shape = (n_elements, nodes_per_element)
         for e, nodes in enumerate(mesh.t.T):
             for n in nodes:
                 node_to_elements[n].add(e)
-        get_elements_with_nodes_fast._cache[mesh_id] = node_to_elements
+        get_elements_by_nodes._cache[mesh_id] = node_to_elements
 
-    node_to_elements = get_elements_with_nodes_fast._cache[mesh_id]
+    node_to_elements = get_elements_by_nodes._cache[mesh_id]
 
     # Normalize target_nodes
     if isinstance(target_nodes, np.ndarray):

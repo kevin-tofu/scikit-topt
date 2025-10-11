@@ -235,7 +235,7 @@ class TaskConfig():
 
         Notes
         -----
-        - Element sets are computed via `utils.get_elements_with_nodes_fast(...)`,
+        - Element sets are computed via `utils.get_elements_by_nodes(...)`,
           i.e., elements **touching** the provided node sets.
         - `free_dofs` = all DOFs `dirichlet_dofs`; `free_elements` are elements
           touching `free_dofs` (convenience for downstream assembly/solves).
@@ -271,18 +271,18 @@ class TaskConfig():
         else:
             raise ValueError("dirichlet_nodes is not np.ndarray or of list")
 
-        dirichlet_elements = utils.get_elements_with_nodes_fast(
+        dirichlet_elements = utils.get_elements_by_nodes(
             basis.mesh, [dirichlet_nodes]
         )
         #
         # Force
         #
         if isinstance(force_nodes, np.ndarray):
-            force_elements = utils.get_elements_with_nodes_fast(
+            force_elements = utils.get_elements_by_nodes(
                 basis.mesh, [force_nodes]
             )
         elif isinstance(force_nodes, list):
-            force_elements = utils.get_elements_with_nodes_fast(
+            force_elements = utils.get_elements_by_nodes(
                 basis.mesh, force_nodes
             )
         if force_elements.shape[0] == 0:
@@ -302,7 +302,7 @@ class TaskConfig():
             [dirichlet_elements, force_elements]
         )
         free_dofs = setdiff1d(np.arange(basis.N), dirichlet_dofs)
-        free_elements = utils.get_elements_with_nodes_fast(
+        free_elements = utils.get_elements_by_nodes(
             basis.mesh, [free_dofs]
         )
         elements_volume = composer.get_elements_volume(basis.mesh)
@@ -449,9 +449,12 @@ class TaskConfig():
             [k for k in keys if re.match(r"force_\d+$", k)],
             key=lambda x: int(re.search(r"\d+$", x).group())
         )
-        force_facets_ids = [
-            basis.mesh.boundaries[k] for k in force_keys
-        ]
+        if force_keys:
+            force_facets_ids = [basis.mesh.boundaries[k] for k in force_keys]
+        elif "force" in keys:
+            force_facets_ids = [basis.mesh.boundaries["force"]]
+        else:
+            force_facets_ids = []
         return cls.from_facets(
             E, nu, basis,
             dirichlet_facets_ids,
