@@ -77,11 +77,13 @@ def logmoc_optimize(tsk):
 def test_optimizers():
     tsk1 = sktopt.mesh.toy_problem.toy_test()
     oc_optimize(tsk1)
-    logmoc_optimize(tsk1)
+
+    tsk2 = sktopt.mesh.toy_problem.toy2()
+    logmoc_optimize(tsk2)
 
 
 if __name__ == "__main__":
 
     # tsk = define_task()
     # logmoc_optimize(tsk)
-    test_optimizers
+    test_optimizers()

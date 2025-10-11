@@ -43,55 +43,9 @@ def create_box_tet(x_len, y_len, z_len, mesh_size):
     mesh = MeshTet().refined(n_refine)
     scale = np.array([x_len, y_len, z_len])
     mesh = mesh.scaled(scale)
-
     t_fixed = utils.fix_tetrahedron_orientation(mesh.t, mesh.p)
     mesh_fixed = MeshTet(mesh.p, t_fixed)
     return mesh_fixed
-
-
-def toy_base0(
-    mesh_size: float,
-    intorder: int = 2
-):
-    x_len = 8.0
-    y_len = 6.0
-    z_len = 4.0
-    eps = 1.2
-
-    # if True:
-    if False:
-        mesh = create_box_tet(x_len, y_len, z_len, mesh_size)
-        e = skfem.ElementVector(skfem.ElementTetP1())
-    else:
-        mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
-        e = skfem.ElementVector(skfem.ElementHex1())
-    basis = skfem.Basis(mesh, e, intorder=intorder)
-    dirichlet_nodes = utils.get_nodes_indices_in_range(
-        basis.mesh, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
-    )
-
-    F_nodes = utils.get_nodes_indices_in_range(
-        basis.mesh,
-        (x_len - eps, x_len+0.1), (y_len*2/5, y_len*3/5), (z_len-eps, z_len)
-    )
-    F_dofs = basis.get_dofs(nodes=F_nodes).nodal['u^3']
-    design_elements = utils.get_elements_in_box(
-        mesh,
-        (0.0, x_len), (0.0, y_len), (0.0, z_len)
-    )
-    E0 = 210e9
-    F = -100.0
-    return task.TaskConfig.from_defaults(
-        E0,
-        0.30,
-        basis,
-        dirichlet_nodes,
-        "all",
-        F_nodes,
-        F_dofs,
-        F,
-        design_elements
-    )
 
 
 def toy_base(
@@ -102,26 +56,26 @@ def toy_base(
     y_len = 6.0
     z_len = 4.0
     eps = 1.2
-
-    mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
+    if False:
+        mesh = create_box_tet(x_len, y_len, z_len, mesh_size)
+        e = skfem.ElementVector(skfem.ElementTetP1())
+    else:
+        mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
+        e = skfem.ElementVector(skfem.ElementHex1())
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=intorder)
-    dirichlet_in_range = utils.get_facets_in_range(
+    dirichlet_in_range = utils.get_points_in_range(
         (0.0, 0.03), (0.0, y_len), (0.0, z_len)
     )
     dirichlet_facets = basis.mesh.facets_satisfying(dirichlet_in_range)
-    # dirichlet_nodes = utils.get_nodes_indices_in_range(
-    #     basis.mesh, (0.0, 0.03), (0.0, y_len), (0.0, z_len)
-    # )
-    in_range = utils.get_facets_in_range(
+    force_in_range = utils.get_points_in_range(
         (x_len - eps, x_len+0.1), (y_len*2/5, y_len*3/5), (z_len-eps, z_len)
     )
-    force_facets = basis.mesh.facets_satisfying(in_range)
-
-    design_elements = utils.get_elements_in_box(
-        mesh,
+    force_facets = basis.mesh.facets_satisfying(force_in_range)
+    desing_in_range = utils.get_points_in_range(
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
+    design_elements = mesh.elements_satisfying(desing_in_range)
     E0 = 210e9
     F = -100.0
 
@@ -150,6 +104,45 @@ def toy1_fine():
     return toy_base(0.2)
 
 
+def toy2():
+    x_len = 8.0
+    y_len = 8.0
+    z_len = 1.0
+    mesh_size = 0.2
+    mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
+    dirichlet_in_range = utils.get_points_in_range(
+        (0.0, 0.05), (0.0, y_len), (0.0, z_len)
+    )
+    eps = mesh_size
+    force_in_range_0 = utils.get_points_in_range(
+        (x_len, x_len), (y_len-eps, y_len), (0, z_len)
+    )
+    force_in_range_1 = utils.get_points_in_range(
+        (x_len, x_len), (0, eps), (0, z_len)
+    )
+    force_dir_type = ["u^2", "u^2"]
+    force_value = [-100, 100]
+    boundaries = {
+        "dirichlet": dirichlet_in_range,
+        "force_0": force_in_range_0,
+        "force_1": force_in_range_1
+    }
+    mesh = mesh.with_boundaries(boundaries)
+    subdomains = {"design": np.array(range(mesh.nelements))}
+    mesh = mesh.with_subdomains(subdomains)
+    e = skfem.ElementVector(skfem.ElementHex1())
+    basis = skfem.Basis(mesh, e, intorder=2)
+    E0 = 210e9
+    return task.TaskConfig.from_mesh_tags(
+        E0,
+        0.30,
+        basis,
+        "all",
+        force_dir_type,
+        force_value
+    )
+
+
 def load_mesh_auto(msh_path: str):
     msh = meshio.read(msh_path)
     cell_types = [cell.type for cell in msh.cells]
@@ -159,64 +152,6 @@ def load_mesh_auto(msh_path: str):
         return skfem.MeshHex.load(pathlib.Path(msh_path))
     else:
         raise ValueError("")
-
-
-def toy2():
-    x_len = 8.0
-    y_len = 8.0
-    z_len = 1.0
-    # mesh_size = 0.5
-    # mesh_size = 0.3
-    mesh_size = 0.2
-    mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
-    e = skfem.ElementVector(skfem.ElementHex1())
-    basis = skfem.Basis(mesh, e, intorder=2)
-    # dirichlet_nodes_0 = utils.get_nodes_indices_in_range(
-    #     basis.mesh, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
-    # )
-    # dirichlet_nodes = dirichlet_nodes_0
-    # dirichlet_dofs = basis.get_dofs(nodes=dirichlet_nodes).all()
-    dirichlet_in_range = utils.get_facets_in_range(
-        (0.0, 0.05), (0.0, y_len), (0.0, z_len)
-    )
-    dirichlet_facets = basis.mesh.facets_satisfying(
-        dirichlet_in_range, boundaries_only=True
-    )
-
-    eps = mesh_size
-    in_range_0 = utils.get_facets_in_range(
-        (x_len, x_len), (y_len-eps, y_len), (0, z_len)
-    )
-    in_range_1 = utils.get_facets_in_range(
-        (x_len, x_len), (0, eps), (0, z_len)
-    )
-    force_facets_0 = basis.mesh.facets_satisfying(
-        in_range_0, boundaries_only=True
-    )
-    force_facets_1 = basis.mesh.facets_satisfying(
-        in_range_1, boundaries_only=True
-    )
-    # print(f"force_facets_0 : {force_facets_0}")
-    # print(f"force_facets_1 : {force_facets_1}")
-    force_dir_type = ["u^2", "u^2"]
-    force_value = [-100, 100]
-    design_elements = utils.get_elements_in_box(
-        mesh,
-        (0.0, x_len), (0.0, y_len), (0.0, z_len)
-    )
-
-    E0 = 210e9
-    return task.TaskConfig.from_facets(
-        E0,
-        0.30,
-        basis,
-        dirichlet_facets,
-        "all",
-        [force_facets_0, force_facets_1],
-        force_dir_type,
-        force_value,
-        design_elements
-    )
 
 
 # from memory_profiler import profile
@@ -267,14 +202,9 @@ def toy_msh(
     print("basis")
     # basis = skfem.Basis(mesh, e, intorder=2)
     basis = skfem.Basis(mesh, e, intorder=3)
-    # basis = skfem.Basis(mesh, e, intorder=4)
-    # basis = skfem.Basis(mesh, e, intorder=5)
-    # print("dirichlet_nodes")
-    # dirichlet_nodes = utils.get_nodes_indices_in_range(
-    #     basis.mesh, (0.0, 0.05), (0.0, y_len), (0.0, z_len)
-    # )
-    # dirichlet_dofs = basis.get_dofs(nodes=dirichlet_nodes).all()
-    dirichlet_in_range = utils.get_facets_in_range((0.0, 0.05), (0.0, y_len), (0.0, z_len))
+    dirichlet_in_range = utils.get_points_in_range(
+        (0.0, 0.05), (0.0, y_len), (0.0, z_len)
+    )
     dirichlet_facets = basis.mesh.facets_satisfying(dirichlet_in_range)
     if task_name == "down":
         x_range = (x_len-eps, x_len+0.05)
@@ -302,21 +232,12 @@ def toy_msh(
         force_dir_type = "u^1"
         force_value = 200.0
 
-    force_in_range = utils.get_facets_in_range(x_range, y_range, z_range)
+    force_in_range = utils.get_points_in_range(x_range, y_range, z_range)
     force_facets = basis.mesh.facets_satisfying(force_in_range)
-    design_elements = utils.get_elements_in_box(
-        mesh,
-        # (0.3, 0.7), (0.0, 1.0), (0.0, 1.0)
+    desing_in_range = utils.get_points_in_range(
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
-    if task_name == "down":
-        # removed_elements = utils.get_elements_in_box(
-        #     mesh,
-        #     (0.0, x_len), (0.0, y_len), (0.0, z_len)
-        # )
-        # design_elements = np.setdiff1d(design_elements, removed_elements)
-        pass
-
+    design_elements = basis.mesh.elements_satisfying(desing_in_range)
     print("generate config")
     E0 = 210e9
     return task.TaskConfig.from_facets(

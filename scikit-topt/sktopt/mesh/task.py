@@ -175,9 +175,9 @@ class TaskConfig():
         E: float,
         nu: float,
         basis: skfem.Basis,
-        dirichlet_nodes: np.ndarray,
+        dirichlet_nodes: np.ndarray | list[np.ndarray],
         dirichlet_dir: _lit_bc | list[_lit_bc],
-        force_nodes: np.ndarray,
+        force_nodes: np.ndarray | list[np.ndarray],
         force: np.ndarray | list[np.ndarray],
         design_elements: np.ndarray,
     ) -> 'TaskConfig':
@@ -237,13 +237,21 @@ class TaskConfig():
         -----
         - Element sets are computed via `utils.get_elements_with_nodes_fast(...)`,
           i.e., elements **touching** the provided node sets.
-        - `free_dofs` = all DOFs \ `dirichlet_dofs`; `free_elements` are elements
+        - `free_dofs` = all DOFs `dirichlet_dofs`; `free_elements` are elements
           touching `free_dofs` (convenience for downstream assembly/solves).
         - If you prefer facet-based specification (with direction literals for
           surface forces, e.g., `_lit_force = Literal['u^1','u^2','u^3']`),
           consider using `TaskConfig.from_facets(...)` which will assemble
           surface loads internally.
         """
+        if isinstance(dirichlet_nodes, list):
+            assert isinstance(dirichlet_dir, list)
+            assert len(dirichlet_nodes) == len(dirichlet_dir)
+        elif isinstance(dirichlet_nodes, np.ndarray):
+            assert isinstance(dirichlet_dir, str)
+            # assert dirichlet_dir in _lit_bc
+        else:
+            raise ValueError("dirichlet_nodes should be list or np.ndarray")
 
         #
         # Dirichlet
@@ -273,7 +281,7 @@ class TaskConfig():
             force_elements = utils.get_elements_with_nodes_fast(
                 basis.mesh, [force_nodes]
             )
-        else:
+        elif isinstance(force_nodes, list):
             force_elements = utils.get_elements_with_nodes_fast(
                 basis.mesh, force_nodes
             )
@@ -336,7 +344,7 @@ class TaskConfig():
         force_dir_type: str | list[str],
         force_value: float | list[float],
         design_elements: np.ndarray,
-    ):
+    ) -> 'TaskConfig':
         """
         Create a TaskConfig from facet-based boundary-condition specifications.
 
@@ -415,6 +423,42 @@ class TaskConfig():
             E, nu, basis,
             dirichlet_nodes, dirichlet_dir,
             force_nodes, force,
+            design_elements
+        )
+
+    @classmethod
+    def from_mesh_tags(
+        cls, 
+        E: float,
+        nu: float,
+        basis: skfem.Basis,
+        dirichlet_dir: _lit_bc | list[_lit_bc],
+        force_dir_type: str | list[str],
+        force_value: float | list[float],
+    ) -> 'TaskConfig':
+        import re
+
+        # dirichlet_facets_ids: np.ndarray | list[np.ndarray]
+        # force_facets_ids: np.ndarray | list[np.ndarray]
+        # design_elements: np.ndarray
+
+        design_elements = basis.mesh.subdomains["design"]
+        dirichlet_facets_ids = basis.mesh.boundaries["dirichlet"]
+        keys = basis.mesh.boundaries.keys()
+        force_keys = sorted(
+            [k for k in keys if re.match(r"force_\d+$", k)],
+            key=lambda x: int(re.search(r"\d+$", x).group())
+        )
+        force_facets_ids = [
+            basis.mesh.boundaries[k] for k in force_keys
+        ]
+        return cls.from_facets(
+            E, nu, basis,
+            dirichlet_facets_ids,
+            dirichlet_dir,
+            force_facets_ids,
+            force_dir_type,
+            force_value,
             design_elements
         )
 
