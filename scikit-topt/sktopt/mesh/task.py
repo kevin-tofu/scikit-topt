@@ -454,7 +454,7 @@ class TaskConfig():
         elif "force" in keys:
             force_facets_ids = [basis.mesh.boundaries["force"]]
         else:
-            force_facets_ids = []
+            force_facets_ids = np.array([])
         return cls.from_facets(
             E, nu, basis,
             dirichlet_facets_ids,
