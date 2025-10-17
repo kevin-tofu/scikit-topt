@@ -108,7 +108,7 @@ def toy2():
     y_len = 8.0
     z_len = 1.0
     mesh_size = 0.2
-    mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
+    mesh = create_box_tet(x_len, y_len, z_len, mesh_size)
     dirichlet_in_range = utils.get_points_in_range(
         (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )

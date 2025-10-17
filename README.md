@@ -15,22 +15,22 @@
 ## Documentation
 [Scikit-topt Documentation](https://scikit-topt.readthedocs.io/en/latest/)
 
-## Examples and Fieatures
+## Examples and Features
 ### Example 1 : Single Load Condition
 <p align="center">
-  <img src="assets/ex-pull-down-0.gif" alt="Optimization Process Pull-Down-0" width="400" style="margin-right: 20px;">
-  <img src="assets/ex-pull-down-1.jpg" alt="Optimization Process Pull-Down-1" width="400">
+  <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-pull-down-0.gif" alt="Optimization Process Pull-Down-0" width="400" style="margin-right: 20px;">
+  <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-pull-down-1.jpg" alt="Optimization Process Pull-Down-1" width="400">
 </p>
 
 ### Example 2 : Multiple Load Condition
 <p align="center">
-  <img src="assets/ex-multi-load-condition.jpg" alt="multi-load-condition" width="400" style="margin-right: 20px;">
-  <img src="assets/ex-multi-load-v-50.jpg" alt="multi-load-condition-distribution" width="400">
+  <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg" alt="multi-load-condition" width="400" style="margin-right: 20px;">
+  <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg" alt="multi-load-condition-distribution" width="400">
 </p>
 
 ### Progress Report
 <p align="center">
-  <img src="assets/ex-progress-report.jpg" alt="multi-load-condition-progress" width="600">
+  <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-progress-report.jpg" alt="multi-load-condition-progress" width="600">
 </p>
 
 
@@ -49,9 +49,18 @@ The currently supported features are as follows:
 - has a function to monitor the transition of parameters.
 
 ## Usage
-### Install Package
+
+You can install **Scikit-Topt** either via **pip** or **Poetry**.
+
+**Choose one of the following methods:**
+
+### Using pip
 ```bash
 pip install scikit-topt
+```
+
+### Using poetry
+```bash
 poetry add scikit-topt
 ```
 
@@ -65,7 +74,7 @@ import sktopt
 
 mesh_path = "./data/model.msh"
 basis = sktopt.mesh.loader.basis_from_file(
-  mesh_path, intorder=3
+  mesh_path, intorder=2
 )
 ```
 
@@ -191,6 +200,18 @@ If you use Scikit Topt in your research or software, please cite it as:
 }
 ```
 
+## Contributing
+
+Scikit-Topt is an open-source project, and we warmly welcome community contributions!
+
+If you’d like to contribute:
+- Open an issue to discuss ideas, report bugs, or suggest improvements.
+- Submit a pull request for fixes, enhancements, or new examples.
+
+Please feel free to join the discussion on [GitHub Issues](https://github.com/Kevin-Tofu/scikit-topt/issues).
+We appreciate all forms of contributions, from small documentation improvements to larger feature proposals.
+
+
 ## ToDo
 - Set break point from the optimization loop
 - Add A feature to assign tags to nodes and cells
@@ -201,3 +222,4 @@ If you use Scikit Topt in your research or software, please cite it as:
   - MMA
 - Add Multiple BC Conditions
 - Add Constraint for Rotation
+

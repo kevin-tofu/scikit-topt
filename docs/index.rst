@@ -11,6 +11,7 @@ Scikit Topology Optimization (scikit-topt) documentation
    :maxdepth: 2
    :caption: Content
 
+   project
    installation
    tutorial
    theory
