@@ -81,7 +81,8 @@ sudo yum install xvfb libgl1-mesa-glx
 
 ## Usage
  See examples in example directory and README.md.
-[Usage Example](https://github.com/kevin-tofu/scikit-topt/blob/master/examples/README.md) 
+[README for Usage](https://github.com/kevin-tofu/scikit-topt/blob/joss-review/examples/README.md) 
+[Examples](https://github.com/kevin-tofu/scikit-topt/tree/joss-review/examples/tutorial) 
 
 ## Algorithm for Optimization
 Optimization Algorithms and Techniques are briefly summarized here.  
