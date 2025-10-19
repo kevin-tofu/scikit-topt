@@ -38,17 +38,31 @@ class HistoryLogger():
         ret = True if len(self.data) > 0 else False
         return ret
 
-    def add(self, data: np.ndarray | float):
-        if isinstance(data, np.ndarray):
-            if data.shape == ():
-                self.data.append(float(data))
+    @property
+    def data_np_array(self) -> np.ndarray:
+        try:
+            value = self.data[0]
+            if isinstance(value, float):
+                return np.array(self.data)
+            elif isinstance(value, list) or isinstance(value, np.ndarray):
+                return np.array(self.data)
+
+        except Exception as e:
+            raise ValueError(f"data not exit {e}")
+
+    def add(self, data_input: np.ndarray | float):
+        if isinstance(data_input, np.ndarray):
+            if data_input.shape == ():
+                self.data.append(float(data_input))
             else:
-                _temp = [np.min(data), np.mean(data), np.max(data)]
+                _temp = [
+                    np.min(data_input), np.mean(data_input), np.max(data_input)
+                ]
                 if self.plot_type == "min-max-mean-std":
-                    _temp.append(np.std(data))
+                    _temp.append(np.std(data_input))
                 self.data.append(_temp)
         else:
-            self.data.append(float(data))
+            self.data.append(float(data_input))
 
     def print(self):
         d = self.data[-1]
@@ -134,6 +148,24 @@ class HistoriesLogger():
         for k in self.histories.keys():
             if self.histories[k].exists():
                 self.histories[k].print()
+
+    def as_object(self):
+        class AttrObj:
+            pass
+
+        obj = AttrObj()
+        for name, hist in self.histories.items():
+            setattr(obj, name, hist.data_np_array)
+        return obj
+
+    def as_object_latest(self):
+        class AttrObj:
+            pass
+
+        obj = AttrObj()
+        for name, hist in self.histories.items():
+            setattr(obj, name, hist.data_np_array[-1])
+        return obj
 
     def export_progress(self, fname: Optional[str] = None):
         if fname is None:
