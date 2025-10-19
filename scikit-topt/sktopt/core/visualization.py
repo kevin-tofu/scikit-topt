@@ -1,4 +1,5 @@
 import os
+import warnings
 import glob
 from typing import Optional
 
@@ -8,6 +9,11 @@ import skfem
 import meshio
 import pyvista as pv
 import matplotlib.pyplot as plt
+
+
+class XvfbWarning(UserWarning):
+    """Raised when Xvfb is not available."""
+    pass
 
 
 def export_mesh_with_info(
@@ -81,7 +87,7 @@ def write_mesh_with_info_as_image(
     clim: tuple,
     image_path: str,
     image_title: str
-):
+) -> bool:
     """
     Render a scalar field on a VTU mesh and save it as an image using PyVista.
 
@@ -108,29 +114,44 @@ def write_mesh_with_info_as_image(
     - Works in headless environments by starting an off-screen xvfb session.
     - Assumes the scalar field is stored in cell data or point data with the specified name.
     """
-    if os.path.exists(mesh_path):
-        pv.start_xvfb()
-        mesh = pv.read(mesh_path)
-        plotter = pv.Plotter(off_screen=True)
-        add_mesh_params = dict(
-            scalars=mesh_scalar_name,
-            cmap="cividis",
-            clim=clim,
-            show_edges=True,
-            scalar_bar_args={"title": mesh_scalar_name}
-        )
-        # if opaque is True:
-        #     add_mesh_params["opacity"] = (rho > 1e-1).astype(float)
-        plotter.add_mesh(
-            mesh, **add_mesh_params
-        )
-        plotter.add_text(
-            image_title, position="upper_left", font_size=12, color="black"
-        )
-        plotter.screenshot(image_path)
-        plotter.close()
-    else:
+    if not os.path.exists(mesh_path):
         raise ValueError(f"mesh: {mesh_path} does not exist.")
+
+    try:
+        pv.start_xvfb()
+    except OSError:
+        warnings.warn(
+            "Xvfb (virtual display) is not available. "
+            "Headless rendering is not supported on this system; skipping image generation. "
+            "To enable off-screen rendering, please install Xvfb "
+            "(e.g., `sudo apt install xvfb libgl1-mesa-glx`).",
+            XvfbWarning,
+            stacklevel=2,
+        )
+
+        return False
+
+    mesh = pv.read(mesh_path)
+    plotter = pv.Plotter(off_screen=True)
+    add_mesh_params = dict(
+        scalars=mesh_scalar_name,
+        cmap="cividis",
+        clim=clim,
+        show_edges=True,
+        scalar_bar_args={"title": mesh_scalar_name}
+    )
+    # if opaque is True:
+    #     add_mesh_params["opacity"] = (rho > 1e-1).astype(float)
+    plotter.add_mesh(
+        mesh, **add_mesh_params
+    )
+    plotter.add_text(
+        image_title, position="upper_left", font_size=12, color="black"
+    )
+    plotter.screenshot(image_path)
+    plotter.close()
+
+    return True
 
 
 def rho_histo_plot(

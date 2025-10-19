@@ -64,6 +64,15 @@ pip install scikit-topt
 poetry add scikit-topt
 ```
 
+### Optional: Enable off-screen rendering
+
+If you want to visualize the optimized density distribution with mesh as an image,
+you need to enable off-screen rendering using a virtual display.
+
+On Debian/Ubuntu:
+```bash
+sudo apt install xvfb libgl1-mesa-glx
+```
 
 ### How to define a task
 
