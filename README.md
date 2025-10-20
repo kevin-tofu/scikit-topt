@@ -99,7 +99,7 @@ You can contribute in various ways:
 - Improving the [tests](https://github.com/kevin-tofu/scikit-topt/tree/joss-review/tests)
 - Enhancing the documentation or code readability [doc](https://scikit-topt.readthedocs.io/en/latest/)
 
-By contributing code to **scikit-topt**, you agree to release it under the [Apache 2.0 License](https://github.com/kevin-tofu/scikit-topt/tree/master/LICENSE.md).
+By contributing code to **scikit-topt**, you agree to release it under the [Apache 2.0 License](https://github.com/kevin-tofu/scikit-topt/tree/master/LICENSE).
 
 
 ## Acknowledgements
@@ -144,4 +144,4 @@ If you use Scikit Topt in your research or software, please cite it as:
   - MMA
 - Add Multiple BC Conditions
 - Add Constraint for Rotation
-
+- Add Unit Test
