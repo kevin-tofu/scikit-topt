@@ -37,8 +37,6 @@ In topology optimization, the evolution of material density fields and the sched
 
 Scikit-topt addresses this gap by enabling users to track and visualize the progression of density distributions and parameter schedules throughout the optimization process. This feature is particularly valuable for algorithm development, comparative studies, and educational purposes.
 
-The project is under active development and welcomes community contributions.
-
 
 # Purpose and Prior Art
 

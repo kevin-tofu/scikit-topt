@@ -89,6 +89,19 @@ Optimization Algorithms and Techniques are briefly summarized here.
 [Optimization Algorithms and Techniques](https://kevin-tofu.github.io/scikit-topt/optimization.html)
 
 
+## Contributing
+
+We are happy to welcome any contributions to the library.
+You can contribute in various ways:
+
+- Reporting bugs, opening pull requests, or starting discussions via [GitHub Issues](https://github.com/kevin-tofu/scikit-topt/issues)
+- Writing new [examples](https://github.com/kevin-tofu/scikit-topt/tree/joss-review/examples)
+- Improving the [tests](https://github.com/kevin-tofu/scikit-topt/tree/joss-review/tests)
+- Enhancing the documentation or code readability [doc](https://scikit-topt.readthedocs.io/en/latest/)
+
+By contributing code to **scikit-topt**, you agree to release it under the [Apache 2.0 License](https://github.com/kevin-tofu/scikit-topt/tree/master/LICENSE.md).
+
+
 ## Acknowledgements
 ### Standing on the shoulders of proverbial giants
  This software does not exist in a vacuum.
@@ -120,18 +133,6 @@ If you use Scikit Topt in your research or software, please cite it as:
   note         = {Version 0.2.12}
 }
 ```
-
-## Contributing
-
-Scikit-Topt is an open-source project, and we warmly welcome community contributions!
-
-If you’d like to contribute:
-- Open an issue to discuss ideas, report bugs, or suggest improvements.
-- Submit a pull request for fixes, enhancements, or new examples.
-
-Please feel free to join the discussion on [GitHub Issues](https://github.com/Kevin-Tofu/scikit-topt/issues).
-We appreciate all forms of contributions, from small documentation improvements to larger feature proposals.
-
 
 ## ToDo
 - Set break point from the optimization loop
