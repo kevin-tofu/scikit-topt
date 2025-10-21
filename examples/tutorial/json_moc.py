@@ -47,7 +47,7 @@ def get_task():
     force_dir_type = "u^3"
     force_value = 100
     # Define it as a task
-    tsk = sktopt.mesh.task.TaskConfig.from_mesh_tags(
+    tsk = sktopt.mesh.task.LinearElastisicity.from_mesh_tags(
         210e9,
         0.30,
         basis,

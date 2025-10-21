@@ -76,8 +76,8 @@ Scikit-topt implements topology optimization algorithms based on the density met
 # Usage Example
 
 The following example demonstrates how to use Scikit-topt to perform topology optimization on an unstructured mesh using the Optimality Criteria (OC) method.
-First, a mesh is loaded using `scikit-fem`, and a `TaskConfig` object is defined with material properties and boundary conditions. Next, a configuration object for the optimizer is created, and the optimization process is launched.
-In this example, a `TaskConfig` is created from a mesh file using `scikit-fem`, which defines the FEM model, material properties, and boundary conditions. Then, `OC_Config` sets the optimization parameters such as volume fraction and iteration limits. Finally, the optimizer is executed.
+First, a mesh is loaded using `scikit-fem`, and a `LinearElastisicity` object is defined with material properties and boundary conditions. Next, a configuration object for the optimizer is created, and the optimization process is launched.
+In this example, a `LinearElastisicity` is created from a mesh file using `scikit-fem`, which defines the FEM model, material properties, and boundary conditions. Then, `OC_Config` sets the optimization parameters such as volume fraction and iteration limits. Finally, the optimizer is executed.
 
 ```python
 
@@ -86,7 +86,7 @@ import skfem, sktopt
 mesh_path = "./data/model.msh"
 basis = sktopt.mesh.loader.basis_from_file(mesh_path, intorder=2)
 
-task = sktopt.mesh.task.TaskConfig.from_facets(
+task = sktopt.mesh.task.LinearElastisicity.from_facets(
     210e9, 0.30, basis, dirichlet_facets...
 )
 cfg = sktopt.core.OC_Config(

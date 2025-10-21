@@ -11,6 +11,11 @@ from sktopt.mesh import utils
 from sktopt.fea import composer
 
 
+@dataclass
+class TaskConfig():
+    pass
+
+
 def setdiff1d(a, b):
     mask = ~np.isin(a, b)
     a = a[mask]
@@ -104,7 +109,7 @@ def assemble_surface_forces(
 
 
 @dataclass
-class TaskConfig():
+class LinearElastisicity():
     """
     Container for storing finite element and optimization-related data
     used in topology optimization tasks.
@@ -112,7 +117,7 @@ class TaskConfig():
     This class holds material properties, boundary condition information,
     designable and non-designable element indices, as well as force vectors
     and volume data for each element. It is typically constructed using
-    `TaskConfig.from_defaults`.
+    `LinearElastisicity.from_defaults`.
 
     Attributes
     ----------
