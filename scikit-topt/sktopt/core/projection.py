@@ -1,7 +1,10 @@
 import numpy as np
 
 
-def heaviside_projection(rho, beta, eta=0.5):
+def heaviside_projection(
+    rho: np.ndarray,
+    beta: float = 0.1, eta: float = 0.5
+):
     """
     Smooth Heaviside projection.
     Returns projected density in [0,1].
