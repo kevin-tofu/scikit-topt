@@ -177,12 +177,11 @@ def test_HJ_WENO_like(basis_s, φ, V):
     return φ_new
 
 
-def test_ReInit_WENO_like(basis_s, φ):
+def test_ReInit_WENO_like(basis_s, φ, φ0):
 
     # ∂τ∂ϕ​=sign(ϕ0​)(1−∣∇ϕ∣)+∇⋅(D(∇ϕ)∇ϕ)
     alpha = 1e-3
     eps = 1e-6
-    φ0 = φ.copy()
 
     @skfem.BilinearForm
     def a_weno_like(u, v, w):
@@ -196,7 +195,7 @@ def test_ReInit_WENO_like(basis_s, φ):
 
     grad_φ = basis_s.interpolate(φ).grad
     grad_norm = np.sqrt(np.sum(grad_φ**2, axis=0))
-    sign_phi0 = φ0 / np.sqrt(φ0**2 + φ0**2)
+    sign_phi0 = φ0 / np.sqrt(φ0**2 + eps**2)
 
     K = skfem.asm(a_weno_like, basis_s, grad_phi=grad_φ)
     M = skfem.asm(lambda u, v, w: u*v, basis_s)
@@ -222,4 +221,11 @@ if __name__ == '__main__':
 
     test_assembling(lam, mu, mesh, basis_v, basis_s, u, φ, q)
     test_HJ_WENO_like(basis_s, φ, V)
-    test_ReInit_WENO_like(basis_s, φ)
+
+    n_iter = 10
+    φ0 = φ.copy()
+    φ = φ.copy()
+    for _ in range(n_iter):
+        φ = test_ReInit_WENO_like(basis_s, φ, φ0)
+
+    # φ = test_ReInit_WENO_like(basis_s, φ)
