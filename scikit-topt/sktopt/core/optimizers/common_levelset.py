@@ -32,7 +32,7 @@ def test():
     import skfem
     import sktopt
 
-    x_len, y_len, z_len = 1.0, 1.0, 1.0
+    x_len, y_len, z_len = 8.0, 1.0, 1.0
     element_size = 0.1
     e_v = skfem.ElementVector(skfem.ElementHex1())
     e_s = skfem.ElementHex1()
@@ -46,7 +46,7 @@ def test():
         return x[0] == 0.0
 
     def is_force_surface(x):
-        return x[0] == 1.0
+        return x[0] == x_len
 
     # --- Material parameters ---
     E = 200e9
@@ -74,13 +74,13 @@ def test():
 
     @skfem.LinearForm
     def l_comp(v, w):
-        return pressure * v[2]
+        return pressure * v[0]
 
     F = l_comp.assemble(fbasis)
 
-    # --- Condense & solve (modern API) ---
     Kc, Fc, uc, I = skfem.condense(K, F, D=D)
     u = skfem.solve(Kc, Fc, uc, I)
+
 
     φ = np.zeros(u.shape[0] // 3)
     q = np.zeros(u.shape[0] // 3)
