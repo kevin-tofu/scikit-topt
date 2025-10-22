@@ -69,12 +69,7 @@ def heaviside(phi, beta=0.1):
     return 0.5 * (1 + (2 / np.pi) * np.arctan(phi / beta))
 
 
-def test():
-
-    # J(u,φ) = ∫((I ∘ φ)*(C ⊙ ε(u) ⊙ ε(u)))dΩ
-    # dJ(q,u,φ) = ∫((C ⊙ ε(u) ⊙ ε(u))*q*(DH ∘ φ)*(norm ∘ ∇(φ)))dΩ
-    # Vol(u,φ) = ∫(((ρ ∘ φ) - vf)/vol_D)dΩ
-    # dVol(q,u,φ) = ∫(-1/vol_D*q*(DH ∘ φ)*(norm ∘ ∇(φ)))dΩ
+def test_fem():
     x_len, y_len, z_len = 8.0, 1.0, 1.0
     element_size = 0.1
     e_v = skfem.ElementVector(skfem.ElementHex1())
@@ -84,7 +79,7 @@ def test():
     )
     basis_v = skfem.Basis(mesh, e_v, intorder=2)
     basis_s = skfem.Basis(mesh, e_s, intorder=2)
-
+    
     def is_dirichlet_surface(x):
         return x[0] == 0.0
 
@@ -95,9 +90,6 @@ def test():
     E = 200e9
     nu = 0.3
     lam, mu = lame_parameters(E, nu)
-
-    shape_derivative_assembler = get_shape_derivative_assembler(lam, mu)
-    dVol_assembler = get_dVol_assembler()
 
     # --- Assemble stiffness matrix ---
     K = skfem.asm(linear_elasticity(lam, mu), basis_v)
@@ -124,10 +116,19 @@ def test():
 
     Kc, Fc, uc, I = skfem.condense(K, F, D=D)
     u = skfem.solve(Kc, Fc, uc, I)
+    return lam, mu, mesh, basis_v, basis_s, u
 
-    q = -u.copy()
 
-    φ = np.zeros(u.shape[0] // 3)
+def test_assembling(lam, mu, mesh, basis_v, basis_s, u, φ, q):
+
+    # J(u,φ) = ∫((I ∘ φ)*(C ⊙ ε(u) ⊙ ε(u)))dΩ
+    # dJ(q,u,φ) = ∫((C ⊙ ε(u) ⊙ ε(u))*q*(DH ∘ φ)*(norm ∘ ∇(φ)))dΩ
+    # Vol(u,φ) = ∫(((ρ ∘ φ) - vf)/vol_D)dΩ
+    # dVol(q,u,φ) = ∫(-1/vol_D*q*(DH ∘ φ)*(norm ∘ ∇(φ)))dΩ
+    shape_derivative_assembler = get_shape_derivative_assembler(lam, mu)
+    dVol_assembler = get_dVol_assembler()
+
+    
     params = dict(
         u_interp=basis_v.interpolate(u),
         φ_interp=basis_s.interpolate(φ),
@@ -141,5 +142,84 @@ def test():
     print(f"dVol: {dVol.shape}")
 
 
+def test_HJ_WENO_like(basis_s, φ, V):
+
+    # add non-linear diffusion on Hamilton-Jacobi
+    # ∂t∂ϕ​+V∣∇ϕ∣ = ∇⋅(D(∇ϕ)∇ϕ)
+    # D(∇ϕ)=α/(1+∣∇ϕ∣^2)
+    # (M+ΔtK(D(∇φ)))φn+1=Mφn−ΔtM(V∣∇φ∣)
+
+    alpha = 0.1
+
+    @skfem.BilinearForm
+    def a_weno_like(u, v, w):
+        φ_grad = grad(w.φ)
+        D = alpha / (1.0 + np.sum(φ_grad**2, axis=0))
+        return D * np.einsum("ijk,ijk->jk", grad(u), grad(v))
+
+
+    @skfem.LinearForm
+    def l_weno_like(v, w):
+        # φ_grad = grad(w.φ)
+        φ_grad = w.φ.grad
+
+        φ_grad_norm = np.linalg.norm(φ_grad, axis=0)
+        return (-w.V * φ_grad_norm) * v
+
+    K = skfem.asm(a_weno_like, basis_s, φ=basis_s.interpolate(φ))
+    M = skfem.asm(lambda u, v, w: u*v, basis_s)
+    rhs = skfem.asm(l_weno_like, basis_s, V=V, φ=basis_s.interpolate(φ))
+
+    dt = 1e-4
+    A = M + dt*K
+    b = M @ φ - dt*rhs
+    φ_new = skfem.solve(A, b)
+    return φ_new
+
+
+def test_ReInit_WENO_like(basis_s, φ):
+
+    # ∂τ∂ϕ​=sign(ϕ0​)(1−∣∇ϕ∣)+∇⋅(D(∇ϕ)∇ϕ)
+    alpha = 1e-3
+    eps = 1e-6
+    φ0 = φ.copy()
+
+    @skfem.BilinearForm
+    def a_weno_like(u, v, w):
+        grad_phi = w["grad_phi"]
+        D = alpha / (1.0 + np.sum(grad_phi**2, axis=0))
+        return D * dot(grad(u), grad(v))
+
+    @skfem.LinearForm
+    def rhs_reinit_weno(v, w):
+        return w["sign_phi0"] * (1.0 - w["grad_norm"]) * v
+
+    grad_φ = basis_s.interpolate(φ).grad
+    grad_norm = np.sqrt(np.sum(grad_φ**2, axis=0))
+    sign_phi0 = φ0 / np.sqrt(φ0**2 + φ0**2)
+
+    K = skfem.asm(a_weno_like, basis_s, grad_phi=grad_φ)
+    M = skfem.asm(lambda u, v, w: u*v, basis_s)
+    rhs = skfem.asm(
+        rhs_reinit_weno, basis_s, sign_phi0=sign_phi0, grad_norm=grad_norm
+    )
+
+    dt = 1e-3
+    A = M + dt * K
+    b = M @ φ + dt * rhs
+    phi_new = skfem.solve(A, b)
+    return phi_new
+
+
 if __name__ == '__main__':
-    test()
+    
+    lam, mu, mesh, basis_v, basis_s, u = test_fem()
+    φ = np.zeros(u.shape[0] // 3)
+    q = -u.copy()
+    # V = np.ones_like(u)
+    # V = np.ones(basis_v.mesh.t.shape[1])
+    V = np.ones(u.shape[0] // 3)
+
+    test_assembling(lam, mu, mesh, basis_v, basis_s, u, φ, q)
+    test_HJ_WENO_like(basis_s, φ, V)
+    test_ReInit_WENO_like(basis_s, φ)
