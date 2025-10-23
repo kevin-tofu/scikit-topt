@@ -462,7 +462,6 @@ class DensityMethod(DensityMethodBase):
                 dst_path=f"{self.cfg.dst_path}/data",
             )
         elif self.cfg.filter_type == "helmholtz":
-            # helmholz_solver
             self.filter = filters.HelmholtzFilter.from_defaults(
                 self.tsk.mesh,
                 self.cfg.filter_radius.init_value,
@@ -719,7 +718,7 @@ class DensityMethod(DensityMethodBase):
                     beta=beta, eta=cfg.beta_eta, out=dH_drho
                 )
                 np.multiply(dC_drho_projected, dH_drho, out=grad_filtered)
-                dC_drho_full[:] += self.helmholz_solver.gradient(grad_filtered)
+                dC_drho_full[:] += self.filter.gradient(grad_filtered)
 
             dC_drho_full /= len(force_vec_list)
             if cfg.sensitivity_filter:
