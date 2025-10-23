@@ -164,8 +164,7 @@ class TaskConfig():
     fixed_elements: np.ndarray
     dirichlet_force_elements: np.ndarray
     elements_volume: np.ndarray
-    
-    
+
     @property
     def design_mask(self):
         return np.isin(self.all_elements, self.design_elements)

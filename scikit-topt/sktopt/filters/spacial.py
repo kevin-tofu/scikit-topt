@@ -7,6 +7,7 @@ from scipy.spatial import cKDTree
 from scipy.sparse import coo_matrix, csr_matrix, diags
 
 import skfem
+from sktopt.filters.base import BaseFilter
 
 
 def get_element_centers(mesh: skfem.Mesh) -> np.ndarray:
@@ -103,12 +104,8 @@ def build_filter_matrix(
 
 
 @dataclass
-class SpacialFilter():
-    mesh: skfem.Mesh
-    radius: float
-    element_centers: np.ndarray
-    design_mask: Optional[np.ndarray] = None
-    dst_path: Optional[str] = None
+class SpacialFilter(BaseFilter):
+    element_centers: Optional[np.ndarray] = None
 
     def update_radius(
         self,
@@ -121,24 +118,19 @@ class SpacialFilter():
     def from_defaults(
         cls,
         mesh: skfem.Mesh,
+        elements_volume: np.ndarray,
         radius: float = 0.3,
-        design_mask: Optional[np.ndarray] = None,
-        dst_path: Optional[str] = None,
+        design_mask: Optional[np.ndarray] = None
     ) -> 'SpacialFilter':
 
         element_centers = get_element_centers(mesh)
         return cls(
             mesh=mesh,
+            elements_volume=elements_volume,
             radius=radius,
-            element_centers=element_centers,
             design_mask=design_mask,
-            dst_path=dst_path,
+            element_centers=element_centers
         )
-
-    @classmethod
-    def from_file(cls, dst_path: str):
-        # raise NotImplementedError("")
-        pass
 
     def run(
         self,
@@ -164,7 +156,7 @@ class SpacialFilter():
 
         return rho_filtered
 
-    def gradient(self, v: np.ndarray):
+    def gradient(self, v: np.ndarray) -> np.ndarray:
         if self.design_mask is None:
             return self.W.T @ v
         else:
@@ -178,17 +170,29 @@ if __name__ == '__main__':
 
     # import skfem
     import sktopt
+    from sktopt.fea import composer
     x_len, y_len, z_len = 1.0, 1.0, 1.0
     element_size = 0.1
     e = skfem.ElementVector(skfem.ElementHex1())
     mesh = sktopt.mesh.toy_problem.create_box_hex(
         x_len, y_len, z_len, element_size
     )
-    filter = SpacialFilter.from_defaults(
-        mesh, radius=0.2
+    elements_volume = composer.get_elements_volume(mesh)
+    filter_0 = SpacialFilter.from_defaults(
+        mesh, elements_volume=elements_volume, radius=0.1
+    )
+    filter_1 = SpacialFilter.from_defaults(
+        mesh, elements_volume=elements_volume, radius=0.2
     )
     rho = np.random.rand(mesh.t.shape[1])
-    for loop in range(1, 201):
-        rho = filter.run(rho)
-        rho_var = np.var(rho)
+    rho_0 = np.copy(rho)
+    for loop in range(1, 21):
+        rho_0 = filter_0.run(rho_0)
+        rho_var = np.var(rho_0)
+        print(f"loop: {loop} rho_var: {rho_var:04f}")
+
+    rho_1 = np.copy(rho)
+    for loop in range(1, 21):
+        rho_1 = filter_1.run(rho_1)
+        rho_var = np.var(rho_1)
         print(f"loop: {loop} rho_var: {rho_var:04f}")

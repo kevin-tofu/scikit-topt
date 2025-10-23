@@ -130,7 +130,7 @@ class DensityMethodConfig():
             curvature=2.0
         )
     )
-    filter_type: Literal["spacial", "helmholtz"] = "spacial"
+    filter_type: Literal["spacial", "helmholtz_ele", "helmholtz_nodal"] = "spacial"
     filter_radius: tools.SchedulerConfig = field(
         default_factory=lambda: tools.SchedulerConfig.constant(
             target_value=0.2
@@ -456,27 +456,28 @@ class DensityMethod(DensityMethodBase):
 
         if self.cfg.filter_type == "spacial":
             self.filter = filters.SpacialFilter.from_defaults(
-                self.tsk.mesh,
+                self.tsk.mesh, self.tsk.elements_volume,
                 self.cfg.filter_radius.init_value,
                 design_mask=self.tsk.design_mask,
-                dst_path=f"{self.cfg.dst_path}/data",
             )
-        elif self.cfg.filter_type == "helmholtz":
-            self.filter = filters.HelmholtzFilter.from_defaults(
-                self.tsk.mesh,
+        elif self.cfg.filter_type == "helmholtz_nodal":
+            raise NotImplementedError("helmholtz_nodal")
+        elif self.cfg.filter_type == "helmholtz_ele":
+            self.filter = filters.HelmholtzFilter_ele.from_defaults(
+                self.tsk.mesh, self.tsk.elements_volume,
                 self.cfg.filter_radius.init_value,
                 design_mask=self.tsk.design_mask,
                 solver_option="cg_pyamg",
                 # solver_option=self.cfg.solver_option,
-                dst_path=f"{self.cfg.dst_path}/data",
             )
         else:
             raise ValueError("should be spacial or helmholtz")
 
     def load_parameters(self):
-        self.filter = filters.HelmholtzFilter.from_file(
-            f"{self.cfg.dst_path}/data"
-        )
+        # self.filter = filters.HelmholtzFilter_ele.from_file(
+        #     f"{self.cfg.dst_path}/data"
+        # )
+        pass
 
     def initialize_density(self):
         tsk = self.tsk

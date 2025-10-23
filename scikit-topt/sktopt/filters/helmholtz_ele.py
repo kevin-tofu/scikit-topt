@@ -8,8 +8,10 @@ from scipy.sparse import coo_matrix, csc_matrix
 from scipy.sparse.linalg import splu
 from scipy.sparse.linalg import cg
 from scipy.sparse.linalg import LinearOperator
+
 import pyamg
 import skfem
+from sktopt.filters.base import BaseFilter
 
 
 def compute_tet_volumes(mesh):
@@ -427,7 +429,6 @@ def apply_filter_gradient_amg(
 def _update_radius(
     mesh: skfem.Mesh,
     radius: float,
-    dst_path: Optional[str] = None,
     design_mask: Optional[np.ndarray] = None
 ):
     exclude_nonadjacent = False if design_mask is None else True
@@ -436,20 +437,17 @@ def _update_radius(
         design_elements_mask=design_mask,
         exclude_nonadjacent=exclude_nonadjacent
     )
-    if isinstance(dst_path, str):
-        scipy.sparse.save_npz(f"{dst_path}/V.npz", V)
-        scipy.sparse.save_npz(f"{dst_path}/A.npz", A)
+    # if isinstance(dst_path, str):
+    #     scipy.sparse.save_npz(f"{dst_path}/V.npz", V)
+    #     scipy.sparse.save_npz(f"{dst_path}/A.npz", A)
 
     return A, V
 
 
 @dataclass
-class HelmholtzFilter():
-    mesh: skfem.Mesh
-    A: csc_matrix
-    V: csc_matrix
-    radius: float
-    design_mask: Optional[np.ndarray] = None
+class HelmholtzFilter(BaseFilter):
+    A: Optional[csc_matrix]=None
+    V: Optional[csc_matrix]=None
     solver_option: Literal["spsolve", "cg_jacobi", "cg_pyamg"] = "cg_jacobi"
     dst_path: Optional[str] = None
     A_solver: Optional[scipy.sparse.linalg.SuperLU] = None
@@ -466,7 +464,6 @@ class HelmholtzFilter():
         self.A, self.V = _update_radius(
             mesh=self.mesh,
             radius=radius,
-            dst_path=self.dst_path,
             design_mask=self.design_mask
         )
         self.preprocess(self.solver_option)
@@ -475,35 +472,32 @@ class HelmholtzFilter():
     def from_defaults(
         cls,
         mesh: skfem.Mesh,
+        elements_volume: np.ndarray,
         radius: float = 0.3,
         design_mask: Optional[np.ndarray] = None,
         solver_option: Literal[
             "spsolve", "cg_jacobi", "cg_pyamg"] = "cg_pyamg",
-        dst_path: Optional[str] = None,
     ):
         A, V = _update_radius(
             mesh=mesh,
             radius=radius,
-            dst_path=dst_path,
             design_mask=design_mask
         )
         ret = cls(
-            mesh=mesh,
+            mesh=mesh, elements_volume=elements_volume,
             A=A, V=V, radius=radius, design_mask=design_mask,
             solver_option=solver_option,
-            dst_path=dst_path,
         )
-        print(f"preprocess : {solver_option}")
+        # print(f"preprocess : {solver_option}")
         ret.preprocess(solver_option)
         print(ret.solver_option)
         return ret
 
-    @classmethod
-    def from_file(cls, dst_path: str):
-        # V = scipy.sparse.load_npz(f"{dst_path}/V.npz")
-        # A = scipy.sparse.load_npz(f"{dst_path}/A.npz")
-        # return cls(A, V, radius=-1)
-        pass
+    # @classmethod
+    # def from_file(cls, dst_path: str):
+    #     V = scipy.sparse.load_npz(f"{dst_path}/V.npz")
+    #     A = scipy.sparse.load_npz(f"{dst_path}/A.npz")
+    #     return cls(A, V, radius=-1)
 
     def run(self, rho_element: np.ndarray):
         if self.solver_option == "spsolve":
