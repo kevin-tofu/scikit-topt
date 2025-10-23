@@ -677,7 +677,7 @@ class DensityMethod(DensityMethodBase):
 
             logger.info("--- project and filter ---")
             rho_prev[:] = rho[:]
-            rho_filtered[:] = self.filter.run(rho)
+            rho_filtered[:] = self.filter.forward(rho)
             projection.heaviside_projection_inplace(
                 rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
             )
@@ -724,7 +724,7 @@ class DensityMethod(DensityMethodBase):
             dC_drho_full /= len(force_vec_list)
             if cfg.sensitivity_filter:
                 logger.info("--- sensitivity filter ---")
-                filtered = self.filter.run(dC_drho_full)
+                filtered = self.filter.forward(dC_drho_full)
                 np.copyto(dC_drho_full, filtered)
             dC_drho_design_eles[:] = dC_drho_full[tsk.design_elements]
             rho_design_eles[:] = rho[tsk.design_elements]

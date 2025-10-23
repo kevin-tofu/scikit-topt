@@ -132,7 +132,7 @@ class SpacialFilter(BaseFilter):
             element_centers=element_centers
         )
 
-    def run(
+    def forward(
         self,
         rho_element: np.ndarray
     ) -> np.ndarray:
@@ -187,12 +187,12 @@ if __name__ == '__main__':
     rho = np.random.rand(mesh.t.shape[1])
     rho_0 = np.copy(rho)
     for loop in range(1, 21):
-        rho_0 = filter_0.run(rho_0)
+        rho_0 = filter_0.forward(rho_0)
         rho_var = np.var(rho_0)
         print(f"loop: {loop} rho_var: {rho_var:04f}")
 
     rho_1 = np.copy(rho)
     for loop in range(1, 21):
-        rho_1 = filter_1.run(rho_1)
+        rho_1 = filter_1.forward(rho_1)
         rho_var = np.var(rho_1)
         print(f"loop: {loop} rho_var: {rho_var:04f}")

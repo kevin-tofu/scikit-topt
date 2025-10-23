@@ -499,7 +499,7 @@ class HelmholtzFilter(BaseFilter):
     #     A = scipy.sparse.load_npz(f"{dst_path}/A.npz")
     #     return cls(A, V, radius=-1)
 
-    def run(self, rho_element: np.ndarray):
+    def forward(self, rho_element: np.ndarray):
         if self.solver_option == "spsolve":
             return apply_helmholtz_filter_lu(
                 rho_element, self.A_solver, self.V
