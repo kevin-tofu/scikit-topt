@@ -53,35 +53,48 @@ def build_filter_matrix(
     support_radius: float,
     elem_volume: Optional[np.ndarray] = None,
     volume_correction: bool = True,
+    design_mask: Optional[np.ndarray] = None,
 ) -> csr_matrix:
     c = element_centers
-    n = c.shape[1]
+    n_all = c.shape[1]
+    if design_mask is None:
+        design_mask = np.ones(n_all, dtype=bool)
+
+    design_ids = np.nonzero(design_mask)[0]
     tree = cKDTree(c.T)
 
-    nbrs = tree.query_ball_tree(tree, support_radius)
-
     rows, cols, data = [], [], []
-    for i in range(n):
-        js = np.asarray(nbrs[i], dtype=int)
+
+    for row_idx, i in enumerate(design_ids):
+        js_all = np.asarray(tree.query_ball_point(c[:, i], support_radius), dtype=int)
+        js = js_all[design_mask[js_all]]
         if js.size == 0:
             continue
+
         dij = np.linalg.norm(c[:, js] - c[:, [i]], axis=0)
         w = kernel(dij)
 
         if volume_correction and elem_volume is not None:
             w = w * elem_volume[js]
-        rows.append(np.full(js.size, i, dtype=int))
-        cols.append(js)
+
+        col_idx = np.searchsorted(design_ids, js)
+
+        rows.append(np.full(js.size, row_idx, dtype=int))
+        cols.append(col_idx)
         data.append(w)
 
-    if len(data) == 0:
-        raise RuntimeError("No neighbor relations found; check support_radius.")
+    if not data:
+        raise RuntimeError(
+            "No neighbor relations found; check support_radius or design_mask."
+        )
 
     rows = np.concatenate(rows)
     cols = np.concatenate(cols)
     data = np.concatenate(data)
 
-    W = coo_matrix((data, (rows, cols)), shape=(n, n)).tocsr()
+    n_design = len(design_ids)
+    W = coo_matrix((data, (rows, cols)), shape=(n_design, n_design)).tocsr()
+
     row_sum = np.array(W.sum(axis=1)).ravel()
     row_sum[row_sum == 0.0] = 1.0
     Dinv = diags(1.0 / row_sum)
@@ -128,7 +141,8 @@ class SpacialFilter():
         raise NotImplementedError("")
 
     def run(
-        self, rho_element: np.ndarray
+        self,
+        rho_element: np.ndarray
     ) -> np.ndarray:
         kernel, support = make_kernel(
             kind="gaussian", r_min=self.radius
@@ -136,10 +150,17 @@ class SpacialFilter():
         volume_array = None
         W = build_filter_matrix(
             self.element_centers,
-            kernel, support, elem_volume=volume_array,
-            volume_correction=True
+            kernel, support,
+            elem_volume=volume_array,
+            volume_correction=False,
+            design_mask=self.design_mask
         )
-        return W @ rho_element
+        if self.design_mask is None:
+            rho_filtered = W @ rho
+        else:
+            rho_filtered = np.copy(rho_element)
+            rho_filtered[self.design_mask] = W @ rho[self.design_mask]
+        return rho_filtered
 
 
 if __name__ == '__main__':
