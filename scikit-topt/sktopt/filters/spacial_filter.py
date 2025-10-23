@@ -117,14 +117,13 @@ class SpacialFilter():
     ):
         self.radius = radius
 
-
     @classmethod
     def from_defaults(
         cls,
         mesh: skfem.Mesh,
-        radius: float = 1.0,
-        dst_path: Optional[str] = None,
+        radius: float = 0.3,
         design_mask: Optional[np.ndarray] = None,
+        dst_path: Optional[str] = None,
     ) -> 'SpacialFilter':
 
         element_centers = get_element_centers(mesh)
@@ -138,7 +137,8 @@ class SpacialFilter():
 
     @classmethod
     def from_file(cls, dst_path: str):
-        raise NotImplementedError("")
+        # raise NotImplementedError("")
+        pass
 
     def run(
         self,
@@ -148,19 +148,30 @@ class SpacialFilter():
             kind="gaussian", r_min=self.radius
         )
         volume_array = None
-        W = build_filter_matrix(
+        self.W = build_filter_matrix(
             self.element_centers,
             kernel, support,
             elem_volume=volume_array,
             volume_correction=False,
             design_mask=self.design_mask
         )
+        rho_filtered = np.copy(rho_element)
         if self.design_mask is None:
-            rho_filtered = W @ rho
+            rho_filtered[:] = self.W @ rho_element
         else:
-            rho_filtered = np.copy(rho_element)
-            rho_filtered[self.design_mask] = W @ rho[self.design_mask]
+            # memory inefficient...
+            rho_filtered[self.design_mask] = self.W @ rho_element[self.design_mask]
+
         return rho_filtered
+
+    def gradient(self, v: np.ndarray):
+        if self.design_mask is None:
+            return self.W.T @ v
+        else:
+            # memory inefficient...
+            dC_drho_full = np.zeros(self.element_centers.shape[1])
+            dC_drho_full[self.design_mask] = self.W.T @ v[self.design_mask]
+            return dC_drho_full
 
 
 if __name__ == '__main__':

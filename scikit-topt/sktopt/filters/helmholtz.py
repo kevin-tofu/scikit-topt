@@ -445,11 +445,13 @@ def _update_radius(
 
 @dataclass
 class HelmholtzFilter():
+    mesh: skfem.Mesh
     A: csc_matrix
     V: csc_matrix
     radius: float
-    dst_path: Optional[str] = None
+    design_mask: Optional[np.ndarray] = None
     solver_option: Literal["spsolve", "cg_jacobi", "cg_pyamg"] = "cg_jacobi"
+    dst_path: Optional[str] = None
     A_solver: Optional[scipy.sparse.linalg.SuperLU] = None
     M: Optional[LinearOperator] = None
     pyamg_solver: Optional[pyamg.multilevel.MultilevelSolver] = None
@@ -458,29 +460,26 @@ class HelmholtzFilter():
 
     def update_radius(
         self,
-        mesh: skfem.Mesh,
-        radius: float,
-        design_mask: Optional[np.ndarray] = None,
-        solver_option="cg_pyamg"
+        radius: float
     ):
         self.radius = radius
         self.A, self.V = _update_radius(
-            mesh=mesh,
+            mesh=self.mesh,
             radius=radius,
             dst_path=self.dst_path,
-            design_mask=design_mask
+            design_mask=self.design_mask
         )
-        self.preprocess(solver_option)
+        self.preprocess(self.solver_option)
 
     @classmethod
     def from_defaults(
         cls,
         mesh: skfem.Mesh,
-        radius: float=1.0,
+        radius: float = 0.3,
+        design_mask: Optional[np.ndarray] = None,
         solver_option: Literal[
             "spsolve", "cg_jacobi", "cg_pyamg"] = "cg_pyamg",
         dst_path: Optional[str] = None,
-        design_mask: Optional[np.ndarray] = None,
     ):
         A, V = _update_radius(
             mesh=mesh,
@@ -489,8 +488,10 @@ class HelmholtzFilter():
             design_mask=design_mask
         )
         ret = cls(
-            A=A, V=V, radius=radius, dst_path=dst_path,
-            solver_option=solver_option
+            mesh=mesh,
+            A=A, V=V, radius=radius, design_mask=design_mask,
+            solver_option=solver_option,
+            dst_path=dst_path,
         )
         print(f"preprocess : {solver_option}")
         ret.preprocess(solver_option)
@@ -499,10 +500,10 @@ class HelmholtzFilter():
 
     @classmethod
     def from_file(cls, dst_path: str):
-        V = scipy.sparse.load_npz(f"{dst_path}/V.npz")
-        A = scipy.sparse.load_npz(f"{dst_path}/A.npz")
-        # A_solver = splu(A)
-        return cls(A, V, radius=-1)
+        # V = scipy.sparse.load_npz(f"{dst_path}/V.npz")
+        # A = scipy.sparse.load_npz(f"{dst_path}/A.npz")
+        # return cls(A, V, radius=-1)
+        pass
 
     def run(self, rho_element: np.ndarray):
         if self.solver_option == "spsolve":
