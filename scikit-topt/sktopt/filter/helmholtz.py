@@ -504,7 +504,7 @@ class HelmholtzFilter():
         # A_solver = splu(A)
         return cls(A, V, radius=-1)
 
-    def filter(self, rho_element: np.ndarray):
+    def run(self, rho_element: np.ndarray):
         if self.solver_option == "spsolve":
             return apply_helmholtz_filter_lu(
                 rho_element, self.A_solver, self.V
