@@ -112,7 +112,7 @@ dirichlet_dir = "all"
 force_dir_type = "u^1"
 force_value = 100
 # Define it as a task
-tsk = sktopt.mesh.task.TaskConfig.from_facets(
+tsk = sktopt.mesh.task.TaskConfig.from_mesh_tags(
     210e9,
     0.30,
     basis,
