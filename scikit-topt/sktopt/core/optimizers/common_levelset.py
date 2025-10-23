@@ -61,7 +61,6 @@ def get_dVol_assembler() -> Callable:
         c = -1.0 / w.vol * q_n * DH * φ_grad_norm    # (nqp, nelems)
         return c * v                                 # LinearForm expects (nqp, nelems)
 
-
     return dVol_assembler
 
 
@@ -69,30 +68,48 @@ def heaviside(phi, beta=0.1):
     return 0.5 * (1 + (2 / np.pi) * np.arctan(phi / beta))
 
 
-def test_fem():
-    x_len, y_len, z_len = 8.0, 1.0, 1.0
-    element_size = 0.1
-    e_v = skfem.ElementVector(skfem.ElementHex1())
-    e_s = skfem.ElementHex1()
-    mesh = sktopt.mesh.toy_problem.create_box_hex(
-        x_len, y_len, z_len, element_size
-    )
-    basis_v = skfem.Basis(mesh, e_v, intorder=2)
-    basis_s = skfem.Basis(mesh, e_s, intorder=2)
-    
-    def is_dirichlet_surface(x):
-        return x[0] == 0.0
+def assemble_stiffness_matrix_with_φ(
+    basis_v: skfem.Basis,
+    basis_s: skfem.Basis,
+    φ: np.ndarray,
+    Emax: float, Emin: float, nu: float
+):
+    print("φ.shape =", φ.shape)
+    print("basis.N =", basis_s.N)
+    print("mesh.p.shape =", basis_s.mesh.p.shape)
 
-    def is_force_surface(x):
-        return x[0] == x_len
+    φ_elem = basis_s.interpolate(φ).value
+    E_elem = Emin + (Emax - Emin) * heaviside(φ_elem)
+    lam = (nu * E_elem) / ((1.0 + nu) * (1.0 - 2.0 * nu))
+    mu = E_elem / (2.0 * (1.0 + nu))
 
-    # --- Material parameters ---
-    E = 200e9
-    nu = 0.3
-    lam, mu = lame_parameters(E, nu)
+    # 3. BilinearForm
+    @skfem.BilinearForm
+    def stiffness_form(u, v, w):
+        strain_u = sym_grad(u)
+        strain_v = sym_grad(v)
+        volume_term = lam * trace(strain_u) * trace(strain_v)
+        return volume_term + 2.0 * mu * ddot(strain_u, strain_v)
 
+    K = skfem.asm(stiffness_form, basis_v)
+    return K
+
+
+def test_fem(
+    mesh: skfem.Mesh,
+    basis_v: skfem.Basis, basis_s: skfem.Basis,
+    is_dirichlet_surface: Callable,
+    is_force_surface: Callable,
+    φ: np.ndarray,
+    Emax=200e9,
+    Emin=200e4,
+    nu=0.3,
+    F_total=100.0
+):
     # --- Assemble stiffness matrix ---
-    K = skfem.asm(linear_elasticity(lam, mu), basis_v)
+    # lam, mu = lame_parameters(E, nu)
+    # K = skfem.asm(linear_elasticity(lam, mu), basis_v)
+    K = assemble_stiffness_matrix_with_φ(basis_v, basis_s, φ, Emax, Emin, nu)
 
     # --- Boundary conditions ---
     left = mesh.facets_satisfying(is_dirichlet_surface)
@@ -100,46 +117,63 @@ def test_fem():
 
     F_facet_ids = mesh.facets_satisfying(is_force_surface)
     fbasis = skfem.FacetBasis(mesh, e_v, facets=F_facet_ids)
-    total_force = 100.0  # [N]
 
     @skfem.Functional
     def surface_measure(w):
         return 1.0
     A_proj_z = surface_measure.assemble(fbasis)
-    pressure = total_force / A_proj_z
+    pressure = F_total / A_proj_z
 
     @skfem.LinearForm
     def l_comp(v, w):
-        return pressure * v[0]
+        return pressure * v[2]
 
     F = l_comp.assemble(fbasis)
 
     Kc, Fc, uc, I = skfem.condense(K, F, D=D)
     u = skfem.solve(Kc, Fc, uc, I)
-    return lam, mu, mesh, basis_v, basis_s, u
+    return u
 
 
-def test_assembling(lam, mu, mesh, basis_v, basis_s, u, φ, q):
+def test_assembling(E, nu, basis_v, basis_s, u, q, φ):
 
     # J(u,φ) = ∫((I ∘ φ)*(C ⊙ ε(u) ⊙ ε(u)))dΩ
     # dJ(q,u,φ) = ∫((C ⊙ ε(u) ⊙ ε(u))*q*(DH ∘ φ)*(norm ∘ ∇(φ)))dΩ
     # Vol(u,φ) = ∫(((ρ ∘ φ) - vf)/vol_D)dΩ
     # dVol(q,u,φ) = ∫(-1/vol_D*q*(DH ∘ φ)*(norm ∘ ∇(φ)))dΩ
+
+    @skfem.LinearForm
+    def liner_v(v, w):
+        return v
+
+    @skfem.LinearForm
+    def linar_φ_grad_norm(v, w):
+        φ_grad_norm = np.linalg.norm(grad(w.φ_interp), axis=0)
+        return φ_grad_norm * v
+
+    L_base = skfem.asm(liner_v, basis_s)
+    vol = L_base * heaviside(φ)
+    # vol = L_base * np.ones_like(φ)
+
+    lam, mu = lame_parameters(E, nu)
     shape_derivative_assembler = get_shape_derivative_assembler(lam, mu)
     dVol_assembler = get_dVol_assembler()
-
-    
     params = dict(
         u_interp=basis_v.interpolate(u),
         φ_interp=basis_s.interpolate(φ),
         q_interp=basis_v.interpolate(q),
-        vol=100.0
+        vol=vol
     )
 
     dJ = skfem.asm(shape_derivative_assembler, basis_s, **params)
-    print(f"dJ: {dJ.shape}")
     dVol = skfem.asm(dVol_assembler, basis_s, **params)
-    print(f"dVol: {dVol.shape}")
+    φ_grad_norm = skfem.asm(linar_φ_grad_norm, basis_s, **params)
+    # print(f"dJ: {dJ.shape}")
+    # print(f"dVol: {dVol.shape}")
+    # print(f"φ_grad_norm: {φ_grad_norm.shape}")
+    # print(f"vol: {vol.shape} {np.sum(vol)}")
+
+    return dJ, dVol, φ_grad_norm
 
 
 def test_HJ_WENO_like(basis_s, φ, V):
@@ -157,11 +191,10 @@ def test_HJ_WENO_like(basis_s, φ, V):
         D = alpha / (1.0 + np.sum(φ_grad**2, axis=0))
         return D * np.einsum("ijk,ijk->jk", grad(u), grad(v))
 
-
     @skfem.LinearForm
     def l_weno_like(v, w):
         # φ_grad = grad(w.φ)
-        φ_grad = w.φ.grad
+        φ_grad = grad(w.φ)
 
         φ_grad_norm = np.linalg.norm(φ_grad, axis=0)
         return (-w.V * φ_grad_norm) * v
@@ -177,7 +210,7 @@ def test_HJ_WENO_like(basis_s, φ, V):
     return φ_new
 
 
-def test_ReInit_WENO_like(basis_s, φ, φ0):
+def test_ReInit_WENO_like(basis_s, φ, φ0, eps: float = 1e-4):
 
     # ∂τ∂ϕ​=sign(ϕ0​)(1−∣∇ϕ∣)+∇⋅(D(∇ϕ)∇ϕ)
     alpha = 1e-3
@@ -185,22 +218,27 @@ def test_ReInit_WENO_like(basis_s, φ, φ0):
 
     @skfem.BilinearForm
     def a_weno_like(u, v, w):
-        grad_phi = w["grad_phi"]
-        D = alpha / (1.0 + np.sum(grad_phi**2, axis=0))
+        D = alpha / (1.0 + np.sum(w.φ_grad_norm**2, axis=0))
         return D * dot(grad(u), grad(v))
 
     @skfem.LinearForm
     def rhs_reinit_weno(v, w):
-        return w["sign_phi0"] * (1.0 - w["grad_norm"]) * v
+        return w.sign_φ0 * (1.0 - w.φ_grad_norm) * v
 
-    grad_φ = basis_s.interpolate(φ).grad
-    grad_norm = np.sqrt(np.sum(grad_φ**2, axis=0))
-    sign_phi0 = φ0 / np.sqrt(φ0**2 + eps**2)
+    @skfem.LinearForm
+    def linar_φ_grad_norm(v, w):
+        φ_grad_norm = np.linalg.norm(grad(w.φ), axis=0)
+        return φ_grad_norm * v
 
-    K = skfem.asm(a_weno_like, basis_s, grad_phi=grad_φ)
+    φ_grad_norm = skfem.asm(
+        linar_φ_grad_norm, basis_s, φ=basis_s.interpolate(φ)
+    )
+    sign_φ0 = φ0 / np.sqrt(φ0**2 + eps**2)
+
+    K = skfem.asm(a_weno_like, basis_s, φ_grad_norm=φ_grad_norm)
     M = skfem.asm(lambda u, v, w: u*v, basis_s)
     rhs = skfem.asm(
-        rhs_reinit_weno, basis_s, sign_phi0=sign_phi0, grad_norm=grad_norm
+        rhs_reinit_weno, basis_s, sign_φ0=sign_φ0, grad_norm=φ_grad_norm
     )
 
     dt = 1e-3
@@ -210,22 +248,131 @@ def test_ReInit_WENO_like(basis_s, φ, φ0):
     return phi_new
 
 
+def HJ_RK4_rhs(
+    Emax, nu, basis_v, basis_s, λ, u, q, φ
+):
+
+    dJ, dVol, φ_grad_norm = test_assembling(
+        Emax, nu, basis_v, basis_s, u, q, φ
+    )
+    velocity = - (dJ + λ * dVol * φ_grad_norm)
+    return velocity
+
+
+def HJ_RK4(
+    Emax, nu, basis_v, basis_s, λ, u, q,
+    φ,
+    dt
+):
+    k1 = HJ_RK4_rhs(
+        Emax, nu, basis_v, basis_s, λ, u, q,
+        φ
+    )
+    k2 = HJ_RK4_rhs(
+        Emax, nu, basis_v, basis_s, λ, u, q,
+        φ - 0.5 * dt * k1
+    )
+    k3 = HJ_RK4_rhs(
+        Emax, nu, basis_v, basis_s, λ, u, q,
+        φ - 0.5 * dt * k2
+    )
+    k4 = HJ_RK4_rhs(
+        Emax, nu, basis_v, basis_s, λ, u, q,
+        φ - dt * k3
+    )
+    return φ - dt / 6 * (k1 + 2*k2 + 2*k3 + k4)
+
+
+def REINIT_RK4_rhs(basis_s, φ0, φ, eps: float = 1e-4):
+    grad_φ = basis_s.interpolate(φ).grad
+    φ_grad_norm = np.sqrt(np.sum(grad_φ**2, axis=0))
+    sign_φ0 = φ0 / np.sqrt(φ0**2 + eps**2)  # smooth sign
+    return - sign_φ0 * (φ_grad_norm - 1.0)
+
+
+def REINIT_RK4(
+    basis_s, φ0, φ, dt,
+    max_iters: int = 5
+):
+    for loop in range(max_iters):
+        k1 = REINIT_RK4_rhs(
+            basis_s, φ0,
+            φ
+        )
+        k2 = REINIT_RK4_rhs(
+            basis_s, φ0,
+            φ - 0.5 * dt * k1
+        )
+        k3 = REINIT_RK4_rhs(
+            basis_s, φ0,
+            φ - 0.5 * dt * k2
+        )
+        k4 = REINIT_RK4_rhs(
+            basis_s, φ0,
+            φ - dt * k3
+        )
+        φ = φ - dt / 6 * (k1 + 2*k2 + 2*k3 + k4)
+    return φ
+
+
 if __name__ == '__main__':
-    
-    lam, mu, mesh, basis_v, basis_s, u = test_fem()
-    φ = np.zeros(u.shape[0] // 3)
+
+    x_len, y_len, z_len = 8.0, 1.0, 1.0
+    element_size = 0.1
+    e_v = skfem.ElementVector(skfem.ElementHex1())
+    e_s = skfem.ElementHex1()
+    mesh = sktopt.mesh.toy_problem.create_box_hex(
+        x_len, y_len, z_len, element_size
+    )
+    Emax = 210e9
+    Emin = Emax * 1e-4
+    nu = 0.3
+    basis_v = skfem.Basis(mesh, e_v, intorder=2)
+    basis_s = skfem.Basis(mesh, e_s, intorder=2)
+
+    def is_dirichlet_surface(x):
+        return x[0] == 0.0
+
+    def is_force_surface(x):
+        return x[0] == x_len
+
+    φ = np.ones(mesh.p.shape[1])
+
+    u = test_fem(
+        mesh, basis_v, basis_s,
+        is_dirichlet_surface,
+        is_force_surface,
+        φ,
+        Emax=Emax, Emin=Emin, nu=nu
+    )
     q = -u.copy()
-    # V = np.ones_like(u)
-    # V = np.ones(basis_v.mesh.t.shape[1])
-    V = np.ones(u.shape[0] // 3)
 
-    test_assembling(lam, mu, mesh, basis_v, basis_s, u, φ, q)
-    test_HJ_WENO_like(basis_s, φ, V)
+    # dJ, dVol, φ_grad_norm = test_assembling(
+    #     Emax, nu, basis_v, basis_s, u, q, φ
+    # )
 
-    n_iter = 10
+    λ = 0.0
+    dt = 1e-5
+    φ_updated = HJ_RK4(
+        Emax, nu, basis_v, basis_s, λ, u, q,
+        φ,
+        dt
+    )
+
     φ0 = φ.copy()
-    φ = φ.copy()
-    for _ in range(n_iter):
-        φ = test_ReInit_WENO_like(basis_s, φ, φ0)
+    φ_updated = REINIT_RK4(
+        Emax, nu, basis_v, basis_s, λ, u, q,
+        φ0,
+        φ,
+        dt
+    )
+
+    # test_HJ_WENO_like(basis_s, φ, V)
+
+    # n_iter = 3
+    # φ0 = φ.copy()
+    # φ = φ.copy()
+    # for _ in range(n_iter):
+    #     φ = test_ReInit_WENO_like(basis_s, φ, φ0)
 
     # φ = test_ReInit_WENO_like(basis_s, φ)
