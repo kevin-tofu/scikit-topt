@@ -366,13 +366,3 @@ if __name__ == '__main__':
         φ,
         dt
     )
-
-    # test_HJ_WENO_like(basis_s, φ, V)
-
-    # n_iter = 3
-    # φ0 = φ.copy()
-    # φ = φ.copy()
-    # for _ in range(n_iter):
-    #     φ = test_ReInit_WENO_like(basis_s, φ, φ0)
-
-    # φ = test_ReInit_WENO_like(basis_s, φ)
