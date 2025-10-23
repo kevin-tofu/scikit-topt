@@ -15,7 +15,7 @@ from sktopt.core import derivatives, projection
 from sktopt.core import visualization
 from sktopt.mesh import visualization as visualization_mesh
 from sktopt.fea import solver
-from sktopt import filter
+from sktopt import filters
 from sktopt.fea import composer
 from sktopt.core import misc
 from sktopt.tools.logconf import mylogger

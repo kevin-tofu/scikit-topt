@@ -1,5 +1,5 @@
-from sktopt.filter.helmholtz import SpacialFilter
-from sktopt.filter.helmholtz import HelmholtzFilter
+from sktopt.filters.spacial import SpacialFilter
+from sktopt.filters.helmholtz import HelmholtzFilter
 
 
 __all__ = [
