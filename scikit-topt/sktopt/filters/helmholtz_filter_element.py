@@ -8,8 +8,10 @@ from scipy.sparse import coo_matrix, csc_matrix
 from scipy.sparse.linalg import splu
 from scipy.sparse.linalg import cg
 from scipy.sparse.linalg import LinearOperator
+
 import pyamg
 import skfem
+from sktopt.filters.base import BaseFilter
 
 
 def compute_tet_volumes(mesh):
@@ -427,7 +429,6 @@ def apply_filter_gradient_amg(
 def _update_radius(
     mesh: skfem.Mesh,
     radius: float,
-    dst_path: Optional[str] = None,
     design_mask: Optional[np.ndarray] = None
 ):
     exclude_nonadjacent = False if design_mask is None else True
@@ -436,20 +437,19 @@ def _update_radius(
         design_elements_mask=design_mask,
         exclude_nonadjacent=exclude_nonadjacent
     )
-    if isinstance(dst_path, str):
-        scipy.sparse.save_npz(f"{dst_path}/V.npz", V)
-        scipy.sparse.save_npz(f"{dst_path}/A.npz", A)
+    # if isinstance(dst_path, str):
+    #     scipy.sparse.save_npz(f"{dst_path}/V.npz", V)
+    #     scipy.sparse.save_npz(f"{dst_path}/A.npz", A)
 
     return A, V
 
 
 @dataclass
-class HelmholtzFilter():
-    A: csc_matrix
-    V: csc_matrix
-    radius: float
-    dst_path: Optional[str] = None
+class HelmholtzFilterElement(BaseFilter):
+    A: Optional[csc_matrix]=None
+    V: Optional[csc_matrix]=None
     solver_option: Literal["spsolve", "cg_jacobi", "cg_pyamg"] = "cg_jacobi"
+    dst_path: Optional[str] = None
     A_solver: Optional[scipy.sparse.linalg.SuperLU] = None
     M: Optional[LinearOperator] = None
     pyamg_solver: Optional[pyamg.multilevel.MultilevelSolver] = None
@@ -458,53 +458,48 @@ class HelmholtzFilter():
 
     def update_radius(
         self,
-        mesh: skfem.Mesh,
-        radius: float,
-        design_mask: Optional[np.ndarray] = None,
-        solver_option="cg_pyamg"
+        radius: float
     ):
         self.radius = radius
         self.A, self.V = _update_radius(
-            mesh=mesh,
+            mesh=self.mesh,
             radius=radius,
-            dst_path=self.dst_path,
-            design_mask=design_mask
+            design_mask=self.design_mask
         )
-        self.preprocess(solver_option)
+        self.preprocess(self.solver_option)
 
     @classmethod
     def from_defaults(
         cls,
         mesh: skfem.Mesh,
-        radius: float=1.0,
+        elements_volume: np.ndarray,
+        radius: float = 0.3,
+        design_mask: Optional[np.ndarray] = None,
         solver_option: Literal[
             "spsolve", "cg_jacobi", "cg_pyamg"] = "cg_pyamg",
-        dst_path: Optional[str] = None,
-        design_mask: Optional[np.ndarray] = None,
     ):
         A, V = _update_radius(
             mesh=mesh,
             radius=radius,
-            dst_path=dst_path,
             design_mask=design_mask
         )
         ret = cls(
-            A=A, V=V, radius=radius, dst_path=dst_path,
-            solver_option=solver_option
+            mesh=mesh, elements_volume=elements_volume,
+            A=A, V=V, radius=radius, design_mask=design_mask,
+            solver_option=solver_option,
         )
-        print(f"preprocess : {solver_option}")
+        # print(f"preprocess : {solver_option}")
         ret.preprocess(solver_option)
         print(ret.solver_option)
         return ret
 
-    @classmethod
-    def from_file(cls, dst_path: str):
-        V = scipy.sparse.load_npz(f"{dst_path}/V.npz")
-        A = scipy.sparse.load_npz(f"{dst_path}/A.npz")
-        # A_solver = splu(A)
-        return cls(A, V, radius=-1)
+    # @classmethod
+    # def from_file(cls, dst_path: str):
+    #     V = scipy.sparse.load_npz(f"{dst_path}/V.npz")
+    #     A = scipy.sparse.load_npz(f"{dst_path}/A.npz")
+    #     return cls(A, V, radius=-1)
 
-    def filter(self, rho_element: np.ndarray):
+    def forward(self, rho_element: np.ndarray):
         if self.solver_option == "spsolve":
             return apply_helmholtz_filter_lu(
                 rho_element, self.A_solver, self.V
@@ -586,3 +581,55 @@ class HelmholtzFilter():
         # import pyamg
         # ml = pyamg.ruge_stuben_solver(A)
         # x = ml.solve(b, tol=1e-8)
+
+
+
+def test_main():
+
+    import sktopt
+    from sktopt.fea import composer
+    x_len, y_len, z_len = 1.0, 1.0, 1.0
+    element_size = 0.1
+    e = skfem.ElementVector(skfem.ElementHex1())
+    mesh = sktopt.mesh.toy_problem.create_box_hex(
+        x_len, y_len, z_len, element_size
+    )
+    elements_volume = composer.get_elements_volume(mesh)
+
+    filter_0 = HelmholtzFilterElement.from_defaults(
+        mesh, elements_volume=elements_volume, radius=0.04
+    )
+    filter_1 = HelmholtzFilterElement.from_defaults(
+        mesh, elements_volume=elements_volume, radius=0.08
+    )
+    rho = np.random.rand(mesh.t.shape[1])
+    rho_0 = np.copy(rho)
+    for loop in range(1, 21):
+        rho_0 = filter_0.forward(rho_0)
+        rho_var = np.var(rho_0)
+        print(f"loop: {loop} rho_var: {rho_var:04f}")
+
+    rho_1 = np.copy(rho)
+    for loop in range(1, 21):
+        rho_1 = filter_1.forward(rho_1)
+        rho_var = np.var(rho_1)
+        print(f"loop: {loop} rho_var: {rho_var:04f}")
+
+    #
+    # compare analytic gradient with numeric
+    #
+    eps = 1e-6
+    v = np.random.rand(mesh.t.shape[1])
+    v_grad = filter_0.gradient(v)
+
+    # finite-diff check
+    fwd1 = filter_0.forward(rho + eps * v)
+    fwd2 = filter_0.forward(rho - eps * v)
+    fd = (fwd1 - fwd2) / (2 * eps)
+
+    print("dot(fd, v) =", np.dot(fd, v))
+    print("dot(grad, v) =", np.dot(v_grad, v))
+
+
+if __name__ == '__main__':
+    test_main()
