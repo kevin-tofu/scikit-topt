@@ -476,8 +476,7 @@ class DensityMethod(DensityMethodBase):
         #         self.cfg.filter_radius.init_value,
         #         design_mask=self.tsk.design_mask,
         #         solver_option="cg_pyamg",
-        #         # solver_option=self.cfg.solver_option,
-            )
+        #     )
         else:
             raise ValueError("should be spacial or helmholtz")
 
