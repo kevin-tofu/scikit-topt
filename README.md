@@ -187,7 +187,7 @@ If you use Scikit Topt in your research or software, please cite it as:
   publisher    = {Zenodo},
   doi          = {10.5281/zenodo.15441499},
   url          = {https://doi.org/10.5281/zenodo.15441499},
-  note         = {Version 0.2.12}
+  note         = {Version 0.2.13}
 }
 ```
 
@@ -201,4 +201,3 @@ If you use Scikit Topt in your research or software, please cite it as:
   - MMA
 - Add Multiple BC Conditions
 - Add Constraint for Rotation
-- Add Helmholtz filter for Nodal and distance filter
