@@ -49,7 +49,7 @@ def add_common_arguments(
         '--max_iters', '-NI', type=int, default=200, help=''
     )
     parser.add_argument(
-        '--filter_type', '-FT', type=str, default="helmholtz_nodal", help=''
+        '--filter_type', '-FT', type=str, default="helmholtz", help=''
     )
     parser.add_argument(
         '--filter_radius_init', '-FRI', type=float, default=0.2, help=''

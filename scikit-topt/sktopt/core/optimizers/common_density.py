@@ -133,8 +133,8 @@ class DensityMethodConfig():
         )
     )
     filter_type: Literal[
-        "spacial", "helmholtz_nodal", "helmholtz_element"
-    ] = "helmholtz_nodal"
+        "spacial", "helmholtz"
+    ] = "helmholtz"
     filter_radius: tools.SchedulerConfig = field(
         default_factory=lambda: tools.SchedulerConfig.constant(
             target_value=0.2
@@ -464,19 +464,19 @@ class DensityMethod(DensityMethodBase):
                 self.cfg.filter_radius.init_value,
                 design_mask=self.tsk.design_mask,
             )
-        elif self.cfg.filter_type == "helmholtz_nodal":
+        elif self.cfg.filter_type == "helmholtz":
             self.filter = filters.HelmholtzFilterNodal.from_defaults(
                 self.tsk.mesh, self.tsk.elements_volume,
                 self.cfg.filter_radius.init_value,
                 design_mask=self.tsk.design_mask
             )
-        elif self.cfg.filter_type == "helmholtz_ele":
-            self.filter = filters.HelmholtzFilterElement.from_defaults(
-                self.tsk.mesh, self.tsk.elements_volume,
-                self.cfg.filter_radius.init_value,
-                design_mask=self.tsk.design_mask,
-                solver_option="cg_pyamg",
-                # solver_option=self.cfg.solver_option,
+        # elif self.cfg.filter_type == "helmholtz_ele":
+        #     self.filter = filters.HelmholtzFilterElement.from_defaults(
+        #         self.tsk.mesh, self.tsk.elements_volume,
+        #         self.cfg.filter_radius.init_value,
+        #         design_mask=self.tsk.design_mask,
+        #         solver_option="cg_pyamg",
+        #         # solver_option=self.cfg.solver_option,
             )
         else:
             raise ValueError("should be spacial or helmholtz")
