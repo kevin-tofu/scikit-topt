@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Literal
 from dataclasses import dataclass
 
 import numpy as np
@@ -85,9 +85,11 @@ def element_to_node_density_averaging(
 
 
 def solve_helmholtz(
+    case: Literal["forward", "gradient"],
     mesh: skfem.Mesh, rho_node: np.ndarray,
-    r_min: float, design_mask: Optional[np.ndarray] = None
+    r_min: float, design_mask: Optional[np.ndarray] = None,
 ):
+    const_value = 1.0 if case == "forward" else -1e-15
     basis = skfem.Basis(mesh, infer_element_from_mesh(mesh))
     elements = mesh.t.shape[1]
 
@@ -102,14 +104,15 @@ def solve_helmholtz(
 
     @skfem.LinearForm
     def L(v, w):
-        mask = design_mask[w.idx]
-        val = rho_field.value.copy()
-        val[~mask] = 1.0
-        return val * v
+        return rho_field * v
 
     A = skfem.asm(a, basis)
     b = skfem.asm(L, basis)
-    rho_filtered = spsolve(A, b)
+    fixed_nodes = np.unique(mesh.t[:, ~design_mask].ravel())
+    D = fixed_nodes
+    x0 = np.zeros(A.shape[0])
+    x0[fixed_nodes] = const_value
+    rho_filtered = skfem.solve(*skfem.condense(A, b, D=D, x=x0))
     return rho_filtered
 
 
@@ -142,6 +145,7 @@ class HelmholtzFilterNodal(BaseFilter):
         #     design_mask=self.design_mask
         # )
         rho_node_filtered = solve_helmholtz(
+            "forward",
             self.mesh, rho_node, r_min=self.radius,
             design_mask=self.design_mask
         )
@@ -160,6 +164,7 @@ class HelmholtzFilterNodal(BaseFilter):
         )
 
         v_node_filtered = solve_helmholtz(
+            "gradient",
             self.mesh,
             v_node,
             r_min=self.radius,

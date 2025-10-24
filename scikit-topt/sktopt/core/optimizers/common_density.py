@@ -20,6 +20,8 @@ from sktopt.fea import composer
 from sktopt.core import misc
 from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
+import logging
+logging.getLogger("skfem").setLevel(logging.WARNING)
 
 
 @dataclass
@@ -131,8 +133,8 @@ class DensityMethodConfig():
         )
     )
     filter_type: Literal[
-        "spacial", "helmholtz_nodal", "helmholtz_element"
-    ] = "helmholtz_nodal"
+        "spacial", "helmholtz"
+    ] = "helmholtz"
     filter_radius: tools.SchedulerConfig = field(
         default_factory=lambda: tools.SchedulerConfig.constant(
             target_value=0.2
@@ -229,7 +231,7 @@ class DensityMethod_OC_Config(DensityMethodConfig):
     lambda_lower: float = 1e-7
     lambda_upper: float = 1e+7
     percentile: tools.SchedulerConfig = field(
-        default_factory=lambda: tools.SchedulerConfig.none( )
+        default_factory=lambda: tools.SchedulerConfig.none()
     )
     move_limit: tools.SchedulerConfig = field(
         default_factory=lambda: tools.SchedulerConfig.sawtooth_decay(
@@ -462,19 +464,19 @@ class DensityMethod(DensityMethodBase):
                 self.cfg.filter_radius.init_value,
                 design_mask=self.tsk.design_mask,
             )
-        elif self.cfg.filter_type == "helmholtz_nodal":
+        elif self.cfg.filter_type == "helmholtz":
             self.filter = filters.HelmholtzFilterNodal.from_defaults(
                 self.tsk.mesh, self.tsk.elements_volume,
                 self.cfg.filter_radius.init_value,
                 design_mask=self.tsk.design_mask
             )
-        elif self.cfg.filter_type == "helmholtz_ele":
-            self.filter = filters.HelmholtzFilterElement.from_defaults(
-                self.tsk.mesh, self.tsk.elements_volume,
-                self.cfg.filter_radius.init_value,
-                design_mask=self.tsk.design_mask,
-                solver_option="cg_pyamg",
-                # solver_option=self.cfg.solver_option,
+        # elif self.cfg.filter_type == "helmholtz_ele":
+        #     self.filter = filters.HelmholtzFilterElement.from_defaults(
+        #         self.tsk.mesh, self.tsk.elements_volume,
+        #         self.cfg.filter_radius.init_value,
+        #         design_mask=self.tsk.design_mask,
+        #         solver_option="cg_pyamg",
+        #         # solver_option=self.cfg.solver_option,
             )
         else:
             raise ValueError("should be spacial or helmholtz")
@@ -732,11 +734,11 @@ class DensityMethod(DensityMethodBase):
                 logger.info("--- sensitivity filter ---")
                 filtered = self.filter.forward(dC_drho_full)
                 np.copyto(dC_drho_full, filtered)
+
             dC_drho_design_eles[:] = dC_drho_full[tsk.design_elements]
             rho_design_eles[:] = rho[tsk.design_elements]
             logger.info("--- update density ---")
             self.rho_update(
-                # iter_num,
                 iter_num,
                 rho_design_eles,
                 rho_projected,
