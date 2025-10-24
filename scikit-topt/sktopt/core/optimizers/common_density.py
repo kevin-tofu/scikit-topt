@@ -130,7 +130,9 @@ class DensityMethodConfig():
             curvature=2.0
         )
     )
-    filter_type: Literal["spacial", "helmholtz_ele", "helmholtz_nodal"] = "spacial"
+    filter_type: Literal[
+        "spacial", "helmholtz_nodal", "helmholtz_element"
+    ] = "helmholtz_nodal"
     filter_radius: tools.SchedulerConfig = field(
         default_factory=lambda: tools.SchedulerConfig.constant(
             target_value=0.2
@@ -461,9 +463,13 @@ class DensityMethod(DensityMethodBase):
                 design_mask=self.tsk.design_mask,
             )
         elif self.cfg.filter_type == "helmholtz_nodal":
-            raise NotImplementedError("helmholtz_nodal")
+            self.filter = filters.HelmholtzFilterNodal.from_defaults(
+                self.tsk.mesh, self.tsk.elements_volume,
+                self.cfg.filter_radius.init_value,
+                design_mask=self.tsk.design_mask
+            )
         elif self.cfg.filter_type == "helmholtz_ele":
-            self.filter = filters.HelmholtzFilter_ele.from_defaults(
+            self.filter = filters.HelmholtzFilterElement.from_defaults(
                 self.tsk.mesh, self.tsk.elements_volume,
                 self.cfg.filter_radius.init_value,
                 design_mask=self.tsk.design_mask,
@@ -474,7 +480,7 @@ class DensityMethod(DensityMethodBase):
             raise ValueError("should be spacial or helmholtz")
 
     def load_parameters(self):
-        # self.filter = filters.HelmholtzFilter_ele.from_file(
+        # self.filter = filters.HelmholtzFilterElement.from_file(
         #     f"{self.cfg.dst_path}/data"
         # )
         pass

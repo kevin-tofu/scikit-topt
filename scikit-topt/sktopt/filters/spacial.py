@@ -196,3 +196,18 @@ if __name__ == '__main__':
         rho_1 = filter_1.forward(rho_1)
         rho_var = np.var(rho_1)
         print(f"loop: {loop} rho_var: {rho_var:04f}")
+
+    #
+    # compare analytic gradient with numeric
+    #
+    eps = 1e-6
+    v = np.random.rand(mesh.t.shape[1])
+    v_grad = filter_0.gradient(v)
+
+    # finite-diff check
+    fwd1 = filter_0.forward(rho + eps * v)
+    fwd2 = filter_0.forward(rho - eps * v)
+    fd = (fwd1 - fwd2) / (2 * eps)
+
+    print("dot(fd, v) =", np.dot(fd, v))
+    print("dot(grad, v) =", np.dot(v_grad, v))

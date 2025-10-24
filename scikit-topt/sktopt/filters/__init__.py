@@ -1,9 +1,10 @@
 from sktopt.filters.spacial import SpacialFilter
-# from sktopt.filters.helmholtz_nodal import HelmholtzFilter_nodal
-from sktopt.filters.helmholtz_ele import HelmholtzFilter_ele
+from sktopt.filters.helmholtz_filter_nodal import HelmholtzFilterNodal
+from sktopt.filters.helmholtz_filter_element import HelmholtzFilterElement
 
 
 __all__ = [
     "SpacialFilter",
-    "HelmholtzFilter_ele",
+    "HelmholtzFilterNodal",
+    "HelmholtzFilterElement",
 ]

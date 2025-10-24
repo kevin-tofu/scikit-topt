@@ -84,7 +84,10 @@ def element_to_node_density_averaging(
 #     return rho_node
 
 
-def solve_helmholtz(mesh, rho_node, r_min, design_mask=None):
+def solve_helmholtz(
+    mesh: skfem.Mesh, rho_node: np.ndarray,
+    r_min: float, design_mask: Optional[np.ndarray] = None
+):
     basis = skfem.Basis(mesh, infer_element_from_mesh(mesh))
     elements = mesh.t.shape[1]
 
@@ -111,7 +114,7 @@ def solve_helmholtz(mesh, rho_node, r_min, design_mask=None):
 
 
 @dataclass
-class HelmholtzFilter_nodal(BaseFilter):
+class HelmholtzFilterNodal(BaseFilter):
 
     def update_radius(
         self,
@@ -126,7 +129,7 @@ class HelmholtzFilter_nodal(BaseFilter):
         mesh: skfem.Mesh, elements_volume: np.ndarray,
         radius: float = 0.3,
         design_mask: Optional[np.ndarray] = None
-    ) -> 'HelmholtzFilter_nodal':
+    ) -> 'HelmholtzFilterNodal':
         return cls(mesh, elements_volume, radius, design_mask)
 
     def forward(self, rho_element: np.ndarray):
@@ -139,7 +142,8 @@ class HelmholtzFilter_nodal(BaseFilter):
         #     design_mask=self.design_mask
         # )
         rho_node_filtered = solve_helmholtz(
-            self.mesh, rho_node, r_min=self.radius
+            self.mesh, rho_node, r_min=self.radius,
+            design_mask=self.design_mask
         )
         rho_elem_filtered = node_to_element_density(
             self.mesh, rho_node_filtered
@@ -147,10 +151,30 @@ class HelmholtzFilter_nodal(BaseFilter):
         return rho_elem_filtered
 
     def gradient(self, v: np.ndarray) -> np.ndarray:
-        return np.array()
+        v_node = element_to_node_density_averaging(
+            self.mesh,
+            self.elements_volume,
+            v,
+            design_mask=self.design_mask,
+            weighted=True,
+        )
+
+        v_node_filtered = solve_helmholtz(
+            self.mesh,
+            v_node,
+            r_min=self.radius,
+            design_mask=self.design_mask
+        )
+
+        v_elem_filtered = node_to_element_density(
+            self.mesh,
+            v_node_filtered,
+        )
+
+        return v_elem_filtered
 
 
-if __name__ == '__main__':
+def test_main():
 
     import logging
     logging.getLogger("skfem").setLevel(logging.WARNING)
@@ -164,10 +188,10 @@ if __name__ == '__main__':
     )
     elements_volume = composer.get_elements_volume(mesh)
 
-    filter_0 = HelmholtzFilter_nodal.from_defaults(
+    filter_0 = HelmholtzFilterNodal.from_defaults(
         mesh, elements_volume=elements_volume, radius=0.04
     )
-    filter_1 = HelmholtzFilter_nodal.from_defaults(
+    filter_1 = HelmholtzFilterNodal.from_defaults(
         mesh, elements_volume=elements_volume, radius=0.08
     )
     rho = np.random.rand(mesh.t.shape[1])
@@ -182,3 +206,22 @@ if __name__ == '__main__':
         rho_1 = filter_1.forward(rho_1)
         rho_var = np.var(rho_1)
         print(f"loop: {loop} rho_var: {rho_var:04f}")
+
+    #
+    # compare analytic gradient with numeric
+    #
+    eps = 1e-6
+    v = np.random.rand(mesh.t.shape[1])
+    v_grad = filter_0.gradient(v)
+
+    # finite-diff check
+    fwd1 = filter_0.forward(rho + eps * v)
+    fwd2 = filter_0.forward(rho - eps * v)
+    fd = (fwd1 - fwd2) / (2 * eps)
+
+    print("dot(fd, v) =", np.dot(fd, v))
+    print("dot(grad, v) =", np.dot(v_grad, v))
+
+
+if __name__ == '__main__':
+    test_main()

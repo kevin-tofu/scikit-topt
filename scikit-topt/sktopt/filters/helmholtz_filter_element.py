@@ -445,7 +445,7 @@ def _update_radius(
 
 
 @dataclass
-class HelmholtzFilter(BaseFilter):
+class HelmholtzFilterElement(BaseFilter):
     A: Optional[csc_matrix]=None
     V: Optional[csc_matrix]=None
     solver_option: Literal["spsolve", "cg_jacobi", "cg_pyamg"] = "cg_jacobi"
@@ -581,3 +581,55 @@ class HelmholtzFilter(BaseFilter):
         # import pyamg
         # ml = pyamg.ruge_stuben_solver(A)
         # x = ml.solve(b, tol=1e-8)
+
+
+
+def test_main():
+
+    import sktopt
+    from sktopt.fea import composer
+    x_len, y_len, z_len = 1.0, 1.0, 1.0
+    element_size = 0.1
+    e = skfem.ElementVector(skfem.ElementHex1())
+    mesh = sktopt.mesh.toy_problem.create_box_hex(
+        x_len, y_len, z_len, element_size
+    )
+    elements_volume = composer.get_elements_volume(mesh)
+
+    filter_0 = HelmholtzFilterElement.from_defaults(
+        mesh, elements_volume=elements_volume, radius=0.04
+    )
+    filter_1 = HelmholtzFilterElement.from_defaults(
+        mesh, elements_volume=elements_volume, radius=0.08
+    )
+    rho = np.random.rand(mesh.t.shape[1])
+    rho_0 = np.copy(rho)
+    for loop in range(1, 21):
+        rho_0 = filter_0.forward(rho_0)
+        rho_var = np.var(rho_0)
+        print(f"loop: {loop} rho_var: {rho_var:04f}")
+
+    rho_1 = np.copy(rho)
+    for loop in range(1, 21):
+        rho_1 = filter_1.forward(rho_1)
+        rho_var = np.var(rho_1)
+        print(f"loop: {loop} rho_var: {rho_var:04f}")
+
+    #
+    # compare analytic gradient with numeric
+    #
+    eps = 1e-6
+    v = np.random.rand(mesh.t.shape[1])
+    v_grad = filter_0.gradient(v)
+
+    # finite-diff check
+    fwd1 = filter_0.forward(rho + eps * v)
+    fwd2 = filter_0.forward(rho - eps * v)
+    fd = (fwd1 - fwd2) / (2 * eps)
+
+    print("dot(fd, v) =", np.dot(fd, v))
+    print("dot(grad, v) =", np.dot(v_grad, v))
+
+
+if __name__ == '__main__':
+    test_main()
