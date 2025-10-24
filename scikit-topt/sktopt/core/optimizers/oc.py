@@ -61,6 +61,7 @@ def bisection_with_projection(
     iter_num = 0
     while abs(l2 - l1) > tolerance:
         lmid = 0.5 * (l1 + l2)
+        # must be dC < 0
         np.negative(dC, out=scaling_rate)
         scaling_rate /= (lmid + eps)
         np.power(scaling_rate, eta, out=scaling_rate)
@@ -74,7 +75,6 @@ def bisection_with_projection(
             rho_design_eles, rho_clip_lower, rho_clip_upper,
             out=rho_design_eles
         )
-
         projection.heaviside_projection_inplace(
             rho_design_eles, beta=beta, eta=beta_eta, out=rho_design_eles
         )

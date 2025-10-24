@@ -20,6 +20,8 @@ from sktopt.fea import composer
 from sktopt.core import misc
 from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
+import logging
+logging.getLogger("skfem").setLevel(logging.WARNING)
 
 
 @dataclass
@@ -229,7 +231,7 @@ class DensityMethod_OC_Config(DensityMethodConfig):
     lambda_lower: float = 1e-7
     lambda_upper: float = 1e+7
     percentile: tools.SchedulerConfig = field(
-        default_factory=lambda: tools.SchedulerConfig.none( )
+        default_factory=lambda: tools.SchedulerConfig.none()
     )
     move_limit: tools.SchedulerConfig = field(
         default_factory=lambda: tools.SchedulerConfig.sawtooth_decay(
@@ -732,11 +734,11 @@ class DensityMethod(DensityMethodBase):
                 logger.info("--- sensitivity filter ---")
                 filtered = self.filter.forward(dC_drho_full)
                 np.copyto(dC_drho_full, filtered)
+
             dC_drho_design_eles[:] = dC_drho_full[tsk.design_elements]
             rho_design_eles[:] = rho[tsk.design_elements]
             logger.info("--- update density ---")
             self.rho_update(
-                # iter_num,
                 iter_num,
                 rho_design_eles,
                 rho_projected,
