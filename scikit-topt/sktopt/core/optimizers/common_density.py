@@ -15,11 +15,13 @@ from sktopt.core import derivatives, projection
 from sktopt.core import visualization
 from sktopt.mesh import visualization as visualization_mesh
 from sktopt.fea import solver
-from sktopt import filter
+from sktopt import filters
 from sktopt.fea import composer
 from sktopt.core import misc
 from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
+import logging
+logging.getLogger("skfem").setLevel(logging.WARNING)
 
 
 @dataclass
@@ -130,9 +132,12 @@ class DensityMethodConfig():
             curvature=2.0
         )
     )
+    filter_type: Literal[
+        "spacial", "helmholtz"
+    ] = "helmholtz"
     filter_radius: tools.SchedulerConfig = field(
         default_factory=lambda: tools.SchedulerConfig.constant(
-            target_value=1.2
+            target_value=0.2
         )
     )
     E0: float = 210e9
@@ -226,7 +231,7 @@ class DensityMethod_OC_Config(DensityMethodConfig):
     lambda_lower: float = 1e-7
     lambda_upper: float = 1e+7
     percentile: tools.SchedulerConfig = field(
-        default_factory=lambda: tools.SchedulerConfig.none( )
+        default_factory=lambda: tools.SchedulerConfig.none()
     )
     move_limit: tools.SchedulerConfig = field(
         default_factory=lambda: tools.SchedulerConfig.sawtooth_decay(
@@ -446,40 +451,40 @@ class DensityMethod(DensityMethodBase):
                 -1,
                 self.cfg.max_iters
             )
-        # if "eta_init" in cfg.__dataclass_fields__:
-        #     self.schedulers.add(
-        #         "eta",
-        #         self.cfg.eta_init,
-        #         self.cfg.eta,
-        #         self.cfg.eta_step,
-        #         self.cfg.max_iters
-        #     )
-        # else:
-        #     self.schedulers.add(
-        #         "eta",
-        #         self.cfg.eta,
-        #         self.cfg.eta,
-        #         -1,
-        #         self.cfg.max_iters
-        #     )
         self.schedulers.set_iters_max(cfg.max_iters)
 
         if export:
             self.schedulers.export()
 
     def parameterize(self):
-        self.helmholz_solver = filter.HelmholtzFilter.from_defaults(
-            self.tsk.mesh,
-            self.cfg.filter_radius.init_value,
-            solver_option="cg_pyamg",
-            # solver_option=self.cfg.solver_option,
-            dst_path=f"{self.cfg.dst_path}/data",
-        )
+
+        if self.cfg.filter_type == "spacial":
+            self.filter = filters.SpacialFilter.from_defaults(
+                self.tsk.mesh, self.tsk.elements_volume,
+                self.cfg.filter_radius.init_value,
+                design_mask=self.tsk.design_mask,
+            )
+        elif self.cfg.filter_type == "helmholtz":
+            self.filter = filters.HelmholtzFilterNodal.from_defaults(
+                self.tsk.mesh, self.tsk.elements_volume,
+                self.cfg.filter_radius.init_value,
+                design_mask=self.tsk.design_mask
+            )
+        # elif self.cfg.filter_type == "helmholtz_ele":
+        #     self.filter = filters.HelmholtzFilterElement.from_defaults(
+        #         self.tsk.mesh, self.tsk.elements_volume,
+        #         self.cfg.filter_radius.init_value,
+        #         design_mask=self.tsk.design_mask,
+        #         solver_option="cg_pyamg",
+        #     )
+        else:
+            raise ValueError("should be spacial or helmholtz")
 
     def load_parameters(self):
-        self.helmholz_solver = filter.HelmholtzFilter.from_file(
-            f"{self.cfg.dst_path}/data"
-        )
+        # self.filter = filters.HelmholtzFilterElement.from_file(
+        #     f"{self.cfg.dst_path}/data"
+        # )
+        pass
 
     def initialize_density(self):
         tsk = self.tsk
@@ -652,9 +657,7 @@ class DensityMethod(DensityMethodBase):
         ) = self.initialize_params()
         elements_volume_design = tsk.elements_volume[tsk.design_elements]
         elements_volume_design_sum = np.sum(elements_volume_design)
-        self.helmholz_solver.update_radius(
-            tsk.mesh, filter_radius, solver_option="cg_pyamg"
-        )
+        self.filter.update_radius(filter_radius)
 
         # Loop 1 - N
         for iter_num in range(iter_begin, iter_end):
@@ -675,15 +678,13 @@ class DensityMethod(DensityMethodBase):
                 precision=6
             )
 
-            if filter_radius != self.helmholz_solver.radius:
+            if filter_radius != self.filter.radius:
                 logger.info("--- Filter Update ---")
-                self.helmholz_solver.update_radius(
-                    tsk.mesh, filter_radius, "cg_pyamg"
-                )
+                self.filter.update_radius(filter_radius)
 
             logger.info("--- project and filter ---")
             rho_prev[:] = rho[:]
-            rho_filtered[:] = self.helmholz_solver.filter(rho)
+            rho_filtered[:] = self.filter.forward(rho)
             projection.heaviside_projection_inplace(
                 rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
             )
@@ -725,18 +726,18 @@ class DensityMethod(DensityMethodBase):
                     beta=beta, eta=cfg.beta_eta, out=dH_drho
                 )
                 np.multiply(dC_drho_projected, dH_drho, out=grad_filtered)
-                dC_drho_full[:] += self.helmholz_solver.gradient(grad_filtered)
+                dC_drho_full[:] += self.filter.gradient(grad_filtered)
 
             dC_drho_full /= len(force_vec_list)
             if cfg.sensitivity_filter:
                 logger.info("--- sensitivity filter ---")
-                filtered = self.helmholz_solver.filter(dC_drho_full)
+                filtered = self.filter.forward(dC_drho_full)
                 np.copyto(dC_drho_full, filtered)
+
             dC_drho_design_eles[:] = dC_drho_full[tsk.design_elements]
             rho_design_eles[:] = rho[tsk.design_elements]
             logger.info("--- update density ---")
             self.rho_update(
-                # iter_num,
                 iter_num,
                 rho_design_eles,
                 rho_projected,

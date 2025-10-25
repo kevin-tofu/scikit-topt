@@ -201,3 +201,4 @@ If you use Scikit Topt in your research or software, please cite it as:
   - MMA
 - Add Multiple BC Conditions
 - Add Constraint for Rotation
+- Add Helmholtz filter for Nodal and distance filter

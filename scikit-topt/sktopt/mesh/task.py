@@ -166,6 +166,10 @@ class TaskConfig():
     elements_volume: np.ndarray
 
     @property
+    def design_mask(self):
+        return np.isin(self.all_elements, self.design_elements)
+
+    @property
     def mesh(self):
         return self.basis.mesh
 
@@ -428,7 +432,7 @@ class TaskConfig():
 
     @classmethod
     def from_mesh_tags(
-        cls, 
+        cls,
         E: float,
         nu: float,
         basis: skfem.Basis,
