@@ -125,7 +125,7 @@ def compute_compliance_basis(
 
 
 def solve_multi_load(
-    basis: skfem.CellBasis,
+    basis: skfem.Basis,
     free_dofs: np.ndarray,
     dirichlet_dofs: np.ndarray,
     force_list: list[np.ndarray],
@@ -216,7 +216,7 @@ def solve_multi_load(
 
 
 def compute_compliance_basis_multi_load(
-    basis: skfem.CellBasis,
+    basis: skfem.Basis,
     free_dofs: np.ndarray,
     dirichlet_dofs: np.ndarray,
     force_list: list[np.ndarray],
