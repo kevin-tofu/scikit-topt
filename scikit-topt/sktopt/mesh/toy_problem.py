@@ -78,7 +78,7 @@ def toy_base(
     F = -100.0
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=2)
-    return task.TaskConfig.from_facets(
+    return task.LinearElastisicity.from_facets(
         E0,
         0.30,
         basis,
@@ -107,8 +107,8 @@ def toy2():
     x_len = 8.0
     y_len = 8.0
     z_len = 1.0
-    mesh_size = 0.2
-    mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
+    mesh_size = 0.5
+    mesh = create_box_tet(x_len, y_len, z_len, mesh_size)
     dirichlet_in_range = utils.get_points_in_range(
         (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
@@ -129,10 +129,10 @@ def toy2():
     mesh = mesh.with_boundaries(boundaries)
     subdomains = {"design": np.array(range(mesh.nelements))}
     mesh = mesh.with_subdomains(subdomains)
-    e = skfem.ElementVector(skfem.ElementHex1())
+    e = skfem.ElementVector(skfem.ElementTetP1())
     basis = skfem.Basis(mesh, e, intorder=2)
     E0 = 210e9
-    return task.TaskConfig.from_mesh_tags(
+    return task.LinearElastisicity.from_mesh_tags(
         E0,
         0.30,
         basis,
@@ -239,7 +239,7 @@ def toy_msh(
     design_elements = basis.mesh.elements_satisfying(desing_in_range)
     print("generate config")
     E0 = 210e9
-    return task.TaskConfig.from_facets(
+    return task.LinearElastisicity.from_facets(
         E0,
         0.30,
         basis,

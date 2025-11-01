@@ -15,22 +15,22 @@
 ## Documentation
 [Scikit-topt Documentation](https://scikit-topt.readthedocs.io/en/latest/)
 
-## Examples and Fieatures
+## Examples and Features
 ### Example 1 : Single Load Condition
 <p align="center">
-  <img src="assets/ex-pull-down-0.gif" alt="Optimization Process Pull-Down-0" width="400" style="margin-right: 20px;">
-  <img src="assets/ex-pull-down-1.jpg" alt="Optimization Process Pull-Down-1" width="400">
+  <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-pull-down-0.gif" alt="Optimization Process Pull-Down-0" width="400" style="margin-right: 20px;">
+  <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-pull-down-1.jpg" alt="Optimization Process Pull-Down-1" width="400">
 </p>
 
 ### Example 2 : Multiple Load Condition
 <p align="center">
-  <img src="assets/ex-multi-load-condition.jpg" alt="multi-load-condition" width="400" style="margin-right: 20px;">
-  <img src="assets/ex-multi-load-v-50.jpg" alt="multi-load-condition-distribution" width="400">
+  <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg" alt="multi-load-condition" width="400" style="margin-right: 20px;">
+  <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg" alt="multi-load-condition-distribution" width="400">
 </p>
 
 ### Progress Report
 <p align="center">
-  <img src="assets/ex-progress-report.jpg" alt="multi-load-condition-progress" width="600">
+  <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-progress-report.jpg" alt="multi-load-condition-progress" width="600">
 </p>
 
 
@@ -49,15 +49,27 @@ The currently supported features are as follows:
 - has a function to monitor the transition of parameters.
 
 ## Usage
-### Install Package
+
+You can install **Scikit-Topt** either via **pip** or **Poetry**.
+
+**Choose one of the following methods:**
+
+### Using pip
 ```bash
 pip install scikit-topt
+```
+
+### Using poetry
+```bash
 poetry add scikit-topt
 ```
 
+### Optional: Enable off-screen rendering
 
-### How to define a task
+If you want to visualize the optimized density distribution with mesh as an image,
+you need to enable off-screen rendering using a virtual display.
 
+<<<<<<< HEAD
 ### Load Mesh file from file.
 ```Python
 import skfem
@@ -147,16 +159,39 @@ optimizer.optimize()
 
 
 ### Optimize Toy Problem with command line.
+=======
+On Debian/Ubuntu:
+>>>>>>> joss-review
 ```bash
-OMP_NUM_THREADS=3 OPENBLAS_NUM_THREADS=3  MKL_NUM_THREADS=3 PYTHONPATH=scikit-topt python ./scikit-topt/sktopt/core/optimizers/logmoc.py --dst_path ./result/toy2_moc 
- --interpolation SIMP  --vol_frac 0.40  --eta 0.8  --record_times 100  --max_iters 300  --mu_p 5  --task_name toy2  --solver_option spsolve  --rho_min 1e-2  --E0 210e9  --E_min 210e5  --design_dirichle
-t true
+sudo apt install xvfb libgl1-mesa-glx
 ```
 
+CentOS / RHL
+```bash
+sudo yum install xvfb libgl1-mesa-glx
+```
 
-## Optimization Algorithm
+## Usage
+ See examples in example directory and README.md.
+[README for Usage](https://github.com/kevin-tofu/scikit-topt/blob/joss-review/examples/README.md) 
+[Examples](https://github.com/kevin-tofu/scikit-topt/tree/joss-review/examples/tutorial) 
+
+## Algorithm for Optimization
 Optimization Algorithms and Techniques are briefly summarized here.  
 [Optimization Algorithms and Techniques](https://kevin-tofu.github.io/scikit-topt/optimization.html)
+
+
+## Contributing
+
+We are happy to welcome any contributions to the library.
+You can contribute in various ways:
+
+- Reporting bugs, opening pull requests, or starting discussions via [GitHub Issues](https://github.com/kevin-tofu/scikit-topt/issues)
+- Writing new [examples](https://github.com/kevin-tofu/scikit-topt/tree/joss-review/examples)
+- Improving the [tests](https://github.com/kevin-tofu/scikit-topt/tree/joss-review/tests)
+- Enhancing the documentation or code readability [doc](https://scikit-topt.readthedocs.io/en/latest/)
+
+By contributing code to **scikit-topt**, you agree to release it under the [Apache 2.0 License](https://github.com/kevin-tofu/scikit-topt/tree/master/LICENSE).
 
 
 ## Acknowledgements
@@ -197,8 +232,7 @@ If you use Scikit Topt in your research or software, please cite it as:
 - Add Level Set
 - Add other optimizers
   - Evolutionary Algorithms
-  - Phase Field
   - MMA
 - Add Multiple BC Conditions
 - Add Constraint for Rotation
-- Add Helmholtz filter for Nodal and distance filter
+- Add Unit Test

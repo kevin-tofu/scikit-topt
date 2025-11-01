@@ -74,7 +74,7 @@ Modified Optimality Criteria (MOC) Variants
 In density-based topology optimization, the Modified Optimality Criteria (MOC) method can be implemented in several ways. 
 One common idea is to reformulate the OC update in **log-space**, which improves numerical stability while preserving its multiplicative structure.
 
-1. Log-space Update Method
+Log-space Update Method
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This variant applies the OC update to the logarithm of the density rather than the density itself:

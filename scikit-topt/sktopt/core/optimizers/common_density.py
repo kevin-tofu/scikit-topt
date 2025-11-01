@@ -1,7 +1,7 @@
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from dataclasses import dataclass, asdict
+from dataclasses import asdict
 from typing import Literal
 import inspect
 import shutil
@@ -410,6 +410,9 @@ class DensityMethod(DensityMethodBase):
         recorder.add("compliance", ylog=True)
         recorder.add("scaling_rate", plot_type="min-max-mean-std")
         return recorder
+
+    def params_latest(self):
+        return self.recorder.as_object_latest()
 
     def scale(self):
         bbox = np.ptp(self.tsk.mesh.p, axis=1)

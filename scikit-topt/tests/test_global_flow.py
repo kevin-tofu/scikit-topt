@@ -2,7 +2,7 @@ import sktopt
 # import pytest
 
 
-def define_task() -> sktopt.mesh.task.TaskConfig:
+def define_task() -> sktopt.mesh.task.LinearElastisicity:
 
     import skfem
     x_len, y_len, z_len = 1.0, 1.0, 1.0
@@ -34,7 +34,7 @@ def define_task() -> sktopt.mesh.task.TaskConfig:
         mesh,
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
-    return sktopt.mesh.task.TaskConfig.from_defaults(
+    return sktopt.mesh.task.LinearElastisicity.from_defaults(
         210e9,
         0.30,
         basis,
@@ -47,16 +47,17 @@ def define_task() -> sktopt.mesh.task.TaskConfig:
     )
 
 
-def oc_optimize(tsk):
+def oc_optimize(tsk) -> sktopt.core.OC_Optimizer:
     cfg = sktopt.core.optimizers.OC_Config()
     cfg.max_iters = 1
     cfg.record_times = 1
     optimizer = sktopt.core.OC_Optimizer(cfg, tsk)
     optimizer.parameterize()
     optimizer.optimize()
+    return optimizer
 
 
-def logmoc_optimize(tsk):
+def logmoc_optimize(tsk) -> sktopt.core.LogMOC_Optimizer:
     cfg = sktopt.core.optimizers.LogMOC_Config(
         p=sktopt.tools.SchedulerConfig(
             init_value=1.0, target_value=3.0,
@@ -72,14 +73,24 @@ def logmoc_optimize(tsk):
     optimizer = sktopt.core.LogMOC_Optimizer(cfg, tsk)
     optimizer.parameterize()
     optimizer.optimize()
+    return optimizer
 
 
 def test_optimizers():
+    import numpy as np
+
     tsk1 = sktopt.mesh.toy_problem.toy_test()
-    oc_optimize(tsk1)
+    oc_optimizer = oc_optimize(tsk1)
+    result1 = oc_optimizer.recorder.as_object_latest()
+    result1 = oc_optimizer.recorder.as_object()
+    assert oc_optimizer is not None, "OC optimizer returned None"
+    assert np.isfinite(result1.compliance), "OC compliance must be finite"
 
     tsk2 = sktopt.mesh.toy_problem.toy2()
-    logmoc_optimize(tsk2)
+    moc_optimizer = logmoc_optimize(tsk2)
+    result2 = moc_optimizer.recorder.as_object()
+    assert moc_optimizer is not None, "LogMOC optimizer returned None"
+    assert np.isfinite(result2.compliance), "LogMOC compliance must be finite"
 
 
 if __name__ == "__main__":

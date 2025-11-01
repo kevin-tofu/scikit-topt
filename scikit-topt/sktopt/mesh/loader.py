@@ -15,13 +15,16 @@ def basis_from_file(
     cell_types = {cell.type for cell in mesh.cells}
 
     if "hexahedron" in cell_types:
-        mesh_skfem = skfem.MeshHex.load(_mesh_path).oriented()
+        mesh_skfem = skfem.MeshHex.load(_mesh_path)
         element = skfem.ElementVector(skfem.ElementHex1())
     elif "tetra" in cell_types:
-        mesh_skfem = skfem.MeshTet.load(_mesh_path).oriented()
+        mesh_skfem = skfem.MeshTet.load(_mesh_path)
         element = skfem.ElementVector(skfem.ElementTetP1())
     else:
         raise ValueError(f"Unsupported cell types: {cell_types}")
+
+    if hasattr(mesh_skfem, "mesh_skfem"):
+        mesh_skfem = mesh_skfem.oriented()
 
     basis = skfem.Basis(
         mesh_skfem, element,
