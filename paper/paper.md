@@ -25,7 +25,7 @@ This technique can be applied to a wide range of physical simulations, including
 Scikit-topt is a Python library that implements topology optimization algorithms. It provides tools for visualizing parameter transitions and optimization results, thereby facilitating algorithm tuning and comparative analysis of optimization strategies. The library is tested via GitHub Actions and includes documentation generated with Sphinx.
 Installation and usage instructions are available in the [GitHub repository](https://github.com/kevin-tofu/scikit-topt).
 
-This article describes version **v0.2.15** of *scikit-topt*.
+This article describes version **v0.2.16** of *scikit-topt*.
 
 
 # Statement of Need
