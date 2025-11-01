@@ -222,7 +222,7 @@ If you use Scikit Topt in your research or software, please cite it as:
   publisher    = {Zenodo},
   doi          = {10.5281/zenodo.15441499},
   url          = {https://doi.org/10.5281/zenodo.15441499},
-  note         = {Version 0.2.12}
+  note         = {Version 0.2.14}
 }
 ```
 
@@ -234,5 +234,4 @@ If you use Scikit Topt in your research or software, please cite it as:
   - Evolutionary Algorithms
   - MMA
 - Add Multiple BC Conditions
-- Add Constraint for Rotation
 - Add Unit Test
