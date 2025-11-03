@@ -74,7 +74,7 @@ def toy_base(
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
     design_elements = mesh.elements_satisfying(desing_in_range)
-    E0 = 210e9
+    E0 = 210e3
     F = -100.0
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=2)
@@ -131,7 +131,7 @@ def toy2():
     mesh = mesh.with_subdomains(subdomains)
     e = skfem.ElementVector(skfem.ElementTetP1())
     basis = skfem.Basis(mesh, e, intorder=2)
-    E0 = 210e9
+    E0 = 210e3
     return task.LinearElastisicity.from_mesh_tags(
         E0,
         0.30,
@@ -238,7 +238,7 @@ def toy_msh(
     )
     design_elements = basis.mesh.elements_satisfying(desing_in_range)
     print("generate config")
-    E0 = 210e9
+    E0 = 210e3
     return task.LinearElastisicity.from_facets(
         E0,
         0.30,

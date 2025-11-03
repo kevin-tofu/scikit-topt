@@ -325,14 +325,14 @@ def strain_energy_skfem_multi(
 class FEM_SimpLinearElastisicity():
     def __init__(
         self, task: LinearElastisicity,
-        E_max: float, E_min: float,
+        E_min_coeff: float,
         density_interpolation: Callable = composer.simp_interpolation,
         solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve",
         n_joblib: float = 1
     ):
         self.task = task
-        self.E_max = E_max
-        self.E_min = E_min
+        self.E_max = task.E * 1.0
+        self.E_min = task.E * E_min_coeff
         self.density_interpolation = density_interpolation
         self.solver_option = solver_option
         self.n_joblib = n_joblib

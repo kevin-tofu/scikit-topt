@@ -75,10 +75,8 @@ class DensityMethodConfig():
     filter_radius : tools.SchedulerConfig
         Schedule for filter radius. Default: Constant (target_value=1.2).
 
-    E0 : float
-        Young's modulus of the solid material.
-    E_min : float
-        Minimum Young's modulus for void regions.
+    E_min_coeff : float
+        A proportional constant that determines the minimum value of Young’s modulus.
     rho_min : float
         Minimum density clamp (avoids singular stiffness).
     rho_max : float
@@ -140,8 +138,7 @@ class DensityMethodConfig():
             target_value=0.2
         )
     )
-    E0: float = 210e9
-    E_min: float = 210e6
+    E_min_coeff: float = 1e-3
     rho_min: float = 1e-2
     rho_max: float = 1.0
     restart: bool = False
@@ -394,7 +391,7 @@ class DensityMethod(DensityMethodBase):
                 os.makedirs(f"{self.cfg.dst_path}/data")
 
         self.fem = solver.FEM_SimpLinearElastisicity(
-            tsk, cfg.E0, cfg.E_min,
+            tsk, cfg.E_min_coeff,
             density_interpolation=interpolation_funcs(cfg)[0],
             solver_option=cfg.solver_option,
             n_joblib=cfg.n_joblib
@@ -719,7 +716,8 @@ class DensityMethod(DensityMethodBase):
                     dC_drho_func(
                         rho_projected,
                         strain_energy[:, force_loop],
-                        cfg.E0, cfg.E_min, p
+                        self.tsk.E, self.tsk.E*cfg.E_min_coeff,
+                        p
                     )
                 )
                 projection.heaviside_projection_derivative_inplace(
