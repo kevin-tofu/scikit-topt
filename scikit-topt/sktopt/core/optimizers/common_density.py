@@ -135,7 +135,7 @@ class DensityMethodConfig():
     ] = "helmholtz"
     filter_radius: tools.SchedulerConfig = field(
         default_factory=lambda: tools.SchedulerConfig.constant(
-            target_value=0.2
+            target_value=0.01
         )
     )
     E_min_coeff: float = 1e-3

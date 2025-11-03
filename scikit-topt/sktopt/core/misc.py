@@ -52,10 +52,10 @@ def add_common_arguments(
         '--filter_type', '-FT', type=str, default="helmholtz", help=''
     )
     parser.add_argument(
-        '--filter_radius_init', '-FRI', type=float, default=0.2, help=''
+        '--filter_radius_init', '-FRI', type=float, default=0.01, help=''
     )
     parser.add_argument(
-        '--filter_radius', '-FR', type=float, default=0.05, help=''
+        '--filter_radius', '-FR', type=float, default=0.01, help=''
     )
     parser.add_argument(
         '--filter_radius_step', '-FRS', type=int, default=3, help=''
