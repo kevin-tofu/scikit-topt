@@ -393,6 +393,12 @@ class DensityMethod(DensityMethodBase):
             if not os.path.exists(f"{self.cfg.dst_path}/data"):
                 os.makedirs(f"{self.cfg.dst_path}/data")
 
+        self.fem = solver.FEM_SimpLinearElastisicity(
+            tsk, cfg.E0, cfg.E_min,
+            density_interpolation=interpolation_funcs(cfg)[0],
+            solver_option=cfg.solver_option,
+            n_joblib=cfg.n_joblib
+        )
         # self.recorder = self.add_recorder(tsk)
         self.schedulers = tools.Schedulers(self.cfg.dst_path)
 
@@ -697,19 +703,11 @@ class DensityMethod(DensityMethodBase):
             strain_energy_mean[:] = 0.0
             u_max = list()
 
-            compliance_avg = solver.compute_compliance_basis_multi_load(
-                tsk.basis, tsk.free_dofs, tsk.dirichlet_dofs, force_vec_list,
-                cfg.E0, cfg.E_min, p, tsk.nu,
-                rho_projected,
-                u_dofs,
-                elem_func=density_interpolation,
-                solver=cfg.solver_option,
-                n_joblib=cfg.n_joblib
+            compliance_avg = self.fem.compute_compliance_multi_load(
+                rho_projected, p, force_vec_list, u_dofs
             ).mean()
-            strain_energy = composer.strain_energy_skfem_multi(
-                tsk.basis, rho_projected, u_dofs,
-                cfg.E0, cfg.E_min, p, tsk.nu,
-                elem_func=density_interpolation
+            strain_energy = self.fem.strain_energy_skfem_multi_load(
+                rho_projected, p, u_dofs,
             )
             strain_energy_mean = strain_energy.mean(axis=1)
             for force_loop, _ in enumerate(force_vec_list):

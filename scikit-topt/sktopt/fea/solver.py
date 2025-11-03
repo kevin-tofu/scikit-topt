@@ -1,9 +1,18 @@
 from typing import Callable, Literal
+
 import numpy as np
 import scipy
 from scipy.sparse.linalg import LinearOperator
+
+
 import skfem
+from skfem.models.elasticity import lame_parameters
+from skfem import Functional
+from skfem.helpers import ddot, sym_grad, trace, eye
+from skfem.helpers import transpose
 import pyamg
+
+from sktopt.mesh import LinearElastisicity
 from sktopt.fea import composer
 from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
@@ -241,3 +250,117 @@ def compute_compliance_basis_multi_load(
     # compliance_total = np.sum(np.einsum('ij,ij->j', F_stack, u_all))
     compliance_each = np.einsum('ij,ij->j', F_stack, u_all)
     return compliance_each
+
+
+@Functional
+def _strain_energy_density_(w):
+    grad = w['uh'].grad  # shape: (3, 3, nelems, nqp)
+    symgrad = 0.5 * (grad + transpose(grad))  # same shape
+    tr = trace(symgrad)
+    I_mat = eye(tr, symgrad.shape[0])  # shape: (3, 3, nelems, nqp)
+    # mu, lam の shape: (nqp, nelems) → transpose to (nelems, nqp)
+    mu = w['mu_elem'].T  # shape: (nelems, nqp)
+    lam = w['lam_elem'].T  # shape: (nelems, nqp)
+    # reshape to enable broadcasting
+    mu = mu[None, None, :, :]  # → shape (1, 1, nelems, nqp)
+    lam = lam[None, None, :, :]  # same
+
+    stress = 2. * mu * symgrad + lam * I_mat  # shape-compatible now
+    return 0.5 * ddot(stress, symgrad)
+
+
+def strain_energy_skfem(
+    basis: skfem.Basis,
+    rho: np.ndarray, u: np.ndarray,
+    E0: float, Emin: float, p: float, nu: float,
+    elem_func: Callable = composer.simp_interpolation
+) -> np.ndarray:
+    uh = basis.interpolate(u)
+    E_elem = elem_func(rho, E0, Emin, p)
+    # shape: (nelements,)
+    lam_elem, mu_elem = lame_parameters(E_elem, nu)
+    n_qp = basis.X.shape[1]
+    # shape: (n_qp, n_elements)
+    lam_elem = np.tile(lam_elem, (n_qp, 1))
+    mu_elem = np.tile(mu_elem, (n_qp, 1))
+    elem_energy = _strain_energy_density_.elemental(
+        basis, uh=uh, lam_elem=lam_elem, mu_elem=mu_elem
+    )
+    return elem_energy
+
+
+def strain_energy_skfem_multi(
+    basis: skfem.Basis,
+    rho: np.ndarray,
+    U: np.ndarray,  # shape: (n_dof, n_loads)
+    E0: float, Emin: float, p: float, nu: float,
+    elem_func: Callable = composer.simp_interpolation
+) -> np.ndarray:
+    """
+    Compute strain energy density for multiple displacement fields.
+
+    Returns:
+        elem_energy_all: (n_elements, n_loads)
+    """
+    n_dof, n_loads = U.shape
+    n_elements = basis.mesh.nelements
+
+    E_elem = elem_func(rho, E0, Emin, p)
+    lam_elem, mu_elem = lame_parameters(E_elem, nu)
+    n_qp = basis.X.shape[1]
+    lam_elem = np.tile(lam_elem, (n_qp, 1))  # (n_qp, n_elements)
+    mu_elem = np.tile(mu_elem, (n_qp, 1))
+
+    elem_energy_all = np.zeros((n_elements, n_loads))
+    for i in range(n_loads):
+        uh = basis.interpolate(U[:, i])  # scalar/vector field per load case
+        elem_energy = _strain_energy_density_.elemental(
+            basis, uh=uh, lam_elem=lam_elem, mu_elem=mu_elem
+        )
+        elem_energy_all[:, i] = elem_energy
+
+    return elem_energy_all  # shape: (n_elements, n_loads)
+
+
+class FEM_SimpLinearElastisicity():
+    def __init__(
+        self, task: LinearElastisicity,
+        E_max: float, E_min: float,
+        density_interpolation: Callable = composer.simp_interpolation,
+        solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve",
+        n_joblib: float = 1
+    ):
+        self.task = task
+        self.E_max = E_max
+        self.E_min = E_min
+        self.density_interpolation = density_interpolation
+        self.solver_option = solver_option
+        self.n_joblib = n_joblib
+
+    def compute_compliance_multi_load(
+        self,
+        rho: np.ndarray, p: float, force_vec_list: list[np.ndarray],
+        u_dofs: np.ndarray
+    ) -> np.ndarray:
+
+        compliance_array = compute_compliance_basis_multi_load(
+            self.task.basis, self.task.free_dofs, self.task.dirichlet_dofs,
+            force_vec_list,
+            self.E_max, self.E_min, p, self.task.nu,
+            rho,
+            u_dofs,
+            elem_func=self.density_interpolation,
+            solver=self.solver_option,
+            n_joblib=self.n_joblib
+        )
+        return compliance_array
+
+    def strain_energy_skfem_multi_load(
+        self,
+        rho: np.ndarray, p: float, u_dofs: np.ndarray
+    ) -> np.ndarray:
+        return strain_energy_skfem_multi(
+            self.task.basis, rho, u_dofs,
+            self.E_max, self.E_min, p, self.task.nu,
+            elem_func=self.density_interpolation
+        )
