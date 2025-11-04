@@ -727,6 +727,8 @@ class DensityMethod(DensityMethodBase):
                 np.multiply(dC_drho_projected, dH_drho, out=grad_filtered)
                 dC_drho_full[:] += self.filter.gradient(grad_filtered)
 
+
+            # print(f"dC_drho_full min/max {dC_drho_full.min()} {dC_drho_full.max()}")
             dC_drho_full /= len(force_vec_list)
             if cfg.sensitivity_filter:
                 logger.info("--- sensitivity filter ---")

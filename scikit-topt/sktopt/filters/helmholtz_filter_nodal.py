@@ -33,6 +33,7 @@ def element_to_node_density_averaging(
     rho_elem: np.ndarray,
     design_mask: np.ndarray | None = None,
     weighted: bool = True,
+    fixed_value_for_design: float = 1.0
 ) -> np.ndarray:
     n_nodes = mesh.p.shape[1]
     rho_node = np.zeros(n_nodes)
@@ -44,7 +45,8 @@ def element_to_node_density_averaging(
         design_mask = np.ones(len(t), dtype=bool)
 
     for e, nodes in enumerate(t):
-        rho_val = rho_elem[e] if design_mask[e] else 1.0
+        rho_val = rho_elem[e] if design_mask[e] else fixed_value_for_design
+        # rho_val = rho_elem[e] if design_mask[e] else 0.0
         w = elements_volume[e] if weighted else 1.0
         rho_node[nodes] += w * rho_val
         wsum[nodes] += w
@@ -84,17 +86,50 @@ def element_to_node_density_averaging(
 #     return rho_node
 
 
+# def solve_helmholtz(
+#     case: Literal["forward", "gradient"],
+#     mesh: skfem.Mesh, rho_node: np.ndarray,
+#     r_min: float, design_mask: Optional[np.ndarray] = None,
+# ):
+#     const_value = 1.0 if case == "forward" else -1e-15
+#     basis = skfem.Basis(mesh, infer_element_from_mesh(mesh))
+#     elements = mesh.t.shape[1]
+
+#     if design_mask is None:
+#         design_mask = np.ones(elements, dtype=bool)
+
+#     rho_field = basis.interpolate(rho_node)
+
+#     @skfem.BilinearForm
+#     def a(u, v, w):
+#         return u * v + (r_min ** 2) * dot(grad(u), grad(v))
+
+#     @skfem.LinearForm
+#     def L(v, w):
+#         return rho_field * v
+
+#     A = skfem.asm(a, basis)
+#     b = skfem.asm(L, basis)
+#     fixed_nodes = np.unique(mesh.t[:, ~design_mask].ravel())
+#     D = fixed_nodes
+#     x0 = np.zeros(A.shape[0])
+#     x0[fixed_nodes] = const_value
+#     rho_filtered = skfem.solve(*skfem.condense(A, b, D=D, x=x0))
+#     return rho_filtered
+
+
 def solve_helmholtz(
     case: Literal["forward", "gradient"],
-    mesh: skfem.Mesh, rho_node: np.ndarray,
-    r_min: float, design_mask: Optional[np.ndarray] = None,
+    mesh: skfem.Mesh,
+    rho_node: np.ndarray,
+    r_min: float,
+    design_mask: Optional[np.ndarray] = None,
 ):
-    const_value = 1.0 if case == "forward" else -1e-15
     basis = skfem.Basis(mesh, infer_element_from_mesh(mesh))
-    elements = mesh.t.shape[1]
-
     if design_mask is None:
-        design_mask = np.ones(elements, dtype=bool)
+        fixed_nodes = np.array([], dtype=int)
+    else:
+        fixed_nodes = np.unique(mesh.t[:, ~design_mask].ravel())
 
     rho_field = basis.interpolate(rho_node)
 
@@ -108,12 +143,19 @@ def solve_helmholtz(
 
     A = skfem.asm(a, basis)
     b = skfem.asm(L, basis)
-    fixed_nodes = np.unique(mesh.t[:, ~design_mask].ravel())
-    D = fixed_nodes
-    x0 = np.zeros(A.shape[0])
-    x0[fixed_nodes] = const_value
-    rho_filtered = skfem.solve(*skfem.condense(A, b, D=D, x=x0))
+
+    if len(fixed_nodes) > 0:
+        D = fixed_nodes
+        x0 = np.zeros(A.shape[0])
+        x0[fixed_nodes] = 1.0 if case == "forward" else 0.0
+        rho_filtered = skfem.solve(*skfem.condense(A, b, D=D, x=x0))
+    else:
+        # Neumann
+        # print("Neumann")
+        rho_filtered = skfem.solve(A, b)
+
     return rho_filtered
+
 
 
 @dataclass
@@ -138,7 +180,8 @@ class HelmholtzFilterNodal(BaseFilter):
     def forward(self, rho_element: np.ndarray):
         rho_node = element_to_node_density_averaging(
             self.mesh, self.elements_volume, rho_element,
-            design_mask=self.design_mask
+            design_mask=self.design_mask,
+            fixed_value_for_design=1.0
         )
         # rho_node = project_element_density_to_nodes(
         #     self.mesh, rho_element,
@@ -154,28 +197,39 @@ class HelmholtzFilterNodal(BaseFilter):
         )
         return rho_elem_filtered
 
-    def gradient(self, v: np.ndarray) -> np.ndarray:
+    def gradient(self, v_ele: np.ndarray) -> np.ndarray:
+        # print("np.sum(v_ele > 0):", np.sum(v_ele > 0))
+        # element to node
         v_node = element_to_node_density_averaging(
             self.mesh,
             self.elements_volume,
-            v,
+            v_ele,
             design_mask=self.design_mask,
             weighted=True,
+            fixed_value_for_design=0.0
         )
+        # if element_to_node_density_averaging is proper, may not necessary.
+        # print("np.sum(v_node > 0):", np.sum(v_node > 0))
+        # v_node = np.minimum(v_node, 0.0)
 
+        # Helmholtz PDE on nodes
         v_node_filtered = solve_helmholtz(
             "gradient",
             self.mesh,
             v_node,
             r_min=self.radius,
-            design_mask=self.design_mask
+            design_mask=None
         )
+        # print("np.sum(v_node_filtered > 0):", np.sum(v_node_filtered > 0))
 
+        # node to element
         v_elem_filtered = node_to_element_density(
             self.mesh,
             v_node_filtered,
         )
-
+        # print("np.sum(v_elem_filtered > 0):", np.sum(v_elem_filtered > 0))
+        # print("v_elem_filtered:min/max", v_elem_filtered.min(), v_elem_filtered.max())
+        v_elem_filtered = np.minimum(v_elem_filtered, 0.0)
         return v_elem_filtered
 
 

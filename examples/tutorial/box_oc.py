@@ -28,7 +28,7 @@ def get_task():
         (x_len, x_len), (0, eps), (0, z_len)
     )
     force_dir_type = ["u^2", "u^2"]
-    force_value = [-100, 100]
+    force_value = [-1.0, 1.0]
 
     boundaries = {
         "dirichlet": dirichlet_in_range,
@@ -41,7 +41,7 @@ def get_task():
 
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=2)
-    E0 = 210e9
+    E0 = 210e3
     mytask = sktopt.mesh.task.LinearElastisicity.from_mesh_tags(
         E0,
         0.30,
@@ -66,8 +66,8 @@ def get_cfg():
         ),
         max_iters=40,
         record_times=40,
-        filter_type="spacial"
-        # filter_type="helmholtz"
+        # filter_type="spacial"
+        filter_type="helmholtz"
     )
     return cfg
 

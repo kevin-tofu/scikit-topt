@@ -107,8 +107,11 @@ def toy2():
     x_len = 8.0
     y_len = 8.0
     z_len = 1.0
-    mesh_size = 0.5
-    mesh = create_box_tet(x_len, y_len, z_len, mesh_size)
+    mesh_size = 0.3
+    # mesh = create_box_tet(x_len, y_len, z_len, mesh_size)
+    # e = skfem.ElementVector(skfem.ElementTetP1())
+    mesh = create_box_hex(x_len, y_len, z_len, mesh_size)
+    e = skfem.ElementVector(skfem.ElementHex1())
     dirichlet_in_range = utils.get_points_in_range(
         (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
@@ -120,7 +123,7 @@ def toy2():
         (x_len, x_len), (0, eps), (0, z_len)
     )
     force_dir_type = ["u^2", "u^2"]
-    force_value = [-100, 100]
+    force_value = [-1.0, 1.0]
     boundaries = {
         "dirichlet": dirichlet_in_range,
         "force_0": force_in_range_0,
@@ -129,7 +132,6 @@ def toy2():
     mesh = mesh.with_boundaries(boundaries)
     subdomains = {"design": np.array(range(mesh.nelements))}
     mesh = mesh.with_subdomains(subdomains)
-    e = skfem.ElementVector(skfem.ElementTetP1())
     basis = skfem.Basis(mesh, e, intorder=2)
     E0 = 210e3
     return task.LinearElastisicity.from_mesh_tags(

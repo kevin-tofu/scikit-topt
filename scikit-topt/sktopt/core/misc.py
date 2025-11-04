@@ -157,7 +157,7 @@ def add_common_arguments(
         '--solver_option', '-SO', type=str, default="spsolve", help=''
     )
     parser.add_argument(
-        '--n_joblib', '-NJ', type=int, default=2, help=''
+        '--n_joblib', '-NJ', type=int, default=4, help=''
     )
 
     return parser
