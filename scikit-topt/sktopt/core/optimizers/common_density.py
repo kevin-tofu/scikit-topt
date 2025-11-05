@@ -356,7 +356,7 @@ class DensityMethod(DensityMethodBase):
 
     Attributes
     ----------
-    tsk : TaskConfig
+    tsk : FEMDomain
         Contains FEM mesh, basis, boundary condition data, and load vectors.
     config : DensityMethodConfig
         Holds numerical and algorithmic settings like filtering radius,
@@ -367,7 +367,7 @@ class DensityMethod(DensityMethodBase):
     def __init__(
         self,
         cfg: DensityMethodConfig,
-        tsk: sktopt.mesh.TaskConfig,
+        tsk: sktopt.mesh.FEMDomain,
     ):
         self.cfg = cfg
         self.tsk = tsk
@@ -400,7 +400,7 @@ class DensityMethod(DensityMethodBase):
         self.schedulers = tools.Schedulers(self.cfg.dst_path)
 
     def add_recorder(
-        self, tsk: sktopt.mesh.TaskConfig
+        self, tsk: sktopt.mesh.FEMDomain
     ) -> tools.HistoriesLogger:
         recorder = tools.HistoriesLogger(self.cfg.dst_path)
         recorder.add("rho_projected", plot_type="min-max-mean-std")
@@ -602,8 +602,8 @@ class DensityMethod(DensityMethodBase):
         rho_design_eles = np.empty_like(rho[tsk.design_elements])
         rho_clip_lower = np.empty_like(rho[tsk.design_elements])
         rho_clip_upper = np.empty_like(rho[tsk.design_elements])
-        force_vec_list = tsk.force \
-            if isinstance(tsk.force, list) else [tsk.force]
+        force_vec_list = tsk.neumann_vector \
+            if isinstance(tsk.neumann_vector, list) else [tsk.neumann_vector]
         u_dofs = np.zeros((tsk.basis.N, len(force_vec_list)))
         filter_radius = cfg.filter_radius.init_value \
             if isinstance(

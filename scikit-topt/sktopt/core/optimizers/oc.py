@@ -135,7 +135,7 @@ class OC_Optimizer(common_density.DensityMethod):
     def __init__(
         self,
         cfg: OC_Config,
-        tsk: sktopt.mesh.TaskConfig,
+        tsk: sktopt.mesh.FEMDomain,
     ):
         assert cfg.lambda_lower < cfg.lambda_upper
         super().__init__(cfg, tsk)

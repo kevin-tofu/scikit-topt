@@ -116,18 +116,18 @@ def toy2():
         (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
     eps = mesh_size
-    force_in_range_0 = utils.get_points_in_range(
+    neumann_in_range_0 = utils.get_points_in_range(
         (x_len, x_len), (y_len-eps, y_len), (0, z_len)
     )
-    force_in_range_1 = utils.get_points_in_range(
+    neumann_in_range_1 = utils.get_points_in_range(
         (x_len, x_len), (0, eps), (0, z_len)
     )
-    force_dir_type = ["u^2", "u^2"]
-    force_value = [-1.0, 1.0]
+    neumann_dir_type = ["u^2", "u^2"]
+    neumann_value = [-1.0, 1.0]
     boundaries = {
         "dirichlet": dirichlet_in_range,
-        "force_0": force_in_range_0,
-        "force_1": force_in_range_1
+        "neumann_0": neumann_in_range_0,
+        "neumann_1": neumann_in_range_1
     }
     mesh = mesh.with_boundaries(boundaries)
     subdomains = {"design": np.array(range(mesh.nelements))}
@@ -139,8 +139,8 @@ def toy2():
         0.30,
         basis,
         "all",
-        force_dir_type,
-        force_value
+        neumann_dir_type,
+        neumann_value
     )
 
 

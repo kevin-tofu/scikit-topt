@@ -2,8 +2,14 @@ import numpy as np
 import sktopt
 
 
+def setdiff1d(a, b):
+    mask = ~np.isin(a, b)
+    a = a[mask]
+    return np.ascontiguousarray(a)
+
+
 def export_submesh(
-    tsk: sktopt.mesh.TaskConfig,
+    tsk: sktopt.mesh.FEMDomain,
     rho_projected: np.ndarray,
     threshold: float,
     dst_path: str
@@ -12,7 +18,7 @@ def export_submesh(
     remove_elements = tsk.design_elements[
         rho_projected[tsk.design_elements] <= threshold
     ]
-    kept_elements = sktopt.mesh.task.setdiff1d(
+    kept_elements = setdiff1d(
         tsk.all_elements, remove_elements
     )
     kept_t = mesh.t[:, kept_elements]

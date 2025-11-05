@@ -339,7 +339,8 @@ class FEM_SimpLinearElastisicity():
 
     def compute_compliance_multi_load(
         self,
-        rho: np.ndarray, p: float, force_vec_list: list[np.ndarray],
+        rho: np.ndarray, p: float,
+        force_vec_list: list[np.ndarray],
         u_dofs: np.ndarray
     ) -> np.ndarray:
 

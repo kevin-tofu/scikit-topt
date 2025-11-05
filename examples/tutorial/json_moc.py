@@ -20,12 +20,12 @@ def msh_export():
     dirichlet_in_range = sktopt.mesh.utils.get_points_in_range(
         (0.0, 0.03), (0.0, y_len), (0.0, z_len)
     )
-    force_in_range = sktopt.mesh.utils.get_points_in_range(
+    neumann_in_range = sktopt.mesh.utils.get_points_in_range(
         (x_len - eps, x_len+0.1), (y_len*2/5, y_len*3/5), (z_len-eps, z_len)
     )
     boundaries = {
         "dirichlet": dirichlet_in_range,
-        "force": force_in_range,
+        "neumann": neumann_in_range,
     }
     subdomains = {"design": np.arange(mesh.nelements)}
 
@@ -44,16 +44,16 @@ def get_task():
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=1)
     dirichlet_dir = "all"
-    force_dir_type = "u^3"
-    force_value = 100
+    neumann_dir_type = "u^3"
+    neumann_value = 100
     # Define it as a task
     tsk = sktopt.mesh.task.LinearElastisicity.from_mesh_tags(
         210e9,
         0.30,
         basis,
         dirichlet_dir,
-        force_dir_type,
-        force_value
+        neumann_dir_type,
+        neumann_value
     )
     return tsk
 
