@@ -3,7 +3,7 @@ import numpy as np
 import skfem
 from skfem import MeshTet
 import meshio
-from sktopt.mesh import task
+from sktopt.mesh import task_elastic
 from sktopt.mesh import utils
 
 
@@ -78,7 +78,7 @@ def toy_base(
     F = -100.0
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=2)
-    return task.LinearElastisicity.from_facets(
+    return task_elastic.LinearElastisicity.from_facets(
         E0,
         0.30,
         basis,
@@ -134,7 +134,7 @@ def toy2():
     mesh = mesh.with_subdomains(subdomains)
     basis = skfem.Basis(mesh, e, intorder=2)
     E0 = 210e3
-    return task.LinearElastisicity.from_mesh_tags(
+    return task_elastic.LinearElastisicity.from_mesh_tags(
         E0,
         0.30,
         basis,
@@ -158,24 +158,24 @@ def load_mesh_auto(msh_path: str):
 # from memory_profiler import profile
 # @profile
 def toy_msh(
-    task_name: str = "down",
+    task_elastic_name: str = "down",
     msh_path: str = 'plate.msh',
 ):
-    if task_name == "down":
+    if task_elastic_name == "down":
         x_len = 4.0
         y_len = 0.16
         # z_len = 1.0
         z_len = 2.0
-    elif task_name == "down_box":
+    elif task_elastic_name == "down_box":
         x_len = 4.0
         y_len = 3.0
         z_len = 2.0
-    elif task_name == "pull":
+    elif task_elastic_name == "pull":
         x_len = 8.0
         # x_len = 4.0
         y_len = 3.0
         z_len = 0.5
-    elif task_name == "pull_2":
+    elif task_elastic_name == "pull_2":
         # x_len = 8.0
         x_len = 4.0
         # x_len = 6.0
@@ -207,26 +207,26 @@ def toy_msh(
         (0.0, 0.05), (0.0, y_len), (0.0, z_len)
     )
     dirichlet_facets = basis.mesh.facets_satisfying(dirichlet_in_range)
-    if task_name == "down":
+    if task_elastic_name == "down":
         x_range = (x_len-eps, x_len+0.05)
         y_range = (y_len/2-eps, y_len/2+eps)
         z_range = (0.0, eps)
         force_dir_type = "u^3"
         force_value = -800
-    if task_name == "down_box":
+    if task_elastic_name == "down_box":
         x_range = (x_len-eps, x_len+0.05)
         y_range = (0, y_len)
         z_range = (0.0, eps)
         force_dir_type = "u^3"
         force_value = -800
 
-    elif task_name == "pull":
+    elif task_elastic_name == "pull":
         x_range = (x_len-eps, x_len+0.05),
         y_range = (y_len*2/5, y_len*3/5)
         z_range = (z_len*2/5, z_len*3/5)
         force_dir_type = "u^1"
         force_value = 1200.0
-    elif task_name == "pull_2":
+    elif task_elastic_name == "pull_2":
         x_range = (x_len-eps, x_len+0.05),
         y_range = (y_len/2.0-eps, y_len/2+eps),
         z_range = (z_len*2/5, z_len*3/5)
@@ -241,7 +241,7 @@ def toy_msh(
     design_elements = basis.mesh.elements_satisfying(desing_in_range)
     print("generate config")
     E0 = 210e3
-    return task.LinearElastisicity.from_facets(
+    return task_elastic.LinearElastisicity.from_facets(
         E0,
         0.30,
         basis,

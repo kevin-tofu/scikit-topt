@@ -47,7 +47,7 @@ def get_task():
     neumann_dir_type = "u^3"
     neumann_value = 100
     # Define it as a task
-    tsk = sktopt.mesh.task.LinearElastisicity.from_mesh_tags(
+    tsk = sktopt.mesh.LinearElastisicity.from_mesh_tags(
         210e9,
         0.30,
         basis,

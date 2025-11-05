@@ -2,7 +2,7 @@ import sktopt
 # import pytest
 
 
-def define_task() -> sktopt.mesh.task.LinearElastisicity:
+def define_task() -> sktopt.mesh.LinearElastisicity:
 
     import skfem
     x_len, y_len, z_len = 1.0, 1.0, 1.0
@@ -34,16 +34,16 @@ def define_task() -> sktopt.mesh.task.LinearElastisicity:
         mesh,
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
-    return sktopt.mesh.task.LinearElastisicity.from_defaults(
-        210e9,
-        0.30,
+    return sktopt.mesh.LinearElastisicity.from_defaults(
         basis,
         dirichlet_nodes,
         dirichlet_dofs,
         F_points,
         F_nodes,
         F,
-        design_elements
+        design_elements,
+        210e9,
+        0.30,
     )
 
 
