@@ -108,8 +108,8 @@ def assemble_surface_neumanns(
 @dataclass
 class LinearHeatConduction():
 
-    k: float # thermal conductivity
-    q: np.ndarray | None = None # heat source per volume
+    k: float  # thermal conductivity
+    q: np.ndarray | None = None  # heat source per volume
 
     @classmethod
     def from_facets(
