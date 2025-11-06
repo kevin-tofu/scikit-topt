@@ -14,7 +14,7 @@ from sktopt import tools
 from sktopt.core import derivatives, projection
 from sktopt.core import visualization
 from sktopt.mesh import visualization as visualization_mesh
-from sktopt.fea import solver
+from sktopt.fea import solver_elastic
 from sktopt import filters
 from sktopt.fea import composer
 from sktopt.core import misc
@@ -390,7 +390,7 @@ class DensityMethod(DensityMethodBase):
             if not os.path.exists(f"{self.cfg.dst_path}/data"):
                 os.makedirs(f"{self.cfg.dst_path}/data")
 
-        self.fem = solver.FEM_SimpLinearElastisicity(
+        self.fem = solver_elastic.FEM_SimpLinearElastisicity(
             tsk, cfg.E_min_coeff,
             density_interpolation=interpolation_funcs(cfg)[0],
             solver_option=cfg.solver_option,

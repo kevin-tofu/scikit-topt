@@ -217,6 +217,7 @@ class LinearElastisicity(FEMDomain):
             force_facets_ids,
             force_dir_type,
             force_value,
+            None, None, None,
             design_elements
         )
 
@@ -226,7 +227,7 @@ class LinearElastisicity(FEMDomain):
             force_dir_type=base.neumann_dir_type,
             force_value=base.neumann_values
         )
-
+        robin_vector = None
         return cls(
             base.basis,
             base.dirichlet_nodes,
@@ -237,6 +238,11 @@ class LinearElastisicity(FEMDomain):
             base.neumann_dir_type,
             base.neumann_values,
             neumann_vector,
+            base.robin_nodes,
+            base.robin_elements,
+            base.robin_dir_type,
+            base.robin_values,
+            robin_vector,
             base.design_elements,
             base.free_dofs,
             base.free_elements,
