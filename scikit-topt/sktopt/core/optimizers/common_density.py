@@ -602,8 +602,8 @@ class DensityMethod(DensityMethodBase):
         rho_design_eles = np.empty_like(rho[tsk.design_elements])
         rho_clip_lower = np.empty_like(rho[tsk.design_elements])
         rho_clip_upper = np.empty_like(rho[tsk.design_elements])
-        force_vec_list = tsk.neumann_vector \
-            if isinstance(tsk.neumann_vector, list) else [tsk.neumann_vector]
+        force_vec_list = tsk.neumann_linear \
+            if isinstance(tsk.neumann_linear, list) else [tsk.neumann_linear]
         u_dofs = np.zeros((tsk.basis.N, len(force_vec_list)))
         filter_radius = cfg.filter_radius.init_value \
             if isinstance(

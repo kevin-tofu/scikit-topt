@@ -16,9 +16,7 @@ def assemble_surface_forces(
     basis,
     force_facets_ids: Union[np.ndarray, List[np.ndarray]],
     force_dir_type: Union[str, List[str]],
-    force_value: Union[float, List[float]],
-    *,
-    treat_value_as_total_force: bool = True,
+    force_value: Union[float, List[float]]
 ):
     def _to_list(x):
         return x if isinstance(x, list) else [x]
@@ -59,24 +57,13 @@ def assemble_surface_forces(
         )
 
         A = asm(l_one, fb)
-        if A <= 0.0:
-            raise ValueError(
-                "Selected facets have zero total area; check facet indices or geometry."
-            )
-
-        if treat_value_as_total_force:
-            pressure = float(val) / A
-        else:
-            pressure = float(val)
+        pressure = float(val) / A
+        # pressure = float(val)
 
         @LinearForm
         def l_comp(v, w):
-            # print(f"v.shape {v.shape}")
-            # print(f"w.n.shape {w.n.shape}")
-            # v.shape (3, 46, 16)
-            # w.n.shape (3, 46, 16)
-            # return pressure * skfem.helpers.dot(w.n, v)
             return pressure * v[comp]
+            # return pressure * dot(v, n)
 
         F = asm(l_comp, fb)
         F_list.append(F)
@@ -115,6 +102,7 @@ class LinearElastisicity(FEMDomain):
 
     E: float
     nu: float
+    neumann_linear: np.array
 
     @property
     def force(self):
@@ -221,13 +209,12 @@ class LinearElastisicity(FEMDomain):
             design_elements
         )
 
-        neumann_vector = assemble_surface_forces(
+        neumann_linear = assemble_surface_forces(
             base.basis,
             force_facets_ids=force_facets_ids,
             force_dir_type=base.neumann_dir_type,
             force_value=base.neumann_values
         )
-        robin_vector = None
         return cls(
             base.basis,
             base.dirichlet_nodes,
@@ -237,12 +224,10 @@ class LinearElastisicity(FEMDomain):
             base.neumann_elements,
             base.neumann_dir_type,
             base.neumann_values,
-            neumann_vector,
             base.robin_nodes,
             base.robin_elements,
-            base.robin_dir_type,
-            base.robin_values,
-            robin_vector,
+            base.robin_coefficient,
+            base.robin_bc_value,
             base.design_elements,
             base.free_dofs,
             base.free_elements,
@@ -250,7 +235,7 @@ class LinearElastisicity(FEMDomain):
             base.fixed_elements,
             base.dirichlet_neumann_elements,
             base.elements_volume,
-            E, nu
+            E, nu, neumann_linear
         )
 
     @property
