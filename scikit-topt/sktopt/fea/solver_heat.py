@@ -200,7 +200,7 @@ class FEM_SimpLinearHeatConduction():
         self.solver_option = solver_option
         self.n_joblib = n_joblib
 
-    def compute_compliance_multi_load(
+    def compliance_multi_load(
         self,
         rho: np.ndarray, p: float, u_dofs: np.ndarray
     ) -> np.ndarray:
@@ -217,7 +217,7 @@ class FEM_SimpLinearHeatConduction():
         )
         return compliance_array
 
-    def strain_energy_skfem_multi_load(
+    def energy_multi_load(
         self,
         rho: np.ndarray, p: float, u_dofs: np.ndarray
     ) -> np.ndarray:

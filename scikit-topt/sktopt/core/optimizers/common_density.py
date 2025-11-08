@@ -297,7 +297,7 @@ class DensityMethodBase(ABC):
         rho_projected: np.ndarray,
         dC_drho_design_eles: np.ndarray,
         u_dofs: np.ndarray,
-        strain_energy_mean: np.ndarray,
+        energy_mean: np.ndarray,
         scaling_rate: np.ndarray,
         move_limit: float,
         eta: float,
@@ -404,7 +404,7 @@ class DensityMethod(DensityMethodBase):
     ) -> tools.HistoriesLogger:
         recorder = tools.HistoriesLogger(self.cfg.dst_path)
         recorder.add("rho_projected", plot_type="min-max-mean-std")
-        recorder.add("strain_energy", plot_type="min-max-mean-std")
+        recorder.add("energy", plot_type="min-max-mean-std")
         recorder.add("vol_error")
         if isinstance(tsk.force, list):
             recorder.add("u_max", plot_type="min-max-mean-std")
@@ -557,7 +557,7 @@ class DensityMethod(DensityMethodBase):
                 Gradient field after combining sensitivity with projection derivative.
             dC_drho_projected : ndarray of shape (n_elements,)
                 Compliance sensitivities with respect to the projected densities.
-            strain_energy_mean : ndarray of shape (n_elements,)
+            energy_mean : ndarray of shape (n_elements,)
                 Average element strain energy over all load cases.
             dC_drho_full : ndarray of shape (n_elements,)
                 Compliance sensitivities mapped back to the full set of elements.
@@ -593,7 +593,7 @@ class DensityMethod(DensityMethodBase):
         dH_drho = np.empty_like(rho)
         grad_filtered = np.empty_like(rho)
         dC_drho_projected = np.empty_like(rho)
-        strain_energy_mean = np.zeros_like(rho)
+        energy_mean = np.zeros_like(rho)
         dC_drho_full = np.zeros_like(rho)
         dC_drho_design_eles = np.zeros_like(rho[tsk.design_elements])
         scaling_rate = np.empty_like(rho[tsk.design_elements])
@@ -619,7 +619,7 @@ class DensityMethod(DensityMethodBase):
             dH_drho,
             grad_filtered,
             dC_drho_projected,
-            strain_energy_mean,
+            energy_mean,
             dC_drho_full,
             dC_drho_design_eles,
             scaling_rate,
@@ -647,7 +647,7 @@ class DensityMethod(DensityMethodBase):
             dH_drho,
             grad_filtered,
             dC_drho_projected,
-            strain_energy_mean,
+            energy_mean,
             dC_drho_full,
             dC_drho_design_eles,
             scaling_rate,
@@ -693,16 +693,16 @@ class DensityMethod(DensityMethodBase):
             logger.info("--- compute compliance ---")
             dC_drho_design_eles[:] = 0.0
             dC_drho_full[:] = 0.0
-            strain_energy_mean[:] = 0.0
+            energy_mean[:] = 0.0
             u_max = list()
 
-            compliance_avg = self.fem.compute_compliance_multi_load(
+            compliance_avg = self.fem.compliance_multi_load(
                 rho_projected, p, u_dofs
             ).mean()
-            strain_energy = self.fem.strain_energy_skfem_multi_load(
+            energy = self.fem.energy_multi_load(
                 rho_projected, p, u_dofs,
             )
-            strain_energy_mean = strain_energy.mean(axis=1)
+            energy_mean = energy.mean(axis=1)
             for task_loop in range(self.tsk.n_tasks):
 
                 u_max.append(np.abs(u_dofs[:, task_loop]).max())
@@ -711,7 +711,7 @@ class DensityMethod(DensityMethodBase):
                     dC_drho_projected,
                     dC_drho_func(
                         rho_projected,
-                        strain_energy[:, task_loop],
+                        energy[:, task_loop],
                         self.tsk.E, self.tsk.E*cfg.E_min_coeff,
                         p
                     )
@@ -722,7 +722,6 @@ class DensityMethod(DensityMethodBase):
                 )
                 np.multiply(dC_drho_projected, dH_drho, out=grad_filtered)
                 dC_drho_full[:] += self.filter.gradient(grad_filtered)
-
 
             # print(f"dC_drho_full min/max {dC_drho_full.min()} {dC_drho_full.max()}")
             dC_drho_full /= tsk.n_tasks
@@ -740,7 +739,7 @@ class DensityMethod(DensityMethodBase):
                 rho_projected,
                 dC_drho_design_eles,
                 u_dofs,
-                strain_energy_mean,
+                energy_mean,
                 scaling_rate,
                 move_limit,
                 eta,
@@ -761,7 +760,7 @@ class DensityMethod(DensityMethodBase):
             self.recorder.feed_data(
                 "rho_projected", rho_projected[tsk.design_elements]
             )
-            self.recorder.feed_data("strain_energy", strain_energy_mean)
+            self.recorder.feed_data("energy", energy_mean)
             self.recorder.feed_data("compliance", compliance_avg)
             self.recorder.feed_data("scaling_rate", scaling_rate)
             u_max = u_max[0] if len(u_max) == 1 else np.array(u_max)
@@ -777,8 +776,8 @@ class DensityMethod(DensityMethodBase):
 
                 visualization.export_mesh_with_info(
                     tsk.mesh,
-                    cell_data_names=["rho_projected", "strain_energy"],
-                    cell_data_values=[rho_projected, strain_energy_mean],
+                    cell_data_names=["rho_projected", "energy"],
+                    cell_data_values=[rho_projected, energy_mean],
                     filepath=cfg.vtu_path(iter_num)
                 )
                 visualization.write_mesh_with_info_as_image(
@@ -790,9 +789,9 @@ class DensityMethod(DensityMethodBase):
                 )
                 visualization.write_mesh_with_info_as_image(
                     mesh_path=cfg.vtu_path(iter_num),
-                    mesh_scalar_name="strain_energy",
-                    clim=(0.0, np.max(strain_energy)),
-                    image_path=cfg.image_path(iter_num, "strain_energy"),
+                    mesh_scalar_name="energy",
+                    clim=(0.0, np.max(energy)),
+                    image_path=cfg.image_path(iter_num, "energy"),
                     image_title=f"Iteration : {iter_num}"
                 )
                 np.savez_compressed(
@@ -818,7 +817,7 @@ class DensityMethod(DensityMethodBase):
         rho_projected: np.ndarray,
         dC_drho_design_eles: np.ndarray,
         u_dofs: np.ndarray,
-        strain_energy_mean: np.ndarray,
+        energy_mean: np.ndarray,
         scaling_rate: np.ndarray,
         move_limit: float,
         eta: float,
