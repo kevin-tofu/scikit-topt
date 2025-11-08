@@ -86,6 +86,10 @@ class FEMDomain():
     elements_volume: np.ndarray
 
     @property
+    def n_tasks(self) -> int:
+        raise NotImplementedError("")
+
+    @property
     def design_mask(self):
         return np.isin(self.all_elements, self.design_elements)
 

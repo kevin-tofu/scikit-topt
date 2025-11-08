@@ -20,6 +20,43 @@ _lit_bc = Literal['u^1', 'u^2', 'u^3', 'all']
 # _lit_robin = Literal['u^1', 'u^2', 'u^3']
 
 
+def assemble_surface_neumann(
+    basis: skfem.Basis,
+    neumann_facets_ids: Union[np.ndarray, List[np.ndarray]],
+    neumann_value: Union[float, List[float]]
+) -> list:
+    def _to_list(x):
+        return x if isinstance(x, list) else [x]
+
+    facets_list = _to_list(neumann_facets_ids)
+    vals_list = _to_list(neumann_value)
+
+    if not (len(facets_list) == len(vals_list)):
+        # print("len(facets_list) : ", len(facets_list))
+        # print("len(dirs_list) : ", len(dirs_list))
+        # print("len(vals_list) : ", len(vals_list))
+        raise ValueError(
+            "Lengths of facets_list and vals_list\
+                must match when lists."
+        )
+
+    heat_list = list()
+    for facets, q_flux in zip(facets_list, vals_list):
+        fb = FacetBasis(
+            basis.mesh, basis.elem,
+            facets=np.asarray(facets, dtype=int)
+        )
+
+        @skfem.LinearForm
+        def surface_heat_source(v, w):
+            return q_flux * v  # q_n * v
+
+        heat = asm(surface_heat_source, fb)
+        heat_list.append(heat)
+
+    return heat_list[0] if (len(heat_list) == 1) else heat_list
+
+
 def assemble_surface_robin(
     basis,
     robin_facets_ids: Union[np.ndarray, List[np.ndarray]],
@@ -72,9 +109,13 @@ def assemble_surface_robin(
 class LinearHeatConduction():
 
     k: float  # thermal conductivity
-    q: np.ndarray | None = None  # heat source per volume
     robin_bilinear: np.array
     robin_linear: np.array
+    heat_source_list: list[np.ndarray]
+
+    @property
+    def n_tasks(self) -> int:
+        return len(self.heat_source_list)
 
     @classmethod
     def from_facets(
@@ -83,22 +124,30 @@ class LinearHeatConduction():
         q: Optional[np.ndarray],
         basis: skfem.Basis,
         dirichlet_facets_ids: np.ndarray | list[np.ndarray],
-        dirichlet_dir: _lit_bc | list[_lit_bc],
+        neumann_facets_ids: Optional[np.ndarray | list[np.ndarray]],
+        neumann_values: Optional[float | list[float]],
         robin_facets_ids: np.ndarray | list[np.ndarray],
         robin_coefficient: float | list[float],
         robin_bc_value: float | list[float],
         design_elements: np.ndarray,
     ) -> 'LinearHeatConduction':
 
+        dirichlet_dir = None
+        neumann_dir = None
         base = FEMDomain.from_facets(
             basis,
             dirichlet_facets_ids,
             dirichlet_dir,
-            None, None, None, 
+            neumann_facets_ids, neumann_dir, neumann_values,
             robin_facets_ids,
             robin_coefficient,
             robin_bc_value,
             design_elements
+        )
+        heat_source_list = assemble_surface_neumann(
+            base.basis,
+            neumann_facets_ids,
+            neumann_values
         )
 
         robin_bilinear, robin_linear = assemble_surface_robin(
@@ -127,5 +176,6 @@ class LinearHeatConduction():
             base.fixed_elements,
             base.dirichlet_neumann_elements,
             base.elements_volume,
-            k, q, robin_bilinear, robin_linear
+            k, robin_bilinear, robin_linear,
+            heat_source_list
         )

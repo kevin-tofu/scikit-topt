@@ -13,11 +13,11 @@ _lit_force = Literal['u^1', 'u^2', 'u^3']
 
 
 def assemble_surface_forces(
-    basis,
+    basis: skfem.Basis,
     force_facets_ids: Union[np.ndarray, List[np.ndarray]],
     force_dir_type: Union[str, List[str]],
     force_value: Union[float, List[float]]
-):
+) -> list:
     def _to_list(x):
         return x if isinstance(x, list) else [x]
 
@@ -102,7 +102,12 @@ class LinearElastisicity(FEMDomain):
 
     E: float
     nu: float
-    neumann_linear: np.array
+    neumann_linear: list[np.array]
+    body_force: np.ndarray | None = None
+
+    @property
+    def n_tasks(self) -> int:
+        return len(self.neumann_linear)
 
     @property
     def force(self):
@@ -215,6 +220,11 @@ class LinearElastisicity(FEMDomain):
             force_dir_type=base.neumann_dir_type,
             force_value=base.neumann_values
         )
+        if isinstance(neumann_linear, np.ndarray):
+            neumann_linear = [neumann_linear]
+        elif isinstance(neumann_linear, list):
+            pass
+
         return cls(
             base.basis,
             base.dirichlet_nodes,

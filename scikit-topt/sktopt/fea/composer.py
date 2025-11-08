@@ -101,6 +101,51 @@ def assemble_stiffness_matrix(
     return K
 
 
+def assemble_conduction_matrix(
+    basis: skfem.Basis,
+    rho: np.ndarray,
+    k0: float,
+    kmin: float,
+    p: float,
+    elem_func: Callable = simp_interpolation
+):
+    """
+    Assemble the global conductivity (stiffness) matrix
+    for steady-state heat conduction using SIMP material interpolation.
+
+    Parameters:
+        basis : skfem Basis
+            FEM basis (e.g. ElementTriP1, ElementTetP1, etc.)
+        rho : ndarray
+            Element-wise density (0 = void, 1 = solid)
+        k0 : float
+            Conductivity of solid material
+        kmin : float
+            Minimum conductivity for void material
+        p : float
+            Penalization exponent (SIMP)
+        elem_func : Callable
+            Custom interpolation function, default is SIMP
+
+    Returns:
+        scipy.sparse.csr_matrix
+            Global conductivity (stiffness) matrix
+    """
+
+    # 1. Compute element-wise conductivity
+    k_elem = elem_func(rho, k0, kmin, p).reshape(-1, 1)
+
+    # 2. Define the weak form
+    @BilinearForm
+    def conduction_form(u, v, w):
+        return k_elem * np.dot(w.grad(u), w.grad(v))
+
+    # 3. Assemble global matrix
+    K = asm(conduction_form, basis)
+    return K
+
+
+
 @njit(parallel=True)
 def _get_elements_volume_tet_numba(t_conn, p_coords) -> np.ndarray:
     n_elements = t_conn.shape[1]

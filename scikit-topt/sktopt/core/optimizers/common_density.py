@@ -571,8 +571,6 @@ class DensityMethod(DensityMethodBase):
                 Lower clipping bounds for density updates.
             rho_clip_upper : ndarray of shape (n_design_elements,)
                 Upper clipping bounds for density updates.
-            force_vec_list : list of ndarray
-                List of external force vectors, one for each load case.
             u_dofs : ndarray of shape (ndof, n_load_cases)
                 Displacement field solutions for each degree of freedom
                 and each load case.
@@ -602,9 +600,9 @@ class DensityMethod(DensityMethodBase):
         rho_design_eles = np.empty_like(rho[tsk.design_elements])
         rho_clip_lower = np.empty_like(rho[tsk.design_elements])
         rho_clip_upper = np.empty_like(rho[tsk.design_elements])
-        force_vec_list = tsk.neumann_linear \
-            if isinstance(tsk.neumann_linear, list) else [tsk.neumann_linear]
-        u_dofs = np.zeros((tsk.basis.N, len(force_vec_list)))
+        # force_vec_list = tsk.neumann_linear \
+        #     if isinstance(tsk.neumann_linear, list) else [tsk.neumann_linear]
+        u_dofs = np.zeros((tsk.basis.N, tsk.n_tasks))
         filter_radius = cfg.filter_radius.init_value \
             if isinstance(
                 cfg.filter_radius.num_steps, (int, float)
@@ -628,7 +626,6 @@ class DensityMethod(DensityMethodBase):
             rho_design_eles,
             rho_clip_lower,
             rho_clip_upper,
-            force_vec_list,
             u_dofs,
             filter_radius
         )
@@ -657,7 +654,6 @@ class DensityMethod(DensityMethodBase):
             rho_design_eles,
             rho_clip_lower,
             rho_clip_upper,
-            force_vec_list,
             u_dofs,
             filter_radius
         ) = self.initialize_params()
@@ -701,21 +697,21 @@ class DensityMethod(DensityMethodBase):
             u_max = list()
 
             compliance_avg = self.fem.compute_compliance_multi_load(
-                rho_projected, p, force_vec_list, u_dofs
+                rho_projected, p, u_dofs
             ).mean()
             strain_energy = self.fem.strain_energy_skfem_multi_load(
                 rho_projected, p, u_dofs,
             )
             strain_energy_mean = strain_energy.mean(axis=1)
-            for force_loop, _ in enumerate(force_vec_list):
+            for task_loop in range(self.tsk.n_tasks):
 
-                u_max.append(np.abs(u_dofs[:, force_loop]).max())
+                u_max.append(np.abs(u_dofs[:, task_loop]).max())
                 dH_drho[:] = 0.0
                 np.copyto(
                     dC_drho_projected,
                     dC_drho_func(
                         rho_projected,
-                        strain_energy[:, force_loop],
+                        strain_energy[:, task_loop],
                         self.tsk.E, self.tsk.E*cfg.E_min_coeff,
                         p
                     )
@@ -729,7 +725,7 @@ class DensityMethod(DensityMethodBase):
 
 
             # print(f"dC_drho_full min/max {dC_drho_full.min()} {dC_drho_full.max()}")
-            dC_drho_full /= len(force_vec_list)
+            dC_drho_full /= tsk.n_tasks
             if cfg.sensitivity_filter:
                 logger.info("--- sensitivity filter ---")
                 filtered = self.filter.forward(dC_drho_full)
