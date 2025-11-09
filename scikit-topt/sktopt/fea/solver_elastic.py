@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Callable, Literal
 
 import numpy as np
@@ -12,7 +13,6 @@ from skfem.helpers import ddot, sym_grad, trace, eye
 from skfem.helpers import transpose
 import pyamg
 
-from sktopt.mesh import LinearElastisicity
 from sktopt.fea import composer
 from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
@@ -324,7 +324,7 @@ def strain_energy_skfem_multi(
 
 class FEM_SimpLinearElastisicity():
     def __init__(
-        self, task: LinearElastisicity,
+        self, task: "LinearElastisicity",
         E_min_coeff: float,
         density_interpolation: Callable = composer.simp_interpolation,
         solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve",

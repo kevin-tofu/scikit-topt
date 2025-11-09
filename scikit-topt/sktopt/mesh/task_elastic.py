@@ -106,6 +106,10 @@ class LinearElastisicity(FEMDomain):
     body_force: np.ndarray | None = None
 
     @property
+    def material_coef(self) -> float:
+        return self.E
+
+    @property
     def n_tasks(self) -> int:
         return len(self.neumann_linear)
 
@@ -251,3 +255,56 @@ class LinearElastisicity(FEMDomain):
     @property
     def force_elements_all(self) -> np.ndarray:
         return self.neumann_elements_all
+
+    @classmethod
+    def from_mesh_tags(
+        cls,
+        E: float,
+        nu: float,
+        basis: skfem.Basis,
+        dirichlet_dir: _lit_bc | list[_lit_bc],
+        neumann_dir_type: str | list[str],
+        neumann_values: float | list[float],
+    ) -> 'FEMDomain':
+        import re
+
+        # dirichlet_facets_ids: np.ndarray | list[np.ndarray]
+        # neumann_facets_ids: np.ndarray | list[np.ndarray]
+        # design_elements: np.ndarray
+
+        design_elements = basis.mesh.subdomains["design"]
+        keys = basis.mesh.boundaries.keys()
+        dirichlet_keys = sorted(
+            [k for k in keys if re.match(r"dirichlete_\d+$", k)],
+            key=lambda x: int(re.search(r"\d+$", x).group())
+        )
+        if dirichlet_keys:
+            dirichlet_facets_ids = [
+                basis.mesh.boundaries[k] for k in dirichlet_keys
+            ]
+        elif "dirichlet" in keys:
+            dirichlet_facets_ids = basis.mesh.boundaries["dirichlet"]
+        else:
+            dirichlet_facets_ids = np.array([])
+        # 
+        neumann_keys = sorted(
+            [k for k in keys if re.match(r"neumann_\d+$", k)],
+            key=lambda x: int(re.search(r"\d+$", x).group())
+        )
+        if neumann_keys:
+            neumann_facets_ids = [
+                basis.mesh.boundaries[k] for k in neumann_keys
+            ]
+        elif "neumann" in keys:
+            neumann_facets_ids = [basis.mesh.boundaries["neumann"]]
+        else:
+            neumann_facets_ids = np.array([])
+        return cls.from_facets(
+            E, nu, basis,
+            dirichlet_facets_ids,
+            dirichlet_dir,
+            neumann_facets_ids,
+            neumann_dir_type,
+            neumann_values,
+            design_elements
+        )

@@ -14,9 +14,9 @@ from sktopt import tools
 from sktopt.core import derivatives, projection
 from sktopt.core import visualization
 from sktopt.mesh import visualization as visualization_mesh
-from sktopt.fea import solver_elastic
-from sktopt import filters
+from sktopt import fea
 from sktopt.fea import composer
+from sktopt import filters
 from sktopt.core import misc
 from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
@@ -390,12 +390,24 @@ class DensityMethod(DensityMethodBase):
             if not os.path.exists(f"{self.cfg.dst_path}/data"):
                 os.makedirs(f"{self.cfg.dst_path}/data")
 
-        self.fem = solver_elastic.FEM_SimpLinearElastisicity(
-            tsk, cfg.E_min_coeff,
-            density_interpolation=interpolation_funcs(cfg)[0],
-            solver_option=cfg.solver_option,
-            n_joblib=cfg.n_joblib
-        )
+        if isinstance(tsk, sktopt.mesh.LinearElastisicity):
+            self.fem = fea.FEM_SimpLinearElastisicity(
+                tsk, cfg.E_min_coeff,
+                density_interpolation=interpolation_funcs(cfg)[0],
+                solver_option=cfg.solver_option,
+                n_joblib=cfg.n_joblib
+            )
+        if isinstance(tsk, sktopt.mesh.LinearHeatConduction):
+            self.fem = fea.FEM_SimpLinearHeatConduction(
+                tsk, cfg.E_min_coeff,
+                density_interpolation=interpolation_funcs(cfg)[0],
+                solver_option=cfg.solver_option,
+                n_joblib=cfg.n_joblib
+            )
+        else:
+            raise NotImplementedError(
+                ""
+            )
         # self.recorder = self.add_recorder(tsk)
         self.schedulers = tools.Schedulers(self.cfg.dst_path)
 
@@ -406,7 +418,8 @@ class DensityMethod(DensityMethodBase):
         recorder.add("rho_projected", plot_type="min-max-mean-std")
         recorder.add("energy", plot_type="min-max-mean-std")
         recorder.add("vol_error")
-        if isinstance(tsk.force, list):
+        # if isinstance(tsk.neumann_values, list):
+        if tsk.n_tasks > 1:
             recorder.add("u_max", plot_type="min-max-mean-std")
         else:
             recorder.add("u_max")
@@ -522,9 +535,9 @@ class DensityMethod(DensityMethodBase):
             iter_end = cfg.max_iters + 1
 
         if cfg.design_dirichlet is True:
-            rho[tsk.force_elements] = 1.0
+            rho[tsk.neumann_elements] = 1.0
         else:
-            rho[tsk.dirichlet_force_elements] = 1.0
+            rho[tsk.dirichlet_neumann_elements] = 1.0
         rho[tsk.fixed_elements] = 1.0
         return rho, iter_begin, iter_end
 
@@ -712,7 +725,8 @@ class DensityMethod(DensityMethodBase):
                     dC_drho_func(
                         rho_projected,
                         energy[:, task_loop],
-                        self.tsk.E, self.tsk.E*cfg.E_min_coeff,
+                        self.tsk.material_coef,
+                        self.tsk.material_coef*cfg.E_min_coeff,
                         p
                     )
                 )
@@ -753,9 +767,9 @@ class DensityMethod(DensityMethodBase):
             )
             rho[tsk.design_elements] = rho_design_eles
             if cfg.design_dirichlet is True:
-                rho[tsk.force_elements] = 1.0
+                rho[tsk.neumann_elements] = 1.0
             else:
-                rho[tsk.dirichlet_force_elements] = 1.0
+                rho[tsk.dirichlet_neumann_elements] = 1.0
 
             self.recorder.feed_data(
                 "rho_projected", rho_projected[tsk.design_elements]

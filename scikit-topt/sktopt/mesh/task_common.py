@@ -40,7 +40,7 @@ class FEMDomain():
         Degrees of freedom constrained by Dirichlet (displacement) boundary conditions.
     dirichlet_elements : np.ndarray
         Elements that contain Dirichlet boundary points.
-    force_elements : np.ndarray
+    neumann_elements : np.ndarray
         Elements that contain the force application points.
     force : np.ndarray or list of np.ndarray
         External force vector(s) applied to the system.
@@ -55,26 +55,28 @@ class FEMDomain():
         Array of all element indices in the mesh.
     fixed_elements : np.ndarray
         Elements excluded from the design domain.
-    dirichlet_force_elements : np.ndarray
+    dirichlet_neumann_elements : np.ndarray
         Union of Dirichlet and force elements.
         Useful for identifying constrained and loaded regions.
     elements_volume : np.ndarray
         Volume of each finite element, used in volume constraints and integration.
     """
     basis: skfem.Basis
-    dirichlet_nodes: np.ndarray
-    dirichlet_dofs: np.ndarray
-    dirichlet_elements: np.ndarray
-    neumann_nodes: Optional[np.ndarray | list[np.ndarray]]
-    neumann_elements: Optional[np.ndarray]
-    neumann_dir_type: Optional[str | list[str]]
-    neumann_values: Optional[float | list[float]]
+    dirichlet_nodes: np.ndarray | list[np.ndarray] | None
+    dirichlet_dofs: np.ndarray | list[np.ndarray] | None  # The nessecity is not high?
+    dirichlet_elements: np.ndarray | None
+    dirichlet_values: float | list[float] | None
+
+    neumann_nodes: np.ndarray | list[np.ndarray] | None
+    neumann_elements: np.ndarray | None
+    neumann_dir_type: str | list[str] | None
+    neumann_values: float | list[float] | None
     # neumann_vector: Optional[np.ndarray | list[np.ndarray]]
 
-    robin_nodes: Optional[np.ndarray | list[np.ndarray]]
-    robin_elements: Optional[np.ndarray]
-    robin_coefficient: Optional[float | list[float]]
-    robin_bc_value: Optional[float | list[float]]
+    robin_nodes: np.ndarray | list[np.ndarray] | None
+    robin_elements: np.ndarray | None
+    robin_coefficient: float | list[float] | None
+    robin_bc_value: float | list[float]| None
     # robin_vector: Optional[np.ndarray | list[np.ndarray]]
 
     design_elements: np.ndarray
@@ -101,47 +103,66 @@ class FEMDomain():
     def from_nodes(
         cls,
         basis: skfem.Basis,
-        dirichlet_nodes: np.ndarray | list[np.ndarray],
-        dirichlet_dir: _lit_bc | list[_lit_bc],
-        neumann_nodes: Optional[np.ndarray | list[np.ndarray]],
-        neumann_dir_type: Optional[str | list[str]],
-        neumann_values: Optional[np.ndarray | list[np.ndarray]],
-        robin_nodes: Optional[np.ndarray | list[np.ndarray]],
-        robin_coefficient: Optional[float | list[float]],
-        robin_bc_value: Optional[float | list[float]],
+        dirichlet_nodes: np.ndarray | list[np.ndarray] | None,
+        dirichlet_dir: _lit_bc | list[_lit_bc] | None,
+        dirichlet_values: float | list[float] | None,
+        neumann_nodes: np.ndarray | list[np.ndarray] | None,
+        neumann_dir_type: str | list[str] | None,
+        neumann_values: np.ndarray | list[np.ndarray] | None,
+        robin_nodes: np.ndarray | list[np.ndarray] | None,
+        robin_coefficient: float | list[float] | None,
+        robin_bc_value: float | list[float] | None,
         design_elements: np.ndarray,
     ) -> 'FEMDomain':
 
-        if isinstance(dirichlet_nodes, list):
-            assert isinstance(dirichlet_dir, list)
-            assert len(dirichlet_nodes) == len(dirichlet_dir)
-        elif isinstance(dirichlet_nodes, np.ndarray):
-            assert isinstance(dirichlet_dir, str)
-            # assert dirichlet_dir in _lit_bc
-        else:
-            raise ValueError("dirichlet_nodes should be list or np.ndarray")
+        if dirichlet_nodes is not None:
+            if isinstance(dirichlet_nodes, list):
+                if dirichlet_dir is None:
+                    assert isinstance(dirichlet_values, list)
+                    assert len(dirichlet_nodes) == len(dirichlet_values)
+                if dirichlet_values is None:
+                    assert isinstance(dirichlet_dir, list)
+                    assert len(dirichlet_nodes) == len(dirichlet_dir)
+            elif isinstance(dirichlet_nodes, np.ndarray):
+                assert isinstance(dirichlet_dir, str)
+                # assert dirichlet_dir in _lit_bc
+            else:
+                raise ValueError("dirichlet_nodes should be list or np.ndarray")
 
-        #
-        # Dirichlet
-        #
-        if isinstance(dirichlet_nodes, list):
-            dirichlet_dofs = [
-                basis.get_dofs(nodes=nodes).all() if direction == 'all'
-                else basis.get_dofs(nodes=nodes).nodal[direction]
-                for nodes, direction in zip(dirichlet_nodes, dirichlet_dir)
-            ]
-            dirichlet_dofs = np.concatenate(dirichlet_dofs)
-            dirichlet_nodes = np.concatenate(dirichlet_nodes)
-        elif isinstance(dirichlet_nodes, np.ndarray):
-            dofs = basis.get_dofs(nodes=dirichlet_nodes)
-            dirichlet_dofs = dofs.all() if dirichlet_dir == 'all' \
-                else dofs.nodal[dirichlet_dir]
-        else:
-            raise ValueError("dirichlet_nodes is not np.ndarray or of list")
+            #
+            # Dirichlet
+            #
+            if isinstance(dirichlet_nodes, list):
+                if dirichlet_dir is not None:
+                    dirichlet_dofs = [
+                        basis.get_dofs(nodes=nodes).all() if direction == 'all'
+                        else basis.get_dofs(nodes=nodes).nodal[direction]
+                        for nodes, direction in zip(
+                            dirichlet_nodes, dirichlet_dir
+                        )
+                    ]
+                else:
+                    dirichlet_dofs = [
+                        basis.get_dofs(nodes=nodes).all()
+                        for nodes in dirichlet_nodes
+                    ]
 
-        dirichlet_elements = utils.get_elements_by_nodes(
-            basis.mesh, [dirichlet_nodes]
-        )
+                # dirichlet_dofs = np.concatenate(dirichlet_dofs)
+                # dirichlet_nodes = np.concatenate(dirichlet_nodes)
+            elif isinstance(dirichlet_nodes, np.ndarray):
+                dofs = basis.get_dofs(nodes=dirichlet_nodes)
+                dirichlet_dofs = dofs.all() if dirichlet_dir == 'all' \
+                    else dofs.nodal[dirichlet_dir]
+            else:
+                raise ValueError("dirichlet_nodes is not np.ndarray or of list")
+
+            dirichlet_elements = utils.get_elements_by_nodes(
+                basis.mesh, [dirichlet_nodes]
+            )
+        else:
+            dirichlet_dofs = None
+            dirichlet_elements = None
+            # dirichlet_elements = np.array([])
 
         #
         # neumann
@@ -197,9 +218,12 @@ class FEMDomain():
 
         all_elements = np.arange(basis.mesh.nelements)
         fixed_elements = setdiff1d(all_elements, design_elements)
-        dirichlet_neumann_elements = np.concatenate(
-            [dirichlet_elements, neumann_elements]
-        )
+        valid = [
+            l for l in [dirichlet_elements, neumann_elements] if l is not None and len(l) > 0
+        ]
+        dirichlet_neumann_elements = np.concatenate(valid) \
+            if len(valid) > 0 else np.array([], dtype=int)
+
         free_dofs = setdiff1d(np.arange(basis.N), dirichlet_dofs)
         free_elements = utils.get_elements_by_nodes(
             basis.mesh, [free_dofs]
@@ -209,7 +233,7 @@ class FEMDomain():
             f"all_elements: {all_elements.shape}",
             f"design_elements: {design_elements.shape}",
             f"fixed_elements: {fixed_elements.shape}",
-            f"dirichlet_force_elements: {dirichlet_neumann_elements.shape}",
+            f"dirichlet_neumann_elements: {dirichlet_neumann_elements.shape}",
             f"neumann_elements: {neumann_elements}",
             f"robin_elements: {robin_elements}"
         )
@@ -218,6 +242,7 @@ class FEMDomain():
             dirichlet_nodes,
             dirichlet_dofs,
             dirichlet_elements,
+            dirichlet_values,
             neumann_nodes,
             neumann_elements,
             neumann_dir_type,
@@ -241,30 +266,35 @@ class FEMDomain():
     def from_facets(
         cls,
         basis: skfem.Basis,
-        dirichlet_facets_ids: np.ndarray | list[np.ndarray],
-        dirichlet_dir: _lit_bc | list[_lit_bc],
-        neumann_facets_ids: Optional[np.ndarray | list[np.ndarray]],
-        neumann_dir_type: Optional[str | list[str]],
-        neumann_values: Optional[float | list[float]],
-        robin_facets_ids: Optional[np.ndarray | list[np.ndarray]],
-        robin_coefficient: Optional[float | list[float]],
-        robin_bc_value: Optional[float | list[float]],
+        dirichlet_facets_ids: np.ndarray | list[np.ndarray] | None,
+        dirichlet_dir: _lit_bc | list[_lit_bc] | None,
+        dirichlet_values: float | list[float] | None,
+        neumann_facets_ids: np.ndarray | list[np.ndarray] | None,
+        neumann_dir_type: str | list[str] | None,
+        neumann_values: float | list[float] | None,
+        robin_facets_ids: np.ndarray | list[np.ndarray] | None,
+        robin_coefficient: float | list[float] | None,
+        robin_bc_value: float | list[float] | None,
         design_elements: np.ndarray,
     ) -> 'FEMDomain':
 
         facets = basis.mesh.facets
-        if isinstance(dirichlet_facets_ids, list):
-            dirichlet_nodes = list()
-            for dirichlet_facets_ids_loop in dirichlet_facets_ids:
-                dirichlet_nodes.append(
-                    np.unique(facets[:, dirichlet_facets_ids_loop].ravel())
-                )
-        elif isinstance(dirichlet_facets_ids, np.ndarray):
-            dirichlet_nodes = np.unique(facets[:, dirichlet_facets_ids].ravel())
+
+        if dirichlet_facets_ids is None:
+            dirichlet_nodes = None
         else:
-            raise ValueError(
-                "dirichlet_facets_ids should be list[np.ndarray] or np.ndarray"
-            )
+            if isinstance(dirichlet_facets_ids, list):
+                dirichlet_nodes = list()
+                for dirichlet_facets_ids_loop in dirichlet_facets_ids:
+                    dirichlet_nodes.append(
+                        np.unique(facets[:, dirichlet_facets_ids_loop].ravel())
+                    )
+            elif isinstance(dirichlet_facets_ids, np.ndarray):
+                dirichlet_nodes = np.unique(facets[:, dirichlet_facets_ids].ravel())
+            else:
+                raise ValueError(
+                    "dirichlet_facets_ids should be list[np.ndarray] or np.ndarray"
+                )
 
         if neumann_facets_ids is not None:
             neumann_facets_ids_concat = np.concatenate(neumann_facets_ids) \
@@ -294,7 +324,7 @@ class FEMDomain():
 
         return cls.from_nodes(
             basis,
-            dirichlet_nodes, dirichlet_dir,
+            dirichlet_nodes, dirichlet_dir, dirichlet_values,
             neumann_nodes,
             neumann_dir_type,
             neumann_values,
@@ -303,61 +333,6 @@ class FEMDomain():
             robin_coefficient,
             robin_bc_value,
             # robin_vector,
-            design_elements
-        )
-
-    @classmethod
-    def from_mesh_tags(
-        cls,
-        E: float,
-        nu: float,
-        basis: skfem.Basis,
-        dirichlet_dir: _lit_bc | list[_lit_bc],
-        neumann_dir_type: str | list[str],
-        neumann_values: float | list[float],
-    ) -> 'FEMDomain':
-        import re
-
-        # dirichlet_facets_ids: np.ndarray | list[np.ndarray]
-        # neumann_facets_ids: np.ndarray | list[np.ndarray]
-        # design_elements: np.ndarray
-
-        design_elements = basis.mesh.subdomains["design"]
-        dirichlet_facets_ids = basis.mesh.boundaries["dirichlet"]
-        keys = basis.mesh.boundaries.keys()
-        # 
-        dirichlet_keys = sorted(
-            [k for k in keys if re.match(r"dirichlete_\d+$", k)],
-            key=lambda x: int(re.search(r"\d+$", x).group())
-        )
-        if dirichlet_keys:
-            neumann_facets_ids = [
-                basis.mesh.boundaries[k] for k in dirichlet_keys
-            ]
-        elif "dirichlet" in keys:
-            neumann_facets_ids = [basis.mesh.boundaries["dirichlet"]]
-        else:
-            neumann_facets_ids = np.array([])
-        # 
-        neumann_keys = sorted(
-            [k for k in keys if re.match(r"neumann_\d+$", k)],
-            key=lambda x: int(re.search(r"\d+$", x).group())
-        )
-        if neumann_keys:
-            neumann_facets_ids = [
-                basis.mesh.boundaries[k] for k in neumann_keys
-            ]
-        elif "neumann" in keys:
-            neumann_facets_ids = [basis.mesh.boundaries["neumann"]]
-        else:
-            neumann_facets_ids = np.array([])
-        return cls.from_facets(
-            E, nu, basis,
-            dirichlet_facets_ids,
-            dirichlet_dir,
-            neumann_facets_ids,
-            neumann_dir_type,
-            neumann_values,
             design_elements
         )
 

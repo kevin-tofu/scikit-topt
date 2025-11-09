@@ -1,32 +1,31 @@
+from __future__ import annotations
 from typing import Callable, Literal
 
 import numpy as np
 import scipy
 from scipy.sparse.linalg import LinearOperator
 
-
 import skfem
-from skfem.models.elasticity import lame_parameters
-from skfem import Functional
-from skfem.helpers import ddot, sym_grad, trace, eye
-from skfem.helpers import transpose
+from skfem.helpers import grad, dot
 import pyamg
 
-from sktopt.mesh import LinearHeatConduction
+# from sktopt.mesh import LinearHeatConduction
 from sktopt.fea import composer
 from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 
 
 def solve_multi_load(
-    basis: skfem.CellBasis,
+    basis: skfem.Basis,
     free_dofs: np.ndarray,
-    dirichlet_dofs: np.ndarray,
-    heat_source_list: list[np.ndarray],
+    dirichlet_nodes_list: list[np.ndarray],
+    dirichlet_values_list: list[float],
+    robin_bilinear: np.ndarray,
+    robin_linear: np.ndarray,
     k0: float, kmin: float, p: float,
     rho: np.ndarray,
     u_all: np.ndarray,
-    solver: Literal['auto', 'cg_jacobi', 'spsolve', 'cg_pyamg'] = 'auto',
+    solver: Literal['auto', 'spsolve'] = 'auto',
     elem_func: Callable = composer.simp_interpolation,
     rtol: float = 1e-5,
     maxiter: int = None,
@@ -34,77 +33,64 @@ def solve_multi_load(
 ) -> float:
     solver = 'spsolve' if solver == 'auto' else solver
     n_dof = basis.N
-    assert u_all.shape == (n_dof, len(heat_source_list))
+    # assert u_all.shape == (n_dof, len(dirichlet_values))
 
     K = composer.assemble_conduction_matrix(
         basis, rho, k0, kmin, p, elem_func
-    )
-    _maxiter = min(1000, max(300, n_dof // 5)) if maxiter is None else maxiter
+    ) + robin_bilinear
     K_csr = K.tocsr()
-    K_e, _ = skfem.enforce(K_csr, heat_source_list[0], D=dirichlet_dofs)
-    heat_source_stack = np.column_stack([
-        skfem.enforce(K_csr, f, D=dirichlet_dofs)[1] for f in heat_source_list
-    ])
     # compliance_total = 0.0
     u_all[:, :] = 0.0
+    dirichlet_dofs_list = [
+        basis.get_dofs(nodes=loop) for loop in dirichlet_nodes_list
+    ]
+
+    def solve_system(
+        dirichlet_dofs_loop, dirichlet_values_loop
+    ):
+        T_sol = skfem.solve(
+            *skfem.condense(
+                K_csr, robin_linear, D=dirichlet_dofs_loop,
+                x=np.full(dirichlet_dofs_loop.N, dirichlet_values_loop)
+            )
+        )
+        return T_sol
+
     if solver == 'spsolve':
         if n_joblib > 1:
             from joblib import Parallel, delayed, parallel_backend
-            lu = scipy.sparse.linalg.splu(K_e.tocsc())
-
-            def solve_system(heat_source_stack):
-                return lu.solve(heat_source_stack)
-
             with parallel_backend("threading"):
                 u_all[:, :] = np.column_stack(
                     Parallel(n_jobs=n_joblib)(
-                        delayed(solve_system)(heat_source_stack[:, i]) for i in range(
-                            heat_source_stack.shape[1]
-                        )
+                        delayed(solve_system)(
+                            dirichlet_dofs_list[i], dirichlet_values_list[i]
+                        ) for i in range(len(dirichlet_values_list))
                     )
                 )
 
         else:
-            lu = scipy.sparse.linalg.splu(K_e.tocsc())
             u_all[:, :] = np.column_stack(
-                [lu.solve(heat_source_stack[:, i]) for i in range(heat_source_stack.shape[1])]
+                [
+                    solve_system(
+                        dirichlet_dofs_list[i], dirichlet_values_list[i]
+                    ) for i in range(len(dirichlet_values_list))
+                ]
             )
 
-    else:
-        # choose preconditioner if needed
-        if solver == 'cg_jacobi':
-            M_diag = K_e.diagonal()
-            M_inv = 1.0 / M_diag
-            M = LinearOperator(K_e.shape, matvec=lambda x: M_inv * x)
-        elif solver == 'cg_pyamg':
-            ml = pyamg.smoothed_aggregation_solver(K_e)
-            M = ml.aspreconditioner()
-        else:
-            raise ValueError(f"Unknown solver: {solver}")
-
-        for i, _ in enumerate(heat_source_list):
-            F_e = heat_source_stack[:, i]
-            # _, F_e = skfem.enforce(K_csr, force, D=dirichlet_dofs)
-            u_e, info = scipy.sparse.linalg.cg(
-                K_e, F_e, M=M, rtol=rtol, maxiter=_maxiter
-            )
-            if info != 0:
-                logger.info(
-                    f"[warning] \
-                        CG did not converge for load case {i}: info = {info}"
-                )
-            u_all[:, i] = u_e
-            # compliance_total += F_e[free_dofs] @ u_e[free_dofs]
-
-    # compliance_total = np.sum(np.einsum('ij,ij->j', F_stack, u_all))
-    return heat_source_stack
+    compliance_list = list()
+    for i in range(u_all.shape[1]):
+        T_i = u_all[:, i]
+        compliance_list.append(float(T_i @ (K_csr @ T_i)))
+    return compliance_list
 
 
 def compute_compliance_basis_multi_load(
     basis: skfem.CellBasis,
     free_dofs: np.ndarray,
-    dirichlet_dofs: np.ndarray,
-    force_list: list[np.ndarray],
+    dirichlet_nodes: list[np.ndarray],
+    dirichlet_values: list[float],
+    robin_bilinear: np.ndarray,
+    robin_linear: np.ndarray,
     E0: float, Emin: float, p: float,
     rho: np.ndarray,
     u_all: np.ndarray,
@@ -114,80 +100,71 @@ def compute_compliance_basis_multi_load(
     maxiter: int = None,
     n_joblib: int = 1
 ) -> np.ndarray:
-    heat_source_stack = solve_multi_load(
-        basis, free_dofs, dirichlet_dofs, force_list,
+    compliance_list = solve_multi_load(
+        basis, free_dofs, dirichlet_nodes, dirichlet_values,
+        robin_bilinear, robin_linear,
         E0, Emin, p,
         rho,
         u_all,
         solver=solver, elem_func=elem_func, rtol=rtol,
         maxiter=maxiter, n_joblib=n_joblib
     )
-
-    # compliance_total = np.sum(np.einsum('ij,ij->j', F_stack, u_all))
-    compliance_each = np.einsum('ij,ij->j', heat_source_stack, u_all)
-    return compliance_each
+    return compliance_list
 
 
+@skfem.Functional
+def _heat_energy_density_(w):
+    gradT = w['Th'].grad  # shape: (3, nqp, nelems)
+    k_elem = w['k_elem'].T  # (nelems, nqp)
+    k_elem = k_elem[None, :, :]  # (1, nqp, nelems)
+    return k_elem * dot(gradT, gradT)
 
-def thermal_energy_skfem_multi(
+
+def heat_energy_skfem(
     basis: skfem.Basis,
     rho: np.ndarray,
-    T: np.ndarray,  # shape: (n_dof, n_loads)
+    T: np.ndarray,
     k0: float, kmin: float, p: float,
-    elem_func: Callable,
+    elem_func: Callable = composer.simp_interpolation
 ) -> np.ndarray:
-    """
-    Compute element-wise thermal energy density for multiple temperature fields.
+    Th = basis.interpolate(T)
+    k_elem = elem_func(rho, k0, kmin, p)  # shape: (n_elem,)
+    n_qp = basis.X.shape[1]
+    k_elem = np.tile(k_elem, (n_qp, 1))   # shape: (n_qp, n_elem)
 
-    Equivalent to 0.5 * ∫Ω k(ρ) |∇T|² dΩ per element.
+    elem_energy = _heat_energy_density_.elemental(
+        basis, Th=Th, k_elem=k_elem
+    )
+    return elem_energy
 
-    Parameters:
-        basis : skfem.Basis
-            Scalar FEM basis (e.g., ElementTriP1, ElementTetP1).
-        rho : np.ndarray
-            Element-wise density (0 = void, 1 = solid).
-        T : np.ndarray
-            Nodal temperature fields for multiple load cases, shape (n_dof, n_loads).
-        k0, kmin : float
-            Conductivity of solid and void material.
-        p : float
-            Penalization power (SIMP exponent).
-        elem_func : Callable
-            Material interpolation function, e.g., SIMP.
 
-    Returns:
-        elem_energy_all : np.ndarray
-            Element-wise thermal energy for each load case, shape (n_elements, n_loads).
-    """
+def heat_energy_skfem_multi(
+    basis: skfem.Basis,
+    rho: np.ndarray,
+    T_all: np.ndarray,  # shape: (n_dof, n_loads)
+    k0: float, kmin: float, p: float,
+    elem_func: Callable = composer.simp_interpolation
+) -> np.ndarray:
+    n_dof, n_loads = T_all.shape
+    n_elem = basis.mesh.nelements
 
-    n_dof, n_loads = T.shape
-    n_elements = basis.mesh.nelements
-
-    # --- 1. Conductivity interpolation (SIMP)
     k_elem = elem_func(rho, k0, kmin, p)
     n_qp = basis.X.shape[1]
-    k_elem = np.tile(k_elem, (n_qp, 1))  # (n_qp, n_elements)
+    k_elem = np.tile(k_elem, (n_qp, 1))
 
-    # --- 2. Initialize results
-    elem_energy_all = np.zeros((n_elements, n_loads))
-
-    # --- 3. Loop over load cases (temperature fields)
+    elem_energy_all = np.zeros((n_elem, n_loads))
     for i in range(n_loads):
-        Th = basis.interpolate(T[:, i])  # interpolate nodal temperatures
-        # compute ∇T at quadrature points
-        gradT = Th.grad  # shape (dim, n_qp, n_elements)
-        # |∇T|² per quadrature point and element
-        gradT_sq = np.sum(gradT**2, axis=0)  # (n_qp, n_elements)
-        # 0.5 * k * |∇T|², integrated over element
-        elem_energy = 0.5 * np.sum(k_elem * gradT_sq * basis.dx)  # scalar sum over quadrature
+        Th = basis.interpolate(T_all[:, i])
+        elem_energy = _heat_energy_density_.elemental(
+            basis, Th=Th, k_elem=k_elem
+        )
         elem_energy_all[:, i] = elem_energy
-
-    return elem_energy_all  # shape: (n_elements, n_loads)
+    return elem_energy_all
 
 
 class FEM_SimpLinearHeatConduction():
     def __init__(
-        self, task: LinearHeatConduction,
+        self, task: "LinearHeatConduction",
         E_min_coeff: float,
         density_interpolation: Callable = composer.simp_interpolation,
         solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve",
@@ -204,10 +181,18 @@ class FEM_SimpLinearHeatConduction():
         self,
         rho: np.ndarray, p: float, u_dofs: np.ndarray
     ) -> np.ndarray:
+        dirichlet_nodes_list = self.task.dirichlet_nodes if isinstance(
+            self.task.dirichlet_nodes, list
+        ) else [self.task.dirichlet_nodes]
+        dirichlet_values_list = self.task.dirichlet_values if isinstance(
+            self.task.dirichlet_values, list
+        ) else [self.task.dirichlet_values]
 
-        compliance_array = compute_compliance_basis_multi_load(
-            self.task.basis, self.task.free_dofs, self.task.dirichlet_dofs,
-            self.task.neumann_linear,
+        compliance_list = compute_compliance_basis_multi_load(
+            self.task.basis, self.task.free_dofs,
+            dirichlet_nodes_list,
+            dirichlet_values_list,
+            self.task.robin_bilinear, self.task.robin_linear,
             self.k_max, self.k_min, p,
             rho,
             u_dofs,
@@ -215,13 +200,13 @@ class FEM_SimpLinearHeatConduction():
             solver=self.solver_option,
             n_joblib=self.n_joblib
         )
-        return compliance_array
+        return np.array(compliance_list)
 
     def energy_multi_load(
         self,
         rho: np.ndarray, p: float, u_dofs: np.ndarray
     ) -> np.ndarray:
-        return thermal_energy_skfem_multi(
+        return heat_energy_skfem_multi(
             self.task.basis, rho, u_dofs,
             self.k_max, self.k_min, p,
             elem_func=self.density_interpolation

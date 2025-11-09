@@ -6,7 +6,7 @@ from numba import njit, prange
 
 import skfem
 from skfem import Basis, asm
-from skfem.helpers import ddot, sym_grad, trace, eye
+from skfem.helpers import dot, ddot, sym_grad, trace, eye, grad
 from skfem.assembly import BilinearForm
 from skfem.helpers import transpose
 from skfem.models.elasticity import lame_parameters
@@ -138,7 +138,7 @@ def assemble_conduction_matrix(
     # 2. Define the weak form
     @BilinearForm
     def conduction_form(u, v, w):
-        return k_elem * np.dot(w.grad(u), w.grad(v))
+        return k_elem * dot(grad(u), grad(v))
 
     # 3. Assemble global matrix
     K = asm(conduction_form, basis)

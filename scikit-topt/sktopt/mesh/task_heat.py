@@ -106,61 +106,74 @@ def assemble_surface_robin(
 
 
 @dataclass
-class LinearHeatConduction():
+class LinearHeatConduction(FEMDomain):
 
     k: float  # thermal conductivity
     robin_bilinear: np.array
     robin_linear: np.array
-    heat_source_list: list[np.ndarray]
+
+    @property
+    def material_coef(self) -> float:
+        return self.k
 
     @property
     def n_tasks(self) -> int:
-        return len(self.heat_source_list)
+        ret = 1 if isinstance(self.dirichlet_values, float) \
+            else len(self.dirichlet_values)
+        return ret
 
     @classmethod
     def from_facets(
         cls,
         k: float,
-        q: Optional[np.ndarray],
         basis: skfem.Basis,
         dirichlet_facets_ids: np.ndarray | list[np.ndarray],
-        neumann_facets_ids: Optional[np.ndarray | list[np.ndarray]],
-        neumann_values: Optional[float | list[float]],
-        robin_facets_ids: np.ndarray | list[np.ndarray],
-        robin_coefficient: float | list[float],
-        robin_bc_value: float | list[float],
+        dirichlet_values: float | list[float],
+        # neumann_facets_ids: np.ndarray | list[np.ndarray],
+        # neumann_values: float | list[float],
+        robin_facets_ids: np.ndarray | list[np.ndarray] | None,
+        robin_coefficient: float | list[float] | None,
+        robin_bc_value: float | list[float] | None,
         design_elements: np.ndarray,
     ) -> 'LinearHeatConduction':
 
         dirichlet_dir = None
+        neumann_facets_ids = None
         neumann_dir = None
+        neumann_values = None
         base = FEMDomain.from_facets(
             basis,
             dirichlet_facets_ids,
             dirichlet_dir,
+            dirichlet_values,
             neumann_facets_ids, neumann_dir, neumann_values,
             robin_facets_ids,
             robin_coefficient,
             robin_bc_value,
             design_elements
         )
-        heat_source_list = assemble_surface_neumann(
-            base.basis,
-            neumann_facets_ids,
-            neumann_values
-        )
+        # heat_source_list = assemble_surface_neumann(
+        #     base.basis,
+        #     neumann_facets_ids,
+        #     neumann_values
+        # )
 
-        robin_bilinear, robin_linear = assemble_surface_robin(
-            base.basis,
-            robin_facets_ids=robin_facets_ids,
-            robin_coefficient=base.robin_coefficient,
-            robin_bc_value=base.robin_bc_value
-        )
+        if robin_facets_ids is not None:
+            robin_bilinear, robin_linear = assemble_surface_robin(
+                base.basis,
+                robin_facets_ids=robin_facets_ids,
+                robin_coefficient=base.robin_coefficient,
+                robin_bc_value=base.robin_bc_value
+            )
+        else:
+            robin_bilinear, robin_linear = None, None
+
         return cls(
             base.basis,
             base.dirichlet_nodes,
             base.dirichlet_dofs,
             base.dirichlet_elements,
+            base.dirichlet_values,
             base.neumann_nodes,
             base.neumann_elements,
             base.neumann_dir_type,
@@ -176,6 +189,72 @@ class LinearHeatConduction():
             base.fixed_elements,
             base.dirichlet_neumann_elements,
             base.elements_volume,
-            k, robin_bilinear, robin_linear,
-            heat_source_list
+            k, robin_bilinear, robin_linear
+        )
+
+    @classmethod
+    def from_mesh_tags(
+        cls,
+        k: float,
+        basis: skfem.Basis,
+        dirichlet_values: float | list[float],
+        robin_coefficient: float | list[float],
+        robin_bc_value: float | list[float],
+    ) -> 'FEMDomain':
+        import re
+
+        design_elements = basis.mesh.subdomains["design"]
+        keys = basis.mesh.boundaries.keys()
+
+        # dirichlet
+        keys = basis.mesh.boundaries.keys()
+        dirichlet_keys = sorted(
+            [k for k in keys if re.match(r"dirichlet_\d+$", k)],
+            key=lambda x: int(re.search(r"\d+$", x).group())
+        )
+        if dirichlet_keys:
+            dirichlet_facets_ids = [
+                basis.mesh.boundaries[k] for k in dirichlet_keys
+            ]
+        elif "dirichlet" in keys:
+            dirichlet_facets_ids = basis.mesh.boundaries["dirichlet"]
+        else:
+            dirichlet_facets_ids = None
+
+        # robin
+        robin_keys = sorted(
+            [k for k in keys if re.match(r"robin_\d+$", k)],
+            key=lambda x: int(re.search(r"\d+$", x).group())
+        )
+        if robin_keys:
+            robin_facets_ids = [
+                basis.mesh.boundaries[k] for k in robin_keys
+            ]
+        elif "robin" in keys:
+            robin_facets_ids = basis.mesh.boundaries["robin"]
+        else:
+            robin_facets_ids = None
+
+        # neumann
+        # neumann_keys = sorted(
+        #     [k for k in keys if re.match(r"neumann_\d+$", k)],
+        #     key=lambda x: int(re.search(r"\d+$", x).group())
+        # )
+        # if neumann_keys:
+        #     neumann_facets_ids = [
+        #         basis.mesh.boundaries[k] for k in neumann_keys
+        #     ]
+        # elif "neumann" in keys:
+        #     neumann_facets_ids = [basis.mesh.boundaries["neumann"]]
+        # else:
+        #     neumann_facets_ids = None
+
+        return cls.from_facets(
+            k, basis,
+            dirichlet_facets_ids,
+            dirichlet_values,
+            robin_facets_ids,
+            robin_coefficient,
+            robin_bc_value,
+            design_elements
         )
