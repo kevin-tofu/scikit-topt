@@ -29,7 +29,8 @@ def solve_multi_load(
     elem_func: Callable = composer.simp_interpolation,
     rtol: float = 1e-5,
     maxiter: int = None,
-    n_joblib: int = 1
+    n_joblib: int = 1,
+    objective: Literal["compliance", "averaged_temp"] = "averaged_temp"
 ) -> float:
     solver = 'spsolve' if solver == 'auto' else solver
     n_dof = basis.N
@@ -88,11 +89,18 @@ def solve_multi_load(
                 ]
             )
 
-    compliance_list = list()
-    for i in range(u_all.shape[1]):
-        T_i = u_all[:, i]
-        compliance_list.append(float(T_i @ (K_csr @ T_i)))
-    return compliance_list
+    objective_list = list()
+    if objective == "compliance":
+        for i in range(u_all.shape[1]):
+            T_i = u_all[:, i]
+            objective_list.append(float(T_i @ (K_csr @ T_i)))
+    elif objective == "averaged_temp":
+        objective_list = [
+            float(np.sum(u_all[:, i])) for i in range(u_all.shape[1])
+        ]
+    else:
+        raise ValueError("")
+    return objective_list
 
 
 def compute_compliance_basis_multi_load(
@@ -109,18 +117,20 @@ def compute_compliance_basis_multi_load(
     elem_func: Callable = composer.simp_interpolation,
     rtol: float = 1e-5,
     maxiter: int = None,
-    n_joblib: int = 1
+    n_joblib: int = 1,
+    objective: Literal["compliance", "averaged_temp"] = "averaged_temp"
 ) -> np.ndarray:
-    compliance_list = solve_multi_load(
+    objective_list = solve_multi_load(
         basis, free_dofs, dirichlet_nodes, dirichlet_values,
         robin_bilinear, robin_linear,
         E0, Emin, p,
         rho,
         u_all,
         solver=solver, elem_func=elem_func, rtol=rtol,
-        maxiter=maxiter, n_joblib=n_joblib
+        maxiter=maxiter, n_joblib=n_joblib,
+        objective=objective
     )
-    return compliance_list
+    return objective_list
 
 
 @skfem.Functional
@@ -142,7 +152,6 @@ def heat_energy_skfem(
     k_elem = elem_func(rho, k0, kmin, p)  # shape: (n_elem,)
     n_qp = basis.X.shape[1]
     k_elem = np.tile(k_elem, (n_qp, 1))   # shape: (n_qp, n_elem)
-
     elem_energy = _heat_energy_density_.elemental(
         basis, Th=Th, k_elem=k_elem
     )
@@ -168,6 +177,56 @@ def heat_energy_skfem_multi(
         Th = basis.interpolate(T_all[:, i])
         elem_energy = _heat_energy_density_.elemental(
             basis, Th=Th, k_elem=k_elem
+        )
+        elem_energy_all[:, i] = elem_energy
+    return elem_energy_all
+
+
+# @skfem.Functional
+# def _heat_source_energy_density_(w):
+#     return w['Q'] * w['Th']
+
+
+@skfem.Functional
+def _avg_temp_density_(w):
+    """
+    Element-wise temperature field contribution for
+    average temperature minimization.
+    J_T = ∫_Ω T(x) dΩ
+    """
+    return w['Th']  # Temperature itself
+
+
+def avg_temp_skfem(
+    basis: skfem.Basis,
+    T: np.ndarray
+) -> np.ndarray:
+    """
+    Compute elementwise contributions to the average temperature functional:
+        J = ∫_Ω T(x) dΩ
+    """
+    Th = basis.interpolate(T)
+    elem_avgT = _avg_temp_density_.elemental(
+        basis, Th=Th
+    )
+    return elem_avgT
+
+
+def avg_temp_skfem_multi(
+    basis: skfem.Basis,
+    T_all: np.ndarray,  # shape: (n_dof, n_loads)
+) -> np.ndarray:
+    """
+    Compute elementwise average temperature functional for multiple load cases.
+    Each column of T_all corresponds to one load condition.
+    """
+    n_dof, n_loads = T_all.shape
+    n_elem = basis.mesh.nelements
+    elem_energy_all = np.zeros((n_elem, n_loads))
+    for i in range(n_loads):
+        Th = basis.interpolate(T_all[:, i])
+        elem_energy = _avg_temp_density_.elemental(
+            basis, Th=Th
         )
         elem_energy_all[:, i] = elem_energy
     return elem_energy_all
