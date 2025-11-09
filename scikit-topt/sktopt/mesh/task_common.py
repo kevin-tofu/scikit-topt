@@ -367,6 +367,7 @@ class FEMDomain():
         node_colors_df = np.zeros(mesh.p.shape[1], dtype=int)
         node_colors_df[self.neumann_nodes_all] = 1
         node_colors_df[self.dirichlet_nodes] = 2
+        node_colors_df[self.robin_nodes] = 3
         point_outputs = dict()
         point_outputs["node_color"] = node_colors_df
 

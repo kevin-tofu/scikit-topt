@@ -3,7 +3,9 @@ import skfem
 import sktopt
 
 
-def get_task_0():
+def get_task_0(
+    multiple_robin: bool = True
+):
 
     x_len = 8.0
     y_len = 8.0
@@ -13,22 +15,26 @@ def get_task_0():
     mesh = sktopt.mesh.toy_problem.create_box_hex(
         x_len, y_len, z_len, mesh_size
     )
-    # robin_in_range = sktopt.mesh.utils.get_points_in_range(
-    #     (0.0, 0.0), (0.0, y_len), (0.0, z_len)
-    # )
-    # robin_coefficient = 4.0e-3
-    # robin_bc_value = 300.0
-    robin_in_range_0 = sktopt.mesh.utils.get_points_in_range(
-        (0.0, 0.0), (0.0, y_len/9), (0.0, z_len)
-    )
-    robin_in_range_1 = sktopt.mesh.utils.get_points_in_range(
-        (0.0, 0.0), (4*y_len/9, 5*y_len/9), (0.0, z_len)
-    )
-    robin_in_range_2 = sktopt.mesh.utils.get_points_in_range(
-        (0.0, 0.0), (8*y_len/9, 9*y_len/9), (0.0, z_len)
-    )
-    robin_coefficient = [4.0e-3, 4.0e-3, 4.0e-3]
-    robin_bc_value = [300.0, 300.0, 300.0]
+
+    if multiple_robin:
+        robin_in_range_0 = sktopt.mesh.utils.get_points_in_range(
+            (0.0, 0.0), (0.0, y_len/9), (0.0, z_len)
+        )
+        robin_in_range_1 = sktopt.mesh.utils.get_points_in_range(
+            (0.0, 0.0), (4*y_len/9, 5*y_len/9), (0.0, z_len)
+        )
+        robin_in_range_2 = sktopt.mesh.utils.get_points_in_range(
+            (0.0, 0.0), (8*y_len/9, 9*y_len/9), (0.0, z_len)
+        )
+        robin_coefficient = [4.0e-3, 4.0e-3, 4.0e-3]
+        robin_bc_value = [300.0, 300.0, 300.0]
+    else:
+        robin_in_range = sktopt.mesh.utils.get_points_in_range(
+            (0.0, 0.0), (0.0, y_len), (0.0, z_len)
+        )
+        robin_coefficient = 4.0e-3
+        robin_bc_value = 300.0
+    
 
     eps = mesh_size
     dirichlet_in_range = sktopt.mesh.utils.get_points_in_range(
@@ -43,12 +49,19 @@ def get_task_0():
     #     "robin": robin_in_range,
     #     "dirichlet_0": dirichlet_in_range
     # }
-    boundaries = {
-        "robin_0": robin_in_range_0,
-        "robin_1": robin_in_range_1,
-        "robin_2": robin_in_range_2,
-        "dirichlet_0": dirichlet_in_range
-    }
+    if multiple_robin:
+        boundaries = {
+            "robin_0": robin_in_range_0,
+            "robin_1": robin_in_range_1,
+            "robin_2": robin_in_range_2,
+            "dirichlet_0": dirichlet_in_range
+        }
+    else:
+        boundaries = {
+            "robin": robin_in_range,
+            "dirichlet_0": dirichlet_in_range
+        }
+
     mesh = mesh.with_boundaries(boundaries)
     subdomains = {"design": np.array(range(mesh.nelements))}
     mesh = mesh.with_subdomains(subdomains)
