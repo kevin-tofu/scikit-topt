@@ -337,7 +337,7 @@ class FEM_SimpLinearElastisicity():
         self.solver_option = solver_option
         self.n_joblib = n_joblib
 
-    def compliance_multi_load(
+    def objectives_multi_load(
         self,
         rho: np.ndarray, p: float,
         u_dofs: np.ndarray

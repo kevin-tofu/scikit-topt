@@ -709,7 +709,7 @@ class DensityMethod(DensityMethodBase):
             energy_mean[:] = 0.0
             u_max = list()
 
-            compliance_avg = self.fem.compliance_multi_load(
+            compliance_avg = self.fem.objectives_multi_load(
                 rho_projected, p, u_dofs
             ).mean()
             energy = self.fem.energy_multi_load(

@@ -15,6 +15,44 @@ from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 
 
+def solve_scipy(
+    K_csr, emit,
+    dirichlet_dofs_list, dirichlet_values_list,
+    u_all,
+    n_joblib: int = 1
+):
+    from joblib import Parallel, delayed, parallel_backend
+
+    def solve_system(
+        dirichlet_dofs_loop, dirichlet_values_loop
+    ):
+        T_sol = skfem.solve(
+            *skfem.condense(
+                K_csr, emit, D=dirichlet_dofs_loop,
+                x=np.full(dirichlet_dofs_loop.N, dirichlet_values_loop)
+            )
+        )
+        return T_sol
+    if n_joblib > 1:
+        with parallel_backend("threading"):
+            u_all[:, :] = np.column_stack(
+                Parallel(n_jobs=n_joblib)(
+                    delayed(solve_system)(
+                        dirichlet_dofs_list[i], dirichlet_values_list[i]
+                    ) for i in range(len(dirichlet_values_list))
+                )
+            )
+
+    else:
+        u_all[:, :] = np.column_stack(
+            [
+                solve_system(
+                    dirichlet_dofs_list[i], dirichlet_values_list[i]
+                ) for i in range(len(dirichlet_values_list))
+            ]
+        )
+
+
 def solve_multi_load(
     basis: skfem.Basis,
     free_dofs: np.ndarray,
@@ -31,7 +69,7 @@ def solve_multi_load(
     maxiter: int = None,
     n_joblib: int = 1,
     objective: Literal["compliance", "averaged_temp"] = "averaged_temp"
-) -> float:
+) -> list:
     solver = 'spsolve' if solver == 'auto' else solver
     n_dof = basis.N
     # assert u_all.shape == (n_dof, len(dirichlet_values))
@@ -57,53 +95,39 @@ def solve_multi_load(
         basis.get_dofs(nodes=loop) for loop in dirichlet_nodes_list
     ]
 
-    def solve_system(
-        dirichlet_dofs_loop, dirichlet_values_loop
-    ):
-        T_sol = skfem.solve(
-            *skfem.condense(
-                K_csr, emit, D=dirichlet_dofs_loop,
-                x=np.full(dirichlet_dofs_loop.N, dirichlet_values_loop)
-            )
+    if solver == "spsolve":
+        solve_scipy(
+            K_csr, emit,
+            dirichlet_dofs_list, dirichlet_values_list,
+            u_all, n_joblib=n_joblib
         )
-        return T_sol
-
-    if solver == 'spsolve':
-        if n_joblib > 1:
-            from joblib import Parallel, delayed, parallel_backend
-            with parallel_backend("threading"):
-                u_all[:, :] = np.column_stack(
-                    Parallel(n_jobs=n_joblib)(
-                        delayed(solve_system)(
-                            dirichlet_dofs_list[i], dirichlet_values_list[i]
-                        ) for i in range(len(dirichlet_values_list))
-                    )
-                )
-
-        else:
-            u_all[:, :] = np.column_stack(
-                [
-                    solve_system(
-                        dirichlet_dofs_list[i], dirichlet_values_list[i]
-                    ) for i in range(len(dirichlet_values_list))
-                ]
-            )
+    else:
+        raise NotImplementedError("")
 
     objective_list = list()
     if objective == "compliance":
         for i in range(u_all.shape[1]):
             T_i = u_all[:, i]
             objective_list.append(float(T_i @ (K_csr @ T_i)))
+
+        # λ_all = None
+        λ_all = - 2 * u_all
     elif objective == "averaged_temp":
         objective_list = [
             float(np.sum(u_all[:, i])) for i in range(u_all.shape[1])
         ]
+        λ_all = np.zeros_like(u_all)
+        solve_scipy(
+            K_csr, np.ones_like(emit),
+            dirichlet_dofs_list, dirichlet_values_list,
+            λ_all, n_joblib=n_joblib
+        )
     else:
         raise ValueError("")
-    return objective_list
+    return objective_list, λ_all
 
 
-def compute_compliance_basis_multi_load(
+def compute_objective_multi_load(
     basis: skfem.CellBasis,
     free_dofs: np.ndarray,
     dirichlet_nodes: list[np.ndarray],
@@ -119,8 +143,8 @@ def compute_compliance_basis_multi_load(
     maxiter: int = None,
     n_joblib: int = 1,
     objective: Literal["compliance", "averaged_temp"] = "averaged_temp"
-) -> np.ndarray:
-    objective_list = solve_multi_load(
+) -> list:
+    objective_list, λ_all = solve_multi_load(
         basis, free_dofs, dirichlet_nodes, dirichlet_values,
         robin_bilinear, robin_linear,
         E0, Emin, p,
@@ -130,7 +154,7 @@ def compute_compliance_basis_multi_load(
         maxiter=maxiter, n_joblib=n_joblib,
         objective=objective
     )
-    return objective_list
+    return objective_list, λ_all
 
 
 @skfem.Functional
@@ -246,8 +270,9 @@ class FEM_SimpLinearHeatConduction():
         self.density_interpolation = density_interpolation
         self.solver_option = solver_option
         self.n_joblib = n_joblib
+        self.λ_all = None
 
-    def compliance_multi_load(
+    def objectives_multi_load(
         self,
         rho: np.ndarray, p: float, u_dofs: np.ndarray
     ) -> np.ndarray:
@@ -258,7 +283,7 @@ class FEM_SimpLinearHeatConduction():
             self.task.dirichlet_values, list
         ) else [self.task.dirichlet_values]
 
-        compliance_list = compute_compliance_basis_multi_load(
+        compliance_list, λ_all = compute_objective_multi_load(
             self.task.basis, self.task.free_dofs,
             dirichlet_nodes_list,
             dirichlet_values_list,
@@ -270,6 +295,7 @@ class FEM_SimpLinearHeatConduction():
             solver=self.solver_option,
             n_joblib=self.n_joblib
         )
+        self.λ_all = λ_all
         return np.array(compliance_list)
 
     def energy_multi_load(
