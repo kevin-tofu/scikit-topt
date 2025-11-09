@@ -69,7 +69,10 @@ def get_task_0(
     e = skfem.ElementHex1()
     basis = skfem.Basis(mesh, e, intorder=1)
     k = 10.0
+    objective = "averaged_temp"
+    objective = "compliance"
     mytask = sktopt.mesh.LinearHeatConduction.from_mesh_tags(
+        objective,
         k,
         basis,
         dirichlet_value,

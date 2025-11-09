@@ -256,6 +256,29 @@ def avg_temp_skfem_multi(
     return elem_energy_all
 
 
+@skfem.Functional
+def _avg_temp_grad_density_(w):
+    gradT = w['Th'].grad
+    gradL = w['λh'].grad
+    return dot(gradT, gradL)
+
+
+def avg_temp_grad_density_multi(
+    basis: skfem.Basis,
+    T_all: np.ndarray,
+    λ_all: np.ndarray,  # adjoint field(s)
+) -> np.ndarray:
+    n_dof, n_loads = T_all.shape
+    n_elem = basis.mesh.nelements
+    elem_energy_all = np.zeros((n_elem, n_loads))
+    for i in range(n_loads):
+        Th = basis.interpolate(T_all[:, i])
+        λh = basis.interpolate(λ_all[:, i])
+        elem_energy = _avg_temp_grad_density_.elemental(basis, Th=Th, λh=λh)
+        elem_energy_all[:, i] = elem_energy
+    return elem_energy_all
+
+
 class FEM_SimpLinearHeatConduction():
     def __init__(
         self, task: "LinearHeatConduction",
@@ -293,7 +316,8 @@ class FEM_SimpLinearHeatConduction():
             u_dofs,
             elem_func=self.density_interpolation,
             solver=self.solver_option,
-            n_joblib=self.n_joblib
+            n_joblib=self.n_joblib,
+            objective=self.task.objective
         )
         self.λ_all = λ_all
         return np.array(compliance_list)
@@ -302,8 +326,15 @@ class FEM_SimpLinearHeatConduction():
         self,
         rho: np.ndarray, p: float, u_dofs: np.ndarray
     ) -> np.ndarray:
-        return heat_energy_skfem_multi(
-            self.task.basis, rho, u_dofs,
-            self.k_max, self.k_min, p,
-            elem_func=self.density_interpolation
-        )
+        if self.task.objective == "averaged_temp":
+            return avg_temp_grad_density_multi(
+                self.task.basis,
+                u_dofs,
+                self.λ_all
+            )
+        if self.task.objective == "compliance":
+            return heat_energy_skfem_multi(
+                self.task.basis, rho, u_dofs,
+                self.k_max, self.k_min, p,
+                elem_func=self.density_interpolation
+            )
