@@ -397,7 +397,7 @@ class DensityMethod(DensityMethodBase):
                 solver_option=cfg.solver_option,
                 n_joblib=cfg.n_joblib
             )
-        if isinstance(tsk, sktopt.mesh.LinearHeatConduction):
+        elif isinstance(tsk, sktopt.mesh.LinearHeatConduction):
             self.fem = fea.FEM_SimpLinearHeatConduction(
                 tsk, cfg.E_min_coeff,
                 density_interpolation=interpolation_funcs(cfg)[0],
