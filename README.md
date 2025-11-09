@@ -41,6 +41,7 @@ The currently supported features are as follows:
 - Coding with Python  
 - easy installation with pip/poetry
 - Implement FEA on unstructured mesh using scikit-fem
+- Structural Analysis / Heat Conduction Analysis
 - Topology optimization using the density method and its optimization algorithm
   - Optimality Criteria (OC) Method  
   - (Log-Space) Modified OC Method 
