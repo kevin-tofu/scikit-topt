@@ -118,8 +118,11 @@ class FEMDomain():
         if dirichlet_nodes is not None:
             if isinstance(dirichlet_nodes, list):
                 if dirichlet_dir is None:
-                    assert isinstance(dirichlet_values, list)
-                    assert len(dirichlet_nodes) == len(dirichlet_values)
+                    is_list = isinstance(dirichlet_values, list)
+                    is_float = isinstance(dirichlet_values, float)
+                    assert is_list | is_float
+                    if is_list:
+                        assert len(dirichlet_nodes) == len(dirichlet_values)
                 if dirichlet_values is None:
                     assert isinstance(dirichlet_dir, list)
                     assert len(dirichlet_nodes) == len(dirichlet_dir)

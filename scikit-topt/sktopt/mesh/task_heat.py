@@ -59,9 +59,9 @@ def assemble_surface_neumann(
 
 def assemble_surface_robin(
     basis,
-    robin_facets_ids: Union[np.ndarray, List[np.ndarray]],
-    robin_coefficient: Union[float, List[float]],
-    robin_bc_value: Union[float, List[float]]
+    robin_facets_ids: np.ndarray | List[np.ndarray],
+    robin_coefficient: float | List[float],
+    robin_bc_value: float | List[float]
 ):
     def _to_list(x):
         return x if isinstance(x, list) else [x]
@@ -89,15 +89,15 @@ def assemble_surface_robin(
         @skfem.BilinearForm
         def robin_form(u, v, w):
             # Surface integral (heat radiation term)
-            return h * u * v
+            return w.h * u * v
 
         @skfem.LinearForm
         def robin_load(v, w):
             # Temperature difference from outside temperature
-            return h * Tenv * v
+            return w.h * w.Tenv * v
 
-        bilinear_list.append(asm(robin_form, fb))
-        linear_list.append(asm(robin_load, fb))
+        bilinear_list.append(asm(robin_form, fb, h=h))
+        linear_list.append(asm(robin_load, fb, h=h, Tenv=Tenv))
 
     if len(bilinear_list) == 1:
         bilinear_list = bilinear_list[0]
@@ -109,8 +109,8 @@ def assemble_surface_robin(
 class LinearHeatConduction(FEMDomain):
 
     k: float  # thermal conductivity
-    robin_bilinear: np.array
-    robin_linear: np.array
+    robin_bilinear: Optional[np.array]
+    robin_linear: Optional[np.array]
 
     @property
     def material_coef(self) -> float:

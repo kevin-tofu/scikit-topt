@@ -20,8 +20,8 @@ def solve_multi_load(
     free_dofs: np.ndarray,
     dirichlet_nodes_list: list[np.ndarray],
     dirichlet_values_list: list[float],
-    robin_bilinear: np.ndarray,
-    robin_linear: np.ndarray,
+    robin_bilinear: scipy.sparse.csr_matrix | list[scipy.sparse.csr_matrix],
+    robin_linear: np.ndarray | list[np.ndarray],
     k0: float, kmin: float, p: float,
     rho: np.ndarray,
     u_all: np.ndarray,
@@ -34,10 +34,21 @@ def solve_multi_load(
     solver = 'spsolve' if solver == 'auto' else solver
     n_dof = basis.N
     # assert u_all.shape == (n_dof, len(dirichlet_values))
-
     K = composer.assemble_conduction_matrix(
         basis, rho, k0, kmin, p, elem_func
-    ) + robin_bilinear
+    )
+    if isinstance(robin_bilinear, scipy.sparse.csr_matrix):
+        K = K + robin_bilinear
+    elif isinstance(robin_bilinear, list):
+        for loop in robin_bilinear:
+            K += loop
+
+    emit = np.zeros([K.shape[0]])
+    if isinstance(robin_linear, np.ndarray):
+        emit = robin_linear
+    elif isinstance(robin_linear, list):
+        for loop in robin_linear:
+            emit += loop
     K_csr = K.tocsr()
     # compliance_total = 0.0
     u_all[:, :] = 0.0
@@ -50,7 +61,7 @@ def solve_multi_load(
     ):
         T_sol = skfem.solve(
             *skfem.condense(
-                K_csr, robin_linear, D=dirichlet_dofs_loop,
+                K_csr, emit, D=dirichlet_dofs_loop,
                 x=np.full(dirichlet_dofs_loop.N, dirichlet_values_loop)
             )
         )
