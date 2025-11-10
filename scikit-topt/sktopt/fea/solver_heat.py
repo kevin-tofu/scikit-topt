@@ -279,6 +279,28 @@ def avg_temp_grad_density_multi(
     return elem_energy_all
 
 
+def get_robin_virtual(
+    h: float, T_env: float, p: float
+):
+    @skfem.BilinearForm
+    def robin_virtual_bilinear(u, v, w):
+        rho = w['rho']
+        grad_rho = w['rho'].grad
+        interface = np.sqrt(np.sum(grad_rho**2, axis=0))
+        h_eff = h * rho**p * (1 - rho)**p
+        return h_eff * interface * u * v  # ← T*v に相当
+
+    @skfem.LinearForm
+    def robin_virtual_linear(v, w):
+        rho = w['rho']
+        grad_rho = w['rho'].grad
+        interface = np.sqrt(np.sum(grad_rho**2, axis=0))
+        h_eff = h * rho**p * (1 - rho)**p
+        return h_eff * interface * T_env * v  # ← T_env*v
+
+    return robin_virtual_bilinear, robin_virtual_linear
+
+
 class FEM_SimpLinearHeatConduction():
     def __init__(
         self, task: "LinearHeatConduction",
@@ -306,11 +328,36 @@ class FEM_SimpLinearHeatConduction():
             self.task.dirichlet_values, list
         ) else [self.task.dirichlet_values]
 
+        robin_virtual_bilinear, robin_virtual_linear = get_robin_virtual(
+            self.task.robin_coefficient, self.task.robin_bc_value, p
+        )
+        basis = self.task.basis
+
+        t = basis.mesh.t
+        nvert = basis.mesh.nvertices
+        k = t.shape[0]
+
+        rho_nodal = np.zeros(nvert, dtype=float)
+        count = np.zeros(nvert, dtype=float)
+        np.add.at(rho_nodal, t.ravel(), np.repeat(rho, k))
+        np.add.at(count,     t.ravel(), 1)
+        rho_nodal /= np.maximum(count, 1.0)
+        # to fem field
+        rho_field = basis.interpolate(rho_nodal)
+        K_virtual = robin_virtual_bilinear.assemble(
+            self.task.basis, rho=rho_field
+        )
+        f_virtual = robin_virtual_linear.assemble(
+            self.task.basis, rho=rho_field
+        )
+        robin_bilinear, robin_linear = self.task.updated_robin_bc(rho, p)
+
         compliance_list, λ_all = compute_objective_multi_load(
             self.task.basis, self.task.free_dofs,
             dirichlet_nodes_list,
             dirichlet_values_list,
-            self.task.robin_bilinear, self.task.robin_linear,
+            robin_bilinear+[K_virtual],
+            robin_linear+[f_virtual],
             self.k_max, self.k_min, p,
             rho,
             u_dofs,

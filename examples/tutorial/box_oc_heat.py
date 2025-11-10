@@ -10,6 +10,7 @@ def get_task_0(
     x_len = 8.0
     y_len = 8.0
     z_len = 1.0
+    # z_len = 8.0
     mesh_size = 0.2
 
     mesh = sktopt.mesh.toy_problem.create_box_hex(
@@ -17,28 +18,34 @@ def get_task_0(
     )
 
     if multiple_robin:
+        # robin_in_range_0 = sktopt.mesh.utils.get_points_in_range(
+        #     (0.0, 0.0), (0.0, y_len/9), (0.0, z_len)
+        # )
+        # robin_in_range_1 = sktopt.mesh.utils.get_points_in_range(
+        #     (0.0, 0.0), (4*y_len/9, 5*y_len/9), (0.0, z_len)
+        # )
+        # robin_in_range_2 = sktopt.mesh.utils.get_points_in_range(
+        #     (0.0, 0.0), (8*y_len/9, 9*y_len/9), (0.0, z_len)
+        # )
         robin_in_range_0 = sktopt.mesh.utils.get_points_in_range(
-            (0.0, 0.0), (0.0, y_len/9), (0.0, z_len)
+            (0.0, 0.0), (0.0, y_len), (0.0, z_len)
         )
         robin_in_range_1 = sktopt.mesh.utils.get_points_in_range(
-            (0.0, 0.0), (4*y_len/9, 5*y_len/9), (0.0, z_len)
+            (0.0, x_len), (y_len, y_len), (0.0, z_len)
         )
-        robin_in_range_2 = sktopt.mesh.utils.get_points_in_range(
-            (0.0, 0.0), (8*y_len/9, 9*y_len/9), (0.0, z_len)
-        )
-        robin_coefficient = [4.0e-3, 4.0e-3, 4.0e-3]
-        robin_bc_value = [300.0, 300.0, 300.0]
+
+        robin_coefficient = 4.0e-5
+        robin_bc_value = 300.0
     else:
         robin_in_range = sktopt.mesh.utils.get_points_in_range(
             (0.0, 0.0), (0.0, y_len), (0.0, z_len)
         )
         robin_coefficient = 4.0e-3
         robin_bc_value = 300.0
-    
 
     eps = mesh_size
     dirichlet_in_range = sktopt.mesh.utils.get_points_in_range(
-        (x_len, x_len), (0.0, 1.0*y_len/20), (0.0, 1.0*z_len/10)
+        (x_len-1.0*x_len/20, x_len), (0.0, 1.0*y_len/20), (0.0, z_len)
     )
     # dirichlet_in_range = sktopt.mesh.utils.get_points_in_range(
     #     (x_len, x_len), (4*y_len/9, 5*y_len/9), (4*z_len/8, 5*z_len/9)
@@ -53,7 +60,7 @@ def get_task_0(
         boundaries = {
             "robin_0": robin_in_range_0,
             "robin_1": robin_in_range_1,
-            "robin_2": robin_in_range_2,
+            # "robin_2": robin_in_range_2,
             "dirichlet_0": dirichlet_in_range
         }
     else:
@@ -69,7 +76,7 @@ def get_task_0(
     e = skfem.ElementHex1()
     basis = skfem.Basis(mesh, e, intorder=1)
     k = 10.0
-    objective = "averaged_temp"
+    # objective = "averaged_temp"
     objective = "compliance"
     mytask = sktopt.mesh.LinearHeatConduction.from_mesh_tags(
         objective,
@@ -131,9 +138,9 @@ def get_cfg():
             target_value=3.0
         ),
         vol_frac=sktopt.tools.SchedulerConfig.constant(
-            target_value=0.4
+            target_value=0.7
         ),
-        max_iters=40,
+        max_iters=120,
         record_times=40,
         # filter_type="spacial"
         filter_type="helmholtz"
@@ -143,7 +150,8 @@ def get_cfg():
 
 def main():
 
-    tsk = get_task_0()
+    tsk = get_task_0(True)
+    # tsk = get_task_0(False)
     # tsk = get_task_1()
     cfg = get_cfg()
     optimizer = sktopt.core.OC_Optimizer(cfg, tsk)

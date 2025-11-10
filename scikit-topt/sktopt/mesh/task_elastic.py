@@ -240,6 +240,7 @@ class LinearElastisicity(FEMDomain):
             base.neumann_elements,
             base.neumann_dir_type,
             base.neumann_values,
+            base.robin_facets_ids,
             base.robin_nodes,
             base.robin_elements,
             base.robin_coefficient,

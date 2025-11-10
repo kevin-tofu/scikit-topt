@@ -73,6 +73,7 @@ class FEMDomain():
     neumann_values: float | list[float] | None
     # neumann_vector: Optional[np.ndarray | list[np.ndarray]]
 
+    robin_facets_ids: np.ndarray | list[np.ndarray] | None
     robin_nodes: np.ndarray | list[np.ndarray] | None
     robin_elements: np.ndarray | None
     robin_coefficient: float | list[float] | None
@@ -109,6 +110,7 @@ class FEMDomain():
         neumann_nodes: np.ndarray | list[np.ndarray] | None,
         neumann_dir_type: str | list[str] | None,
         neumann_values: np.ndarray | list[np.ndarray] | None,
+        robin_facets_ids: np.ndarray | list[np.ndarray] | None,
         robin_nodes: np.ndarray | list[np.ndarray] | None,
         robin_coefficient: float | list[float] | None,
         robin_bc_value: float | list[float] | None,
@@ -209,10 +211,10 @@ class FEMDomain():
             elements_excluded = np.concatenate(
                 [elements_excluded, neumann_elements]
             )
-        if robin_elements is not None:
-            elements_excluded = np.concatenate(
-                [elements_excluded, robin_elements]
-            )
+        # if robin_elements is not None:
+        #     elements_excluded = np.concatenate(
+        #         [elements_excluded, robin_elements]
+        #     )
 
         design_elements = setdiff1d(design_elements, elements_excluded)
         if len(design_elements) == 0:
@@ -251,6 +253,7 @@ class FEMDomain():
             neumann_dir_type,
             neumann_values,
             # neumann_vector,
+            robin_facets_ids,
             robin_nodes,
             robin_elements,
             robin_coefficient,
@@ -332,6 +335,7 @@ class FEMDomain():
             neumann_dir_type,
             neumann_values,
             # neumann_vector,
+            robin_facets_ids,
             robin_nodes,
             robin_coefficient,
             robin_bc_value,
