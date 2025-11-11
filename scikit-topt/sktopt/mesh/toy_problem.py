@@ -79,15 +79,15 @@ def toy_base(
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=2)
     return task_elastic.LinearElastisicity.from_facets(
-        E0,
-        0.30,
         basis,
         dirichlet_facets,
         "all",
         force_facets,
         "u^3",
         F,
-        design_elements
+        design_elements,
+        E0,
+        0.30,
     )
 
 
@@ -135,12 +135,12 @@ def toy2():
     basis = skfem.Basis(mesh, e, intorder=2)
     E0 = 210e3
     return task_elastic.LinearElastisicity.from_mesh_tags(
-        E0,
-        0.30,
         basis,
         "all",
         neumann_dir_type,
-        neumann_value
+        neumann_value,
+        E0,
+        0.30,
     )
 
 
@@ -242,15 +242,15 @@ def toy_msh(
     print("generate config")
     E0 = 210e3
     return task_elastic.LinearElastisicity.from_facets(
-        E0,
-        0.30,
         basis,
         dirichlet_facets,
         "all",
         force_facets,
         force_dir_type,
         force_value,
-        design_elements
+        design_elements,
+        E0,
+        0.30,
     )
 
 

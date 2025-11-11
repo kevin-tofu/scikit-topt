@@ -148,8 +148,6 @@ class LinearElastisicity(FEMDomain):
     @classmethod
     def from_facets(
         cls,
-        E: float,
-        nu: float,
         basis: skfem.Basis,
         dirichlet_facets_ids: np.ndarray | list[np.ndarray],
         dirichlet_dir: _lit_bc | list[_lit_bc],
@@ -157,6 +155,8 @@ class LinearElastisicity(FEMDomain):
         force_dir_type: str | list[str],
         force_value: float | list[float],
         design_elements: np.ndarray,
+        E: float,
+        nu: float,
     ) -> 'LinearElastisicity':
         """
         Create a TaskConfig from facet-based boundary-condition specifications.
@@ -215,7 +215,7 @@ class LinearElastisicity(FEMDomain):
             force_facets_ids,
             force_dir_type,
             force_value,
-            None, None, None,
+            None, None, None, None,
             design_elements
         )
 
@@ -245,6 +245,7 @@ class LinearElastisicity(FEMDomain):
             base.robin_elements,
             base.robin_coefficient,
             base.robin_bc_value,
+            base.design_robin_boundary,
             base.design_elements,
             base.free_dofs,
             base.free_elements,
@@ -262,12 +263,12 @@ class LinearElastisicity(FEMDomain):
     @classmethod
     def from_mesh_tags(
         cls,
-        E: float,
-        nu: float,
         basis: skfem.Basis,
         dirichlet_dir: _lit_bc | list[_lit_bc],
         neumann_dir_type: str | list[str],
         neumann_values: float | list[float],
+        E: float,
+        nu: float,
     ) -> 'FEMDomain':
         import re
 
@@ -303,11 +304,12 @@ class LinearElastisicity(FEMDomain):
         else:
             neumann_facets_ids = np.array([])
         return cls.from_facets(
-            E, nu, basis,
+            basis,
             dirichlet_facets_ids,
             dirichlet_dir,
             neumann_facets_ids,
             neumann_dir_type,
             neumann_values,
-            design_elements
+            design_elements,
+            E, nu
         )

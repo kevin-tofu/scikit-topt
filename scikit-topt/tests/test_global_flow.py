@@ -35,8 +35,6 @@ def define_task() -> sktopt.mesh.LinearElastisicity:
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
     return sktopt.mesh.LinearElastisicity.from_defaults(
-        210e9,
-        0.30,
         basis,
         dirichlet_nodes,
         dirichlet_dofs,
@@ -44,6 +42,8 @@ def define_task() -> sktopt.mesh.LinearElastisicity:
         F_nodes,
         F,
         design_elements,
+        210e3,
+        0.30,
     )
 
 

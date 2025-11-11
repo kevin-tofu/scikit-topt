@@ -280,22 +280,23 @@ def avg_temp_grad_density_multi(
 
 
 def get_robin_virtual(
-    h: float, T_env: float, p: float
+    h: float, T_env: float,
+    p: float, q: float
 ):
     @skfem.BilinearForm
     def robin_virtual_bilinear(u, v, w):
         rho = w['rho']
         grad_rho = w['rho'].grad
         interface = np.sqrt(np.sum(grad_rho**2, axis=0))
-        h_eff = h * rho**p * (1 - rho)**p
-        return h_eff * interface * u * v  # ← T*v に相当
+        h_eff = h * rho**p * (1 - rho)**q
+        return h_eff * interface * u * v
 
     @skfem.LinearForm
     def robin_virtual_linear(v, w):
         rho = w['rho']
         grad_rho = w['rho'].grad
         interface = np.sqrt(np.sum(grad_rho**2, axis=0))
-        h_eff = h * rho**p * (1 - rho)**p
+        h_eff = h * rho**p * (1 - rho)**q
         return h_eff * interface * T_env * v  # ← T_env*v
 
     return robin_virtual_bilinear, robin_virtual_linear
@@ -307,7 +308,8 @@ class FEM_SimpLinearHeatConduction():
         E_min_coeff: float,
         density_interpolation: Callable = composer.simp_interpolation,
         solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve",
-        n_joblib: float = 1
+        q: int = 4,
+        n_joblib: int = 1
     ):
         self.task = task
         self.k_max = task.k * 1.0
@@ -316,6 +318,7 @@ class FEM_SimpLinearHeatConduction():
         self.solver_option = solver_option
         self.n_joblib = n_joblib
         self.λ_all = None
+        self.q = q
 
     def objectives_multi_load(
         self,
@@ -329,7 +332,8 @@ class FEM_SimpLinearHeatConduction():
         ) else [self.task.dirichlet_values]
 
         robin_virtual_bilinear, robin_virtual_linear = get_robin_virtual(
-            self.task.robin_coefficient, self.task.robin_bc_value, p
+            self.task.robin_coefficient, self.task.robin_bc_value,
+            p, self.q
         )
         basis = self.task.basis
 
@@ -350,14 +354,19 @@ class FEM_SimpLinearHeatConduction():
         f_virtual = robin_virtual_linear.assemble(
             self.task.basis, rho=rho_field
         )
-        robin_bilinear, robin_linear = self.task.updated_robin_bc(rho, p)
+
+        if self.task.design_robin_boundary is True:
+            self.task.update_robin_bc(rho, p)
+        # else:
+        #     robin_bilinear = self.task.robin_bilinear
+        #     robin_linear = self.task.robin_linear
 
         compliance_list, λ_all = compute_objective_multi_load(
             self.task.basis, self.task.free_dofs,
             dirichlet_nodes_list,
             dirichlet_values_list,
-            robin_bilinear+[K_virtual],
-            robin_linear+[f_virtual],
+            self.task.robin_bilinear+[K_virtual],
+            self.task.robin_linear+[f_virtual],
             self.k_max, self.k_min, p,
             rho,
             u_dofs,
@@ -373,15 +382,15 @@ class FEM_SimpLinearHeatConduction():
         self,
         rho: np.ndarray, p: float, u_dofs: np.ndarray
     ) -> np.ndarray:
-        if self.task.objective == "averaged_temp":
-            return avg_temp_grad_density_multi(
-                self.task.basis,
-                u_dofs,
-                self.λ_all
-            )
-        if self.task.objective == "compliance":
-            return heat_energy_skfem_multi(
-                self.task.basis, rho, u_dofs,
-                self.k_max, self.k_min, p,
-                elem_func=self.density_interpolation
-            )
+        # if self.task.objective == "compliance":
+        return heat_energy_skfem_multi(
+            self.task.basis, rho, u_dofs,
+            self.k_max, self.k_min, p,
+            elem_func=self.density_interpolation
+        )
+        # elif self.task.objective == "averaged_temp":
+        #     return avg_temp_grad_density_multi(
+        #         self.task.basis,
+        #         u_dofs,
+        #         self.λ_all
+        #     )

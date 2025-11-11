@@ -63,7 +63,7 @@ def assemble_surface_robin(
     robin_coefficient: float | List[float],
     robin_bc_value: float | List[float],
     rho: Optional[np.ndarray] = None,
-    p: float = 3.0
+    p: Optional[float] = None
 ):
     def _to_list(x):
         return x if isinstance(x, list) else [x]
@@ -144,9 +144,9 @@ class LinearHeatConduction(FEMDomain):
     k: float  # thermal conductivity
     robin_bilinear: Optional[list] = None
     robin_linear: Optional[list] = None
-    objective: Literal["compliance", "averaged_temp"] = "averaged_temp"
+    objective: Literal["compliance"] = "compliance"
 
-    def updated_robin_bc(self, rho: np.ndarray, p: float):
+    def update_robin_bc(self, rho: np.ndarray, p: float):
         robin_bilinear, robin_linear = assemble_surface_robin(
             self.basis,
             robin_facets_ids=self.robin_facets_ids,
@@ -154,7 +154,8 @@ class LinearHeatConduction(FEMDomain):
             robin_bc_value=self.robin_bc_value,
             rho=rho, p=p
         )
-        return robin_bilinear, robin_linear
+        self.robin_bilinear = robin_bilinear
+        self.robin_linear = robin_linear
 
     @property
     def material_coef(self) -> float:
@@ -169,21 +170,20 @@ class LinearHeatConduction(FEMDomain):
     @classmethod
     def from_facets(
         cls,
-        objective: str,
-        k: float,
         basis: skfem.Basis,
         dirichlet_facets_ids: np.ndarray | list[np.ndarray],
         dirichlet_values: float | list[float],
-        # neumann_facets_ids: np.ndarray | list[np.ndarray],
-        # neumann_values: float | list[float],
         robin_facets_ids: np.ndarray | list[np.ndarray] | None,
         robin_coefficient: float | list[float] | None,
         robin_bc_value: float | list[float] | None,
+        design_robin_boundary: bool | None,
         design_elements: np.ndarray,
+        k: float,
+        objective: Literal["compliance"] = "compliance"
     ) -> 'LinearHeatConduction':
 
-        if objective not in ["compliance", "averaged_temp"]:
-            raise ValueError("should be compliance or averaged_temp")
+        if objective not in ["compliance"]:
+            raise ValueError("should be compliance")
 
         dirichlet_dir = None
         neumann_facets_ids = None
@@ -198,6 +198,7 @@ class LinearHeatConduction(FEMDomain):
             robin_facets_ids,
             robin_coefficient,
             robin_bc_value,
+            design_robin_boundary,
             design_elements
         )
         # heat_source_list = assemble_surface_neumann(
@@ -231,6 +232,7 @@ class LinearHeatConduction(FEMDomain):
             base.robin_elements,
             base.robin_coefficient,
             base.robin_bc_value,
+            base.design_robin_boundary,
             base.design_elements,
             base.free_dofs,
             base.free_elements,
@@ -244,12 +246,13 @@ class LinearHeatConduction(FEMDomain):
     @classmethod
     def from_mesh_tags(
         cls,
-        objective: str,
-        k: float,
         basis: skfem.Basis,
         dirichlet_values: float | list[float],
         robin_coefficient: float | list[float],
         robin_bc_value: float | list[float],
+        design_robin_boundary: bool | None,
+        k: float,
+        objective: Literal["compliance"] = "compliance"
     ) -> 'FEMDomain':
         import re
 
@@ -300,11 +303,13 @@ class LinearHeatConduction(FEMDomain):
         #     neumann_facets_ids = None
 
         return cls.from_facets(
-            objective, k, basis,
+            basis,
             dirichlet_facets_ids,
             dirichlet_values,
             robin_facets_ids,
             robin_coefficient,
             robin_bc_value,
-            design_elements
+            design_robin_boundary,
+            design_elements,
+            k, objective
         )

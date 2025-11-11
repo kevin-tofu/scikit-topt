@@ -4,7 +4,8 @@ import sktopt
 
 
 def get_task_0(
-    multiple_robin: bool = True
+    multiple_robin: bool = True,
+    design_robin_boundary: bool = True
 ):
 
     x_len = 8.0
@@ -79,12 +80,12 @@ def get_task_0(
     # objective = "averaged_temp"
     objective = "compliance"
     mytask = sktopt.mesh.LinearHeatConduction.from_mesh_tags(
-        objective,
-        k,
         basis,
         dirichlet_value,
         robin_coefficient,
         robin_bc_value,
+        design_robin_boundary,
+        k, objective
     )
     return mytask
 
@@ -120,11 +121,11 @@ def get_task_1():
     basis = skfem.Basis(mesh, e, intorder=1)
     k = 10.0
     mytask = sktopt.mesh.LinearHeatConduction.from_mesh_tags(
-        k,
         basis,
         dirichlet_value,
         None,
         None,
+        k,
     )
     return mytask
 
@@ -140,8 +141,8 @@ def get_cfg():
         vol_frac=sktopt.tools.SchedulerConfig.constant(
             target_value=0.7
         ),
-        max_iters=120,
-        record_times=40,
+        max_iters=60,
+        record_times=60,
         # filter_type="spacial"
         filter_type="helmholtz"
     )
@@ -150,8 +151,9 @@ def get_cfg():
 
 def main():
 
-    tsk = get_task_0(True)
-    # tsk = get_task_0(False)
+    tsk = get_task_0(multiple_robin=True, design_robin_boundary=True)
+    # tsk = get_task_0(multiple_robin=True, design_robin_boundary=False)
+    # tsk = get_task_0(multiple_robin=False, design_robin_boundary=False)
     # tsk = get_task_1()
     cfg = get_cfg()
     optimizer = sktopt.core.OC_Optimizer(cfg, tsk)
