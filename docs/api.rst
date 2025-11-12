@@ -6,7 +6,7 @@ This page provides detailed documentation for modules, classes and functions.
 .. toctree::
    :maxdepth: 1
 
-   core.optimizers.common
+   core.optimizers.common_density
    core.optimizers.oc
    core.optimizers.logmoc
    fea.solver_elastic
