@@ -141,8 +141,8 @@ def get_cfg():
         vol_frac=sktopt.tools.SchedulerConfig.constant(
             target_value=0.7
         ),
-        max_iters=60,
-        record_times=60,
+        max_iters=40,
+        record_times=40,
         # filter_type="spacial"
         filter_type="helmholtz"
     )
