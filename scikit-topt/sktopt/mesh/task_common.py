@@ -421,8 +421,6 @@ class FEMDomain():
         else:
             raise ValueError("should be ndarray or list of ndarray")
 
-
-
     def nodes_and_elements_stats(self, dst_path: str):
         node_points = self.basis.mesh.p.T  # shape = (n_points, 3)
         tree_nodes = cKDTree(node_points)
