@@ -390,8 +390,8 @@ class DensityMethod(DensityMethodBase):
             if not os.path.exists(f"{self.cfg.dst_path}/data"):
                 os.makedirs(f"{self.cfg.dst_path}/data")
 
-        if isinstance(tsk, sktopt.mesh.LinearElastisicity):
-            self.fem = fea.FEM_SimpLinearElastisicity(
+        if isinstance(tsk, sktopt.mesh.LinearElasticity):
+            self.fem = fea.FEM_SimpLinearElasticity(
                 tsk, cfg.E_min_coeff,
                 density_interpolation=interpolation_funcs(cfg)[0],
                 solver_option=cfg.solver_option,

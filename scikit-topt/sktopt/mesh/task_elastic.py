@@ -82,7 +82,7 @@ def assemble_surface_forces(
 
 
 @dataclass
-class LinearElastisicity(FEMDomain):
+class LinearElasticity(FEMDomain):
     """
     Container for storing finite element and optimization-related data
     used in topology optimization tasks.
@@ -90,7 +90,7 @@ class LinearElastisicity(FEMDomain):
     This class holds material properties, boundary condition information,
     designable and non-designable element indices, as well as force vectors
     and volume data for each element. It is typically constructed using
-    `LinearElastisicity.from_defaults`.
+    `LinearElasticity.from_defaults`.
 
     Attributes
     ----------
@@ -157,7 +157,7 @@ class LinearElastisicity(FEMDomain):
         design_elements: np.ndarray,
         E: float,
         nu: float,
-    ) -> 'LinearElastisicity':
+    ) -> 'LinearElasticity':
         """
         Create a TaskConfig from facet-based boundary-condition specifications.
 

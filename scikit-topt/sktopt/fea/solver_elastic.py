@@ -322,9 +322,9 @@ def strain_energy_skfem_multi(
     return elem_energy_all  # shape: (n_elements, n_loads)
 
 
-class FEM_SimpLinearElastisicity():
+class FEM_SimpLinearElasticity():
     def __init__(
-        self, task: "LinearElastisicity",
+        self, task: "LinearElasticity",
         E_min_coeff: float,
         density_interpolation: Callable = composer.simp_interpolation,
         solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve",
