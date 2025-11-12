@@ -1,4 +1,4 @@
-sktopt.mesh.solver_elastic
+sktopt.fea.solver_elastic
 ==============================
 
 .. automodule:: sktopt.fea.solver_elastic

@@ -7,7 +7,7 @@ import skfem
 from skfem import FacetBasis, asm, LinearForm
 from scipy.spatial import cKDTree
 import matplotlib.pyplot as plt
-from sktopt.mesh.task_common import FEMDomain
+from sktopt.mesh import FEMDomain
 
 
 def setdiff1d(a, b):

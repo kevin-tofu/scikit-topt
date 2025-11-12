@@ -5,7 +5,7 @@ import numpy as np
 import skfem
 
 from skfem import FacetBasis, asm, LinearForm
-from sktopt.mesh.task_common import FEMDomain
+from sktopt.mesh import FEMDomain
 
 
 _lit_bc = Literal['u^1', 'u^2', 'u^3', 'all']

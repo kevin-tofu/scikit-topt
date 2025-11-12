@@ -8,6 +8,7 @@ from scipy.sparse.linalg import LinearOperator
 import skfem
 from skfem.helpers import grad, dot
 import pyamg
+import joblib
 
 # from sktopt.mesh import LinearHeatConduction
 from sktopt.fea import composer

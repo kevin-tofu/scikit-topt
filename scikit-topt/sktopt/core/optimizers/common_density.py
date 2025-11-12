@@ -7,7 +7,6 @@ import inspect
 import shutil
 import json
 
-
 import numpy as np
 import sktopt
 from sktopt import tools
@@ -29,82 +28,89 @@ class DensityMethodConfig():
     """
     Configuration for density-based topology optimization (SIMP/RAMP).
 
-    This configuration controls interpolation, continuation schedules via
-    `SchedulerConfig`, filtering/projection thresholds, and numerical options.
-    It targets sensitivity-based methods such as SIMP and RAMP.
+    This configuration controls interpolation models, continuation schedules
+    (via :class:`~sktopt.tools.SchedulerConfig`), filtering/projection thresholds,
+    and numerical options. It targets sensitivity-based topology optimization
+    methods such as SIMP and RAMP.
 
     Notes on continuation
     ---------------------
     Parameters that change during optimization are represented by
-    :class:`tools.SchedulerConfig`:
-      - ``p``: penalization power (e.g., 1.0 → 3.0)
-      - ``vol_frac``: volume fraction constraint (e.g., 0.8 → 0.4)
-      - ``beta``: Heaviside projection sharpness (e.g., 1.0 → 2.0)
-      - ``filter_radius``: filter radius (often constant)
+    :class:`~sktopt.tools.SchedulerConfig`:
 
-    Each scheduler defines how a value evolves (e.g., "Step", "StepAccelerating",
-    "Constant") and may include extra shape parameters (e.g., ``curvature`` for
-    accelerating schedules).
+    - ``p``: Penalization power (e.g., 1.0 → 3.0)
+    - ``vol_frac``: Volume fraction constraint (e.g., 0.8 → 0.4)
+    - ``beta``: Heaviside projection sharpness (e.g., 1.0 → 2.0)
+    - ``filter_radius``: Filter radius (often constant)
+
+    Each scheduler defines how its value evolves (e.g., ``"Step"``,
+    ``"StepAccelerating"``, ``"Constant"``) and may include shape parameters
+    such as ``curvature`` for accelerating schedules.
 
     Attributes
     ----------
     dst_path : str
         Output directory for results and logs.
     interpolation : {"SIMP", "RAMP"}
-        Material interpolation model for penalization.
+        Material interpolation model used for penalization.
     record_times : int
         Number of snapshots recorded during optimization.
     max_iters : int
         Maximum number of optimization iterations.
 
     beta_eta : float
-        Threshold parameter (η) for Heaviside projection; the density at which
-        the projection transitions sharply between 0 and 1.
+        Threshold parameter (η) for the Heaviside projection. Represents the
+        density at which the projection transitions sharply between 0 and 1.
     eta : float
         Threshold density used in projection or post-processing.
 
-    p : tools.SchedulerConfig
+    p : :class:`~sktopt.tools.SchedulerConfig`
         Continuation schedule for penalization power.
-        Default: Step from 1.0 to 3.0.
-    vol_frac : tools.SchedulerConfig
-        Continuation schedule for volume fraction constraint.
-        Default: Step from 0.8 to 0.4.
-    beta : tools.SchedulerConfig
+        Default: ``Step(init_value=1.0, target_value=3.0, num_steps=3)``.
+    vol_frac : :class:`~sktopt.tools.SchedulerConfig`
+        Continuation schedule for the volume fraction constraint.
+        Default: ``Constant(target_value=0.8)``.
+    beta : :class:`~sktopt.tools.SchedulerConfig`
         Continuation schedule for Heaviside sharpness (β).
-        Default: StepAccelerating from 1.0 to 2.0 with ``curvature=2.0``.
-    filter_radius : tools.SchedulerConfig
-        Schedule for filter radius. Default: Constant (target_value=1.2).
+        Default: ``StepAccelerating(init_value=1.0, target_value=2.0,
+        num_steps=3, curvature=2.0)``.
+    filter_type : {"spacial", "helmholtz"}
+        Type of filter to apply to the density field.
+    filter_radius : :class:`~sktopt.tools.SchedulerConfig`
+        Schedule for filter radius. Default: ``Constant(target_value=0.01)``.
 
     E_min_coeff : float
-        A proportional constant that determines the minimum value of Young’s modulus.
+        Proportional constant that defines the minimum Young’s modulus
+        (typically 1e-3 × E₀).
     rho_min : float
-        Minimum density clamp (avoids singular stiffness).
+        Minimum density clamp to avoid singular stiffness.
     rho_max : float
         Maximum density clamp (typically 1.0).
 
     restart : bool
-        If True, resume optimization from saved state.
+        If ``True``, resume optimization from a saved state.
     restart_from : int
-        Iteration index to resume from (use -1 to auto-detect latest).
+        Iteration index to resume from. Use ``-1`` to auto-detect the latest checkpoint.
 
     export_img : bool
         Whether to export images during optimization.
     export_img_opaque : bool
-        If True, use opaque rendering for exported images.
+        If ``True``, use opaque rendering for exported images.
 
     design_dirichlet : bool
-        If True, Dirichlet boundary elements are included in the design domain.
+        If ``True``, Dirichlet boundary elements are included in the design domain.
     sensitivity_filter : bool
-        If True, apply filtering to sensitivity fields.
+        If ``True``, apply filtering to sensitivity fields.
 
     solver_option : {"spsolve", "cg_pyamg"}
         Linear solver for the state analysis. ``"cg_pyamg"`` enables multigrid
-        acceleration via PyAMG.
+        acceleration using PyAMG.
     scaling : bool
-        If True, apply length/force scaling to normalize geometry and loads for
-        improved conditioning.
+        If ``True``, apply length/force scaling to normalize geometry and loads
+        for improved numerical conditioning.
     n_joblib : int
         Number of parallel workers used in joblib-enabled sections.
+
     """
 
     dst_path: str = "./result/pytests"
@@ -543,59 +549,55 @@ class DensityMethod(DensityMethodBase):
 
     def initialize_params(self):
         """
-            Initialize parameters and preallocate work arrays for density-based topology 
-            optimization using the SIMP method.
+    Initialize parameters and preallocate work arrays for density-based topology
+    optimization using the SIMP method.
 
-            This function prepares all arrays required for iterative optimization. 
-            By preallocating memory and reusing arrays in-place, repeated allocations 
-            are avoided and execution speed is improved.
+    This prepares all arrays required for the iterative loop. By preallocating and
+    reusing arrays in-place, repeated allocations are avoided and performance improves.
 
-            Returns
-            -------
-            iter_begin : int
-                Starting iteration index.
-            iter_end : int
-                Final iteration index.
-            rho : ndarray of shape (n_elements,)
-                Current element-wise design density variables.
-            rho_prev : ndarray of shape (n_elements,)
-                Copy of densities from the previous iteration.
-            rho_filtered : ndarray of shape (n_elements,)
-                Densities after applying the density filter (e.g., Helmholtz filter).
-            rho_projected : ndarray of shape (n_elements,)
-                Densities after applying the projection function (e.g., Heaviside projection).
-            dH_drho : ndarray of shape (n_elements,)
-                Derivative of the projection function with respect to the filtered densities.
-            grad_filtered : ndarray of shape (n_elements,)
-                Gradient field after combining sensitivity with projection derivative.
-            dC_drho_projected : ndarray of shape (n_elements,)
-                Compliance sensitivities with respect to the projected densities.
-            energy_mean : ndarray of shape (n_elements,)
-                Average element strain energy over all load cases.
-            dC_drho_full : ndarray of shape (n_elements,)
-                Compliance sensitivities mapped back to the full set of elements.
-            dC_drho_design_eles : ndarray of shape (n_design_elements,)
-                Compliance sensitivities restricted to design elements only.
-            scaling_rate : ndarray of shape (n_design_elements,)
-                Scaling factors used in the update scheme (e.g., MOC/OC update).
-            rho_design_eles : ndarray of shape (n_design_elements,)
-                Subset of densities corresponding to design elements only.
-            rho_clip_lower : ndarray of shape (n_design_elements,)
-                Lower clipping bounds for density updates.
-            rho_clip_upper : ndarray of shape (n_design_elements,)
-                Upper clipping bounds for density updates.
-            u_dofs : ndarray of shape (ndof, n_load_cases)
-                Displacement field solutions for each degree of freedom
-                and each load case.
-            filter_radius : float
-                Initial radius of the density filter. Determined either from 
-                a fixed value or from a scheduled update.
+    Returns
+    -------
+    iter_begin : int
+        Starting iteration index.
+    iter_end : int
+        Final iteration index.
+    rho : ndarray, shape (n_elements,)
+        Current element-wise design density.
+    rho_prev : ndarray, shape (n_elements,)
+        Copy of densities from the previous iteration.
+    rho_filtered : ndarray, shape (n_elements,)
+        Densities after applying the density filter (e.g., Helmholtz filter).
+    rho_projected : ndarray, shape (n_elements,)
+        Densities after applying the projection (e.g., Heaviside projection).
+    dH_drho : ndarray, shape (n_elements,)
+        Derivative of the projection with respect to the filtered densities.
+    grad_filtered : ndarray, shape (n_elements,)
+        Aggregated gradient after combining sensitivity with projection derivative.
+    dC_drho_projected : ndarray, shape (n_elements,)
+        Compliance sensitivities with respect to the projected densities.
+    energy_mean : ndarray, shape (n_elements,)
+        Average element strain energy over all load cases.
+    dC_drho_full : ndarray, shape (n_elements,)
+        Compliance sensitivities mapped back to the full element set.
+    dC_drho_design_eles : ndarray, shape (n_design_elements,)
+        Compliance sensitivities restricted to design elements only.
+    scaling_rate : ndarray, shape (n_design_elements,)
+        Scaling factors used in the update scheme (e.g., OC/MOC).
+    rho_design_eles : ndarray, shape (n_design_elements,)
+        Subset of densities corresponding to design elements only.
+    rho_clip_lower : ndarray, shape (n_design_elements,)
+        Lower clipping bounds for density updates.
+    rho_clip_upper : ndarray, shape (n_design_elements,)
+        Upper clipping bounds for density updates.
+    u_dofs : ndarray, shape (ndof, n_load_cases)
+        Displacement field solutions for each degree of freedom and each load case.
+    filter_radius : float
+        Initial density-filter radius, determined from a fixed value or a schedule.
 
-            Notes
-            -----
-            - This setup is specific to density-based SIMP topology optimization.
-            - Arrays are reused in-place across iterations to minimize memory 
-            allocation overhead.
+    Notes
+    -----
+    - This setup targets density-based (SIMP) topology optimization.
+    - Arrays are reused in-place across iterations to minimize allocation overhead.
         """
         tsk = self.tsk
         cfg = self.cfg

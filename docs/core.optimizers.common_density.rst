@@ -1,8 +1,8 @@
 sktopt.core.optimizers.common_density
-==============================
+======================================
 
 .. automodule:: sktopt.core.optimizers.common_density
    :members:
-   :no-index:
+   :noindex:
    :undoc-members:
    :show-inheritance:
