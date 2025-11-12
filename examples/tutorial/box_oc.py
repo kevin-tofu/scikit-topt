@@ -42,7 +42,7 @@ def get_task():
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=2)
     E0 = 210e3
-    mytask = sktopt.mesh.LinearElastisicity.from_mesh_tags(
+    mytask = sktopt.mesh.LinearElasticity.from_mesh_tags(
         basis,
         dirichlet_dir,
         neumann_dir_type,
