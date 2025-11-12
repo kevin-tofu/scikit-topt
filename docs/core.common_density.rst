@@ -1,7 +1,7 @@
-sktopt.core.optimizers.common
+sktopt.core.optimizers.common_density
 ==============================
 
-.. automodule:: sktopt.core.optimizers.common
+.. automodule:: sktopt.core.optimizers.common_density
    :members:
    :no-index:
    :undoc-members:
