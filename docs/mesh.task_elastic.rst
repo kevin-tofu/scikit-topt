@@ -1,7 +1,7 @@
-sktopt.mesh.task
+sktopt.mesh.task_elastic
 ==============================
 
-.. automodule:: sktopt.mesh.task
+.. automodule:: sktopt.mesh.task_elastic
    :members:
    :no-index:
    :undoc-members:

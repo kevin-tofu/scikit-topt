@@ -9,5 +9,7 @@ This page provides detailed documentation for modules, classes and functions.
    core.optimizers.common
    core.optimizers.oc
    core.optimizers.logmoc
-   mesh.task
+   mesh.task_common
+   mesh.task_elastic
+   mesh.task_heat
    mesh.utils
