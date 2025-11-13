@@ -50,6 +50,7 @@ def solve_scipy(
     except ModuleNotFoundError as e:
         logger.info(f"ModuleNotFoundError: {e}")
         n_joblib = -1
+        raise
 
     except Exception:
         u_all[:, :] = np.column_stack(

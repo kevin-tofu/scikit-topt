@@ -172,23 +172,28 @@ def solve_multi_load(
     compliance_total = 0.0
     u_all[:, :] = 0.0
     if solver == 'spsolve':
-        if n_joblib > 1:
-            from joblib import Parallel, delayed, parallel_backend
-            lu = scipy.sparse.linalg.splu(K_e.tocsc())
+        try:
+            if n_joblib > 1:
+                from joblib import Parallel, delayed, parallel_backend
+                lu = scipy.sparse.linalg.splu(K_e.tocsc())
 
-            def solve_system(F_stack):
-                return lu.solve(F_stack)
+                def solve_system(F_stack):
+                    return lu.solve(F_stack)
 
-            with parallel_backend("threading"):
-                u_all[:, :] = np.column_stack(
-                    Parallel(n_jobs=n_joblib)(
-                        delayed(solve_system)(F_stack[:, i]) for i in range(
-                            F_stack.shape[1]
+                with parallel_backend("threading"):
+                    u_all[:, :] = np.column_stack(
+                        Parallel(n_jobs=n_joblib)(
+                            delayed(solve_system)(F_stack[:, i]) for i in range(
+                                F_stack.shape[1]
+                            )
                         )
                     )
-                )
+        except ModuleNotFoundError as e:
+            logger.info(f"ModuleNotFoundError: {e}")
+            n_joblib = -1
+            raise
 
-        else:
+        except Exception:
             lu = scipy.sparse.linalg.splu(K_e.tocsc())
             u_all[:, :] = np.column_stack(
                 [lu.solve(F_stack[:, i]) for i in range(F_stack.shape[1])]
