@@ -177,14 +177,14 @@ This will run a compliance minimization with OC method.</p>
 
 <span class="n">e</span> <span class="o">=</span> <span class="n">skfem</span><span class="o">.</span><span class="n">ElementVector</span><span class="p">(</span><span class="n">skfem</span><span class="o">.</span><span class="n">ElementHex1</span><span class="p">())</span>
 <span class="n">basis</span> <span class="o">=</span> <span class="n">skfem</span><span class="o">.</span><span class="n">Basis</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">intorder</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<span class="n">E0</span> <span class="o">=</span> <span class="mf">210e9</span>
+<span class="n">E0</span> <span class="o">=</span> <span class="mf">210e3</span>
 <span class="n">mytask</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">LinearElastisicity</span><span class="o">.</span><span class="n">from_mesh_tags</span><span class="p">(</span>
-    <span class="n">E0</span><span class="p">,</span>
-    <span class="mf">0.30</span><span class="p">,</span>
     <span class="n">basis</span><span class="p">,</span>
     <span class="s2">&quot;all&quot;</span><span class="p">,</span>
     <span class="n">force_dir_type</span><span class="p">,</span>
-    <span class="n">force_value</span>
+    <span class="n">force_value</span><span class="p">,</span>
+    <span class="n">E0</span><span class="p">,</span>
+    <span class="mf">0.30</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>

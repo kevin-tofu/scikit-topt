@@ -1,0 +1,344 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sktopt.core &mdash; scikit-topt 0.2.18 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+    <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/core.html" />
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=ae23a911"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="sktopt.fea" href="fea.html" />
+    <link rel="prev" title="API Reference" href="api.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            scikit-topt
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Content</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="project.html">Project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial Page</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory.html">Topology Optimization Algorithm Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization Algorithms in Density-Based Topology Optimization</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">sktopt.core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fea.html">sktopt.fea</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mesh.html">sktopt.mesh</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mesh.utils.html">sktopt.mesh.utils</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">scikit-topt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="api.html">API Reference</a></li>
+      <li class="breadcrumb-item active">sktopt.core</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/core.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="sktopt-core">
+<h1>sktopt.core<a class="headerlink" href="#sktopt-core" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">LogMOC_Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dst_path:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'./result/pytests'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation:</span> <span class="pre">~typing.Literal['SIMP']</span> <span class="pre">=</span> <span class="pre">'SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">record_times:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vol_frac:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_type:</span> <span class="pre">~typing.Literal['spacial'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'helmholtz']</span> <span class="pre">=</span> <span class="pre">'helmholtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_radius:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_from:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img_opaque:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_dirichlet:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity_filter:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">~typing.Literal['spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'cg_pyamg']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_lower:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1e-07</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_upper:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">10000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percentile:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">move_limit:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_p:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">3000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_v:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_decay:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.7</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethod_OC_Config</span></code></p>
+<p>Configuration for log-space gradient update with optional mean-centering.</p>
+<p>This configuration supports a variant of log-space Lagrangian descent used in topology
+optimization. The update is performed in the logarithmic domain to ensure strictly positive
+densities and to simulate multiplicative behavior. Optionally, the computed update direction
+can be centered (mean-subtracted) to improve numerical stability.</p>
+<p>This method differs from standard OC-based updates: it adds the volume constraint penalty
+directly to the compliance sensitivity and applies the gradient step in log(ρ)-space:</p>
+<blockquote>
+<div><p>log(ρ_new) = log(ρ) - η · (∂C/∂ρ + λ)</p>
+</div></blockquote>
+<p>Optionally (when enabled), the update direction is centered as:</p>
+<blockquote>
+<div><p>Δ = (∂C/∂ρ + λ) - mean(∂C/∂ρ + λ)</p>
+</div></blockquote>
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">interpolation</span></span></dt>
+<dd><p>Interpolation scheme used for material penalization. Currently only “SIMP” is supported.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Literal[“SIMP”]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">mu_p</span></span></dt>
+<dd><p>Penalty weight for the volume constraint. This controls how strongly the constraint
+influences the descent direction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">lambda_v</span></span></dt>
+<dd><p>Initial Lagrange multiplier for the volume constraint.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">lambda_decay</span></span></dt>
+<dd><p>Factor by which lambda_v decays over iterations. Smaller values cause λ to adapt more rapidly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">LogMOC_Optimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LogMOC_Config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tsk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">FEMDomain</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethod</span></code></p>
+<p>Topology optimization solver using log-space Lagrangian gradient descent.</p>
+<p>This optimizer performs sensitivity-based topology optimization by applying
+gradient descent on the Lagrangian (compliance + volume penalty) in the
+logarithmic domain. The update is computed in log(ρ)-space to ensure positive
+densities and simulate multiplicative behavior.</p>
+<p>Unlike traditional Optimality Criteria (OC) methods, this approach adds the
+volume constraint penalty λ directly to the compliance sensitivity, rather than
+forming a multiplicative ratio. The update is then applied as:</p>
+<blockquote>
+<div><p>log(ρ_new) = log(ρ) - η · (∂C/∂ρ + λ)</p>
+</div></blockquote>
+<p>which is equivalent to:</p>
+<blockquote>
+<div><p>ρ_new = ρ · exp( - η · (∂C/∂ρ + λ) )</p>
+</div></blockquote>
+<p>This method maintains positivity of the density field without explicit clipping
+and offers improved numerical robustness for problems involving low volume fractions
+or sharp sensitivity gradients.</p>
+<section id="advantages">
+<h2>Advantages<a class="headerlink" href="#advantages" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Ensures positive densities via log-space formulation</p></li>
+<li><p>Simulates OC-like multiplicative update behavior</p></li>
+<li><p>Straightforward gradient descent formulation</p></li>
+</ul>
+</section>
+<section id="limitations">
+<h2>Limitations<a class="headerlink" href="#limitations" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Not derived from strict OC/KKT conditions</p></li>
+<li><p>May still require step size tuning and clipping for stability</p></li>
+<li><p>Involves logarithmic and exponential operations at each iteration</p></li>
+</ul>
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">config</span></span></dt>
+<dd><p>Configuration object specifying parameters such as mu_p, lambda_v,
+decay schedules, and interpolation settings (currently SIMP only).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>LogGradientUpdateConfig</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">mesh,</span> <span class="pre">basis,</span> <span class="pre">etc.</span></span></dt>
+<dd><p>FEM components used to evaluate sensitivities and apply boundary conditions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>inherited from common_density.DensityMethod</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">OC_Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dst_path:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'./result/pytests'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation:</span> <span class="pre">~typing.Literal['SIMP']</span> <span class="pre">=</span> <span class="pre">'SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">record_times:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vol_frac:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_type:</span> <span class="pre">~typing.Literal['spacial'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'helmholtz']</span> <span class="pre">=</span> <span class="pre">'helmholtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_radius:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_from:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img_opaque:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_dirichlet:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity_filter:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">~typing.Literal['spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'cg_pyamg']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_lower:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1e-07</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_upper:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">10000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percentile:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">move_limit:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethod_OC_Config</span></code></p>
+<p>Optimality-Criteria (OC) configuration for density-based optimization.</p>
+<p>This class specializes <code class="xref py py-class docutils literal notranslate"><span class="pre">common_density.DensityMethod_OC_Config</span></code>
+for OC-style updates. The material interpolation is fixed to SIMP, and
+the projection threshold <code class="docutils literal notranslate"><span class="pre">eta</span></code> is controlled via a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">sktopt.tools.SchedulerConfig</span></code>.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">interpolation</span></span></dt>
+<dd><p>Material interpolation model. Fixed to “SIMP” for OC.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>{“SIMP”}</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">eta</span></span></dt>
+<dd><p>Threshold (η) used in Heaviside projection / update logic.
+The default keeps η constant at 0.5 using a <code class="docutils literal notranslate"><span class="pre">Constant</span></code> scheduler.
+Pass a custom scheduler to run continuation (e.g., Step from 0.7 → 0.3).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>sktopt.tools.SchedulerConfig</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>Other continuation parameters (e.g., <code class="docutils literal notranslate"><span class="pre">p</span></code>, <code class="docutils literal notranslate"><span class="pre">beta</span></code>, <code class="docutils literal notranslate"><span class="pre">vol_frac</span></code>,
+<code class="docutils literal notranslate"><span class="pre">filter_radius</span></code>) are inherited from the parent config if present there.</p></li>
+<li><p>To override <code class="docutils literal notranslate"><span class="pre">eta</span></code> from outside, provide a pre-built
+<code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code> at construction time.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">OC_Optimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">OC_Config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tsk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">FEMDomain</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethod</span></code></p>
+<p>Topology optimization solver using the classic Optimality Criteria (OC) method.
+This class implements the standard OC algorithm for compliance minimization problems.
+It uses a multiplicative density update formula derived from Karush-Kuhn-Tucker (KKT)
+optimality conditions under volume constraints.</p>
+<dl class="simple">
+<dt>The update rule typically takes the form:</dt><dd><p>ρ_new = clamp(ρ * sqrt(-dC / λ), ρ_min, ρ_max)</p>
+</dd>
+<dt>where:</dt><dd><ul class="simple">
+<li><p>dC is the sensitivity of the compliance objective,</p></li>
+<li><p>λ is a Lagrange multiplier for the volume constraint.</p></li>
+</ul>
+</dd>
+</dl>
+<p>This method is widely used in structural optimization due to its simplicity,
+interpretability, and solid theoretical foundation.</p>
+<section id="id1">
+<h2>Advantages<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Simple and easy to implement</p></li>
+<li><p>Intuitive update rule based on physical insight</p></li>
+<li><p>Well-established and widely validated in literature</p></li>
+</ul>
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">config</span></span></dt>
+<dd><p>Configuration object specifying the interpolation method, volume fraction,
+continuation settings, filter radius, and other numerical parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DensityMethodConfig</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">mesh,</span> <span class="pre">basis,</span> <span class="pre">etc.</span></span></dt>
+<dd><p>FEM components required for simulation, including boundary conditions and loads.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>inherited from common_density.DensityMethod</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="api.html" class="btn btn-neutral float-left" title="API Reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fea.html" class="btn btn-neutral float-right" title="sktopt.fea" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Kohei Watanabe.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
