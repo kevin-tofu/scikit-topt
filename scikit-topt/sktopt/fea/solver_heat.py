@@ -44,22 +44,19 @@ def solve_scipy(
                         ) for i in range(len(dirichlet_values_list))
                     )
                 )
-        else:
-            raise Exception("")
+            return
 
     except ModuleNotFoundError as e:
         logger.info(f"ModuleNotFoundError: {e}")
         n_joblib = -1
-        raise
 
-    except Exception:
-        u_all[:, :] = np.column_stack(
-            [
-                solve_system(
-                    dirichlet_dofs_list[i], dirichlet_values_list[i]
-                ) for i in range(len(dirichlet_values_list))
-            ]
-        )
+    u_all[:, :] = np.column_stack(
+        [
+            solve_system(
+                dirichlet_dofs_list[i], dirichlet_values_list[i]
+            ) for i in range(len(dirichlet_values_list))
+        ]
+    )
 
 
 def solve_multi_load(
