@@ -66,7 +66,6 @@ def get_cfg():
         ),
         max_iters=10,
         record_times=10,
-        # filter_type="spacial"
         filter_type="helmholtz"
     )
     return cfg

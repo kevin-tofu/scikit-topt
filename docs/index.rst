@@ -14,7 +14,8 @@ Scikit Topology Optimization (scikit-topt) documentation
    project
    installation
    tutorial
-   theory
+   physics
+   formulation
    optimization
    api
 
