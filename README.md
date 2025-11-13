@@ -24,14 +24,14 @@
 
 ### Example 2 : Multiple Load Condition
 <p align="center">
-  <img src="https://raw.githubusercontent.com/kevin-tofu/scikit-topt/refs/heads/master/assets/ex-multi-load-condition.jpg" alt="multi-load-condition" width="400" style="margin-right: 20px;">
-  <img src="https://raw.githubusercontent.com/kevin-tofu/scikit-topt/refs/heads/master/assets/ex-multi-load-v-50.jpg" alt="multi-load-condition-distribution" width="400">
+  <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg" alt="multi-load-condition" width="400" style="margin-right: 20px;">
+  <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg" alt="multi-load-condition-distribution" width="400">
 </p>
 
 ### Example 3 : Heat Conduction
 <p align="center">
-  <img src="https://raw.githubusercontent.com/kevin-tofu/scikit-topt/refs/heads/feature-heat-equation/assets/ex-heat-conduction-0.jpg" alt="heat-conduction" width="400" style="margin-right: 20px;">
-  <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/feature-heat-equation/assets/ex-heat-conduction-0.gif" alt="heat-conduction" width="400" style="margin-right: 20px;">
+  <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-heat-conduction-0.jpg" alt="heat-conduction" width="400" style="margin-right: 20px;">
+  <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-heat-conduction-0.gif" alt="heat-conduction" width="400" style="margin-right: 20px;">
 </p>
 
 ### Progress Report
