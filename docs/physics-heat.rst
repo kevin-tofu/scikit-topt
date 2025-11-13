@@ -197,19 +197,3 @@ In Scikit-Topt, the solver is typically:
 .. code-block:: python
 
    T = scipy.sparse.linalg.spsolve(K_e, f_e)
-
-Summary
--------
-
-The heat conduction solver in Scikit-Topt follows the standard FEM procedure:
-
-1. Governing equation  
-2. Weak form  
-3. Boundary conditions  
-4. Robin BC → both stiffness + load contribution  
-5. Assemble global matrices  
-6. Enforce Dirichlet BC via ``skfem.enforce``  
-7. Solve linear system :math:`K T = f`
-
-This framework is used consistently for thermal topology optimization,
-including SIMP-based and adjoint sensitivity analyses.

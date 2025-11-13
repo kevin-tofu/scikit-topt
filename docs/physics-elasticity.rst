@@ -128,12 +128,6 @@ Enforced by modifying the stiffness matrix system:
 - Diagonal entries are set to 1
 - Load vector entries for those DOFs are set to the prescribed value
 
-In Scikit-Topt (via scikit-fem), this is done using:
-
-.. code-block:: python
-
-   K_e, f_e = skfem.enforce(K, f, D=dirichlet_dofs)
-
 Neumann BC (surface forces)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -159,19 +153,3 @@ Typical code:
 
    K_e, f_e = skfem.enforce(K, f, D=dirichlet_dofs)
    u = scipy.sparse.linalg.spsolve(K_e, f_e)
-
-
-Summary
--------
-
-Linear elasticity in Scikit-Topt follows the classical FEM formulation:
-
-1. Define displacement :math:`\mathbf{u}`  
-2. Hooke’s law :math:`\boldsymbol{\sigma} = \mathbb{C} : \boldsymbol{\varepsilon}`  
-3. Weak form  
-4. FEM discretization → stiffness matrix  
-5. Apply Dirichlet & Neumann BC  
-6. Solve :math:`K u = f`
-
-This framework is used consistently across elastic analysis and serves
-as the foundation for topology optimization in Scikit-Topt.
