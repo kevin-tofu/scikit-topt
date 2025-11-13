@@ -171,7 +171,7 @@ def rho_histo_plot(
 
 def images2gif(
     dir_path: str,
-    prefix: str = "rho",
+    prefix: str = "rho_projected",
     scale: float = 0.7,
     skip_frame: int = 0
 ):
@@ -179,6 +179,10 @@ def images2gif(
 
     file_pattern = f"{dir_path}/mesh_rho/info_{prefix}-*.jpg"
     image_files = sorted(glob.glob(file_pattern))
+    if len(image_files) == 0:
+        print("Files not found")
+        return
+
     if skip_frame > 0:
         image_files = image_files[::skip_frame+1]
 
@@ -211,10 +215,10 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
     images2gif(
-        f"{args.images_path}", "rho", scale=args.scale,
+        f"{args.images_path}", "rho_projected", scale=args.scale,
         skip_frame=args.skip_frame
     )
-    images2gif(
-        f"{args.images_path}", "dC", scale=args.scale,
-        skip_frame=args.skip_frame
-    )
+    # images2gif(
+    #     f"{args.images_path}", "dC", scale=args.scale,
+    #     skip_frame=args.skip_frame
+    # )

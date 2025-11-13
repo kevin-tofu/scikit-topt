@@ -11,6 +11,11 @@ from sktopt.core.optimizers.logmoc import LogMOC_Optimizer
 # from sktopt.core.optimizers.evo import Evolutionary_Config
 # from sktopt.core.optimizers.evo import Evolutionary_Optimizer
 
+OC_Config.__module__ = "sktopt.core"
+OC_Optimizer.__module__ = "sktopt.core"
+LogMOC_Config.__module__ = "sktopt.core"
+LogMOC_Optimizer.__module__ = "sktopt.core"
+
 __all__ = [
     "OC_Config",
     "OC_Optimizer",

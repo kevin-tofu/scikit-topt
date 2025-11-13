@@ -73,10 +73,12 @@ class FEMDomain():
     neumann_values: float | list[float] | None
     # neumann_vector: Optional[np.ndarray | list[np.ndarray]]
 
+    robin_facets_ids: np.ndarray | list[np.ndarray] | None
     robin_nodes: np.ndarray | list[np.ndarray] | None
     robin_elements: np.ndarray | None
     robin_coefficient: float | list[float] | None
-    robin_bc_value: float | list[float]| None
+    robin_bc_value: float | list[float] | None
+    design_robin_boundary: bool | None
     # robin_vector: Optional[np.ndarray | list[np.ndarray]]
 
     design_elements: np.ndarray
@@ -109,9 +111,11 @@ class FEMDomain():
         neumann_nodes: np.ndarray | list[np.ndarray] | None,
         neumann_dir_type: str | list[str] | None,
         neumann_values: np.ndarray | list[np.ndarray] | None,
+        robin_facets_ids: np.ndarray | list[np.ndarray] | None,
         robin_nodes: np.ndarray | list[np.ndarray] | None,
         robin_coefficient: float | list[float] | None,
         robin_bc_value: float | list[float] | None,
+        design_robin_boundary: bool | None,
         design_elements: np.ndarray,
     ) -> 'FEMDomain':
 
@@ -209,7 +213,7 @@ class FEMDomain():
             elements_excluded = np.concatenate(
                 [elements_excluded, neumann_elements]
             )
-        if robin_elements is not None:
+        if design_robin_boundary is False:
             elements_excluded = np.concatenate(
                 [elements_excluded, robin_elements]
             )
@@ -250,12 +254,12 @@ class FEMDomain():
             neumann_elements,
             neumann_dir_type,
             neumann_values,
-            # neumann_vector,
+            robin_facets_ids,
             robin_nodes,
             robin_elements,
             robin_coefficient,
             robin_bc_value,
-            # robin_vector,
+            design_robin_boundary,
             design_elements,
             free_dofs,
             free_elements,
@@ -278,6 +282,7 @@ class FEMDomain():
         robin_facets_ids: np.ndarray | list[np.ndarray] | None,
         robin_coefficient: float | list[float] | None,
         robin_bc_value: float | list[float] | None,
+        design_robin_boundary: bool | None,
         design_elements: np.ndarray,
     ) -> 'FEMDomain':
 
@@ -323,7 +328,7 @@ class FEMDomain():
             robin_nodes = None
             robin_coefficient = None
             robin_bc_value = None
-            # robin_vector = None
+            design_robin_boundary = None
 
         return cls.from_nodes(
             basis,
@@ -332,9 +337,11 @@ class FEMDomain():
             neumann_dir_type,
             neumann_values,
             # neumann_vector,
+            robin_facets_ids,
             robin_nodes,
             robin_coefficient,
             robin_bc_value,
+            design_robin_boundary,
             # robin_vector,
             design_elements
         )
@@ -367,6 +374,7 @@ class FEMDomain():
         node_colors_df = np.zeros(mesh.p.shape[1], dtype=int)
         node_colors_df[self.neumann_nodes_all] = 1
         node_colors_df[self.dirichlet_nodes] = 2
+        node_colors_df[self.robin_nodes] = 3
         point_outputs = dict()
         point_outputs["node_color"] = node_colors_df
 
@@ -412,8 +420,6 @@ class FEMDomain():
                 self.force[loop] *= F_scale
         else:
             raise ValueError("should be ndarray or list of ndarray")
-
-
 
     def nodes_and_elements_stats(self, dst_path: str):
         node_points = self.basis.mesh.p.T  # shape = (n_points, 3)

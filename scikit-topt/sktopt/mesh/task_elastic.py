@@ -5,7 +5,7 @@ import numpy as np
 import skfem
 
 from skfem import FacetBasis, asm, LinearForm
-from sktopt.mesh.task_common import FEMDomain
+from sktopt.mesh import FEMDomain
 
 
 _lit_bc = Literal['u^1', 'u^2', 'u^3', 'all']
@@ -82,7 +82,7 @@ def assemble_surface_forces(
 
 
 @dataclass
-class LinearElastisicity(FEMDomain):
+class LinearElasticity(FEMDomain):
     """
     Container for storing finite element and optimization-related data
     used in topology optimization tasks.
@@ -90,7 +90,7 @@ class LinearElastisicity(FEMDomain):
     This class holds material properties, boundary condition information,
     designable and non-designable element indices, as well as force vectors
     and volume data for each element. It is typically constructed using
-    `LinearElastisicity.from_defaults`.
+    `LinearElasticity.from_defaults`.
 
     Attributes
     ----------
@@ -148,8 +148,6 @@ class LinearElastisicity(FEMDomain):
     @classmethod
     def from_facets(
         cls,
-        E: float,
-        nu: float,
         basis: skfem.Basis,
         dirichlet_facets_ids: np.ndarray | list[np.ndarray],
         dirichlet_dir: _lit_bc | list[_lit_bc],
@@ -157,7 +155,9 @@ class LinearElastisicity(FEMDomain):
         force_dir_type: str | list[str],
         force_value: float | list[float],
         design_elements: np.ndarray,
-    ) -> 'LinearElastisicity':
+        E: float,
+        nu: float,
+    ) -> 'LinearElasticity':
         """
         Create a TaskConfig from facet-based boundary-condition specifications.
 
@@ -215,7 +215,7 @@ class LinearElastisicity(FEMDomain):
             force_facets_ids,
             force_dir_type,
             force_value,
-            None, None, None,
+            None, None, None, None,
             design_elements
         )
 
@@ -240,10 +240,12 @@ class LinearElastisicity(FEMDomain):
             base.neumann_elements,
             base.neumann_dir_type,
             base.neumann_values,
+            base.robin_facets_ids,
             base.robin_nodes,
             base.robin_elements,
             base.robin_coefficient,
             base.robin_bc_value,
+            base.design_robin_boundary,
             base.design_elements,
             base.free_dofs,
             base.free_elements,
@@ -261,12 +263,12 @@ class LinearElastisicity(FEMDomain):
     @classmethod
     def from_mesh_tags(
         cls,
-        E: float,
-        nu: float,
         basis: skfem.Basis,
         dirichlet_dir: _lit_bc | list[_lit_bc],
         neumann_dir_type: str | list[str],
         neumann_values: float | list[float],
+        E: float,
+        nu: float,
     ) -> 'FEMDomain':
         import re
 
@@ -302,11 +304,12 @@ class LinearElastisicity(FEMDomain):
         else:
             neumann_facets_ids = np.array([])
         return cls.from_facets(
-            E, nu, basis,
+            basis,
             dirichlet_facets_ids,
             dirichlet_dir,
             neumann_facets_ids,
             neumann_dir_type,
             neumann_values,
-            design_elements
+            design_elements,
+            E, nu
         )

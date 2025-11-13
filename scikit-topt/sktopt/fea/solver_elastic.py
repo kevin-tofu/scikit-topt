@@ -172,23 +172,28 @@ def solve_multi_load(
     compliance_total = 0.0
     u_all[:, :] = 0.0
     if solver == 'spsolve':
-        if n_joblib > 1:
-            from joblib import Parallel, delayed, parallel_backend
-            lu = scipy.sparse.linalg.splu(K_e.tocsc())
+        try:
+            if n_joblib > 1:
+                from joblib import Parallel, delayed, parallel_backend
+                lu = scipy.sparse.linalg.splu(K_e.tocsc())
 
-            def solve_system(F_stack):
-                return lu.solve(F_stack)
+                def solve_system(F_stack):
+                    return lu.solve(F_stack)
 
-            with parallel_backend("threading"):
-                u_all[:, :] = np.column_stack(
-                    Parallel(n_jobs=n_joblib)(
-                        delayed(solve_system)(F_stack[:, i]) for i in range(
-                            F_stack.shape[1]
+                with parallel_backend("threading"):
+                    u_all[:, :] = np.column_stack(
+                        Parallel(n_jobs=n_joblib)(
+                            delayed(solve_system)(F_stack[:, i]) for i in range(
+                                F_stack.shape[1]
+                            )
                         )
                     )
-                )
+        except ModuleNotFoundError as e:
+            logger.info(f"ModuleNotFoundError: {e}")
+            n_joblib = -1
+            raise
 
-        else:
+        except Exception:
             lu = scipy.sparse.linalg.splu(K_e.tocsc())
             u_all[:, :] = np.column_stack(
                 [lu.solve(F_stack[:, i]) for i in range(F_stack.shape[1])]
@@ -322,9 +327,9 @@ def strain_energy_skfem_multi(
     return elem_energy_all  # shape: (n_elements, n_loads)
 
 
-class FEM_SimpLinearElastisicity():
+class FEM_SimpLinearElasticity():
     def __init__(
-        self, task: "LinearElastisicity",
+        self, task: "LinearElasticity",
         E_min_coeff: float,
         density_interpolation: Callable = composer.simp_interpolation,
         solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve",
@@ -337,7 +342,7 @@ class FEM_SimpLinearElastisicity():
         self.solver_option = solver_option
         self.n_joblib = n_joblib
 
-    def compliance_multi_load(
+    def objectives_multi_load(
         self,
         rho: np.ndarray, p: float,
         u_dofs: np.ndarray

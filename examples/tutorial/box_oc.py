@@ -42,13 +42,13 @@ def get_task():
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=2)
     E0 = 210e3
-    mytask = sktopt.mesh.LinearElastisicity.from_mesh_tags(
-        E0,
-        0.30,
+    mytask = sktopt.mesh.LinearElasticity.from_mesh_tags(
         basis,
         dirichlet_dir,
         neumann_dir_type,
-        neumann_value
+        neumann_value,
+        E0,
+        0.30,
     )
     return mytask
 
@@ -64,8 +64,8 @@ def get_cfg():
         vol_frac=sktopt.tools.SchedulerConfig.constant(
             target_value=0.4
         ),
-        max_iters=40,
-        record_times=40,
+        max_iters=10,
+        record_times=10,
         # filter_type="spacial"
         filter_type="helmholtz"
     )

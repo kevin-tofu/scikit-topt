@@ -25,19 +25,36 @@ def heaviside_projection_derivative(rho, beta, eta=0.5):
 
 
 def heaviside_projection_inplace(rho, beta, eta=0.5, out=None):
-    """
-    In-place Smooth Heaviside projection.
+    r"""
+    In-place Heaviside projection.
+
+    Applies the smoothed Heaviside projection to ``rho``:
+
+    .. math::
+
+       \tilde{\rho} = \frac{\tanh(\beta \eta) + \tanh(\beta (\rho - \eta))}
+                           {\tanh(\beta \eta) + \tanh(\beta (1 - \eta))}
+
     Parameters
     ----------
     rho : ndarray
-        Input density array.
+        Input density array in-place (modified) unless ``out`` is given.
     beta : float
-        Sharpness of the projection.
+        Sharpness parameter of the Heaviside.
     eta : float
-        Threshold.
-    out : ndarray or None
-        If provided, output will be written here.
-        Otherwise, a new array is returned.
+        Threshold of the Heaviside (0..1).
+    out : ndarray or None, optional
+        If provided, the projection is written to ``out`` instead of ``rho``.
+
+    Returns
+    -------
+    ndarray
+        The projected array (``rho`` itself if ``out`` is ``None``).
+
+    Notes
+    -----
+    - Ensure ``rho`` is clipped to ``[0, 1]`` before projection.
+    - This implementation avoids temporary arrays when ``out`` is ``None``.
     """
     if out is None:
         out = np.empty_like(rho)
