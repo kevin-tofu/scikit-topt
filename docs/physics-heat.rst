@@ -182,9 +182,6 @@ the linear system:
 
 In Scikit-FEM (as used by Scikit-Topt):
 
-.. code-block:: python
-
-   K_e, f_e = skfem.enforce(K, f, D=dirichlet_dofs)
 
 Solving the Linear System
 -------------------------
@@ -200,12 +197,6 @@ In Scikit-Topt, the solver is typically:
 .. code-block:: python
 
    T = scipy.sparse.linalg.spsolve(K_e, f_e)
-
-For multi-load or adjoint problems:
-
-.. code-block:: python
-
-   T_all[:, i] = lu.solve(F_stack[:, i])
 
 Summary
 -------

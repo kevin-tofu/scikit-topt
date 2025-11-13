@@ -139,16 +139,6 @@ Neumann BC (surface forces)
 
 Traction loads add contributions to :math:`\mathbf{f}`:
 
-.. math::
-
-   \mathbf{f}_i += \int_{\Gamma_N} \mathbf{t} \cdot \phi_i \, d\Gamma.
-
-In scikit-fem:
-
-.. code-block:: python
-
-   f += basis.boundary_integral(lambda v: dot(t, v))
-
 Solving the Linear System
 -------------------------
 
@@ -170,11 +160,6 @@ Typical code:
    K_e, f_e = skfem.enforce(K, f, D=dirichlet_dofs)
    u = scipy.sparse.linalg.spsolve(K_e, f_e)
 
-For multi-load problems, forces are stacked:
-
-.. code-block:: python
-
-   u_all[:, i] = lu.solve(F_stack[:, i])
 
 Summary
 -------
