@@ -61,7 +61,6 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#solving-the-linear-system">Solving the Linear System</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#summary">Summary</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="physics-heat.html">The Weak Form of Heat Conduction</a></li>
@@ -194,20 +193,10 @@ degrees of freedom.</p>
 <li><p>Diagonal entries are set to 1</p></li>
 <li><p>Load vector entries for those DOFs are set to the prescribed value</p></li>
 </ul>
-<p>In Scikit-Topt (via scikit-fem), this is done using:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">K_e</span><span class="p">,</span> <span class="n">f_e</span> <span class="o">=</span> <span class="n">skfem</span><span class="o">.</span><span class="n">enforce</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">D</span><span class="o">=</span><span class="n">dirichlet_dofs</span><span class="p">)</span>
-</pre></div>
-</div>
 </section>
 <section id="neumann-bc-surface-forces">
 <h3>Neumann BC (surface forces)<a class="headerlink" href="#neumann-bc-surface-forces" title="Link to this heading"></a></h3>
 <p>Traction loads add contributions to <span class="math notranslate nohighlight">\(\mathbf{f}\)</span>:</p>
-<div class="math notranslate nohighlight">
-\[\mathbf{f}_i += \int_{\Gamma_N} \mathbf{t} \cdot \phi_i \, d\Gamma.\]</div>
-<p>In scikit-fem:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">f</span> <span class="o">+=</span> <span class="n">basis</span><span class="o">.</span><span class="n">boundary_integral</span><span class="p">(</span><span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="n">dot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span>
-</pre></div>
-</div>
 </section>
 </section>
 <section id="solving-the-linear-system">
@@ -225,24 +214,6 @@ degrees of freedom.</p>
 <span class="n">u</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">spsolve</span><span class="p">(</span><span class="n">K_e</span><span class="p">,</span> <span class="n">f_e</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>For multi-load problems, forces are stacked:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">u_all</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">lu</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">F_stack</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span>
-</pre></div>
-</div>
-</section>
-<section id="summary">
-<h2>Summary<a class="headerlink" href="#summary" title="Link to this heading"></a></h2>
-<p>Linear elasticity in Scikit-Topt follows the classical FEM formulation:</p>
-<ol class="arabic simple">
-<li><p>Define displacement <span class="math notranslate nohighlight">\(\mathbf{u}\)</span></p></li>
-<li><p>Hooke’s law <span class="math notranslate nohighlight">\(\boldsymbol{\sigma} = \mathbb{C} : \boldsymbol{\varepsilon}\)</span></p></li>
-<li><p>Weak form</p></li>
-<li><p>FEM discretization → stiffness matrix</p></li>
-<li><p>Apply Dirichlet &amp; Neumann BC</p></li>
-<li><p>Solve <span class="math notranslate nohighlight">\(K u = f\)</span></p></li>
-</ol>
-<p>This framework is used consistently across elastic analysis and serves
-as the foundation for topology optimization in Scikit-Topt.</p>
 </section>
 </section>
 

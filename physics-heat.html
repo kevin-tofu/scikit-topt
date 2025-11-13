@@ -61,7 +61,6 @@
 <li class="toctree-l3"><a class="reference internal" href="#fem-discretization">FEM Discretization</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#dirichlet-boundary-enforcement">Dirichlet Boundary Enforcement</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#solving-the-linear-system">Solving the Linear System</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#summary">Summary</a></li>
 </ul>
 </li>
 </ul>
@@ -233,9 +232,6 @@ the linear system:</p>
 <li><p>Set load entry = prescribed value</p></li>
 </ul>
 <p>In Scikit-FEM (as used by Scikit-Topt):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">K_e</span><span class="p">,</span> <span class="n">f_e</span> <span class="o">=</span> <span class="n">skfem</span><span class="o">.</span><span class="n">enforce</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">D</span><span class="o">=</span><span class="n">dirichlet_dofs</span><span class="p">)</span>
-</pre></div>
-</div>
 </section>
 <section id="solving-the-linear-system">
 <h2>Solving the Linear System<a class="headerlink" href="#solving-the-linear-system" title="Link to this heading"></a></h2>
@@ -246,25 +242,6 @@ the linear system:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">T</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">spsolve</span><span class="p">(</span><span class="n">K_e</span><span class="p">,</span> <span class="n">f_e</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>For multi-load or adjoint problems:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">T_all</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">lu</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">F_stack</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span>
-</pre></div>
-</div>
-</section>
-<section id="summary">
-<h2>Summary<a class="headerlink" href="#summary" title="Link to this heading"></a></h2>
-<p>The heat conduction solver in Scikit-Topt follows the standard FEM procedure:</p>
-<ol class="arabic simple">
-<li><p>Governing equation</p></li>
-<li><p>Weak form</p></li>
-<li><p>Boundary conditions</p></li>
-<li><p>Robin BC → both stiffness + load contribution</p></li>
-<li><p>Assemble global matrices</p></li>
-<li><p>Enforce Dirichlet BC via <code class="docutils literal notranslate"><span class="pre">skfem.enforce</span></code></p></li>
-<li><p>Solve linear system <span class="math notranslate nohighlight">\(K T = f\)</span></p></li>
-</ol>
-<p>This framework is used consistently for thermal topology optimization,
-including SIMP-based and adjoint sensitivity analyses.</p>
 </section>
 </section>
 
