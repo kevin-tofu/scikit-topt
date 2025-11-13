@@ -8,7 +8,7 @@ from scipy.sparse.linalg import LinearOperator
 import skfem
 from skfem.helpers import grad, dot
 import pyamg
-import joblib
+# import joblib
 
 # from sktopt.mesh import LinearHeatConduction
 from sktopt.fea import composer
@@ -22,8 +22,6 @@ def solve_scipy(
     u_all,
     n_joblib: int = 1
 ):
-    from joblib import Parallel, delayed, parallel_backend
-
     def solve_system(
         dirichlet_dofs_loop, dirichlet_values_loop
     ):
@@ -34,17 +32,26 @@ def solve_scipy(
             )
         )
         return T_sol
-    if n_joblib > 1:
-        with parallel_backend("threading"):
-            u_all[:, :] = np.column_stack(
-                Parallel(n_jobs=n_joblib)(
-                    delayed(solve_system)(
-                        dirichlet_dofs_list[i], dirichlet_values_list[i]
-                    ) for i in range(len(dirichlet_values_list))
-                )
-            )
 
-    else:
+    try:
+        from joblib import Parallel, delayed, parallel_backend
+        if n_joblib > 1:
+            with parallel_backend("threading"):
+                u_all[:, :] = np.column_stack(
+                    Parallel(n_jobs=n_joblib)(
+                        delayed(solve_system)(
+                            dirichlet_dofs_list[i], dirichlet_values_list[i]
+                        ) for i in range(len(dirichlet_values_list))
+                    )
+                )
+        else:
+            raise Exception("")
+
+    except ModuleNotFoundError as e:
+        logger.info(f"ModuleNotFoundError: {e}")
+        n_joblib = -1
+
+    except Exception:
         u_all[:, :] = np.column_stack(
             [
                 solve_system(
