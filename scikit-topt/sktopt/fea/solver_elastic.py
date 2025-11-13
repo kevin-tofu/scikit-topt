@@ -188,16 +188,15 @@ def solve_multi_load(
                             )
                         )
                     )
+                return F_stack
         except ModuleNotFoundError as e:
             logger.info(f"ModuleNotFoundError: {e}")
             n_joblib = -1
-            raise
 
-        except Exception:
-            lu = scipy.sparse.linalg.splu(K_e.tocsc())
-            u_all[:, :] = np.column_stack(
-                [lu.solve(F_stack[:, i]) for i in range(F_stack.shape[1])]
-            )
+        lu = scipy.sparse.linalg.splu(K_e.tocsc())
+        u_all[:, :] = np.column_stack(
+            [lu.solve(F_stack[:, i]) for i in range(F_stack.shape[1])]
+        )
 
     else:
         # choose preconditioner if needed
