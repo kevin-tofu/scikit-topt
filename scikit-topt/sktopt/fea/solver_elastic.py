@@ -173,8 +173,8 @@ def solve_multi_load(
     u_all[:, :] = 0.0
     if solver == 'spsolve':
         try:
+            from joblib import Parallel, delayed, parallel_backend
             if n_joblib > 1:
-                from joblib import Parallel, delayed, parallel_backend
                 lu = scipy.sparse.linalg.splu(K_e.tocsc())
 
                 def solve_system(F_stack):
