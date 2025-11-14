@@ -120,7 +120,7 @@ Boundary Conditions
 -------------------
 
 Dirichlet BC (fixed boundaries)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Enforced by modifying the stiffness matrix system:
 
