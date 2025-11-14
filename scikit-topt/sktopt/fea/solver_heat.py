@@ -309,11 +309,64 @@ def get_robin_virtual(
 
 
 class FEM_SimpLinearHeatConduction():
+    """
+    Finite element solver for SIMP-based linear heat conduction problems
+    with support for multi-load objectives and virtual Robin boundaries.
+
+    This class evaluates thermal objectives (e.g., average temperature,
+    thermal compliance, or user-defined metrics) for a given density field
+    using SIMP interpolation of the conductivity.
+    It also assembles additional "virtual" Robin boundaries, which enables
+    topology optimization of boundary-dependent heat-transfer behavior.
+
+    Parameters
+    ----------
+    task : LinearHeatConduction
+        Problem configuration containing mesh, basis, boundary conditions,
+        load cases, and objective type.
+    E_min_coeff : float
+        Minimum conductivity ratio used in the SIMP model. The actual minimum
+        conductivity is ``task.k * E_min_coeff``.
+    density_interpolation : Callable, optional
+        Interpolation function for SIMP (or RAMP) mapping ρ → k(ρ).
+        Defaults to ``composer.simp_interpolation``.
+    solver_option : {"spsolve", "cg_pyamg"}, optional
+        Linear solver to use for the state equation of each load case.
+    q : int, optional
+        Exponent for boundary interpolation in the virtual Robin model
+        (often used to sharpen on/off behavior of boundary heat transfer).
+    n_joblib : int, optional
+        Number of parallel jobs for solving multiple load cases.
+
+    Attributes
+    ----------
+    k_max : float
+        Conductivity of solid material.
+    k_min : float
+        Conductivity of void (or weak) material.
+    λ_all : np.ndarray or None
+        Stored adjoint fields for all load cases, computed during the last
+        call to :meth:`objectives_multi_load`.
+
+    Notes
+    -----
+    - The class converts element-wise densities into nodal densities by
+      averaging over connected elements. This ensures smoother interpolation
+      when assembling virtual Robin terms.
+    - When ``task.design_robin_boundary`` is True, the actual boundary
+      condition is updated based on the given density field, enabling
+      optimization over Robin boundaries.
+    - For multi-load problems, each load case is solved independently and
+      the objectives are returned as a list (e.g., one compliance value per
+      thermal load case).
+
+    """
+
     def __init__(
         self, task: "LinearHeatConduction",
         E_min_coeff: float,
         density_interpolation: Callable = composer.simp_interpolation,
-        solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve",
+        solver_option: Literal["spsolve"] = "spsolve",
         q: int = 4,
         n_joblib: int = 1
     ):

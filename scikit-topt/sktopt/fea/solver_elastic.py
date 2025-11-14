@@ -327,6 +327,78 @@ def strain_energy_skfem_multi(
 
 
 class FEM_SimpLinearElasticity():
+    """
+    Finite Element solver for linear elasticity using SIMP interpolation.
+
+    This class performs linear elastic FEM analysis where the Young's modulus
+    is interpolated based on material density (ρ) using a SIMP-type
+    interpolation function. It is intended for density-based topology
+    optimization workflows, where element stiffness is expressed as:
+
+        E(ρ) = E_min + (E_max - E_min) * f(ρ)
+
+    where `f(ρ)` is typically ρᵖ for SIMP.
+
+    Parameters
+    ----------
+    task : LinearElasticity
+        Predefined linear elasticity problem that includes mesh, material
+        constants (E, ν), boundary conditions, load vectors, and basis
+        definitions.
+    E_min_coeff : float
+        Ratio defining the minimum Young's modulus as:
+            E_min = task.E * E_min_coeff
+        Used to avoid singular stiffness matrices during optimization.
+    density_interpolation : Callable, optional
+        A function f(ρ) that returns an interpolated stiffness multiplier.
+        Defaults to `composer.simp_interpolation` (ρᵖ). Any custom
+        interpolation function following SIMP/RAMP/etc. can be used.
+    solver_option : {"spsolve", "cg_pyamg"}, optional
+        Linear solver backend.
+        - "spsolve": direct SciPy sparse solver (robust, slower for large DOF)
+        - "cg_pyamg": Conjugate Gradient with PyAMG multigrid preconditioner
+            (fast for large problems)
+    n_joblib : float, optional
+        Number of parallel jobs for element-wise computations. If 1, no
+        parallelization is used.
+
+    Attributes
+    ----------
+    task : LinearElasticity
+        The underlying elasticity problem definition.
+    E_max : float
+        Maximum Young's modulus (equal to `task.E`).
+    E_min : float
+        Minimum Young's modulus used for void regions.
+    density_interpolation : Callable
+        The SIMP / RAMP interpolation function used to compute material
+        stiffness.
+    solver_option : str
+        Selected linear solver backend.
+    n_joblib : float
+        Number of parallel jobs for element computations.
+
+    Notes
+    -----
+    - This class does **not** update densities; it only evaluates the FEM
+        response for a given density field.
+    - Designed to integrate with OC/MMA/ADMM-based topology optimization
+        frameworks.
+    - The stiffness matrix assembly depends on interpolated Young's modulus
+        at each element.
+    - `E_min_coeff` should typically be small (1e−3 ~ 1e−9), but not zero.
+
+    Examples
+    --------
+    >>> fem = FEM_SimpLinearElasticity(
+    ...     task=my_task,
+    ...     E_min_coeff=1e-3,
+    ...     density_interpolation=composer.simp_interpolation,
+    ...     solver_option="spsolve",
+    ... )
+    >>> u = fem.objectives_multi_load(rho)  # FEM compliaance given density
+    """
+
     def __init__(
         self, task: "LinearElasticity",
         E_min_coeff: float,

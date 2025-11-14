@@ -1,3 +1,6 @@
+from sktopt.core.optimizers.common_density import DensityMethodConfig
+from sktopt.core.optimizers.common_density import DensityMethod_OC_Config
+from sktopt.core.optimizers.common_density import DensityMethod
 from sktopt.core.optimizers.oc import OC_Config
 from sktopt.core.optimizers.oc import OC_Optimizer
 from sktopt.core.optimizers.logmoc import LogMOC_Config
@@ -10,6 +13,10 @@ from sktopt.core.optimizers.logmoc import LogMOC_Optimizer
 # from sktopt.core.optimizers.linearlagrangian import LinearLagrangian_Optimizer
 # from sktopt.core.optimizers.evo import Evolutionary_Config
 # from sktopt.core.optimizers.evo import Evolutionary_Optimizer
+
+DensityMethodConfig.__module__ = "sktopt.core"
+DensityMethod_OC_Config.__module__ = "sktopt.core"
+DensityMethod.__module__ = "sktopt.core"
 
 OC_Config.__module__ = "sktopt.core"
 OC_Optimizer.__module__ = "sktopt.core"
