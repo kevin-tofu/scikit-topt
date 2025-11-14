@@ -30,7 +30,7 @@
 
 ### Example 3 : Heat Conduction
 <p align="center">
-  <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-heat-conduction-0.jpg" alt="heat-conduction" width="400" style="margin-right: 20px;">
+  <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-heat-conduction-cond.jpg" alt="heat-conduction" width="400" style="margin-right: 20px;">
   <img src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-heat-conduction-0.gif" alt="heat-conduction" width="400" style="margin-right: 20px;">
 </p>
 
