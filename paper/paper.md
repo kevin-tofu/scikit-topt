@@ -56,21 +56,28 @@ Furthermore, Scikit-topt visualizes parameter transitions and material density e
 
 Scikit-topt implements topology optimization algorithms based on the density method, and currently supports the following features:
 
+### **Physics & Analysis**
 
-* Structural analysis and topology optimization using unstructured meshes
-* Optimization based on the density method (SIMP / RAMP)
-* Binarization acceleration using Heaviside projection
-* Smoothing using the Helmholtz filter
-* Gradient computation via backpropagation, combining the density method, Heaviside projection, and Helmholtz filter
+* Structural analysis and heat conduction on unstructured 2D/3D meshes
+* Finite element solvers powered by:
+
+  * SciPy [@Virtanen2020]
+  * PyAMG [@Bell2023]
+  * scikit-fem [@skfem]
+
+### **Density-Based Topology Optimization**
+
+* SIMP and RAMP material interpolation
+* Heaviside projection for binarization acceleration
+* Helmholtz filtering for density smoothing
+* Sensitivity analysis via adjoint-based backpropagation through SIMP, the Helmholtz filter, and the Heaviside projection
 * Optimization under multiple load cases
-* Continuation for scheduling parameter transitions
-* Includes FEA solvers powered by:
-  - Scipy[@Virtanen2020]
-  - PyAMG[@Bell2023]
-  - scikit-fem[@skfem]
-* Support for multiple optimization algorithms
-  - Optimality Criteria Method
-  - Modified Optimality Criteria (MOC) Variants
+* Continuation strategies for scheduling parameters (e.g., β in Heaviside, penalization (p))
+
+### **Optimization Algorithms**
+
+* Optimality Criteria Method (OC)
+* Modified Optimality Criteria (MOC)
 
 
 # Usage Example
