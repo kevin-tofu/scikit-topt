@@ -14,16 +14,19 @@ from sktopt.core.optimizers.logmoc import LogMOC_Optimizer
 # from sktopt.core.optimizers.evo import Evolutionary_Config
 # from sktopt.core.optimizers.evo import Evolutionary_Optimizer
 
-DensityMethodConfig.__module__ = "sktopt.core"
-DensityMethod_OC_Config.__module__ = "sktopt.core"
-DensityMethod.__module__ = "sktopt.core"
+DensityMethodConfig.__module__ = __name__
+DensityMethod_OC_Config.__module__ = __name__
+DensityMethod.__module__ = __name__
 
-OC_Config.__module__ = "sktopt.core"
-OC_Optimizer.__module__ = "sktopt.core"
-LogMOC_Config.__module__ = "sktopt.core"
-LogMOC_Optimizer.__module__ = "sktopt.core"
+OC_Config.__module__ = __name__
+OC_Optimizer.__module__ = __name__
+LogMOC_Config.__module__ = __name__
+LogMOC_Optimizer.__module__ = __name__
 
 __all__ = [
+    "DensityMethodConfig",
+    "DensityMethod_OC_Config",
+    "DensityMethod",
     "OC_Config",
     "OC_Optimizer",
     "LogMOC_Config",
