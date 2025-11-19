@@ -20,3 +20,9 @@ This page provides detailed documentation for modules, classes and functions.
 
    mesh
    mesh.utils
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Tools to manage optimization
+
+   tools
