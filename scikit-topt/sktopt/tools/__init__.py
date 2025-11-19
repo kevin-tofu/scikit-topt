@@ -5,12 +5,12 @@ from sktopt.tools.scheduler import SchedulerStepAccelerating
 from sktopt.tools.scheduler import SchedulerStep
 from sktopt.tools.scheduler import SchedulerSawtoothDecay
 
-HistoriesLogger.__module__ = "sktopt.tools"
-SchedulerConfig.__module__ = "sktopt.tools"
-Schedulers.__module__ = "sktopt.tools"
-SchedulerStepAccelerating.__module__ = "sktopt.tools"
-SchedulerStep.__module__ = "sktopt.tools"
-SchedulerSawtoothDecay.__module__ = "sktopt.tools"
+HistoriesLogger.__module__ = __name__
+SchedulerConfig.__module__ = __name__
+Schedulers.__module__ = __name__
+SchedulerStepAccelerating.__module__ = __name__
+SchedulerStep.__module__ = __name__
+SchedulerSawtoothDecay.__module__ = __name__
 
 __all__ = [
     "HistoriesLogger",

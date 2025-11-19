@@ -77,7 +77,7 @@ def solve_multi_load(
     objective: Literal["compliance", "averaged_temp"] = "averaged_temp"
 ) -> list:
     solver = 'spsolve' if solver == 'auto' else solver
-    n_dof = basis.N
+    # n_dof = basis.N
     # assert u_all.shape == (n_dof, len(dirichlet_values))
     K = composer.assemble_conduction_matrix(
         basis, rho, k0, kmin, p, elem_func
@@ -211,40 +211,89 @@ def heat_energy_skfem_multi(
         elem_energy_all[:, i] = elem_energy
     return elem_energy_all
 
+@skfem.Functional
+def _hx_num_density_(w):
+    """
+    Numerator of heat-exchange objective:
+        J_num = -∫_Γh T_env * h_eff * (T - T_env) dΓ
+    approximated via:
+        -∫_Ω T_env * h_eff * (Th - T_env) * |∇ρ| dΩ
+    """
+    Th = w['Th']                # Temperature field
+    T_env = w['T_env']          # Ambient temperature
+    h_eff = w['h_eff']          # Effective Robin coefficient
 
-# @skfem.Functional
-# def _heat_source_energy_density_(w):
-#     return w['Q'] * w['Th']
+    grad_rho = w['rho'].grad
+    interface = np.sqrt(np.sum(grad_rho**2, axis=0))
+
+    return -T_env * h_eff * (Th - T_env) * interface
 
 
 @skfem.Functional
-def _avg_temp_density_(w):
+def _hx_den_density_(w):
     """
-    Element-wise temperature field contribution for
-    average temperature minimization.
-    J_T = ∫_Ω T(x) dΩ
+    Denominator: ∫_Γh dΓ ≈ ∫_Ω |∇ρ| dΩ
     """
-    return w['Th']  # Temperature itself
+    grad_rho = w['rho'].grad
+    interface = np.sqrt(np.sum(grad_rho**2, axis=0))
+    return interface
+
+
+def heat_exchange_objective(
+    cbasis: skfem.CellBasis,
+    T: np.ndarray,        # nodal temperature
+    rho_nodal: np.ndarray,
+    T_env: float,
+    h_eff_scalar: float,  # 基本は self.task.robin_coefficient を入れる
+) -> float:
+    """
+    Heat-exchange objective:
+        J = J_num / J_den
+    """
+
+    Th = cbasis.interpolate(T)
+    rhoh = cbasis.interpolate(rho_nodal)
+
+    T_env_field = cbasis.interpolate(np.full(cbasis.N, T_env))
+    h_eff_field = cbasis.interpolate(np.full(cbasis.N, h_eff_scalar))
+
+    num_e = _hx_num_density_.elemental(
+        cbasis, Th=Th, rho=rhoh, T_env=T_env_field, h_eff=h_eff_field
+    )
+    den_e = _hx_den_density_.elemental(cbasis, rho=rhoh)
+
+    J_num = num_e.sum()
+    J_den = den_e.sum()
+
+    if J_den <= 1e-16:
+        return 0.0
+
+    return J_num / J_den
 
 
 def avg_temp_skfem(
     basis: skfem.Basis,
-    T: np.ndarray
+    T: np.ndarray,
+    T_env: float
 ) -> np.ndarray:
     """
     Compute elementwise contributions to the average temperature functional:
         J = ∫_Ω T(x) dΩ
     """
     Th = basis.interpolate(T)
-    elem_avgT = _avg_temp_density_.elemental(
-        basis, Th=Th
+    # elem_avgT = _avg_temp_density_.elemental(
+    #     basis, Th=Th
+    # )
+    elem_avgT = _hx_boundary_density_.elemental(
+        basis, Th=Th, T_env=T_env
     )
     return elem_avgT
 
 
 def avg_temp_skfem_multi(
     basis: skfem.Basis,
-    T_all: np.ndarray,  # shape: (n_dof, n_loads)
+    T_all: np.ndarray,
+    T_env: float
 ) -> np.ndarray:
     """
     Compute elementwise average temperature functional for multiple load cases.
@@ -256,7 +305,7 @@ def avg_temp_skfem_multi(
     for i in range(n_loads):
         Th = basis.interpolate(T_all[:, i])
         elem_energy = _avg_temp_density_.elemental(
-            basis, Th=Th
+            basis, Th=Th, T_env=T_env
         )
         elem_energy_all[:, i] = elem_energy
     return elem_energy_all
@@ -420,7 +469,7 @@ class FEM_SimpLinearHeatConduction():
         #     robin_bilinear = self.task.robin_bilinear
         #     robin_linear = self.task.robin_linear
 
-        compliance_list, λ_all = compute_objective_multi_load(
+        objective_list, λ_all = compute_objective_multi_load(
             self.task.basis, self.task.free_dofs,
             dirichlet_nodes_list,
             dirichlet_values_list,
@@ -433,9 +482,33 @@ class FEM_SimpLinearHeatConduction():
             solver=self.solver_option,
             n_joblib=self.n_joblib,
             objective=self.task.objective
+            # objective=(
+            #     "averaged_temp"
+            #     if self.task.objective == "heat_exchange"
+            #     else self.task.objective
+            # )
         )
+
+        if self.task.objective == "heat_exchange":
+            cbasis = skfem.CellBasis(
+                self.task.basis.mesh,
+                self.task.basis.elem
+            )
+            J_list = []
+            for i in range(u_dofs.shape[1]):
+                T_i = u_dofs[:, i]
+                J_i = heat_exchange_objective(
+                    cbasis,
+                    T_i,
+                    rho_nodal,
+                    self.task.robin_bc_value,      # T_env
+                    self.task.robin_coefficient    # h (or h_eff scalar)
+                )
+                J_list.append(J_i)
+            objective_list = J_list
+
         self.λ_all = λ_all
-        return np.array(compliance_list)
+        return np.array(objective_list)
 
     def energy_multi_load(
         self,
