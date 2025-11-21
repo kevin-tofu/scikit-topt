@@ -133,6 +133,59 @@ def solve_multi_load(
     return objective_list, λ_all
 
 
+def solve_multi_load(
+    basis: skfem.Basis,
+    free_dofs: np.ndarray,
+    dirichlet_nodes_list: list[np.ndarray],
+    dirichlet_values_list: list[float],
+    robin_bilinear: scipy.sparse.csr_matrix | list[scipy.sparse.csr_matrix],
+    robin_linear: np.ndarray | list[np.ndarray],
+    k0: float, kmin: float, p: float,
+    rho: np.ndarray,
+    u_all: np.ndarray,
+    solver: Literal['auto', 'spsolve'] = 'auto',
+    elem_func: Callable = composer.simp_interpolation,
+    rtol: float = 1e-5,
+    maxiter: int = None,
+    n_joblib: int = 1,
+    objective: Literal["compliance", "averaged_temp"] = "averaged_temp"
+) -> list:
+    solver = 'spsolve' if solver == 'auto' else solver
+    # n_dof = basis.N
+    # assert u_all.shape == (n_dof, len(dirichlet_values))
+    K = composer.assemble_conduction_matrix(
+        basis, rho, k0, kmin, p, elem_func
+    )
+    if isinstance(robin_bilinear, scipy.sparse.csr_matrix):
+        K = K + robin_bilinear
+    elif isinstance(robin_bilinear, list):
+        for loop in robin_bilinear:
+            K += loop
+
+    emit = np.zeros([K.shape[0]])
+    if isinstance(robin_linear, np.ndarray):
+        emit = robin_linear
+    elif isinstance(robin_linear, list):
+        for loop in robin_linear:
+            emit += loop
+    K_csr = K.tocsr()
+    # compliance_total = 0.0
+    u_all[:, :] = 0.0
+    dirichlet_dofs_list = [
+        basis.get_dofs(nodes=loop) for loop in dirichlet_nodes_list
+    ]
+
+    if solver == "spsolve":
+        solve_scipy(
+            K_csr, emit,
+            dirichlet_dofs_list, dirichlet_values_list,
+            u_all, n_joblib=n_joblib
+        )
+    else:
+        raise NotImplementedError("")
+    return K_csr, emit, dirichlet_dofs_list
+
+
 def compute_objective_multi_load(
     basis: skfem.CellBasis,
     free_dofs: np.ndarray,
@@ -150,17 +203,45 @@ def compute_objective_multi_load(
     n_joblib: int = 1,
     objective: Literal["compliance", "averaged_temp"] = "averaged_temp"
 ) -> list:
-    objective_list, λ_all = solve_multi_load(
+    K_csr, emit, dirichlet_dofs_list = solve_multi_load(
         basis, free_dofs, dirichlet_nodes, dirichlet_values,
         robin_bilinear, robin_linear,
         E0, Emin, p,
         rho,
         u_all,
         solver=solver, elem_func=elem_func, rtol=rtol,
-        maxiter=maxiter, n_joblib=n_joblib,
-        objective=objective
+        maxiter=maxiter, n_joblib=n_joblib
     )
+
+    n_loads = u_all.shape[1]
+    objective_list: list[float] = []
+
+    if objective == "compliance":
+        # J_i = u_i^T K u_i
+        for i in range(n_loads):
+            T_i = u_all[:, i]
+            objective_list.append(float(T_i @ (K_csr @ T_i)))
+        λ_all = -2.0 * u_all
+
+    elif objective == "averaged_temp":
+        # J_i = sum_j T_{i,j}
+        for i in range(n_loads):
+            objective_list.append(float(np.sum(u_all[:, i])))
+
+        # 随伴場 λ を解く場合（平均温度目的用）
+        λ_all = np.zeros_like(u_all)
+        ones_emit = np.ones_like(emit)
+        solve_scipy(
+            K_csr, ones_emit,
+            dirichlet_dofs_list, dirichlet_values,
+            λ_all, n_joblib=n_joblib
+        )
+
+    else:
+        raise ValueError(f"Unknown objective: {objective}")
+
     return objective_list, λ_all
+
 
 
 @skfem.Functional
@@ -210,6 +291,7 @@ def heat_energy_skfem_multi(
         )
         elem_energy_all[:, i] = elem_energy
     return elem_energy_all
+
 
 @skfem.Functional
 def _hx_num_density_(w):
