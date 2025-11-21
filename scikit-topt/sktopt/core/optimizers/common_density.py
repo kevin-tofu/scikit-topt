@@ -419,8 +419,8 @@ class DensityMethod(DensityMethodBase):
 
     def add_recorder(
         self, tsk: sktopt.mesh.FEMDomain
-    ) -> tools.HistoriesLogger:
-        recorder = tools.HistoriesLogger(self.cfg.dst_path)
+    ) -> tools.HistoryCollection:
+        recorder = tools.HistoryCollection(self.cfg.dst_path)
         recorder.add("rho_projected", plot_type="min-max-mean-std")
         recorder.add("energy", plot_type="min-max-mean-std")
         recorder.add("vol_error")
