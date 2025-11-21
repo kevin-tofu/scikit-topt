@@ -44,7 +44,6 @@ def get_task_0(
         robin_coefficient = 4.0e-3
         robin_bc_value = 300.0
 
-    eps = mesh_size
     dirichlet_in_range = sktopt.mesh.utils.get_points_in_range(
         (x_len-1.0*x_len/20, x_len), (0.0, 1.0*y_len/20), (0.0, z_len)
     )
@@ -126,6 +125,8 @@ def get_task_1():
         None,
         None,
         k,
+        objective="compliance"
+        # objective="heat_exchange"
     )
     return mytask
 
