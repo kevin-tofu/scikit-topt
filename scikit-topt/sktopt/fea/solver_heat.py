@@ -74,29 +74,29 @@ def solve_multi_load(
     rtol: float = 1e-5,
     maxiter: int = None,
     n_joblib: int = 1,
-    objective: Literal["compliance", "averaged_temp"] = "averaged_temp"
 ) -> list:
     solver = 'spsolve' if solver == 'auto' else solver
-    # n_dof = basis.N
-    # assert u_all.shape == (n_dof, len(dirichlet_values))
+
     K = composer.assemble_conduction_matrix(
         basis, rho, k0, kmin, p, elem_func
     )
+
     if isinstance(robin_bilinear, scipy.sparse.csr_matrix):
         K = K + robin_bilinear
     elif isinstance(robin_bilinear, list):
         for loop in robin_bilinear:
             K += loop
 
-    emit = np.zeros([K.shape[0]])
+    emit = np.zeros(K.shape[0])
     if isinstance(robin_linear, np.ndarray):
         emit = robin_linear
     elif isinstance(robin_linear, list):
         for loop in robin_linear:
             emit += loop
+
     K_csr = K.tocsr()
-    # compliance_total = 0.0
     u_all[:, :] = 0.0
+
     dirichlet_dofs_list = [
         basis.get_dofs(nodes=loop) for loop in dirichlet_nodes_list
     ]
@@ -110,138 +110,7 @@ def solve_multi_load(
     else:
         raise NotImplementedError("")
 
-    objective_list = list()
-    if objective == "compliance":
-        for i in range(u_all.shape[1]):
-            T_i = u_all[:, i]
-            objective_list.append(float(T_i @ (K_csr @ T_i)))
-
-        # λ_all = None
-        λ_all = - 2 * u_all
-    elif objective == "averaged_temp":
-        objective_list = [
-            float(np.sum(u_all[:, i])) for i in range(u_all.shape[1])
-        ]
-        λ_all = np.zeros_like(u_all)
-        solve_scipy(
-            K_csr, np.ones_like(emit),
-            dirichlet_dofs_list, dirichlet_values_list,
-            λ_all, n_joblib=n_joblib
-        )
-    else:
-        raise ValueError("")
-    return objective_list, λ_all
-
-
-def solve_multi_load(
-    basis: skfem.Basis,
-    free_dofs: np.ndarray,
-    dirichlet_nodes_list: list[np.ndarray],
-    dirichlet_values_list: list[float],
-    robin_bilinear: scipy.sparse.csr_matrix | list[scipy.sparse.csr_matrix],
-    robin_linear: np.ndarray | list[np.ndarray],
-    k0: float, kmin: float, p: float,
-    rho: np.ndarray,
-    u_all: np.ndarray,
-    solver: Literal['auto', 'spsolve'] = 'auto',
-    elem_func: Callable = composer.simp_interpolation,
-    rtol: float = 1e-5,
-    maxiter: int = None,
-    n_joblib: int = 1,
-    objective: Literal["compliance", "averaged_temp"] = "averaged_temp"
-) -> list:
-    solver = 'spsolve' if solver == 'auto' else solver
-    # n_dof = basis.N
-    # assert u_all.shape == (n_dof, len(dirichlet_values))
-    K = composer.assemble_conduction_matrix(
-        basis, rho, k0, kmin, p, elem_func
-    )
-    if isinstance(robin_bilinear, scipy.sparse.csr_matrix):
-        K = K + robin_bilinear
-    elif isinstance(robin_bilinear, list):
-        for loop in robin_bilinear:
-            K += loop
-
-    emit = np.zeros([K.shape[0]])
-    if isinstance(robin_linear, np.ndarray):
-        emit = robin_linear
-    elif isinstance(robin_linear, list):
-        for loop in robin_linear:
-            emit += loop
-    K_csr = K.tocsr()
-    # compliance_total = 0.0
-    u_all[:, :] = 0.0
-    dirichlet_dofs_list = [
-        basis.get_dofs(nodes=loop) for loop in dirichlet_nodes_list
-    ]
-
-    if solver == "spsolve":
-        solve_scipy(
-            K_csr, emit,
-            dirichlet_dofs_list, dirichlet_values_list,
-            u_all, n_joblib=n_joblib
-        )
-    else:
-        raise NotImplementedError("")
     return K_csr, emit, dirichlet_dofs_list
-
-
-def compute_objective_multi_load(
-    basis: skfem.CellBasis,
-    free_dofs: np.ndarray,
-    dirichlet_nodes: list[np.ndarray],
-    dirichlet_values: list[float],
-    robin_bilinear: np.ndarray,
-    robin_linear: np.ndarray,
-    E0: float, Emin: float, p: float,
-    rho: np.ndarray,
-    u_all: np.ndarray,
-    solver: Literal['auto', 'cg_jacobi', 'spsolve', 'cg_pyamg'] = 'auto',
-    elem_func: Callable = composer.simp_interpolation,
-    rtol: float = 1e-5,
-    maxiter: int = None,
-    n_joblib: int = 1,
-    objective: Literal["compliance", "averaged_temp"] = "averaged_temp"
-) -> list:
-    K_csr, emit, dirichlet_dofs_list = solve_multi_load(
-        basis, free_dofs, dirichlet_nodes, dirichlet_values,
-        robin_bilinear, robin_linear,
-        E0, Emin, p,
-        rho,
-        u_all,
-        solver=solver, elem_func=elem_func, rtol=rtol,
-        maxiter=maxiter, n_joblib=n_joblib
-    )
-
-    n_loads = u_all.shape[1]
-    objective_list: list[float] = []
-
-    if objective == "compliance":
-        # J_i = u_i^T K u_i
-        for i in range(n_loads):
-            T_i = u_all[:, i]
-            objective_list.append(float(T_i @ (K_csr @ T_i)))
-        λ_all = -2.0 * u_all
-
-    elif objective == "averaged_temp":
-        # J_i = sum_j T_{i,j}
-        for i in range(n_loads):
-            objective_list.append(float(np.sum(u_all[:, i])))
-
-        # 随伴場 λ を解く場合（平均温度目的用）
-        λ_all = np.zeros_like(u_all)
-        ones_emit = np.ones_like(emit)
-        solve_scipy(
-            K_csr, ones_emit,
-            dirichlet_dofs_list, dirichlet_values,
-            λ_all, n_joblib=n_joblib
-        )
-
-    else:
-        raise ValueError(f"Unknown objective: {objective}")
-
-    return objective_list, λ_all
-
 
 
 @skfem.Functional
@@ -312,6 +181,64 @@ def _hx_num_density_(w):
 
 
 @skfem.Functional
+def _heat_exchange_grad_density_(w):
+    """
+    Element-wise contribution to the heat-exchange objective gradient
+    coming from the PDE (conduction) part, i.e. proportional to
+        ∂k/∂ρ * ∇T · ∇λ.
+
+    Note:
+        This captures only the implicit dependence of J on ρ via the state
+        equation (K(ρ) T = f). The explicit dependence of J on ρ through
+        h_eff(ρ) and |∇ρ| should be added separately if needed.
+    """
+    gradT = w['Th'].grad   # ∇T
+    gradL = w['λh'].grad   # ∇λ
+    return dot(gradT, gradL)
+
+
+def heat_exchange_grad_density_multi(
+    basis: skfem.Basis,
+    T_all: np.ndarray,    # shape: (n_dof, n_loads), state field(s)
+    λ_all: np.ndarray,    # shape: (n_dof, n_loads), adjoint field(s)
+) -> np.ndarray:
+    """
+    Compute elementwise gradient density for the heat-exchange objective
+    (PDE contribution) for multiple load cases.
+
+    Parameters
+    ----------
+    basis : skfem.Basis
+        FEM basis used for the conduction problem.
+    T_all : (n_dof, n_loads) ndarray
+        State temperatures for each load case (columns).
+    λ_all : (n_dof, n_loads) ndarray
+        Adjoint fields corresponding to the heat-exchange objective.
+
+    Returns
+    -------
+    elem_grad_all : (n_elem, n_loads) ndarray
+        Elementwise gradient densities for each load case. These are
+        proportional to ∇T · ∇λ and should be combined with the SIMP
+        derivative ∂k/∂ρ and any filter/projection derivatives to obtain
+        dJ/dρ on the design variables.
+    """
+    n_dof, n_loads = T_all.shape
+    n_elem = basis.mesh.nelements
+
+    elem_grad_all = np.zeros((n_elem, n_loads))
+    for i in range(n_loads):
+        Th = basis.interpolate(T_all[:, i])
+        λh = basis.interpolate(λ_all[:, i])
+        elem_grad = _heat_exchange_grad_density_.elemental(
+            basis, Th=Th, λh=λh
+        )
+        elem_grad_all[:, i] = elem_grad
+
+    return elem_grad_all
+
+
+@skfem.Functional
 def _hx_den_density_(w):
     """
     Denominator: ∫_Γh dΓ ≈ ∫_Ω |∇ρ| dΩ
@@ -319,6 +246,25 @@ def _hx_den_density_(w):
     grad_rho = w['rho'].grad
     interface = np.sqrt(np.sum(grad_rho**2, axis=0))
     return interface
+
+
+@skfem.LinearForm
+def _hx_adj_rhs_(v, w):
+    """
+    Right-hand side density for the adjoint equation of the
+    heat-exchange objective.
+
+        dJ/dT = (- T_env * h_eff * |∇ρ| / J_den)
+
+    This LinearForm integrates
+        - T_env * h_eff * |∇ρ| * v
+    before dividing by Jden
+    """
+    T_env = w['T_env']
+    h_eff = w['h_eff']
+    grad_rho = w['rho'].grad
+    interface = np.sqrt(np.sum(grad_rho**2, axis=0))
+    return - T_env * h_eff * interface * v
 
 
 def heat_exchange_objective(
@@ -353,6 +299,20 @@ def heat_exchange_objective(
     return J_num / J_den
 
 
+@skfem.Functional
+def _avg_temp_density_(w):
+    """
+    Element-wise density for the average-temperature objective:
+        J = ∫_Ω (T - T_env) dΩ
+
+    Up to a constant shift, this is equivalent to ∫_Ω T dΩ,
+    so it induces the same sensitivity with respect to ρ.
+    """
+    Th = w['Th']       # interpolated temperature
+    T_env = w['T_env'] # ambient temperature field
+    return Th - T_env
+
+
 def avg_temp_skfem(
     basis: skfem.Basis,
     T: np.ndarray,
@@ -360,14 +320,27 @@ def avg_temp_skfem(
 ) -> np.ndarray:
     """
     Compute elementwise contributions to the average temperature functional:
-        J = ∫_Ω T(x) dΩ
+        J = ∫_Ω (T(x) - T_env) dΩ
+
+    Parameters
+    ----------
+    basis : skfem.Basis
+        FEM basis.
+    T : (n_dof,) ndarray
+        Nodal temperature vector.
+    T_env : float
+        Ambient/reference temperature.
+
+    Returns
+    -------
+    elem_avgT : (n_elem,) ndarray
+        Elementwise contributions to the average-temperature functional.
     """
     Th = basis.interpolate(T)
-    # elem_avgT = _avg_temp_density_.elemental(
-    #     basis, Th=Th
-    # )
-    elem_avgT = _hx_boundary_density_.elemental(
-        basis, Th=Th, T_env=T_env
+    T_env_field = basis.interpolate(np.full(basis.N, T_env))
+
+    elem_avgT = _avg_temp_density_.elemental(
+        basis, Th=Th, T_env=T_env_field
     )
     return elem_avgT
 
@@ -380,17 +353,36 @@ def avg_temp_skfem_multi(
     """
     Compute elementwise average temperature functional for multiple load cases.
     Each column of T_all corresponds to one load condition.
+
+    Parameters
+    ----------
+    basis : skfem.Basis
+        FEM basis.
+    T_all : (n_dof, n_loads) ndarray
+        Nodal temperatures for each load case (columns).
+    T_env : float
+        Ambient/reference temperature.
+
+    Returns
+    -------
+    elem_avg_all : (n_elem, n_loads) ndarray
+        Elementwise contributions to the average-temperature functional
+        for each load case.
     """
     n_dof, n_loads = T_all.shape
     n_elem = basis.mesh.nelements
-    elem_energy_all = np.zeros((n_elem, n_loads))
+    elem_avg_all = np.zeros((n_elem, n_loads))
+
+    T_env_field = basis.interpolate(np.full(basis.N, T_env))
+
     for i in range(n_loads):
         Th = basis.interpolate(T_all[:, i])
-        elem_energy = _avg_temp_density_.elemental(
-            basis, Th=Th, T_env=T_env
+        elem_avg = _avg_temp_density_.elemental(
+            basis, Th=Th, T_env=T_env_field
         )
-        elem_energy_all[:, i] = elem_energy
-    return elem_energy_all
+        elem_avg_all[:, i] = elem_avg
+
+    return elem_avg_all
 
 
 @skfem.Functional
@@ -551,60 +543,123 @@ class FEM_SimpLinearHeatConduction():
         #     robin_bilinear = self.task.robin_bilinear
         #     robin_linear = self.task.robin_linear
 
-        objective_list, λ_all = compute_objective_multi_load(
-            self.task.basis, self.task.free_dofs,
-            dirichlet_nodes_list,
-            dirichlet_values_list,
+        K_csr, emit, dirichlet_dofs_list = solve_multi_load(
+            basis, self.task.free_dofs,
+            dirichlet_nodes_list, dirichlet_values_list,
             self.task.robin_bilinear+[K_virtual],
             self.task.robin_linear+[f_virtual],
             self.k_max, self.k_min, p,
             rho,
             u_dofs,
-            elem_func=self.density_interpolation,
             solver=self.solver_option,
+            elem_func=self.density_interpolation,
             n_joblib=self.n_joblib,
-            objective=self.task.objective
-            # objective=(
-            #     "averaged_temp"
-            #     if self.task.objective == "heat_exchange"
-            #     else self.task.objective
-            # )
         )
 
-        if self.task.objective == "heat_exchange":
-            cbasis = skfem.CellBasis(
-                self.task.basis.mesh,
-                self.task.basis.elem
-            )
-            J_list = []
-            for i in range(u_dofs.shape[1]):
+        n_loads = u_dofs.shape[1]
+        J_list: list[float] = []
+        λ_all: np.ndarray | None = None
+
+        objective = self.task.objective
+
+        if objective == "compliance":
+            for i in range(n_loads):
+                T_i = u_dofs[:, i]
+                J_list.append(float(T_i @ (K_csr @ T_i)))
+            λ_all = -2.0 * u_dofs
+
+        elif objective == "heat_exchange":
+            cbasis = skfem.CellBasis(basis.mesh, basis.elem)
+            rhoh = cbasis.interpolate(rho_nodal)
+
+            # J_den = ∫|∇ρ| dΩ
+            den_e = _hx_den_density_.elemental(cbasis, rho=rhoh)
+            J_den = den_e.sum()
+
+            if J_den <= 1e-16:
+                # the boundary is almost zero -> objective/grad = 0
+                J_list = [0.0 for _ in range(n_loads)]
+                λ_all = np.zeros_like(u_dofs)
+                self.λ_all = λ_all
+                return np.array(J_list)
+
+            J_list: list[float] = list()
+            for i in range(n_loads):
                 T_i = u_dofs[:, i]
                 J_i = heat_exchange_objective(
                     cbasis,
                     T_i,
                     rho_nodal,
                     self.task.robin_bc_value,      # T_env
-                    self.task.robin_coefficient    # h (or h_eff scalar)
+                    self.task.robin_coefficient    # h
                 )
                 J_list.append(J_i)
-            objective_list = J_list
+
+            T_env_field = cbasis.interpolate(
+                np.full(cbasis.N, self.task.robin_bc_value)
+            )
+            # h_eff_nodal = h * ρ^p (1-ρ)^q
+            h = self.task.robin_coefficient
+            h_eff_nodal = h * (rho_nodal**p) * (1.0 - rho_nodal)**self.q
+            h_eff_field = cbasis.interpolate(h_eff_nodal)
+            rhs_vec = _hx_adj_rhs_.assemble(
+                cbasis, rho=rhoh, T_env=T_env_field, h_eff=h_eff_field
+            )
+            rhs_vec /= J_den  # ∂J/∂T
+
+            # solve adjoint K λ = ∂J/∂T
+            λ_all = np.zeros_like(u_dofs)
+            solve_scipy(
+                K_csr, rhs_vec,
+                dirichlet_dofs_list, dirichlet_values_list,
+                λ_all, n_joblib=self.n_joblib
+            )
+
+        elif objective == "averaged_temp":
+            for i in range(n_loads):
+                J_list.append(float(np.sum(u_dofs[:, i])))
+
+            λ_all = np.zeros_like(u_dofs)
+            ones_emit = np.ones_like(emit)
+            solve_scipy(
+                K_csr, ones_emit,
+                dirichlet_dofs_list, dirichlet_values_list,
+                λ_all, n_joblib=self.n_joblib
+            )
+
+        else:
+            raise ValueError(f"Unknown objective: {objective}")
 
         self.λ_all = λ_all
-        return np.array(objective_list)
+        return np.array(J_list)
 
     def energy_multi_load(
         self,
         rho: np.ndarray, p: float, u_dofs: np.ndarray
     ) -> np.ndarray:
-        # if self.task.objective == "compliance":
-        return heat_energy_skfem_multi(
-            self.task.basis, rho, u_dofs,
-            self.k_max, self.k_min, p,
-            elem_func=self.density_interpolation
-        )
-        # elif self.task.objective == "averaged_temp":
-        #     return avg_temp_grad_density_multi(
-        #         self.task.basis,
-        #         u_dofs,
-        #         self.λ_all
-        #     )
+        if self.task.objective == "compliance":
+            return heat_energy_skfem_multi(
+                self.task.basis, rho, u_dofs,
+                self.k_max, self.k_min, p,
+                elem_func=self.density_interpolation
+            )
+
+        elif self.task.objective == "heat_exchange":
+            if self.λ_all is None:
+                raise RuntimeError("adjoint field λ_all is not computed.")
+            return heat_exchange_grad_density_multi(
+                self.task.basis,
+                u_dofs,
+                self.λ_all,
+            )
+
+        elif self.task.objective == "averaged_temp":
+            if self.λ_all is None:
+                raise RuntimeError("adjoint field λ_all is not computed.")
+            return avg_temp_grad_density_multi(
+                self.task.basis,
+                u_dofs,
+                self.λ_all
+            )
+        else:
+            raise ValueError(f"Unknown objective: {self.task.objective}")
