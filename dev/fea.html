@@ -1,0 +1,358 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sktopt.fea &mdash; scikit-topt 0.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+    <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/fea.html" />
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=4621528c"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="sktopt.mesh" href="mesh.html" />
+    <link rel="prev" title="sktopt.core" href="core.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            scikit-topt
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Content</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="project.html">Project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial Page</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Gourvan Equation and Weak Form</a></li>
+<li class="toctree-l1"><a class="reference internal" href="formulation.html">Topology Optimization Algorithm Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization Algorithms in Density-Based Topology Optimization</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core.html">sktopt.core</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">sktopt.fea</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mesh.html">sktopt.mesh</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mesh.utils.html">sktopt.mesh.utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools.html">sktopt.tools</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">scikit-topt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="api.html">API Reference</a></li>
+      <li class="breadcrumb-item active">sktopt.fea</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/fea.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="sktopt-fea">
+<h1>sktopt.fea<a class="headerlink" href="#sktopt-fea" title="Link to this heading"></a></h1>
+<p>This package provides functions to handle finite element analysis</p>
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.fea.</span></span><span class="sig-name descname"><span class="pre">FEM_SimpLinearElasticity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task:</span> <span class="pre">LinearElasticity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density_interpolation:</span> <span class="pre">Callable</span> <span class="pre">=</span> <span class="pre">CPUDispatcher(&lt;function</span> <span class="pre">simp_interpolation&gt;)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">Literal['spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'cg_pyamg']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Finite Element solver for linear elasticity using SIMP interpolation.</p>
+<p>This class performs linear elastic FEM analysis where the Young’s modulus
+is interpolated based on material density (ρ) using a SIMP-type
+interpolation function. It is intended for density-based topology
+optimization workflows, where element stiffness is expressed as:</p>
+<blockquote>
+<div><p>E(ρ) = E_min + (E_max - E_min) * f(ρ)</p>
+</div></blockquote>
+<p>where <cite>f(ρ)</cite> is typically ρᵖ for SIMP.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>task</strong> (<em>LinearElasticity</em>) – Predefined linear elasticity problem that includes mesh, material
+constants (E, ν), boundary conditions, load vectors, and basis
+definitions.</p></li>
+<li><p><strong>E_min_coeff</strong> (<em>float</em>) – <dl class="simple">
+<dt>Ratio defining the minimum Young’s modulus as:</dt><dd><p>E_min = task.E * E_min_coeff</p>
+</dd>
+</dl>
+<p>Used to avoid singular stiffness matrices during optimization.</p>
+</p></li>
+<li><p><strong>density_interpolation</strong> (<em>Callable</em><em>, </em><em>optional</em>) – A function f(ρ) that returns an interpolated stiffness multiplier.
+Defaults to <cite>composer.simp_interpolation</cite> (ρᵖ). Any custom
+interpolation function following SIMP/RAMP/etc. can be used.</p></li>
+<li><p><strong>solver_option</strong> (<em>{&quot;spsolve&quot;</em><em>, </em><em>&quot;cg_pyamg&quot;}</em><em>, </em><em>optional</em>) – <p>Linear solver backend.
+- “spsolve”: direct SciPy sparse solver (robust, slower for large DOF)
+- “cg_pyamg”: Conjugate Gradient with PyAMG multigrid preconditioner</p>
+<blockquote>
+<div><p>(fast for large problems)</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>n_joblib</strong> (<em>float</em><em>, </em><em>optional</em>) – Number of parallel jobs for element-wise computations. If 1, no
+parallelization is used.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">task</span></span></dt>
+<dd><p>The underlying elasticity problem definition.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>LinearElasticity</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">E_max</span></span></dt>
+<dd><p>Maximum Young’s modulus (equal to <cite>task.E</cite>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">E_min</span></span></dt>
+<dd><p>Minimum Young’s modulus used for void regions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">density_interpolation</span></span></dt>
+<dd><p>The SIMP / RAMP interpolation function used to compute material
+stiffness.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">solver_option</span></span></dt>
+<dd><p>Selected linear solver backend.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">n_joblib</span></span></dt>
+<dd><p>Number of parallel jobs for element computations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>This class does <strong>not</strong> update densities; it only evaluates the FEM</dt><dd><p>response for a given density field.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Designed to integrate with OC/MMA/ADMM-based topology optimization</dt><dd><p>frameworks.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>The stiffness matrix assembly depends on interpolated Young’s modulus</dt><dd><p>at each element.</p>
+</dd>
+</dl>
+</li>
+<li><p><cite>E_min_coeff</cite> should typically be small (1e−3 ~ 1e−9), but not zero.</p></li>
+</ul>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">fem</span> <span class="o">=</span> <span class="n">FEM_SimpLinearElasticity</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">task</span><span class="o">=</span><span class="n">my_task</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">E_min_coeff</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">density_interpolation</span><span class="o">=</span><span class="n">composer</span><span class="o">.</span><span class="n">simp_interpolation</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">solver_option</span><span class="o">=</span><span class="s2">&quot;spsolve&quot;</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">fem</span><span class="o">.</span><span class="n">objectives_multi_load</span><span class="p">(</span><span class="n">rho</span><span class="p">)</span>  <span class="c1"># FEM compliaance given density</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">energy_multi_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rho</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">u_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">objectives_multi_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rho</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">u_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.fea.</span></span><span class="sig-name descname"><span class="pre">FEM_SimpLinearHeatConduction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task:</span> <span class="pre">LinearHeatConduction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density_interpolation:</span> <span class="pre">Callable</span> <span class="pre">=</span> <span class="pre">CPUDispatcher(&lt;function</span> <span class="pre">simp_interpolation&gt;)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">Literal['spsolve']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Finite element solver for SIMP-based linear heat conduction problems
+with support for multi-load objectives and virtual Robin boundaries.</p>
+<p>This class evaluates thermal objectives (e.g., average temperature,
+thermal compliance, or user-defined metrics) for a given density field
+using SIMP interpolation of the conductivity.
+It also assembles additional “virtual” Robin boundaries, which enables
+topology optimization of boundary-dependent heat-transfer behavior.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>task</strong> (<em>LinearHeatConduction</em>) – Problem configuration containing mesh, basis, boundary conditions,
+load cases, and objective type.</p></li>
+<li><p><strong>E_min_coeff</strong> (<em>float</em>) – Minimum conductivity ratio used in the SIMP model. The actual minimum
+conductivity is <code class="docutils literal notranslate"><span class="pre">task.k</span> <span class="pre">*</span> <span class="pre">E_min_coeff</span></code>.</p></li>
+<li><p><strong>density_interpolation</strong> (<em>Callable</em><em>, </em><em>optional</em>) – Interpolation function for SIMP (or RAMP) mapping ρ → k(ρ).
+Defaults to <code class="docutils literal notranslate"><span class="pre">composer.simp_interpolation</span></code>.</p></li>
+<li><p><strong>solver_option</strong> (<em>{&quot;spsolve&quot;</em><em>, </em><em>&quot;cg_pyamg&quot;}</em><em>, </em><em>optional</em>) – Linear solver to use for the state equation of each load case.</p></li>
+<li><p><strong>q</strong> (<em>int</em><em>, </em><em>optional</em>) – Exponent for boundary interpolation in the virtual Robin model
+(often used to sharpen on/off behavior of boundary heat transfer).</p></li>
+<li><p><strong>n_joblib</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of parallel jobs for solving multiple load cases.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">k_max</span></span></dt>
+<dd><p>Conductivity of solid material.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">k_min</span></span></dt>
+<dd><p>Conductivity of void (or weak) material.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">λ_all</span></span></dt>
+<dd><p>Stored adjoint fields for all load cases, computed during the last
+call to <code class="xref py py-meth docutils literal notranslate"><span class="pre">objectives_multi_load()</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>The class converts element-wise densities into nodal densities by
+averaging over connected elements. This ensures smoother interpolation
+when assembling virtual Robin terms.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">task.design_robin_boundary</span></code> is True, the actual boundary
+condition is updated based on the given density field, enabling
+optimization over Robin boundaries.</p></li>
+<li><p>For multi-load problems, each load case is solved independently and
+the objectives are returned as a list (e.g., one compliance value per
+thermal load case).</p></li>
+</ul>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">energy_multi_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rho</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">u_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">objectives_multi_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rho</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">u_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="core.html" class="btn btn-neutral float-left" title="sktopt.core" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mesh.html" class="btn btn-neutral float-right" title="sktopt.mesh" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Kohei Watanabe.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
