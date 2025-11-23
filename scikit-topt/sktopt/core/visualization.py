@@ -7,12 +7,15 @@ import numpy as np
 import imageio.v2 as imageio
 import skfem
 import meshio
-import pyvista as pv
 import matplotlib.pyplot as plt
 
 
 class XvfbWarning(UserWarning):
     """Raised when Xvfb is not available."""
+    pass
+
+
+class VisualizationUnavailableWarning(UserWarning):
     pass
 
 
@@ -118,6 +121,7 @@ def write_mesh_with_info_as_image(
         raise ValueError(f"mesh: {mesh_path} does not exist.")
 
     try:
+        import pyvista as pv
         pv.start_xvfb()
     except OSError:
         warnings.warn(
@@ -129,6 +133,17 @@ def write_mesh_with_info_as_image(
             stacklevel=2,
         )
 
+        return False
+    except ImportError:
+        warnings.warn(
+            "PyVista could not be imported. This usually occurs because VTK "
+            "wheels are not available for your Python version (e.g., Python 3.13). "
+            "Visualization features will be skipped. "
+            "To enable 3D visualization, install a Python version with VTK wheels "
+            "available (Python 3.10–3.12) and then install `pyvista`.",
+            VisualizationUnavailableWarning,
+            stacklevel=2,
+        )
         return False
 
     mesh = pv.read(mesh_path)
