@@ -56,7 +56,7 @@ line-profiler = ">=4.2.0,<5.0.0"
 memory-profiler = ">=0.61.0,<0.62.0"
 flake8 = "^7.2.0"
 sphinx = { version = "^8.2.3", python = ">=3.11" }
-recommonmark = "^0.7.1"
+recommonmark = { version = "^0.7.1", python = ">=3.11" }
 sphinx-rtd-theme = { version = "^3.0.2", python = ">=3.11" }
 myst-parser = { version = "^4.0.1", python = ">=3.11" }
 sphinx-autodoc-typehints = { version = "^3.2.0", python = ">=3.11" }
