@@ -1,4 +1,4 @@
-Gourvan Equation and Weak Form
+Governing Equation and Weak Form
 ================================
 
 This section summarizes the physical simulation models used in Scikit-Topt.
