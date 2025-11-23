@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://kevin-tofu.github.io/scikit-topt/sitemap.xml
