@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - dev
 
 jobs:
   build-and-deploy:
@@ -32,7 +33,7 @@ jobs:
           mkdir -p docs/_static
           cp -r assets/* docs/_static/
           cp -r paper/figures/* docs/_static/
-      
+
       - name: Install dependencies and Build Sphinx documentation
         working-directory: docs
         run: |
@@ -45,5 +46,10 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN  }}
-          publish_dir: ./docs/_build/html
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: |
+            ${{
+              github.ref == 'refs/heads/master' && './docs/_build/html' ||
+              format('./docs/_build/html/../dev')
+            }}
