@@ -59,7 +59,7 @@ sphinx = { version = "^8.2.3", python = ">=3.11" }
 recommonmark = "^0.7.1"
 sphinx-rtd-theme = "^3.0.2"
 myst-parser = "^4.0.1"
-sphinx-autodoc-typehints = "^3.2.0"
+sphinx-autodoc-typehints = { version = "^3.2.0", python = ">=3.11,<3.14" }
 sphinx-sitemap = "^2.6.0"
 
 [build-system]
