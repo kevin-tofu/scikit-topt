@@ -1,0 +1,251 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Weak Form of Linear Elasticity &mdash; scikit-topt 0.3.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+    <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/physics-elasticity.html" />
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=4621528c"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="The Weak Form of Heat Conduction" href="physics-heat.html" />
+    <link rel="prev" title="Gourvan Equation and Weak Form" href="physics.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            scikit-topt
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Content</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="project.html">Project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial Page</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="physics.html">Gourvan Equation and Weak Form</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">The Weak Form of Linear Elasticity</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#linear-elasticity">Linear Elasticity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#governing-equation-strong-form">Governing Equation (Strong Form)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#weak-formulation">Weak Formulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#finite-element-discretization">Finite Element Discretization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#boundary-conditions">Boundary Conditions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#dirichlet-bc-fixed-boundaries">Dirichlet BC (fixed boundaries)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#neumann-bc-surface-forces">Neumann BC (surface forces)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#solving-the-linear-system">Solving the Linear System</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="physics-heat.html">The Weak Form of Heat Conduction</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="formulation.html">Topology Optimization Algorithm Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization Algorithms in Density-Based Topology Optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">scikit-topt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="physics.html">Gourvan Equation and Weak Form</a></li>
+      <li class="breadcrumb-item active">The Weak Form of Linear Elasticity</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/physics-elasticity.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="the-weak-form-of-linear-elasticity">
+<h1>The Weak Form of Linear Elasticity<a class="headerlink" href="#the-weak-form-of-linear-elasticity" title="Link to this heading"></a></h1>
+<p>This document provides an overview of the physics implemented in
+<strong>Scikit-Topt</strong>, focusing on linear elasticity and its formulation in the
+finite element method (FEM).
+We explain the governing equations, weak formulation, boundary conditions
+(Neumann and Dirichlet), and the resulting linear system solved inside
+the optimizer.</p>
+<section id="linear-elasticity">
+<h2>Linear Elasticity<a class="headerlink" href="#linear-elasticity" title="Link to this heading"></a></h2>
+<p>In linear elasticity, the displacement field
+<span class="math notranslate nohighlight">\(\mathbf{u} : \Omega \rightarrow \mathbb{R}^d\)</span>
+describes how each point in the domain <span class="math notranslate nohighlight">\(\Omega\)</span> moves under
+external forces.</p>
+<p>The stress–strain relationship follows Hooke’s law:</p>
+<div class="math notranslate nohighlight">
+\[\boldsymbol{\sigma} = \mathbb{C} : \boldsymbol{\varepsilon},\]</div>
+<p>where</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(\boldsymbol{\sigma}\)</span> = Cauchy stress tensor</p></li>
+<li><p><span class="math notranslate nohighlight">\(\boldsymbol{\varepsilon}\)</span> = infinitesimal strain tensor</p></li>
+<li><p><span class="math notranslate nohighlight">\(\mathbb{C}\)</span> = 4th-order elasticity tensor
+(depends on Young’s modulus <span class="math notranslate nohighlight">\(E\)</span> and Poisson ratio <span class="math notranslate nohighlight">\(\nu\)</span>).</p></li>
+</ul>
+<p>The strain tensor is defined as:</p>
+<div class="math notranslate nohighlight">
+\[\boldsymbol{\varepsilon}(\mathbf{u})
+= \frac{1}{2}(\nabla \mathbf{u} + \nabla\mathbf{u}^T).\]</div>
+</section>
+<section id="governing-equation-strong-form">
+<h2>Governing Equation (Strong Form)<a class="headerlink" href="#governing-equation-strong-form" title="Link to this heading"></a></h2>
+<p>Mechanical equilibrium in absence of body forces is written as:</p>
+<div class="math notranslate nohighlight">
+\[-\nabla \cdot \boldsymbol{\sigma} = \mathbf{0}
+\quad \text{in } \Omega.\]</div>
+<p>Boundary conditions are applied on the domain boundary <span class="math notranslate nohighlight">\(\partial\Omega\)</span>:</p>
+<ul class="simple">
+<li><p><strong>Dirichlet BC (fixed boundary)</strong>:
+<span class="math notranslate nohighlight">\(\mathbf{u} = \bar{\mathbf{u}}\)</span> on <span class="math notranslate nohighlight">\(\Gamma_D\)</span></p></li>
+<li><p><strong>Neumann BC (traction/force)</strong>:
+<span class="math notranslate nohighlight">\(\boldsymbol{\sigma}\mathbf{n} = \mathbf{t}\)</span> on <span class="math notranslate nohighlight">\(\Gamma_N\)</span></p></li>
+</ul>
+<p>Here <span class="math notranslate nohighlight">\(\mathbf{n}\)</span> is the outward normal vector.</p>
+</section>
+<section id="weak-formulation">
+<h2>Weak Formulation<a class="headerlink" href="#weak-formulation" title="Link to this heading"></a></h2>
+<p>We multiply the equilibrium equation by a test function
+<span class="math notranslate nohighlight">\(\mathbf{v}\)</span> and integrate over the domain:</p>
+<div class="math notranslate nohighlight">
+\[\int_\Omega \boldsymbol{\sigma}(\mathbf{u}) : \boldsymbol{\varepsilon}(\mathbf{v}) \, d\Omega
+= \int_{\Gamma_N} \mathbf{t} \cdot \mathbf{v} \, d\Gamma.\]</div>
+<p>This is the <em>weak form</em> of linear elasticity.</p>
+<p>Substituting Hooke’s law gives:</p>
+<div class="math notranslate nohighlight">
+\[\int_\Omega (\mathbb{C}\boldsymbol{\varepsilon}(\mathbf{u}))
+: \boldsymbol{\varepsilon}(\mathbf{v}) \, d\Omega
+= \int_{\Gamma_N} \mathbf{t} \cdot \mathbf{v} \, d\Gamma.\]</div>
+</section>
+<section id="finite-element-discretization">
+<h2>Finite Element Discretization<a class="headerlink" href="#finite-element-discretization" title="Link to this heading"></a></h2>
+<p>We approximate the displacement field as:</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{u}_h(\mathbf{x})
+= \sum_{i=1}^{N} u_i \, \phi_i(\mathbf{x}),\]</div>
+<p>where <span class="math notranslate nohighlight">\(\phi_i\)</span> are FEM shape functions and <span class="math notranslate nohighlight">\(u_i\)</span> the unknown nodal
+degrees of freedom.</p>
+<p>Inserting this into the weak form yields the discrete system:</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{K} \mathbf{u} = \mathbf{f},\]</div>
+<p>where:</p>
+<ul>
+<li><p><span class="math notranslate nohighlight">\(\mathbf{K}\)</span> is the <strong>stiffness matrix</strong></p>
+<div class="math notranslate nohighlight">
+\[\mathbf{K}_{ij}
+= \int_\Omega
+  \boldsymbol{\varepsilon}(\phi_j)^T \,
+  \mathbb{C} \,
+  \boldsymbol{\varepsilon}(\phi_i)
+  \, d\Omega.\]</div>
+</li>
+<li><p><span class="math notranslate nohighlight">\(\mathbf{f}\)</span> is the <strong>load vector</strong></p>
+<div class="math notranslate nohighlight">
+\[\mathbf{f}_i
+= \int_{\Gamma_N} \mathbf{t} \cdot \phi_i \, d\Gamma.\]</div>
+</li>
+</ul>
+</section>
+<section id="boundary-conditions">
+<h2>Boundary Conditions<a class="headerlink" href="#boundary-conditions" title="Link to this heading"></a></h2>
+<section id="dirichlet-bc-fixed-boundaries">
+<h3>Dirichlet BC (fixed boundaries)<a class="headerlink" href="#dirichlet-bc-fixed-boundaries" title="Link to this heading"></a></h3>
+<p>Enforced by modifying the stiffness matrix system:</p>
+<ul class="simple">
+<li><p>Rows corresponding to fixed DOFs are zeroed</p></li>
+<li><p>Diagonal entries are set to 1</p></li>
+<li><p>Load vector entries for those DOFs are set to the prescribed value</p></li>
+</ul>
+</section>
+<section id="neumann-bc-surface-forces">
+<h3>Neumann BC (surface forces)<a class="headerlink" href="#neumann-bc-surface-forces" title="Link to this heading"></a></h3>
+<p>Traction loads add contributions to <span class="math notranslate nohighlight">\(\mathbf{f}\)</span>:</p>
+</section>
+</section>
+<section id="solving-the-linear-system">
+<h2>Solving the Linear System<a class="headerlink" href="#solving-the-linear-system" title="Link to this heading"></a></h2>
+<p>After applying boundary conditions, we solve:</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{K}_e \mathbf{u} = \mathbf{f}_e.\]</div>
+<p>In Scikit-Topt:</p>
+<ul class="simple">
+<li><p>Default: sparse direct solver (<code class="docutils literal notranslate"><span class="pre">scipy.spsolve</span></code> or <code class="docutils literal notranslate"><span class="pre">splu</span></code>)</p></li>
+<li><p>Optional: iterative solvers or PyAMG</p></li>
+</ul>
+<p>Typical code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">K_e</span><span class="p">,</span> <span class="n">f_e</span> <span class="o">=</span> <span class="n">skfem</span><span class="o">.</span><span class="n">enforce</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">D</span><span class="o">=</span><span class="n">dirichlet_dofs</span><span class="p">)</span>
+<span class="n">u</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">spsolve</span><span class="p">(</span><span class="n">K_e</span><span class="p">,</span> <span class="n">f_e</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="physics.html" class="btn btn-neutral float-left" title="Gourvan Equation and Weak Form" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="physics-heat.html" class="btn btn-neutral float-right" title="The Weak Form of Heat Conduction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Kohei Watanabe.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
