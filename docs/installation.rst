@@ -1,7 +1,7 @@
 Installation
 ============
 
-sktopt is a Python package that can be installed using pip or poetry.  
+Scikit-Topt is a Python library distributed as the package `sktopt` and can be installed using pip or poetry.  
 It is compatible with Python 3.11 - 3.12. To install sktopt, follow these steps:
 
 **Install sktopt**:  
