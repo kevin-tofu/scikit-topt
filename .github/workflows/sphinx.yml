@@ -43,24 +43,27 @@ jobs:
         run: |
           poetry run sphinx-build -b html docs docs/_build/html
 
-      - name: Prepare dev folder when necessary
-        if: github.ref == 'refs/heads/dev'
-        run: |
-          mkdir -p docs/_build/dev
-          cp -r docs/_build/html/* docs/_build/dev/
-
       - name: Add .nojekyll
         run: |
           touch docs/_build/html/.nojekyll
-          touch docs/_build/dev/.nojekyll || true
 
-      - name: Deploy to GitHub Pages
+      # master 用デプロイ（ルートに）
+      - name: Deploy master docs to GitHub Pages
+        if: github.ref == 'refs/heads/master'
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: |
-            ${{
-              github.ref == 'refs/heads/master' && 'docs/_build/html' ||
-              'docs/_build/dev'
-            }}
+          publish_dir: docs/_build/html
+          keep_files: true
+
+      # dev 用デプロイ（/dev サブフォルダに）
+      - name: Deploy dev docs to GitHub Pages under /dev
+        if: github.ref == 'refs/heads/dev'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: docs/_build/html
+          destination_dir: dev
+          keep_files: true
