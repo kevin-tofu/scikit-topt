@@ -23,7 +23,6 @@ matrices. A common choice is \(E_\text{min} \approx 10^{-3} E_0\).
 Initialization
 ~~~~~~~~~~~~~~
 
-- Design variable :math:`\rho` is initialized using the ``vol_frac_init`` or a fixed value depending on the interpolation scheme.
 - Restart logic loads a previous design if specified.
 - Dirichlet and force boundary elements are set to full material.
 
@@ -124,15 +123,25 @@ variable passes through two transformations:
 
 The total derivative uses the chain rule:
 
-.. math::
-\frac{\partial C}{\partial \rho}
-================================
+We denote by :math:`\mathcal{F}` the (linear) density filter operator such that
 
-\frac{\partial C}{\partial \hat{\rho}}
-\cdot
-\frac{\partial \hat{\rho}}{\partial \tilde{\rho}}
-\cdot
-\frac{\partial \tilde{\rho}}{\partial \rho}.
+.. math::
+   \tilde{\rho} = \mathcal{F}(\rho).
+
+Because :math:`\mathcal{F}` is linear, its derivative with respect to
+:math:`\rho` is the operator itself, and the adjoint filter required for
+backpropagation is the transpose operator :math:`\mathcal{F}^T`,
+implemented via ``filter.gradient()`` in Scikit-Topt.
+Applying the chain rule gives
+
+.. math::
+   \frac{\partial C}{\partial \rho}
+   =
+   \frac{\partial C}{\partial \hat{\rho}}
+   \cdot
+   \frac{\partial \hat{\rho}}{\partial \tilde{\rho}}
+   \cdot
+   \frac{\partial \tilde{\rho}}{\partial \rho}.
 
 Meaning of each term:
 
@@ -150,15 +159,21 @@ Meaning of each term:
 
 Thus, the final sensitivity in Scikit-Topt is computed as:
 
-.. math::
-\frac{\partial C}{\partial \rho}
-================================
+We denote by :math:`W` the (discrete) linear filter operator such that
 
-\mathcal{F}^T \left(
-\frac{\partial \hat{\rho}}{\partial \tilde{\rho}}
-\circ
-\frac{\partial C}{\partial \hat{\rho}}
-\right)
+.. math::
+   \tilde{\rho} = W \rho.
+
+The total derivative then follows the chain rule:
+
+.. math::
+   \frac{\partial C}{\partial \rho}
+   =
+   \frac{\partial C}{\partial \hat{\rho}}
+   \cdot
+   \frac{\partial \hat{\rho}}{\partial \tilde{\rho}}
+   \cdot
+   \frac{\partial \tilde{\rho}}{\partial \rho}.
 
 where :math:`\circ` denotes element-wise multiplication.
 
