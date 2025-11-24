@@ -5,7 +5,7 @@ Density-based topology optimization relies on continuous design variables to rep
 
 One of the most widely used methods is the **Optimality Criteria (OC) method**, which updates the density based on a closed-form expression derived from the Karush-Kuhn-Tucker (KKT) conditions. The OC method is simple to implement and provides fast convergence in many structural problems. It typically uses a multiplicative update rule that enforces a volume constraint while improving the compliance.
 
-Another approach is the **Modified Optimality Criteria (MOC)** method, which extends the OC framework by incorporating additional strategies for handling constraints, improving stability, or enhancing convergence. For example, some MOC variants integrate projection and filtering directly into the update step or apply move limits and continuation schemes to control intermediate densities more robustly.
+Another approach is the **Modified Optimality Criteria (MOC)** method, which extends the OC framework by incorporating additional strategies for handling constraints, improving stability, or enhancing convergence. For example, MOC integrate projection and filtering directly into the update step or apply move limits and continuation schemes to control intermediate densities more robustly.
 
 In addition to these, gradient-based methods using standard optimization libraries (e.g., MMA: Method of Moving Asymptotes) are also popular in density-based formulations, particularly when dealing with multiple constraints or noncompliance objectives.
 
@@ -94,8 +94,8 @@ Despite these limitations, the OC method remains one of the most popular approac
 especially when a robust and lightweight heuristic is sufficient for prototyping or academic demonstration.
 
 
-Modified Optimality Criteria (MOC) Variants
--------------------------------------------
+Modified Optimality Criteria (MOC)
+-----------------------------------
 
 In density-based topology optimization, the Modified Optimality Criteria (MOC) method can be implemented in several ways. 
 One common idea is to reformulate the OC update in **log-space**, which improves numerical stability while preserving its multiplicative structure.

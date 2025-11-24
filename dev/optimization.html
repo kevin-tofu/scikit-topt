@@ -61,7 +61,7 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#modified-optimality-criteria-moc-variants">Modified Optimality Criteria (MOC) Variants</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#modified-optimality-criteria-moc">Modified Optimality Criteria (MOC)</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#log-space-update-method">Log-space Update Method</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#practical-notes-for-oc-and-moc-implementations">Practical Notes for OC and MOC Implementations</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#parameter-guidelines">Parameter Guidelines</a></li>
@@ -103,7 +103,7 @@
 <h1>Optimization Algorithms in Density-Based Topology Optimization<a class="headerlink" href="#optimization-algorithms-in-density-based-topology-optimization" title="Link to this heading"></a></h1>
 <p>Density-based topology optimization relies on continuous design variables to represent material distribution, and various optimization algorithms have been developed to update these densities effectively.</p>
 <p>One of the most widely used methods is the <strong>Optimality Criteria (OC) method</strong>, which updates the density based on a closed-form expression derived from the Karush-Kuhn-Tucker (KKT) conditions. The OC method is simple to implement and provides fast convergence in many structural problems. It typically uses a multiplicative update rule that enforces a volume constraint while improving the compliance.</p>
-<p>Another approach is the <strong>Modified Optimality Criteria (MOC)</strong> method, which extends the OC framework by incorporating additional strategies for handling constraints, improving stability, or enhancing convergence. For example, some MOC variants integrate projection and filtering directly into the update step or apply move limits and continuation schemes to control intermediate densities more robustly.</p>
+<p>Another approach is the <strong>Modified Optimality Criteria (MOC)</strong> method, which extends the OC framework by incorporating additional strategies for handling constraints, improving stability, or enhancing convergence. For example, MOC integrate projection and filtering directly into the update step or apply move limits and continuation schemes to control intermediate densities more robustly.</p>
 <p>In addition to these, gradient-based methods using standard optimization libraries (e.g., MMA: Method of Moving Asymptotes) are also popular in density-based formulations, particularly when dealing with multiple constraints or noncompliance objectives.</p>
 <p>Each of these methods offers different trade-offs in terms of implementation complexity, convergence speed, and robustness. The choice of optimization algorithm can significantly affect the quality and performance of the final design.</p>
 <section id="optimality-criteria">
@@ -178,8 +178,8 @@ especially when a robust and lightweight heuristic is sufficient for prototyping
 </section>
 </section>
 </section>
-<section id="modified-optimality-criteria-moc-variants">
-<h2>Modified Optimality Criteria (MOC) Variants<a class="headerlink" href="#modified-optimality-criteria-moc-variants" title="Link to this heading"></a></h2>
+<section id="modified-optimality-criteria-moc">
+<h2>Modified Optimality Criteria (MOC)<a class="headerlink" href="#modified-optimality-criteria-moc" title="Link to this heading"></a></h2>
 <p>In density-based topology optimization, the Modified Optimality Criteria (MOC) method can be implemented in several ways.
 One common idea is to reformulate the OC update in <strong>log-space</strong>, which improves numerical stability while preserving its multiplicative structure.</p>
 <section id="log-space-update-method">

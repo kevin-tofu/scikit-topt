@@ -108,52 +108,59 @@ Compliance Evaluation
 
      \frac{\partial C}{\partial \rho} = -p \rho^{p-1} (E_0 - E_\text{min}) \epsilon^T \mathbf{D} \epsilon
 
-Sensitivity Analysis with Backpropagation
---------------------------------------------
+Sensitivity Propagation Through Filtering and Projection
+--------------------------------------------------------
 
-In practice, the sensitivities propagate through filtering and projection as
+In density-based topology optimization, the compliance sensitivity computed
+from FEM does not act directly on the design density. Instead, the design
+variable passes through two transformations:
 
 .. math::
-   \frac{\partial C}{\partial \rho}
-   = \frac{\partial C}{\partial \tilde{\rho}}
-   \frac{\partial \tilde{\rho}}{\partial \rho_{\text{filtered}}}
-   \frac{\partial \rho_{\text{filtered}}}{\partial \rho},
+   \rho
+   \;\xrightarrow{\text{filter}}\;
+   \tilde{\rho}
+   \;\xrightarrow{\text{projection}}\;
+   \hat{\rho}.
 
-which makes the influence of both the Helmholtz filter and the Heaviside
-projection explicit in the gradient computation.
-
-In topology optimization, the sensitivity of the objective function (e.g.,
-compliance) with respect to the design variable :math:`\rho` is computed by
-applying the chain rule through each computational step. This is
-conceptually similar to backpropagation in machine learning.
-
-Assume the objective function :math:`C` depends on the displacement field
-:math:`\mathbf{u}`, which in turn depends on the projected density
-:math:`\tilde{\rho}`, which is computed from the filtered density
-:math:`\rho_{\text{filtered}}`, and ultimately from the design variable
-:math:`\rho`.
-
-The total derivative is written as:
+The total derivative uses the chain rule:
 
 .. math::
    \frac{\partial C}{\partial \rho}
    =
-   \frac{\partial C}{\partial \mathbf{u}}
+   \frac{\partial C}{\partial \hat{\rho}}
    \cdot
-   \frac{\partial \mathbf{u}}{\partial \tilde{\rho}}
+   \frac{\partial \hat{\rho}}{\partial \tilde{\rho}}
    \cdot
-   \frac{\partial \tilde{\rho}}{\partial \rho_{\text{filtered}}}
-   \cdot
-   \frac{\partial \rho_{\text{filtered}}}{\partial \rho}
+   \frac{\partial \tilde{\rho}}{\partial \rho}.
 
-Each term corresponds to:
+Meaning of each term:
 
-- :math:`\frac{\partial C}{\partial \mathbf{u}}`: the derivative of compliance with respect to displacement, typically equal to the load vector :math:`\mathbf{f}`.
-- :math:`\frac{\partial \mathbf{u}}{\partial \tilde{\rho}}`: the derivative of the displacement field with respect to material stiffness, obtained via the adjoint method or differentiating the FEM equilibrium equation.
-- :math:`\frac{\partial \tilde{\rho}}{\partial \rho_{\text{filtered}}}`: the derivative of the Heaviside projection function.
-- :math:`\frac{\partial \rho_{\text{filtered}}}{\partial \rho}`: the derivative of the Helmholtz filter, which is typically linear and defined via the solution of a diffusion-type PDE.
+* :math:`\partial C / \partial \hat{\rho}`  
+  Raw compliance sensitivity obtained from FEM (already aggregated over load cases).
 
-This chain rule composition allows the gradient of the objective function to be backpropagated from output (compliance) to input (design variable), and is essential for gradient-based optimization algorithms.
+* :math:`\partial \hat{\rho} / \partial \tilde{\rho}`  
+  Derivative of the Heaviside-type projection used for black–white refinement.
+
+* :math:`\partial \tilde{\rho} / \partial \rho`  
+  Adjoint of the spatial or Helmholtz density filter.  
+  For the linear Helmholtz filter, this corresponds to applying ``F^T`` via
+  ``filter.gradient()``.
+
+Thus the final sensitivity in Scikit-Topt is computed as:
+
+.. math::
+   \frac{\partial C}{\partial \rho}
+   = F^T \left(
+       \frac{\partial \hat{\rho}}{\partial \tilde{\rho}}
+       \circ
+       \frac{\partial C}{\partial \hat{\rho}}
+     \right),
+
+where :math:`\circ` denotes element-wise multiplication.
+
+This “chain rule through filtering and projection’’ ensures that the update
+step (OC or MOC) is consistent with the filtered and projected densities used
+in the state equation
 
 As post-processing:
 
@@ -178,6 +185,33 @@ The process repeats until the maximum number of iterations is reached or converg
 .. note::
 
    This implementation uses a modular framework where filtering, projection, and updating are decoupled for clarity and extensibility.
+
+
+Convergence Criteria
+--------------------
+
+Although a fixed number of iterations (``max_iters``) is commonly used,
+more precise stopping criteria improve the robustness of OC and MOC
+implementations.
+
+Typical criteria include the following.
+
+**Maximum density change**
+
+.. math::
+
+   \max_e \left| \rho_e^{(t+1)} - \rho_e^{(t)} \right|
+   < \varepsilon_\rho.
+
+**KKT residual**
+
+.. math::
+
+   \left\| \nabla_\rho L(\rho, \lambda) \right\|
+   < \varepsilon_{\mathrm{KKT}}.
+
+
+If **:class:~sktopt.core.optimizers.DensityMethodConfig.check_convergence** is set to **True**, convergence is declared only when both of the following conditions are satisfied:
 
 Next Steps
 ~~~~~~~~~~
