@@ -205,11 +205,19 @@ two standard convergence checks widely used in OC/MOC methods:
 
 **KKT residual**
 
+The KKT residual is evaluated using the gradient of the Lagrangian
+
+.. math::
+
+   L(\rho, \lambda)
+   = C(\rho) + \lambda \left( \sum_e \rho_e v_e - V_{\max} \right),
+
+which leads to the convergence check
+
 .. math::
 
    \left\| \nabla_\rho L(\rho, \lambda) \right\|
    < \varepsilon_{\mathrm{KKT}}.
-
 
 If :class:`~sktopt.core.DensityMethodConfig.check_convergence` is set to ``True``, convergence is declared only when both of the following conditions are satisfied:
 
