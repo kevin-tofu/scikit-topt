@@ -115,17 +115,15 @@ from FEM does not act directly on the design density. Instead, the design
 variable passes through two transformations:
 
 .. math::
-
    \rho
-   \;\xrightarrow{\text{filter}}\;
+   \quad\xrightarrow{\text{filter}}\quad
    \tilde{\rho}
-   \;\xrightarrow{\text{projection}}\;
+   \quad\xrightarrow{\text{projection}}\quad
    \hat{\rho}.
 
+The total derivative uses the chain rule.
 
-The total derivative uses the chain rule:
-
-We denote by :math:`\mathcal{F}` the (linear) density filter operator such that
+We denote by :math:`\mathcal{F}` the (linear) density–filter operator such that
 
 .. math::
    \tilde{\rho} = \mathcal{F}(\rho).
@@ -146,40 +144,25 @@ Applying the chain rule gives
    \cdot
    \frac{\partial \tilde{\rho}}{\partial \rho}.
 
-
 Meaning of each term:
 
-* :math:`\frac{\partial C}{\partial \hat{\rho}}`
-  Raw compliance sensitivity obtained from FEM.
+* :math:`\frac{\partial C}{\partial \hat{\rho}}` — raw compliance sensitivity.
+* :math:`\frac{\partial \hat{\rho}}{\partial \tilde{\rho}}` — projection derivative.
+* :math:`\frac{\partial \tilde{\rho}}{\partial \rho}` — adjoint filter :math:`\mathcal{F}^T`.
 
-* :math:`\frac{\partial \hat{\rho}}{\partial \tilde{\rho}}`
-  Derivative of the Heaviside-type projection.
-
-* :math:`\frac{\partial \tilde{\rho}}{\partial \rho}`
-  Adjoint of the density filter.
-  For linear filters (including the Helmholtz filter), this corresponds to
-  applying the transpose of the filter operator,
-  written as :math:`\mathcal{F}^T`, implemented via `filter.gradient()`.
-
-Thus, the final sensitivity in Scikit-Topt is computed as:
-
-We denote by :math:`W` the (discrete) linear filter operator such that
-
-.. math::
-   \tilde{\rho} = W \rho.
-
-The total derivative then follows the chain rule:
+Thus, the final sensitivity in Scikit-Topt is
 
 .. math::
    \frac{\partial C}{\partial \rho}
    =
-   \frac{\partial C}{\partial \hat{\rho}}
-   \cdot
-   \frac{\partial \hat{\rho}}{\partial \tilde{\rho}}
-   \cdot
-   \frac{\partial \tilde{\rho}}{\partial \rho}.
+   \mathcal{F}^{T}\!\left(
+      \frac{\partial \hat{\rho}}{\partial \tilde{\rho}}
+      \circ
+      \frac{\partial C}{\partial \hat{\rho}}
+   \right),
 
 where :math:`\circ` denotes element-wise multiplication.
+
 
 This “chain rule through filtering and projection’’ ensures that the update
 step (OC or MOC) is consistent with the filtered and projected densities used in the state equation
