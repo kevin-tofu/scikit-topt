@@ -33,5 +33,5 @@ If you’d like to contribute:
 - Open an issue to discuss ideas, report bugs, or suggest improvements.
 - Submit a pull request for fixes, enhancements, or new examples.
 
-Please feel free to join the discussion on [GitHub Issues](https://github.com/Kevin-Tofu/scikit-topt/issues).
+Please feel free to join the discussion on [GitHub Issues](https://github.com/kevin-tofu/scikit-topt/issues).
 We appreciate all forms of contributions, from small documentation improvements to larger feature proposals.
