@@ -59,6 +59,20 @@ The currently supported features are as follows:
 
 You can install **Scikit-Topt** either via **pip** or **Poetry**.
 
+#### Supported Python Versions
+
+Scikit-Topt supports **Python 3.10–3.13**:
+
+- **3.10–3.12** — fully supported and tested  
+- **3.13** — core topology optimization works normally,  
+  but **VTK-based features** (VTU export & image rendering using PyVista)  
+  are temporarily unavailable because VTK/PyVista do not yet provide wheels  
+  for Python 3.13.
+
+You can still run the full optimization workflow on Python 3.13;  
+only visualization-related features are restricted.
+
+
 **Choose one of the following methods:**
 
 ### Using pip

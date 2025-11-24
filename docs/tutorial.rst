@@ -116,7 +116,7 @@ Task Configuration
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=2)
     E0 = 210e3
-    mytask = task.LinearElastisicity.from_mesh_tags(
+    mytask = task.LinearElasticity.from_mesh_tags(
         basis,
         "all",
         force_dir_type,

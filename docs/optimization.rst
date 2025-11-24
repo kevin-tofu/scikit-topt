@@ -52,10 +52,30 @@ and therefore avoids reliance on general-purpose gradient-based optimizers such 
 
 ### Bisection for the Volume Constraint
 
-The multiplier :math:`\lambda` enforcing the volume constraint is found by scalar bisection.
-This procedure is identical for both OC and MOC updates, as the volume constraint enters only through the scalar multiplier.
-Each trial :math:`\lambda` yields updated densities via the OC/MOC rule; the volume is checked and the bounds adjusted until the target is met.
-The process is inexpensive, as it requires only vectorized density updates and no additional FEA solves.
+The Lagrange multiplier :math:\lambda enforcing the volume constraint is determined by a scalar bisection procedure.
+This procedure is the same for both OC and MOC formulations, since the volume constraint enters only through this scalar multiplier.
+For each trial value of :math:\lambda, the densities are tentatively updated using the OC/MOC rule, the resulting volume is evaluated, and the bisection bounds are adjusted accordingly.
+Because this step requires only vectorized density updates—without any additional finite element analyses—it is computationally inexpensive.
+
+A typical implementation is shown in the following pseudo-code:
+
+.. code-block:: none
+
+   λ_low  = 1e−9
+   λ_high = 1e+9
+
+   while (λ_high − λ_low) / (λ_high + λ_low) > tol:
+
+       λ = (λ_low + λ_high) / 2
+       ρ_trial = OC_Update(ρ, ∂C/∂ρ, λ)
+       V = Volume(ρ_trial)
+
+       if V > V_max:
+           λ_low = λ        # too much material
+       else:
+           λ_high = λ       # too little material
+
+   λ_final = λ
 
 
 Advantages

@@ -1,8 +1,14 @@
 Installation
 ============
 
-Scikit-Topt is a Python library distributed as the package `sktopt` and can be installed using pip or poetry.  
-It is compatible with Python 3.11 - 3.12. To install sktopt, follow these steps:
+Scikit-Topt is a Python library distributed on PyPI as the package
+``scikit-topt`` (imported as ``sktopt``).  
+It supports **Python 3.10–3.13**:
+
+- **Python 3.10–3.12**: fully supported and tested.
+- **Python 3.13**: core topology optimization works as normal,  
+  but VTK-based features (VTU export and image rendering) require
+  PyVista/VTK, which do not currently provide wheels for Python 3.13.
 
 **Install sktopt**:  
 Open your terminal or command prompt and run one of the following commands:
