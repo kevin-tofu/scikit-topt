@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Project &mdash; scikit-topt 0.3.1 documentation</title>
+  <title>Project &mdash; Scikit-Topt 0.3.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -14,14 +14,14 @@
     <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/project.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=4621528c"></script>
+      <script src="_static/documentation_options.js?v=71d9d8e6"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Installation" href="installation.html" />
-    <link rel="prev" title="Scikit Topology Optimization (scikit-topt) documentation" href="index.html" /> 
+    <link rel="prev" title="Scikit Topology Optimization (Scikit-Topt) documentation" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -33,7 +33,7 @@
           
           
           <a href="index.html" class="icon icon-home">
-            scikit-topt
+            Scikit-Topt
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -48,7 +48,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Project</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial Page</a></li>
-<li class="toctree-l1"><a class="reference internal" href="physics.html">Gourvan Equation and Weak Form</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Governing Equation and Weak Form</a></li>
 <li class="toctree-l1"><a class="reference internal" href="formulation.html">Topology Optimization Algorithm Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization Algorithms in Density-Based Topology Optimization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
@@ -60,7 +60,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">scikit-topt</a>
+          <a href="index.html">Scikit-Topt</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -81,17 +81,19 @@
   <section id="project">
 <h1>Project<a class="headerlink" href="#project" title="Link to this heading"></a></h1>
 <p><strong>Purpose of this Project</strong></p>
-<blockquote>
-<div><dl class="simple">
-<dt>Scikit-Topt is a lightweight and flexible Python library for topology optimization</dt><dd><ul class="simple">
-<li><p>a computational approach for determining the optimal shape and material layout of structures and components.</p></li>
-</ul>
-</dd>
-</dl>
-</div></blockquote>
+<p>Scikit-Topt is a lightweight and flexible Python library for topology optimization
+— a computational approach for determining the optimal shape and material layout of structures and components.</p>
 <p>Using the finite element method (FEM), topology optimization automatically generates efficient and
-high-performance designs by redistributing material to achieve a given objective, such as minimizing compliance
-under a volume constraint.</p>
+high-performance designs by redistributing material to achieve various objectives, such as:</p>
+<ul class="simple">
+<li><p><strong>minimizing structural compliance under a volume constraint</strong>, or</p></li>
+<li><p><strong>maximizing heat exchange / minimizing thermal compliance in steady-state heat conduction problems</strong>.</p></li>
+</ul>
+<p>Scikit-Topt explicitly supports multiple physics:</p>
+<ul class="simple">
+<li><p><strong>Linear elasticity</strong></p></li>
+<li><p><strong>Steady-state heat conduction</strong></p></li>
+</ul>
 <p>The library aims to make topology optimization accessible, transparent, and practical for both academic research
 and real-world engineering. It provides modular tools for assembling finite element models, defining optimization
 problems, and visualizing results, enabling users to experiment with algorithms, benchmark methods, and integrate
@@ -109,7 +111,7 @@ We appreciate all forms of contributions, from small documentation improvements 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="Scikit Topology Optimization (scikit-topt) documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral float-left" title="Scikit Topology Optimization (Scikit-Topt) documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

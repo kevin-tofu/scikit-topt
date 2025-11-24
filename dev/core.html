@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>sktopt.core &mdash; scikit-topt 0.3.1 documentation</title>
+  <title>sktopt.core &mdash; Scikit-Topt 0.3.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -14,9 +14,10 @@
     <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/core.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=4621528c"></script>
+      <script src="_static/documentation_options.js?v=71d9d8e6"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -33,7 +34,7 @@
           
           
           <a href="index.html" class="icon icon-home">
-            scikit-topt
+            Scikit-Topt
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -48,7 +49,7 @@
 <li class="toctree-l1"><a class="reference internal" href="project.html">Project</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial Page</a></li>
-<li class="toctree-l1"><a class="reference internal" href="physics.html">Gourvan Equation and Weak Form</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Governing Equation and Weak Form</a></li>
 <li class="toctree-l1"><a class="reference internal" href="formulation.html">Topology Optimization Algorithm Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization Algorithms in Density-Based Topology Optimization</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="api.html">API Reference</a><ul class="current">
@@ -67,7 +68,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">scikit-topt</a>
+          <a href="index.html">Scikit-Topt</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -87,55 +88,96 @@
            <div itemprop="articleBody">
              
   <section id="sktopt-core">
-<h1>sktopt.core<a class="headerlink" href="#sktopt-core" title="Link to this heading"></a></h1>
+<span id="core-api"></span><h1>sktopt.core<a class="headerlink" href="#sktopt-core" title="Link to this heading"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">DensityMethod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DensityMethodConfig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tsk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">FEMDomain</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethodBase</span></code></p>
-<p>Base class for sensitivity-based topology optimization routines.</p>
-<p>This class provides common functionality shared by multiple optimization         strategies
-(e.g., OC, LDMOC, EUMOC), including finite element analysis (FEA),         sensitivity
-filtering, and density projection using Heaviside-type functions. It does         not
-perform the optimization update itself — that logic is delegated to         subclasses.</p>
-<p>Typical usage involves:
-- Assembling the global stiffness matrix
-- Solving the displacement field under given loads and boundary conditions
-- Computing the compliance and its sensitivity with respect to density
-- Applying density or sensitivity filters (e.g., Helmholtz, cone filters)
-- Projecting intermediate densities using smooth Heaviside functions</p>
-<p>This class is designed for reuse and extension. All algorithm-specific         update
-steps (e.g., density changes, Lagrange multiplier updates) should be         implemented
-in derived classes such as <cite>OC_Optimizer</cite>, <cite>LDMOC_Optimizer</cite>, or `        EUMOC_Optimizer`.</p>
+<p>Core driver for sensitivity-based density topology optimization.</p>
+<p>This class implements the common workflow shared by multiple
+optimization strategies (e.g., OC, LogMOC). It handles</p>
+<ul class="simple">
+<li><p>problem setup (scaling, restart, output directories),</p></li>
+<li><p>finite element analysis (FEA) for elasticity / heat conduction,</p></li>
+<li><p>density initialization and masking of fixed / boundary elements,</p></li>
+<li><p>density and sensitivity filtering, and</p></li>
+<li><p>Heaviside-type projection and sensitivity chain rules,</p></li>
+</ul>
+<p>while leaving the actual density update rule to subclasses via
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">rho_update()</span></code>.</p>
+<p>Typical usage involves:</p>
+<ul class="simple">
+<li><p>Assembling the global stiffness / conductivity matrix
+(via an internal <code class="xref py py-class docutils literal notranslate"><span class="pre">FEM_*</span></code> instance),</p></li>
+<li><p>Solving the state problem under given loads and boundary conditions,</p></li>
+<li><p>Computing compliance (or thermal) objectives and sensitivities,</p></li>
+<li><p>Applying density / sensitivity filters (e.g. spatial, Helmholtz),</p></li>
+<li><p>Projecting intermediate densities with a smooth Heaviside function, and</p></li>
+<li><p>Delegating the update of design densities to a subclass-specific
+implementation (OC, MOC variants, etc.).</p></li>
+</ul>
 <section id="responsibilities">
 <h2>Responsibilities<a class="headerlink" href="#responsibilities" title="Link to this heading"></a></h2>
 <ul class="simple">
-<li><p>Manage problem configuration (e.g., material parameters, mesh, basis)</p></li>
-<li><p>Provide filtered sensitivities for stable optimization</p></li>
-<li><p>Apply projection functions for sharp interface control</p></li>
-<li><p>Evaluate objective functions such as compliance</p></li>
+<li><p>Manage the overall optimization loop (iterations, restart, output).</p></li>
+<li><p>Initialize and update continuation schedules
+(penalization, volume fraction, projection sharpness, move limits, etc.).</p></li>
+<li><p>Apply filtering and projection consistently to densities and gradients.</p></li>
+<li><p>Evaluate objective values and record histories / visualization outputs.</p></li>
+<li><p>Call <code class="xref py py-meth docutils literal notranslate"><span class="pre">rho_update()</span></code> to perform the actual density update
+(including, e.g., Lagrange multiplier bisection for OC).</p></li>
 </ul>
 <p class="rubric">Notes</p>
-<p>This class serves as the backbone of sensitivity-based topology         optimization.
-Subclasses are expected to override methods such as <cite>rho_update()</cite>         to implement specific optimization logic.</p>
+<p>This class serves as the backbone of density-based topology
+optimization in Scikit-Topt. All algorithm-specific update logic
+(e.g., OC / MOC density updates, dual variable handling) must be
+implemented in subclasses by overriding <code class="xref py py-meth docutils literal notranslate"><span class="pre">rho_update()</span></code>.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">tsk</span></span></dt>
-<dd><p>Contains FEM mesh, basis, boundary condition data, and load vectors.</p>
+<span class="sig-name descname"><span class="pre">cfg</span></span></dt>
+<dd><p>Configuration object holding numerical and algorithmic settings,
+such as interpolation model, filters, continuation schedules,
+and solver options.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>FEMDomain</p>
+<dd class="field-odd"><p>DensityMethodConfig</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">config</span></span></dt>
-<dd><p>Holds numerical and algorithmic settings like filtering radius,
-penalization power, projection beta, etc.</p>
+<span class="sig-name descname"><span class="pre">tsk</span></span></dt>
+<dd><p>Problem description including mesh, basis, boundary conditions,
+and load vectors.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>DensityMethodConfig</p>
+<dd class="field-odd"><p>sktopt.mesh.FEMDomain</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">fem</span></span></dt>
+<dd><p>Finite element solver used for state and sensitivity evaluation,
+constructed from <code class="docutils literal notranslate"><span class="pre">tsk</span></code> and <code class="docutils literal notranslate"><span class="pre">cfg</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>sktopt.fea.FEM_SimpLinearElasticity or           sktopt.fea.FEM_SimpLinearHeatConduction</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">schedulers</span></span></dt>
+<dd><p>Collection of <code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code> instances
+controlling continuation of parameters such as <code class="docutils literal notranslate"><span class="pre">p</span></code>, <code class="docutils literal notranslate"><span class="pre">vol_frac</span></code>,
+<code class="docutils literal notranslate"><span class="pre">beta</span></code>, <code class="docutils literal notranslate"><span class="pre">move_limit</span></code>, <code class="docutils literal notranslate"><span class="pre">percentile</span></code>, and <code class="docutils literal notranslate"><span class="pre">filter_radius</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>sktopt.tools.Schedulers</p>
 </dd>
 </dl>
 </dd></dl>
@@ -187,22 +229,26 @@ reusing arrays in-place, repeated allocations are avoided and performance improv
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">DensityMethodConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dst_path:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'./result/pytests'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation:</span> <span class="pre">~typing.Literal['SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'RAMP']</span> <span class="pre">=</span> <span class="pre">'SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">record_times:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vol_frac:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_type:</span> <span class="pre">~typing.Literal['spacial'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'helmholtz']</span> <span class="pre">=</span> <span class="pre">'helmholtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_radius:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_from:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img_opaque:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_dirichlet:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity_filter:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">~typing.Literal['spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'cg_pyamg']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Configuration for density-based topology optimization (SIMP/RAMP).</p>
-<p>This configuration controls interpolation models, continuation schedules
-(via <code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code>), filtering/projection thresholds,
-and numerical options. It targets sensitivity-based topology optimization
-methods such as SIMP and RAMP.</p>
+<p>This configuration collects the main numerical settings for
+density-based topology optimization, including interpolation models,
+continuation schedules (via <code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code>),
+filtering/projection parameters, and solver options. It is intended
+for sensitivity-based methods such as SIMP and RAMP and is shared by
+both OC and MOC-style update rules.</p>
 <section id="notes-on-continuation">
 <h2>Notes on continuation<a class="headerlink" href="#notes-on-continuation" title="Link to this heading"></a></h2>
 <p>Parameters that change during optimization are represented by
 <code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code>:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">p</span></code>: Penalization power (e.g., 1.0 → 3.0)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">vol_frac</span></code>: Volume fraction constraint (e.g., 0.8 → 0.4)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">beta</span></code>: Heaviside projection sharpness (e.g., 1.0 → 2.0)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">filter_radius</span></code>: Filter radius (often constant)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">p</span></code>: Penalization power (e.g., 1.0 → 3.0).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">vol_frac</span></code>: Target volume fraction (often constant, e.g. 0.8).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">beta</span></code>: Heaviside / projection sharpness (e.g., 1.0 → 2.0 or higher).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">filter_radius</span></code>: Filter radius (typically kept constant).</p></li>
 </ul>
-<p>Each scheduler defines how its value evolves (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;Step&quot;</span></code>,
-<code class="docutils literal notranslate"><span class="pre">&quot;StepAccelerating&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Constant&quot;</span></code>) and may include shape parameters
+<p>Each scheduler defines how its value evolves during the optimization
+(e.g., <code class="xref py py-func docutils literal notranslate"><span class="pre">SchedulerConfig.step()</span></code>,
+<code class="xref py py-func docutils literal notranslate"><span class="pre">SchedulerConfig.step_accelerating()</span></code>,
+<code class="xref py py-func docutils literal notranslate"><span class="pre">SchedulerConfig.constant()</span></code>) and may include shape parameters
 such as <code class="docutils literal notranslate"><span class="pre">curvature</span></code> for accelerating schedules.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py">
@@ -251,8 +297,9 @@ such as <code class="docutils literal notranslate"><span class="pre">curvature</
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">beta_eta</span></span></dt>
-<dd><p>Threshold parameter (η) for the Heaviside projection. Represents the
-density at which the projection transitions sharply between 0 and 1.</p>
+<dd><p>Additional damping parameter used in OC/MOC-style updates
+(for example, to smooth dual variables or stabilize
+multiplicative/log-space updates).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>float</p>
@@ -263,7 +310,8 @@ density at which the projection transitions sharply between 0 and 1.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">eta</span></span></dt>
-<dd><p>Threshold density used in projection or post-processing.</p>
+<dd><p>Damping or learning-rate–like exponent used in the OC/MOC
+multiplicative update rule.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>float</p>
@@ -274,8 +322,8 @@ density at which the projection transitions sharply between 0 and 1.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">p</span></span></dt>
-<dd><p>Continuation schedule for penalization power.
-Default: <code class="docutils literal notranslate"><span class="pre">Step(init_value=1.0,</span> <span class="pre">target_value=3.0,</span> <span class="pre">num_steps=3)</span></code>.</p>
+<dd><p>Continuation schedule for the penalization power.
+Default: <code class="docutils literal notranslate"><span class="pre">step(init_value=1.0,</span> <span class="pre">target_value=3.0,</span> <span class="pre">num_steps=3)</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></p>
@@ -286,8 +334,8 @@ Default: <code class="docutils literal notranslate"><span class="pre">Step(init_
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">vol_frac</span></span></dt>
-<dd><p>Continuation schedule for the volume fraction constraint.
-Default: <code class="docutils literal notranslate"><span class="pre">Constant(target_value=0.8)</span></code>.</p>
+<dd><p>Schedule for the target volume fraction constraint.
+Default: <code class="docutils literal notranslate"><span class="pre">constant(target_value=0.8)</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></p>
@@ -298,8 +346,8 @@ Default: <code class="docutils literal notranslate"><span class="pre">Constant(t
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">beta</span></span></dt>
-<dd><p>Continuation schedule for Heaviside sharpness (β).
-Default: <code class="docutils literal notranslate"><span class="pre">StepAccelerating(init_value=1.0,</span> <span class="pre">target_value=2.0,</span>
+<dd><p>Continuation schedule for Heaviside / projection sharpness (β).
+Default: <code class="docutils literal notranslate"><span class="pre">step_accelerating(init_value=1.0,</span> <span class="pre">target_value=2.0,</span>
 <span class="pre">num_steps=3,</span> <span class="pre">curvature=2.0)</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -311,7 +359,7 @@ Default: <code class="docutils literal notranslate"><span class="pre">StepAccele
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">filter_type</span></span></dt>
-<dd><p>Type of filter to apply to the density field.</p>
+<dd><p>Type of filter applied to the density field (spatial or Helmholtz).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>{“spacial”, “helmholtz”}</p>
@@ -322,7 +370,8 @@ Default: <code class="docutils literal notranslate"><span class="pre">StepAccele
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">filter_radius</span></span></dt>
-<dd><p>Schedule for filter radius. Default: <code class="docutils literal notranslate"><span class="pre">Constant(target_value=0.01)</span></code>.</p>
+<dd><p>Schedule for the filter radius.
+Default: <code class="docutils literal notranslate"><span class="pre">constant(target_value=0.01)</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></p>
@@ -334,7 +383,7 @@ Default: <code class="docutils literal notranslate"><span class="pre">StepAccele
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">E_min_coeff</span></span></dt>
 <dd><p>Proportional constant that defines the minimum Young’s modulus
-(typically 1e-3 × E₀).</p>
+as <code class="docutils literal notranslate"><span class="pre">E_min_coeff</span> <span class="pre">*</span> <span class="pre">E0</span></code> (typically <span class="math notranslate nohighlight">\(10^{-3}\)</span>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>float</p>
@@ -345,7 +394,7 @@ Default: <code class="docutils literal notranslate"><span class="pre">StepAccele
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">rho_min</span></span></dt>
-<dd><p>Minimum density clamp to avoid singular stiffness.</p>
+<dd><p>Minimum density clamp to avoid singular stiffness matrices.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>float</p>
@@ -367,7 +416,7 @@ Default: <code class="docutils literal notranslate"><span class="pre">StepAccele
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">restart</span></span></dt>
-<dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, resume optimization from a saved state.</p>
+<dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, resume optimization from a saved state in <code class="docutils literal notranslate"><span class="pre">dst_path</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>bool</p>
@@ -378,7 +427,8 @@ Default: <code class="docutils literal notranslate"><span class="pre">StepAccele
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">restart_from</span></span></dt>
-<dd><p>Iteration index to resume from. Use <code class="docutils literal notranslate"><span class="pre">-1</span></code> to auto-detect the latest checkpoint.</p>
+<dd><p>Iteration index to resume from. Use <code class="docutils literal notranslate"><span class="pre">-1</span></code> to auto-detect the
+latest checkpoint.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>int</p>
@@ -389,7 +439,7 @@ Default: <code class="docutils literal notranslate"><span class="pre">StepAccele
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">export_img</span></span></dt>
-<dd><p>Whether to export images during optimization.</p>
+<dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, export images of the density field during optimization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>bool</p>
@@ -411,7 +461,8 @@ Default: <code class="docutils literal notranslate"><span class="pre">StepAccele
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">design_dirichlet</span></span></dt>
-<dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, Dirichlet boundary elements are included in the design domain.</p>
+<dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, Dirichlet boundary elements are included in the
+design domain.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>bool</p>
@@ -422,7 +473,8 @@ Default: <code class="docutils literal notranslate"><span class="pre">StepAccele
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">sensitivity_filter</span></span></dt>
-<dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, apply filtering to sensitivity fields.</p>
+<dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, apply filtering directly to sensitivity fields
+in addition to density filtering.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>bool</p>
@@ -433,8 +485,8 @@ Default: <code class="docutils literal notranslate"><span class="pre">StepAccele
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">solver_option</span></span></dt>
-<dd><p>Linear solver for the state analysis. <code class="docutils literal notranslate"><span class="pre">&quot;cg_pyamg&quot;</span></code> enables multigrid
-acceleration using PyAMG.</p>
+<dd><p>Linear solver for the state analysis.
+<code class="docutils literal notranslate"><span class="pre">&quot;cg_pyamg&quot;</span></code> enables multigrid-accelerated CG via PyAMG.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>{“spsolve”, “cg_pyamg”}</p>
@@ -445,8 +497,8 @@ acceleration using PyAMG.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">scaling</span></span></dt>
-<dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, apply length/force scaling to normalize geometry and loads
-for improved numerical conditioning.</p>
+<dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, apply length/force scaling to normalize geometry
+and loads for improved numerical conditioning.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>bool</p>
@@ -472,84 +524,17 @@ for improved numerical conditioning.</p>
 <dt class="sig sig-object py">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">DensityMethod_OC_Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dst_path:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'./result/pytests'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation:</span> <span class="pre">~typing.Literal['SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'RAMP']</span> <span class="pre">=</span> <span class="pre">'SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">record_times:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vol_frac:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_type:</span> <span class="pre">~typing.Literal['spacial'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'helmholtz']</span> <span class="pre">=</span> <span class="pre">'helmholtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_radius:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_from:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img_opaque:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_dirichlet:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity_filter:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">~typing.Literal['spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'cg_pyamg']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_lower:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1e-07</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_upper:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">10000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percentile:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">move_limit:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethodConfig</span></code></p>
-<p>Configuration class for controlling parameters in topology optimization.</p>
-<p>This class defines optimization parameters, filtering and projection settings,
-continuation schedules, and numerical solver options. It is designed to support
-sensitivity-based topology optimization algorithms such as SIMP and RAMP.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">percentile_init</span></span></dt>
-<dd><p>Initial percentile used to scale sensitivity fields.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">percentile</span></span></dt>
-<dd><p>Final percentile value. If set to a negative value,
-percentile-based scaling is disabled, resulting in a
-more “exact” optimization behavior.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">percentile_step</span></span></dt>
-<dd><p>Number of continuation steps for the percentile value.
-If negative, fixed at percentile_init.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">move_limit_init</span></span></dt>
-<dd><p>Initial move limit for density update.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">move_limit</span></span></dt>
-<dd><p>Final move limit.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">move_limit_step</span></span></dt>
-<dd><p>Number of continuation steps for move limit.
-If negative, move limit is fixed.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
+<p>Configuration class for OC-style density updates.</p>
+<p>This subclass of <code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethodConfig</span></code> adds parameters that are
+specific to Optimality Criteria (OC) and related multiplicative update
+schemes. It controls the move-limit strategy, optional percentile-based
+sensitivity scaling, and the bracket for the Lagrange multiplier used
+in the volume-constraint bisection.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">lambda_lower</span></span></dt>
-<dd><p>Lower bound for the Lagrange multiplier in constrained optimization.</p>
+<dd><p>Lower bound for the Lagrange multiplier used in the bisection
+enforcing the volume constraint. Must be strictly positive.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>float</p>
@@ -560,10 +545,38 @@ If negative, move limit is fixed.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py">
 <span class="sig-name descname"><span class="pre">lambda_upper</span></span></dt>
-<dd><p>Upper bound for the Lagrange multiplier.</p>
+<dd><p>Upper bound for the Lagrange multiplier used in the bisection
+enforcing the volume constraint.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">percentile</span></span></dt>
+<dd><p>Optional schedule for percentile-based scaling of sensitivity
+fields. When set to <code class="docutils literal notranslate"><span class="pre">SchedulerConfig.none()</span></code>, percentile
+scaling is disabled and raw sensitivities are used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">move_limit</span></span></dt>
+<dd><p>Schedule for the OC move limit applied to density updates.
+By default, a sawtooth-decay schedule is used, e.g.
+<code class="docutils literal notranslate"><span class="pre">sawtooth_decay(&quot;move_limit&quot;,</span> <span class="pre">0.3,</span> <span class="pre">0.1,</span> <span class="pre">3)</span></code>, which gradually
+tightens the allowed per-iteration change in density.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></p>
 </dd>
 </dl>
 </dd></dl>

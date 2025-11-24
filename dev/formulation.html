@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Topology Optimization Algorithm Overview &mdash; scikit-topt 0.3.1 documentation</title>
+  <title>Topology Optimization Algorithm Overview &mdash; Scikit-Topt 0.3.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -14,7 +14,7 @@
     <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/formulation.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=4621528c"></script>
+      <script src="_static/documentation_options.js?v=71d9d8e6"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -34,7 +34,7 @@
           
           
           <a href="index.html" class="icon icon-home">
-            scikit-topt
+            Scikit-Topt
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -49,7 +49,7 @@
 <li class="toctree-l1"><a class="reference internal" href="project.html">Project</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial Page</a></li>
-<li class="toctree-l1"><a class="reference internal" href="physics.html">Gourvan Equation and Weak Form</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Governing Equation and Weak Form</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Topology Optimization Algorithm Overview</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#interpolation-setup">Interpolation Setup</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#initialization">Initialization</a></li>
@@ -76,7 +76,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">scikit-topt</a>
+          <a href="index.html">Scikit-Topt</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -110,6 +110,8 @@
 <li><p><span class="math notranslate nohighlight">\(E_0\)</span> and <span class="math notranslate nohighlight">\(E_\text{min}\)</span> are the maximum and minimum Young’s moduli.</p></li>
 <li><p><span class="math notranslate nohighlight">\(p\)</span> and <span class="math notranslate nohighlight">\(q\)</span> are penalization parameters.</p></li>
 </ul>
+<p>Note: (<a href="#id1"><span class="problematic" id="id2">E_</span></a>text{min}) must be strictly positive to avoid singular stiffness
+matrices. A common choice is (<a href="#id3"><span class="problematic" id="id4">E_</span></a>text{min} approx 10^{-3} E_0).</p>
 <section id="initialization">
 <h3>Initialization<a class="headerlink" href="#initialization" title="Link to this heading"></a></h3>
 <ul class="simple">
@@ -182,8 +184,23 @@ The filter is defined by the following partial differential equation (PDE):</p>
 </section>
 <section id="sensitivity-analysis-with-backpropagation">
 <h2>Sensitivity Analysis with Backpropagation<a class="headerlink" href="#sensitivity-analysis-with-backpropagation" title="Link to this heading"></a></h2>
-<p>In topology optimization, the sensitivity of the objective function (e.g., compliance) with respect to the design variable <span class="math notranslate nohighlight">\(\rho\)</span> is computed by applying the chain rule through each computational step. This is conceptually similar to backpropagation in machine learning.</p>
-<p>Assume the objective function <span class="math notranslate nohighlight">\(C\)</span> depends on the displacement field <span class="math notranslate nohighlight">\(\mathbf{u}\)</span>, which in turn depends on the projected density <span class="math notranslate nohighlight">\(\tilde{\rho}\)</span>, which is computed from the filtered density <span class="math notranslate nohighlight">\(\rho_{\text{filtered}}\)</span>, and ultimately from the design variable <span class="math notranslate nohighlight">\(\rho\)</span>.</p>
+<p>In practice, the sensitivities propagate through filtering and projection as</p>
+<div class="math notranslate nohighlight">
+\[\frac{\partial C}{\partial \rho}
+= \frac{\partial C}{\partial \tilde{\rho}}
+\frac{\partial \tilde{\rho}}{\partial \rho_{\text{filtered}}}
+\frac{\partial \rho_{\text{filtered}}}{\partial \rho},\]</div>
+<p>which makes the influence of both the Helmholtz filter and the Heaviside
+projection explicit in the gradient computation.</p>
+<p>In topology optimization, the sensitivity of the objective function (e.g.,
+compliance) with respect to the design variable <span class="math notranslate nohighlight">\(\rho\)</span> is computed by
+applying the chain rule through each computational step. This is
+conceptually similar to backpropagation in machine learning.</p>
+<p>Assume the objective function <span class="math notranslate nohighlight">\(C\)</span> depends on the displacement field
+<span class="math notranslate nohighlight">\(\mathbf{u}\)</span>, which in turn depends on the projected density
+<span class="math notranslate nohighlight">\(\tilde{\rho}\)</span>, which is computed from the filtered density
+<span class="math notranslate nohighlight">\(\rho_{\text{filtered}}\)</span>, and ultimately from the design variable
+<span class="math notranslate nohighlight">\(\rho\)</span>.</p>
 <p>The total derivative is written as:</p>
 <div class="math notranslate nohighlight">
 \[\frac{\partial C}{\partial \rho}
@@ -203,7 +220,7 @@ The filter is defined by the following partial differential equation (PDE):</p>
 <li><p><span class="math notranslate nohighlight">\(\frac{\partial \rho_{\text{filtered}}}{\partial \rho}\)</span>: the derivative of the Helmholtz filter, which is typically linear and defined via the solution of a diffusion-type PDE.</p></li>
 </ul>
 <p>This chain rule composition allows the gradient of the objective function to be backpropagated from output (compliance) to input (design variable), and is essential for gradient-based optimization algorithms.</p>
-<p>As post-processing, the process after the sensitivity Analysis can have is as follows:</p>
+<p>As post-processing:</p>
 <ul class="simple">
 <li><p>Gradients are filtered and averaged across load cases.</p></li>
 <li><p>Sensitivity filtering is optionally applied post-processing.</p></li>

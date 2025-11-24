@@ -49,6 +49,35 @@ Here:
 The OC method requires only element-wise sensitivities and a scalar multiplier update, 
 and therefore avoids reliance on general-purpose gradient-based optimizers such as MMA or SQP.
 
+
+### Bisection for the Volume Constraint
+
+The Lagrange multiplier :math:\lambda enforcing the volume constraint is determined by a scalar bisection procedure.
+This procedure is the same for both OC and MOC formulations, since the volume constraint enters only through this scalar multiplier.
+For each trial value of :math:\lambda, the densities are tentatively updated using the OC/MOC rule, the resulting volume is evaluated, and the bisection bounds are adjusted accordingly.
+Because this step requires only vectorized density updates—without any additional finite element analyses—it is computationally inexpensive.
+
+A typical implementation is shown in the following pseudo-code:
+
+.. code-block:: none
+
+   λ_low  = 1e−9
+   λ_high = 1e+9
+
+   while (λ_high − λ_low) / (λ_high + λ_low) > tol:
+
+       λ = (λ_low + λ_high) / 2
+       ρ_trial = OC_Update(ρ, ∂C/∂ρ, λ)
+       V = Volume(ρ_trial)
+
+       if V > V_max:
+           λ_low = λ        # too much material
+       else:
+           λ_high = λ       # too little material
+
+   λ_final = λ
+
+
 Advantages
 ^^^^^^^^^^
 
@@ -127,3 +156,61 @@ This is not part of the classical OC method but can improve stability in practic
 - Requires careful tuning of :math:`\eta` and the handling of :math:`\lambda_v`.
 - Volume constraint is not enforced exactly unless :math:`\lambda_v` is solved consistently (e.g., via bisection).
 - Convergence may be sensitive to filtering and parameter settings.
+
+
+## Practical Notes for OC and MOC Implementations
+
+Both the classical OC method and its modified variants (MOC) rely on a few practical numerical settings that significantly affect robustness and convergence.
+The following guidelines summarize commonly used choices across the literature.
+
+### Parameter Guidelines
+
+Several heuristic parameters appear in OC/MOC-style multiplicative updates:
+
+* **Move limits ** (move_limit, controls per-iteration change): typically **0.2–0.5**.
+  Smaller limits improve stability; larger limits accelerate convergence.
+
+* **Exponent parameter :math:`\eta`** (eta): often **1.0**, with **0.5–1.0** used when sensitivities are noisy.
+
+* **Minimum density :math:`\rho_{\min}`** (rho_min): usually **10⁻³–10⁻⁴** to avoid singular stiffness matrices.
+
+* **Volume fraction :math:`v_{\text{frac}}`** (vol_frac): typically **0.3–0.8** depending on the desired material usage.
+  Very low targets may cause discontinuities; very high targets reduce optimization benefit.
+
+* **SIMP penalization :math:`p`**: commonly continued from **1.0** to a final value of **3–4** over a few steps.
+  Higher values promote a sharper black–white design but increase non-convexity.
+
+* **Projection sharpness :math:`\beta`** (beta, Heaviside): usually increased from **1.0** to **2–8** through continuation.
+  Larger final values sharpen the design but require stronger filtering to maintain stability.
+
+* **Filter radius**  (filter_radius, spatial/Helmholtz filters): typically **1.5–3.0** times the local element size,
+  corresponding to **0.01–0.1** for normalized domains.
+  Larger radius suppress numerical artifacts but remove small features.
+
+* **Weak material coefficient :math:`E_{\min}`** (E_min, void stiffness): usually **10^{-3}–10^{-4}**.
+  Too small values lead to ill-conditioned stiffness matrices; too large values blur the void region.
+
+
+These ranges are not strict but offer reliable starting points for most compliance-based problems.
+
+### Recommended Range for the Multiplier Bounds
+
+The Lagrange multiplier :math:`\lambda` used in OC/MOC updates must be **strictly positive**, since the multiplicative update
+.. math::
+\rho_e^{(t+1)} = \rho_e^{(t)}\left(\frac{-\partial C/\partial \rho_e}{\lambda}\right)^\eta
+requires :math:`\lambda > 0` to keep the update well-defined and to preserve the monotonic relationship between
+:math:`\lambda` and the resulting volume.
+
+A wide positive bracket such as
+
+```
+lambda_lower = 1e−7
+lambda_upper = 1e+7
+```
+
+is sufficient for most problems. This logarithmic range covers all practical sensitivity scales,
+and because the OC/MOC update is monotonic in :math:`\lambda`,
+using a wide positive interval does not increase computational cost.
+
+For implementation details and the correspondence with actual parameter
+definitions, see the :ref:`core module <core_api>`.

@@ -13,17 +13,18 @@ Optimizer Configuration, and Run
 
 .. code-block:: python
 
-   import sktopt
+    import sktopt
 
-   cfg = sktopt.core.optimizers.LogMOC_Config(
-        vol_frac=vol_frac=sktopt.tools.SchedulerConfig.constant(
-            target_value=0.6
+    cfg = sktopt.core.optimizers.OC_Config(
+        dst_path="./result/tutorial_box_oc",
+        vol_frac=sktopt.tools.SchedulerConfig.constant(
+            target_value=0.4
         ),
-        max_iters=40,
-        record_times=40,
+        max_iters=10,
+        record_times=10,
         export_img=True
     )
-    optimizer = sktopt.core.LogMOC_Optimizer(cfg, mytask)
+    optimizer = sktopt.core.OC_Optimizer(cfg, mytask)
     optimizer.parameterize()
     optimizer.optimize()
 
@@ -34,6 +35,14 @@ Task Definition
 
 Shape modeling and its basis function
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In this example, we use skfem.ElementHex1() 
+`ElementHex1` represents a **first-order (linear) hexahedral element**.  
+Scikit-Topt currently supports:
+
+- 3D: Hexahedral P1 (`ElementHex1`)
+- 3D Tetrahedral P1 (`ElementTetP1`)
+
 
 .. code-block:: python
 
@@ -49,11 +58,22 @@ Shape modeling and its basis function
         x_len, y_len, z_len, mesh_size
     )
     e = skfem.ElementVector(skfem.ElementHex1())
-    basis = skfem.Basis(mesh, e, intorder=2)
+    basis = skfem.Basis(mesh, e, intorder=1)
 
 
 Load Basis from Model File 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Scikit-Topt loads meshes via scikit-fem, which internally relies on meshio.
+Therefore, the library supports all mesh formats that meshio supports:
+
+Gmsh v2 (ASCII / binary)
+
+Gmsh v4 (ASCII / binary)
+
+When using .msh files, users may provide physical groups (surfaces/volumes)
+which scikit-topt interprets as boundary and subdomain tags.
+
 
 .. code-block:: python
 
@@ -61,7 +81,7 @@ Load Basis from Model File
     import sktopt
 
     mesh_path = "./data/model.msh"
-    basis = sktopt.mesh.loader.basis_from_file(mesh_path, intorder=3)
+    basis = sktopt.mesh.loader.basis_from_file(mesh_path, intorder=1)
 
 
 Task Configuration
@@ -96,7 +116,7 @@ Task Configuration
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=2)
     E0 = 210e3
-    mytask = task.LinearElastisicity.from_mesh_tags(
+    mytask = task.LinearElasticity.from_mesh_tags(
         basis,
         "all",
         force_dir_type,
@@ -109,21 +129,22 @@ Task Configuration
 Results and Visualization
 -----------------------------
 
-Results and Visualization
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 The results of the optimization are stored in the directory specified by cfg.dst_path.
-For example, it contains visualizations of the density distribution, as well as graphs showing the evolution of various parameters during the optimization process, such as the density field, volume fraction, and sensitivity values.
+They include visualizations of the density distribution and graphs showing the evolution
+of optimization quantities such as compliance, volume fraction, and sensitivities.
 
-.. image:: https://raw.githubusercontent.com/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg
-   :alt: multi-load-condition
+
+.. figure:: https://raw.githubusercontent.com/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg
    :width: 400px
    :align: center
 
-.. image:: https://raw.githubusercontent.com/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg
-   :alt: Multi-Load-condition-Density-Distribution
+   Multi-load condition visualization.
+
+.. figure:: https://raw.githubusercontent.com/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg
    :width: 400px
    :align: center
+
+   Density distribution after optimization under multi-load conditions.
 
 .. raw:: html
 

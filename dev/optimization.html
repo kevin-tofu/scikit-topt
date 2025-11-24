@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Optimization Algorithms in Density-Based Topology Optimization &mdash; scikit-topt 0.3.1 documentation</title>
+  <title>Optimization Algorithms in Density-Based Topology Optimization &mdash; Scikit-Topt 0.3.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -14,7 +14,7 @@
     <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/optimization.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=4621528c"></script>
+      <script src="_static/documentation_options.js?v=71d9d8e6"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -34,7 +34,7 @@
           
           
           <a href="index.html" class="icon icon-home">
-            scikit-topt
+            Scikit-Topt
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -49,7 +49,7 @@
 <li class="toctree-l1"><a class="reference internal" href="project.html">Project</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial Page</a></li>
-<li class="toctree-l1"><a class="reference internal" href="physics.html">Gourvan Equation and Weak Form</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Governing Equation and Weak Form</a></li>
 <li class="toctree-l1"><a class="reference internal" href="formulation.html">Topology Optimization Algorithm Overview</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Optimization Algorithms in Density-Based Topology Optimization</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#optimality-criteria">Optimality Criteria</a><ul>
@@ -75,7 +75,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">scikit-topt</a>
+          <a href="index.html">Scikit-Topt</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -128,6 +128,29 @@ It provides a closed-form multiplicative update rule for the design variables, d
 </ul>
 <p>The OC method requires only element-wise sensitivities and a scalar multiplier update,
 and therefore avoids reliance on general-purpose gradient-based optimizers such as MMA or SQP.</p>
+<p>### Bisection for the Volume Constraint</p>
+<p>The Lagrange multiplier :math:lambda enforcing the volume constraint is determined by a scalar bisection procedure.
+This procedure is the same for both OC and MOC formulations, since the volume constraint enters only through this scalar multiplier.
+For each trial value of :math:lambda, the densities are tentatively updated using the OC/MOC rule, the resulting volume is evaluated, and the bisection bounds are adjusted accordingly.
+Because this step requires only vectorized density updates—without any additional finite element analyses—it is computationally inexpensive.</p>
+<p>A typical implementation is shown in the following pseudo-code:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>λ_low  = 1e−9
+λ_high = 1e+9
+
+while (λ_high − λ_low) / (λ_high + λ_low) &gt; tol:
+
+    λ = (λ_low + λ_high) / 2
+    ρ_trial = OC_Update(ρ, ∂C/∂ρ, λ)
+    V = Volume(ρ_trial)
+
+    if V &gt; V_max:
+        λ_low = λ        # too much material
+    else:
+        λ_high = λ       # too little material
+
+λ_final = λ
+</pre></div>
+</div>
 <section id="advantages">
 <h4>Advantages<a class="headerlink" href="#advantages" title="Link to this heading"></a></h4>
 <ul class="simple">
@@ -194,6 +217,45 @@ This is not part of the classical OC method but can improve stability in practic
 <li><p>Volume constraint is not enforced exactly unless <span class="math notranslate nohighlight">\(\lambda_v\)</span> is solved consistently (e.g., via bisection).</p></li>
 <li><p>Convergence may be sensitive to filtering and parameter settings.</p></li>
 </ul>
+<p>## Practical Notes for OC and MOC Implementations</p>
+<p>Both the classical OC method and its modified variants (MOC) rely on a few practical numerical settings that significantly affect robustness and convergence.
+The following guidelines summarize commonly used choices across the literature.</p>
+<p>### Parameter Guidelines</p>
+<p>Several heuristic parameters appear in OC/MOC-style multiplicative updates:</p>
+<ul class="simple">
+<li><p><strong>Move limits ** (move_limit, controls per-iteration change): typically **0.2–0.5</strong>.
+Smaller limits improve stability; larger limits accelerate convergence.</p></li>
+<li><p><strong>Exponent parameter :math:`eta`</strong> (eta): often <strong>1.0</strong>, with <strong>0.5–1.0</strong> used when sensitivities are noisy.</p></li>
+<li><p><strong>Minimum density :math:`rho_{min}`</strong> (rho_min): usually <strong>10⁻³–10⁻⁴</strong> to avoid singular stiffness matrices.</p></li>
+<li><p><strong>Volume fraction :math:`v_{text{frac}}`</strong> (vol_frac): typically <strong>0.3–0.8</strong> depending on the desired material usage.
+Very low targets may cause discontinuities; very high targets reduce optimization benefit.</p></li>
+<li><p><strong>SIMP penalization :math:`p`</strong>: commonly continued from <strong>1.0</strong> to a final value of <strong>3–4</strong> over a few steps.
+Higher values promote a sharper black–white design but increase non-convexity.</p></li>
+<li><p><strong>Projection sharpness :math:`beta`</strong> (beta, Heaviside): usually increased from <strong>1.0</strong> to <strong>2–8</strong> through continuation.
+Larger final values sharpen the design but require stronger filtering to maintain stability.</p></li>
+<li><p><strong>Filter radius</strong>  (filter_radius, spatial/Helmholtz filters): typically <strong>1.5–3.0</strong> times the local element size,
+corresponding to <strong>0.01–0.1</strong> for normalized domains.
+Larger radius suppress numerical artifacts but remove small features.</p></li>
+<li><p><strong>Weak material coefficient :math:`E_{min}`</strong> (E_min, void stiffness): usually <strong>10^{-3}–10^{-4}</strong>.
+Too small values lead to ill-conditioned stiffness matrices; too large values blur the void region.</p></li>
+</ul>
+<p>These ranges are not strict but offer reliable starting points for most compliance-based problems.</p>
+<p>### Recommended Range for the Multiplier Bounds</p>
+<p>The Lagrange multiplier <span class="math notranslate nohighlight">\(\lambda\)</span> used in OC/MOC updates must be <strong>strictly positive</strong>, since the multiplicative update
+.. math::
+rho_e^{(t+1)} = rho_e^{(t)}left(frac{-partial C/partial rho_e}{lambda}right)^eta
+requires <span class="math notranslate nohighlight">\(\lambda &gt; 0\)</span> to keep the update well-defined and to preserve the monotonic relationship between
+<span class="math notranslate nohighlight">\(\lambda\)</span> and the resulting volume.</p>
+<p>A wide positive bracket such as</p>
+<p><code class="docutils literal notranslate"><span class="pre">`</span>
+<span class="pre">lambda_lower</span> <span class="pre">=</span> <span class="pre">1e−7</span>
+<span class="pre">lambda_upper</span> <span class="pre">=</span> <span class="pre">1e+7</span>
+<span class="pre">`</span></code></p>
+<p>is sufficient for most problems. This logarithmic range covers all practical sensitivity scales,
+and because the OC/MOC update is monotonic in <span class="math notranslate nohighlight">\(\lambda\)</span>,
+using a wide positive interval does not increase computational cost.</p>
+<p>For implementation details and the correspondence with actual parameter
+definitions, see the <a class="reference internal" href="core.html#core-api"><span class="std std-ref">core module</span></a>.</p>
 </section>
 </section>
 </section>
