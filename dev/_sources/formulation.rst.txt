@@ -115,11 +115,11 @@ from FEM does not act directly on the design density. Instead, the design
 variable passes through two transformations:
 
 .. math::
-\rho
-;\xrightarrow{\text{filter}};
-\tilde{\rho}
-;\xrightarrow{\text{projection}};
-\hat{\rho}.
+   \rho
+   \xrightarrow{\text{filter}}
+   \tilde{\rho}
+   \xrightarrow{\text{projection}}
+   \hat{\rho}.
 
 The total derivative uses the chain rule:
 
@@ -132,6 +132,7 @@ Because :math:`\mathcal{F}` is linear, its derivative with respect to
 :math:`\rho` is the operator itself, and the adjoint filter required for
 backpropagation is the transpose operator :math:`\mathcal{F}^T`,
 implemented via ``filter.gradient()`` in Scikit-Topt.
+
 Applying the chain rule gives
 
 .. math::
@@ -142,6 +143,7 @@ Applying the chain rule gives
    \frac{\partial \hat{\rho}}{\partial \tilde{\rho}}
    \cdot
    \frac{\partial \tilde{\rho}}{\partial \rho}.
+
 
 Meaning of each term:
 

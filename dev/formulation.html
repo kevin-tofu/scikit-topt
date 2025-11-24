@@ -190,12 +190,11 @@ The filter is defined by the following partial differential equation (PDE):</p>
 from FEM does not act directly on the design density. Instead, the design
 variable passes through two transformations:</p>
 <div class="math notranslate nohighlight">
-\[\]</div>
-<p>rho
-;xrightarrow{text{filter}};
-tilde{rho}
-;xrightarrow{text{projection}};
-hat{rho}.</p>
+\[\rho
+\xrightarrow{\text{filter}}
+\tilde{\rho}
+\xrightarrow{\text{projection}}
+\hat{\rho}.\]</div>
 <p>The total derivative uses the chain rule:</p>
 <p>We denote by <span class="math notranslate nohighlight">\(\mathcal{F}\)</span> the (linear) density filter operator such that</p>
 <div class="math notranslate nohighlight">
@@ -203,8 +202,8 @@ hat{rho}.</p>
 <p>Because <span class="math notranslate nohighlight">\(\mathcal{F}\)</span> is linear, its derivative with respect to
 <span class="math notranslate nohighlight">\(\rho\)</span> is the operator itself, and the adjoint filter required for
 backpropagation is the transpose operator <span class="math notranslate nohighlight">\(\mathcal{F}^T\)</span>,
-implemented via <code class="docutils literal notranslate"><span class="pre">filter.gradient()</span></code> in Scikit-Topt.
-Applying the chain rule gives</p>
+implemented via <code class="docutils literal notranslate"><span class="pre">filter.gradient()</span></code> in Scikit-Topt.</p>
+<p>Applying the chain rule gives</p>
 <div class="math notranslate nohighlight">
 \[\frac{\partial C}{\partial \rho}
 =
