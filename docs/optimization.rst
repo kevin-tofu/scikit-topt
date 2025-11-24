@@ -165,7 +165,7 @@ Several heuristic parameters appear in OC/MOC-style multiplicative updates:
 
 * **Filter radius**  (filter_radius, spatial/Helmholtz filters): typically **1.5–3.0** times the local element size,
   corresponding to **0.01–0.1** for normalized domains.
-  Larger radii suppress numerical artifacts but remove small features.
+  Larger radius suppress numerical artifacts but remove small features.
 
 * **Weak material coefficient :math:`E_{\min}`** (E_min, void stiffness): usually **10^{-3}–10^{-4}**.
   Too small values lead to ill-conditioned stiffness matrices; too large values blur the void region.
