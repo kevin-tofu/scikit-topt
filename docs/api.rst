@@ -1,6 +1,6 @@
 API Reference
 =============
-This page provides detailed documentation for modules, classes and functions.
+The following sections contain the API documentation for the core modules, classes, and functions.
 
 .. toctree::
    :maxdepth: 1
