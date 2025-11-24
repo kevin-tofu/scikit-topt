@@ -11,10 +11,10 @@ import sys
 sys.path.insert(0, os.path.abspath('../scikit-topt'))
 
 
-project = 'scikit-topt'
+project = 'Scikit-Topt'
 copyright = '2025, Kohei Watanabe'
 author = 'Kohei Watanabe'
-release = '0.3.1'
+release = '0.3.2'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -38,7 +38,7 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 html_extra_path = ["extra"]
 html_meta = {
-    "description": "scikit-topt(sktopt) is a scientific topology optimization library in Python.",
+    "description": "Scikit-Topt(sktopt) is a scientific topology optimization library in Python.",
     "keywords": "topology optimization, FEM, Python, scientific computing",
     "author": "Kohei Watanabe",
     "robots": "index, follow",

@@ -13,7 +13,7 @@
 - [scikit-fem](https://github.com/kinnala/scikit-fem)
 
 ## Documentation
-[Scikit-topt Documentation](https://scikit-topt.readthedocs.io/en/latest/)
+[Scikit-Topt Documentation](https://scikit-topt.readthedocs.io/en/latest/)
 
 ## Examples and Features
 ### Example 1 : Single Load Condition
@@ -106,7 +106,7 @@ You can contribute in various ways:
 - Improving the [tests](https://github.com/kevin-tofu/scikit-topt/tree/joss-review/tests)
 - Enhancing the documentation or code readability [doc](https://scikit-topt.readthedocs.io/en/latest/)
 
-By contributing code to **scikit-topt**, you agree to release it under the [Apache 2.0 License](https://github.com/kevin-tofu/scikit-topt/tree/master/LICENSE).
+By contributing code to **Scikit-Topt**, you agree to release it under the [Apache 2.0 License](https://github.com/kevin-tofu/scikit-topt/tree/master/LICENSE).
 
 
 ## Acknowledgements
@@ -130,7 +130,7 @@ Scikit-Topt is standing on the shoulders of proverbial giants. In particular, I 
 If you use Scikit Topt in your research or software, please cite it as:
 
 ```bibtex
-@misc{scikit-topt2025,
+@misc{Scikit-Topt2025,
   author       = {Watanabe, Kohei},
   title        = {Scikit-Topt: A Python Library for Algorithm Development in Topology Optimization},
   year         = {2025},
