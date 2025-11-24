@@ -58,11 +58,11 @@
 <li class="toctree-l2"><a class="reference internal" href="#helmholtz-filter">Helmholtz Filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#heaviside-projection">Heaviside Projection</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#compliance-evaluation">Compliance Evaluation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#sensitivity-propagation-through-filtering-and-projection">Sensitivity Propagation Through Filtering and Projection</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#density-update">Density Update</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#stopping-criteria">Stopping Criteria</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sensitivity-propagation-through-filtering-and-projection">Sensitivity Propagation Through Filtering and Projection</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="#frac-partial-c-partial-rho">frac{partial C}{partial rho}</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#id1">frac{partial C}{partial rho}</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#convergence-criteria">Convergence Criteria</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#next-steps">Next Steps</a></li>
 </ul>
@@ -113,8 +113,8 @@
 <li><p><span class="math notranslate nohighlight">\(E_0\)</span> and <span class="math notranslate nohighlight">\(E_\text{min}\)</span> are the maximum and minimum Young’s moduli.</p></li>
 <li><p><span class="math notranslate nohighlight">\(p\)</span> and <span class="math notranslate nohighlight">\(q\)</span> are penalization parameters.</p></li>
 </ul>
-<p>Note: (<a href="#id1"><span class="problematic" id="id2">E_</span></a>text{min}) must be strictly positive to avoid singular stiffness
-matrices. A common choice is (<a href="#id3"><span class="problematic" id="id4">E_</span></a>text{min} approx 10^{-3} E_0).</p>
+<p>Note: (<a href="#id2"><span class="problematic" id="id3">E_</span></a>text{min}) must be strictly positive to avoid singular stiffness
+matrices. A common choice is (<a href="#id4"><span class="problematic" id="id5">E_</span></a>text{min} approx 10^{-3} E_0).</p>
 <section id="initialization">
 <h3>Initialization<a class="headerlink" href="#initialization" title="Link to this heading"></a></h3>
 <ul class="simple">
@@ -191,50 +191,55 @@ The filter is defined by the following partial differential equation (PDE):</p>
 from FEM does not act directly on the design density. Instead, the design
 variable passes through two transformations:</p>
 <div class="math notranslate nohighlight">
-\[\rho
-\;\xrightarrow{\text{filter}}\;
-\tilde{\rho}
-\;\xrightarrow{\text{projection}}\;
-\hat{\rho}.\]</div>
+\[\]</div>
+<p>rho
+;xrightarrow{text{filter}};
+tilde{rho}
+;xrightarrow{text{projection}};
+hat{rho}.</p>
 <p>The total derivative uses the chain rule:</p>
 <div class="math notranslate nohighlight">
-\[\frac{\partial C}{\partial \rho}
-=
-\frac{\partial C}{\partial \hat{\rho}}
-\cdot
-\frac{\partial \hat{\rho}}{\partial \tilde{\rho}}
-\cdot
-\frac{\partial \tilde{\rho}}{\partial \rho}.\]</div>
+\[\]</div>
+</section>
+</section>
+<section id="frac-partial-c-partial-rho">
+<h1>frac{partial C}{partial rho}<a class="headerlink" href="#frac-partial-c-partial-rho" title="Link to this heading"></a></h1>
+<p>frac{partial C}{partial hat{rho}}
+cdot
+frac{partial hat{rho}}{partial tilde{rho}}
+cdot
+frac{partial tilde{rho}}{partial rho}.</p>
 <p>Meaning of each term:</p>
 <ul class="simple">
-<li><p><span class="math notranslate nohighlight">\(\partial C / \partial \hat{\rho}\)</span>
-Raw compliance sensitivity obtained from FEM (already aggregated over load cases).</p></li>
-<li><p><span class="math notranslate nohighlight">\(\partial \hat{\rho} / \partial \tilde{\rho}\)</span>
-Derivative of the Heaviside-type projection used for black–white refinement.</p></li>
-<li><p><span class="math notranslate nohighlight">\(\partial \tilde{\rho} / \partial \rho\)</span>
-Adjoint of the spatial or Helmholtz density filter.
-For the linear Helmholtz filter, this corresponds to applying <code class="docutils literal notranslate"><span class="pre">F^T</span></code> via
-<code class="docutils literal notranslate"><span class="pre">filter.gradient()</span></code>.</p></li>
+<li><p><span class="math notranslate nohighlight">\(\frac{\partial C}{\partial \hat{\rho}}\)</span>
+Raw compliance sensitivity obtained from FEM.</p></li>
+<li><p><span class="math notranslate nohighlight">\(\frac{\partial \hat{\rho}}{\partial \tilde{\rho}}\)</span>
+Derivative of the Heaviside-type projection.</p></li>
+<li><p><span class="math notranslate nohighlight">\(\frac{\partial \tilde{\rho}}{\partial \rho}\)</span>
+Adjoint of the density filter.
+For linear filters (including the Helmholtz filter), this corresponds to
+applying the transpose of the filter operator,
+written as <span class="math notranslate nohighlight">\(\mathcal{F}^T\)</span>, implemented via <cite>filter.gradient()</cite>.</p></li>
 </ul>
-<p>Thus the final sensitivity in Scikit-Topt is computed as:</p>
+<p>Thus, the final sensitivity in Scikit-Topt is computed as:</p>
 <div class="math notranslate nohighlight">
-\[\frac{\partial C}{\partial \rho}
-= F^T \left(
-    \frac{\partial \hat{\rho}}{\partial \tilde{\rho}}
-    \circ
-    \frac{\partial C}{\partial \hat{\rho}}
-  \right)\]</div>
+\[\]</div>
+</section>
+<section id="id1">
+<h1>frac{partial C}{partial rho}<a class="headerlink" href="#id1" title="Link to this heading"></a></h1>
+<p>mathcal{F}^T left(
+frac{partial hat{rho}}{partial tilde{rho}}
+circ
+frac{partial C}{partial hat{rho}}
+right)</p>
 <p>where <span class="math notranslate nohighlight">\(\circ\)</span> denotes element-wise multiplication.</p>
 <p>This “chain rule through filtering and projection’’ ensures that the update
-step (OC or MOC) is consistent with the filtered and projected densities used
-in the state equation</p>
+step (OC or MOC) is consistent with the filtered and projected densities used in the state equation</p>
 <p>As post-processing:</p>
 <ul class="simple">
 <li><p>Gradients are filtered and averaged across load cases.</p></li>
 <li><p>Sensitivity filtering is optionally applied post-processing.</p></li>
 </ul>
-<section id="density-update">
-<h3>Density Update<a class="headerlink" href="#density-update" title="Link to this heading"></a></h3>
 <p>The densities are updated via a custom update rule using:</p>
 <ul class="simple">
 <li><p>Move limits</p></li>
@@ -242,16 +247,11 @@ in the state equation</p>
 <li><p>Sensitivity-based scaling</p></li>
 <li><p>Percentile clipping for stability</p></li>
 </ul>
-</section>
-<section id="stopping-criteria">
-<h3>Stopping Criteria<a class="headerlink" href="#stopping-criteria" title="Link to this heading"></a></h3>
 <p>The process repeats until the maximum number of iterations is reached or convergence criteria are satisfied.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This implementation uses a modular framework where filtering, projection, and updating are decoupled for clarity and extensibility.</p>
 </div>
-</section>
-</section>
 <section id="convergence-criteria">
 <h2>Convergence Criteria<a class="headerlink" href="#convergence-criteria" title="Link to this heading"></a></h2>
 <p>In addition to the fixed iteration limit (<code class="docutils literal notranslate"><span class="pre">max_iters</span></code>), Scikit-Topt supports
