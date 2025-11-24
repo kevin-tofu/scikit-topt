@@ -4,12 +4,19 @@ Project
 
 **Purpose of this Project**
 
- Scikit-Topt is a lightweight and flexible Python library for topology optimization
-  - a computational approach for determining the optimal shape and material layout of structures and components.
+Scikit-Topt is a lightweight and flexible Python library for topology optimization  
+— a computational approach for determining the optimal shape and material layout of structures and components.
 
 Using the finite element method (FEM), topology optimization automatically generates efficient and 
-high-performance designs by redistributing material to achieve a given objective, such as minimizing compliance 
-under a volume constraint.
+high-performance designs by redistributing material to achieve various objectives, such as:
+
+- **minimizing structural compliance under a volume constraint**, or  
+- **maximizing heat exchange / minimizing thermal compliance in steady-state heat conduction problems**.
+
+Scikit-Topt explicitly supports multiple physics:
+
+- **Linear elasticity**
+- **Steady-state heat conduction**
 
 The library aims to make topology optimization accessible, transparent, and practical for both academic research 
 and real-world engineering. It provides modular tools for assembling finite element models, defining optimization 

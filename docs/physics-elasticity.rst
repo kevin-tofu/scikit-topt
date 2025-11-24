@@ -124,9 +124,16 @@ Dirichlet BC (fixed boundaries)
 
 Enforced by modifying the stiffness matrix system:
 
-- Rows corresponding to fixed DOFs are zeroed
+- Rows corresponding to fixed DOFs are zeroed.
+- Columns corresponding to fixed DOFs are also zeroed to preserve symmetry.
 - Diagonal entries are set to 1
-- Load vector entries for those DOFs are set to the prescribed value
+- The right-hand side is corrected as :math:`\mathbf{f} \leftarrow \mathbf{f} - \mathbf{K}_{:,i}\,\bar{u}_i` so that the prescribed displacement is enforced consistently.
+
+This approach follows the ``enforce()`` function in scikit-fem, which modifies
+the full matrix without reducing its size. An important advantage is that the
+resulting stiffness matrix remains identical across all load cases, allowing a
+single LU factorization to be reused efficiently. For this reason, Scikit-Topt
+uses enforcement rather than matrix condensation.
 
 Neumann BC (surface forces)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

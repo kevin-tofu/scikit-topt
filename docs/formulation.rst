@@ -17,6 +17,9 @@ Where:
 - :math:`E_0` and :math:`E_\text{min}` are the maximum and minimum Young's moduli.
 - :math:`p` and :math:`q` are penalization parameters.
 
+Note: \(E_\text{min}\) must be strictly positive to avoid singular stiffness
+matrices. A common choice is \(E_\text{min} \approx 10^{-3} E_0\).
+
 Initialization
 ~~~~~~~~~~~~~~
 
@@ -108,14 +111,31 @@ Compliance Evaluation
 Sensitivity Analysis with Backpropagation
 --------------------------------------------
 
-In topology optimization, the sensitivity of the objective function (e.g., compliance) with respect to the design variable :math:`\rho` is computed by applying the chain rule through each computational step. This is conceptually similar to backpropagation in machine learning.
+In practice, the sensitivities propagate through filtering and projection as
 
-Assume the objective function :math:`C` depends on the displacement field :math:`\mathbf{u}`, which in turn depends on the projected density :math:`\tilde{\rho}`, which is computed from the filtered density :math:`\rho_{\text{filtered}}`, and ultimately from the design variable :math:`\rho`.
+.. math::
+   \frac{\partial C}{\partial \rho}
+   = \frac{\partial C}{\partial \tilde{\rho}}
+   \frac{\partial \tilde{\rho}}{\partial \rho_{\text{filtered}}}
+   \frac{\partial \rho_{\text{filtered}}}{\partial \rho},
+
+which makes the influence of both the Helmholtz filter and the Heaviside
+projection explicit in the gradient computation.
+
+In topology optimization, the sensitivity of the objective function (e.g.,
+compliance) with respect to the design variable :math:`\rho` is computed by
+applying the chain rule through each computational step. This is
+conceptually similar to backpropagation in machine learning.
+
+Assume the objective function :math:`C` depends on the displacement field
+:math:`\mathbf{u}`, which in turn depends on the projected density
+:math:`\tilde{\rho}`, which is computed from the filtered density
+:math:`\rho_{\text{filtered}}`, and ultimately from the design variable
+:math:`\rho`.
 
 The total derivative is written as:
 
 .. math::
-
    \frac{\partial C}{\partial \rho}
    =
    \frac{\partial C}{\partial \mathbf{u}}
@@ -135,7 +155,7 @@ Each term corresponds to:
 
 This chain rule composition allows the gradient of the objective function to be backpropagated from output (compliance) to input (design variable), and is essential for gradient-based optimization algorithms.
 
-As post-processing, the process after the sensitivity Analysis can have is as follows:
+As post-processing:
 
 - Gradients are filtered and averaged across load cases.
 - Sensitivity filtering is optionally applied post-processing.

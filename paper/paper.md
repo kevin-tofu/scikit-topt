@@ -22,20 +22,20 @@ Topology optimization is a computational method for optimizing the shape and mat
 
 This technique can be applied to a wide range of physical simulations, including structural analysis, heat conduction, fluid dynamics, and electromagnetic field analysis, making it a powerful tool for optimal design.
 
-Scikit-topt is a Python library that implements topology optimization algorithms. It provides tools for visualizing parameter transitions and optimization results, thereby facilitating algorithm tuning and comparative analysis of optimization strategies. The library is tested via GitHub Actions and includes documentation generated with Sphinx.
+Scikit-Topt is a Python library that implements topology optimization algorithms. It provides tools for visualizing parameter transitions and optimization results, thereby facilitating algorithm tuning and comparative analysis of optimization strategies. The library is tested via GitHub Actions and includes documentation generated with Sphinx.
 Installation and usage instructions are available in the [GitHub repository](https://github.com/kevin-tofu/scikit-topt).
 
-This article describes version **v0.3.1** of *scikit-topt*.
+This article describes version **v0.3.2** of *Scikit-Topt*.
 
 
 # Statement of Need
 
 There is a growing demand for accessible and flexible tools for topology optimization that support unstructured meshes and can be easily integrated into Python-based workflows.
-While many existing libraries focus on specific problems with rigid architectures or heavy dependencies, Scikit-topt offers a lightweight, modular, and fully Pythonic framework suitable for both academic research and industrial applications.
+While many existing libraries focus on specific problems with rigid architectures or heavy dependencies, Scikit-Topt offers a lightweight, modular, and fully Pythonic framework suitable for both academic research and industrial applications.
 
 In topology optimization, the evolution of material density fields and the scheduling of algorithmic parameters (e.g., via continuation methods) play a crucial role in achieving high-quality results. However, most existing libraries provide limited or no support for managing and visualizing such transitions, making it difficult to interpret the optimization process.
 
-Scikit-topt addresses this gap by enabling users to track and visualize the progression of density distributions and parameter schedules throughout the optimization process. This feature is particularly valuable for algorithm development, comparative studies, and educational purposes.
+Scikit-Topt addresses this gap by enabling users to track and visualize the progression of density distributions and parameter schedules throughout the optimization process. This feature is particularly valuable for algorithm development, comparative studies, and educational purposes.
 
 
 # Purpose and Prior Art
@@ -49,12 +49,12 @@ However, many projects are specialized implementations targeted at specific prob
 * They are not packaged properly or depend on outdated software, making installation and usage difficult.
 * They are not designed as standard experimental platforms, making it hard to compare algorithms across different parameters and case studies.
 
-Scikit-topt avoids these issues by not including compiled code and depending only on Scipy[@Virtanen2020], a widely used and stable Python library, making packaging and installation straightforward.
+Scikit-Topt avoids these issues by not including compiled code and depending only on Scipy[@Virtanen2020], a widely used and stable Python library, making packaging and installation straightforward.
 For finite element matrix assembly, it uses Scikit-FEM[@skfem], which also contains no compiled components.
 
-Furthermore, Scikit-topt visualizes parameter transitions and material density evolution through Matplotlib[@Hunter2007] and PyVista[@Sullivan2019].
+Furthermore, Scikit-Topt visualizes parameter transitions and material density evolution through Matplotlib[@Hunter2007] and PyVista[@Sullivan2019].
 
-Scikit-topt implements topology optimization algorithms based on the density method, and currently supports the following features:
+Scikit-Topt implements topology optimization algorithms based on the density method, and currently supports the following features:
 
 ### **Physics & Analysis**
 
@@ -82,7 +82,7 @@ Scikit-topt implements topology optimization algorithms based on the density met
 
 # Usage Example
 
-The following example demonstrates how to use Scikit-topt to perform topology optimization on an unstructured mesh using the Optimality Criteria (OC) method.
+The following example demonstrates how to use Scikit-Topt to perform topology optimization on an unstructured mesh using the Optimality Criteria (OC) method.
 First, a mesh is loaded using `scikit-fem`, and a `LinearElastisicity` object is defined with material properties and boundary conditions. Next, a configuration object for the optimizer is created, and the optimization process is launched.
 In this example, a `LinearElastisicity` is created from a mesh file using `scikit-fem`, which defines the FEM model, material properties, and boundary conditions. Then, `OC_Config` sets the optimization parameters such as volume fraction and iteration limits. Finally, the optimizer is executed.
 
@@ -119,7 +119,7 @@ An example is shown below. The left figure shows the boundary conditions, while 
 
 ![Parameter progression during optimization](figures/ex-multi-load-v-progress.jpg){ width=80% }  
 
-As an extensible and open framework, Scikit-topt aims to facilitate reproducible experimentation and accelerate the development of new topology optimization strategies.
+As an extensible and open framework, Scikit-Topt aims to facilitate reproducible experimentation and accelerate the development of new topology optimization strategies.
 
 # Acknowledgements
 I acknowledge the use of open-source tools and libraries that made this research possible.
