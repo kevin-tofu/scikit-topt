@@ -223,7 +223,7 @@ For the linear Helmholtz filter, this corresponds to applying <code class="docut
     \frac{\partial \hat{\rho}}{\partial \tilde{\rho}}
     \circ
     \frac{\partial C}{\partial \hat{\rho}}
-  \right),\]</div>
+  \right)\]</div>
 <p>where <span class="math notranslate nohighlight">\(\circ\)</span> denotes element-wise multiplication.</p>
 <p>This “chain rule through filtering and projection’’ ensures that the update
 step (OC or MOC) is consistent with the filtered and projected densities used
@@ -254,10 +254,8 @@ in the state equation</p>
 </section>
 <section id="convergence-criteria">
 <h2>Convergence Criteria<a class="headerlink" href="#convergence-criteria" title="Link to this heading"></a></h2>
-<p>Although a fixed number of iterations (<code class="docutils literal notranslate"><span class="pre">max_iters</span></code>) is commonly used,
-more precise stopping criteria improve the robustness of OC and MOC
-implementations.</p>
-<p>Typical criteria include the following.</p>
+<p>In addition to the fixed iteration limit (<code class="docutils literal notranslate"><span class="pre">max_iters</span></code>), Scikit-Topt supports
+two standard convergence checks widely used in OC/MOC methods:</p>
 <p><strong>Maximum density change</strong></p>
 <div class="math notranslate nohighlight">
 \[\max_e \left| \rho_e^{(t+1)} - \rho_e^{(t)} \right|
@@ -266,7 +264,7 @@ implementations.</p>
 <div class="math notranslate nohighlight">
 \[\left\| \nabla_\rho L(\rho, \lambda) \right\|
 &lt; \varepsilon_{\mathrm{KKT}}.\]</div>
-<p>If <strong>:class:~sktopt.core.optimizers.DensityMethodConfig.check_convergence</strong> is set to <strong>True</strong>, convergence is declared only when both of the following conditions are satisfied:</p>
+<p>If <code class="xref py py-class docutils literal notranslate"><span class="pre">check_convergence</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, convergence is declared only when both of the following conditions are satisfied:</p>
 <section id="next-steps">
 <h3>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h3>
 <p>Refer to the individual components below for deeper explanation:</p>

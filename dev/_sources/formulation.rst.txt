@@ -154,7 +154,7 @@ Thus the final sensitivity in Scikit-Topt is computed as:
        \frac{\partial \hat{\rho}}{\partial \tilde{\rho}}
        \circ
        \frac{\partial C}{\partial \hat{\rho}}
-     \right),
+     \right)
 
 where :math:`\circ` denotes element-wise multiplication.
 
@@ -190,11 +190,8 @@ The process repeats until the maximum number of iterations is reached or converg
 Convergence Criteria
 --------------------
 
-Although a fixed number of iterations (``max_iters``) is commonly used,
-more precise stopping criteria improve the robustness of OC and MOC
-implementations.
-
-Typical criteria include the following.
+In addition to the fixed iteration limit (``max_iters``), Scikit-Topt supports
+two standard convergence checks widely used in OC/MOC methods:
 
 **Maximum density change**
 
@@ -211,7 +208,7 @@ Typical criteria include the following.
    < \varepsilon_{\mathrm{KKT}}.
 
 
-If **:class:~sktopt.core.optimizers.DensityMethodConfig.check_convergence** is set to **True**, convergence is declared only when both of the following conditions are satisfied:
+If :class:`~sktopt.core.optimizers.DensityMethodConfig.check_convergence` is set to ``True``, convergence is declared only when both of the following conditions are satisfied:
 
 Next Steps
 ~~~~~~~~~~
