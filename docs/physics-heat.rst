@@ -24,7 +24,7 @@ where
 - :math:`T` is the unknown temperature
 
 
-Here, the thermal conductivity \(k(\mathbf{x})\) is treated as a scalar
+Here, the thermal conductivity :math:`k(\mathbf{x})` is treated as a scalar
 (isotropic conductivity). Anisotropic or tensor-valued conductivity is not
 considered in the current implementation.
 
