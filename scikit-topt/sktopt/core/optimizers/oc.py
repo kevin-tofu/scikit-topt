@@ -52,6 +52,7 @@ def bisection_with_projection(
     elements_volume, elements_volume_sum,
     max_iter: int = 100,
     tolerance: float = 1e-4,
+    vol_tol: float = 1e-4,
     l1: float = 1e-7,
     l2: float = 1e+7
 ):
@@ -84,12 +85,13 @@ def bisection_with_projection(
             rho_design_eles * elements_volume
         ) / elements_volume_sum - vol_frac
 
-        if abs(vol_error) < 1e-4:
+        if abs(vol_error) < vol_tol:
             break
 
         if iter_num >= max_iter:
             break
 
+        iter_num += 1
         if vol_error > 0:
             l1 = lmid
         else:
@@ -170,6 +172,13 @@ class OC_Optimizer(common_density.DensityMethod):
     ):
         cfg = self.cfg
         # tsk = self.tsk
+        if self._rho_e_buffer is None:
+            self._rho_e_buffer = np.empty_like(rho_design_eles)
+            self._dC_raw_buffer = np.empty_like(dC_drho_design_eles)
+
+        # rho_e = self._rho_e_buffer
+        # dC_raw = self._dC_raw_buffer
+
         eps = 1e-6
         if isinstance(percentile, float):
             scale = np.percentile(np.abs(dC_drho_design_eles), percentile)
@@ -181,13 +190,16 @@ class OC_Optimizer(common_density.DensityMethod):
         else:
             pass
 
-        # rho_e = rho_projected[tsk.design_elements]
+        # store dC_drho_design_eles for kkt residual before scaling
+        np.copyto(self._dC_raw_buffer, dC_drho_design_eles)
+        np.copyto(self._rho_e_buffer, rho_design_eles)
+        # np.copyto(rho_e, rho_projected[tsk.design_elements])
         # rho_e = rho[tsk.design_elements]
-        rho_e = rho_design_eles.copy()
+        # rho_e = rho_design_eles.copy()
 
         lmid, vol_error = bisection_with_projection(
             dC_drho_design_eles,
-            rho_e, cfg.rho_min, cfg.rho_max, move_limit,
+            self._rho_e_buffer, cfg.rho_min, cfg.rho_max, move_limit,
             eta, eps, vol_frac,
             beta, cfg.beta_eta,
             scaling_rate, rho_design_eles,
@@ -197,15 +209,34 @@ class OC_Optimizer(common_density.DensityMethod):
             l1=cfg.lambda_lower,
             l2=cfg.lambda_upper
         )
+
+        #
+        # compute kkt residual
+        #
+        mask_int = (
+            (rho_design_eles > cfg.rho_min + 1e-6) &
+            (rho_design_eles < cfg.rho_max - 1e-6)
+        )
+        if np.any(mask_int):
+            # dL/dρ_i = dC/dρ_i + λ * dV/dρ_i
+            # KKT residual
+            dL = self._dC_raw_buffer[mask_int] + \
+                lmid * self._dV_drho_design[mask_int]
+            self.kkt_residual = float(np.linalg.norm(dL, ord=np.inf))
+        else:
+            self.kkt_residual = 0.0
+
         l_str = f"λ: {lmid:.4e}"
         vol_str = f"vol_error: {vol_error:.4f}"
         rho_str = f"mean(rho): {np.mean(rho_design_eles):.4f}"
-        message = f"{l_str}, {vol_str}, {rho_str}"
+        kkt_str = f"kkt_res: {self.kkt_residual:.4e}"
+        message = f"{l_str}, {vol_str}, {rho_str}, {kkt_str}"
 
         logger.info(message)
         self.recorder.feed_data("lmid", lmid)
         self.recorder.feed_data("vol_error", vol_error)
         self.recorder.feed_data("-dC", -dC_drho_design_eles)
+        self.recorder.feed_data("kkt_residual", self.kkt_residual)
 
 
 if __name__ == '__main__':

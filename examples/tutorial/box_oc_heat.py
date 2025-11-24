@@ -145,7 +145,8 @@ def get_cfg():
         max_iters=40,
         record_times=40,
         # filter_type="spacial"
-        filter_type="helmholtz"
+        filter_type="helmholtz",
+        check_convergence=True
     )
     return cfg
 

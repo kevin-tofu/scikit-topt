@@ -205,6 +205,31 @@ class HistorySeries():
         header = [self.name, self.plot_type]
         return data, header
 
+    def latest(self) -> float | np.ndarray:
+        """
+        Return the latest logged entry.
+
+        Returns
+        -------
+        float or numpy.ndarray
+            The most recent value. For scalar histories, this is a float.
+            For aggregated histories (e.g. min/mean/max[/std]), this is
+            a 1D NumPy array of statistics.
+
+        Raises
+        ------
+        ValueError
+            If the history is empty.
+        """
+        if not self.exists():
+            raise ValueError(f"HistorySeries '{self.name}' has no data.")
+
+        d = self.data[-1]
+        if isinstance(d, list) or isinstance(d, np.ndarray):
+            return np.array(d, dtype=float)
+        else:
+            return float(d)
+
 
 def compare_histories_data_and_plot_type(h1, h2) -> bool:
     """
@@ -249,7 +274,6 @@ def compare_histories_data_and_plot_type(h1, h2) -> bool:
             return False
 
     return True
-
 
 class HistoryCollection():
     """
@@ -661,3 +685,29 @@ class HistoryCollection():
 
         # Replace histories with updated ones
         self.histories = new_histories
+
+    def latest(self, name: str):
+        """
+        Return the latest value of a specific history.
+
+        Parameters
+        ----------
+        name : str
+            Name of the history to query.
+
+        Returns
+        -------
+        float or numpy.ndarray
+            Latest value stored in the specified history.
+
+        Raises
+        ------
+        KeyError
+            If the history ``name`` does not exist.
+        ValueError
+            If the history exists but has no data.
+        """
+        if name not in self.histories:
+            raise KeyError(f"History '{name}' not found.")
+
+        return self.histories[name].latest()

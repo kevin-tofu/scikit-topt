@@ -62,11 +62,14 @@ def get_cfg():
             target_value=3.0
         ),
         vol_frac=sktopt.tools.SchedulerConfig.constant(
-            target_value=0.4
+            target_value=0.6
         ),
-        max_iters=10,
-        record_times=10,
-        filter_type="helmholtz"
+        max_iters=50,
+        record_times=50,
+        filter_type="helmholtz",
+        check_convergence=True,
+        tol_rho_change=0.2,
+        tol_kkt_residual=5e-3
     )
     return cfg
 

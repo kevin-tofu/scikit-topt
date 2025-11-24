@@ -26,7 +26,7 @@ logging.getLogger("skfem").setLevel(logging.WARNING)
 @dataclass
 class DensityMethodConfig():
     """
-    Configuration for density-based topology optimization (SIMP/RAMP).
+    Configuration for density-based topology optimization (SIMP).
 
     This configuration collects the main numerical settings for
     density-based topology optimization, including interpolation models,
@@ -120,7 +120,38 @@ class DensityMethodConfig():
         and loads for improved numerical conditioning.
     n_joblib : int
         Number of parallel workers used in joblib-enabled sections.
+    check_convergence : bool
+        If ``True``, enable automatic convergence checking during optimization.
+        Convergence is determined by two criteria:
 
+        1. Maximum density change (``tol_rho_change``)
+        2. KKT-like residual or Lagrangian gradient norm (``tol_kkt_residual``)
+
+        Optimization terminates early only when both are satisfied.
+
+    tol_rho_change : float
+        Tolerance for the maximum per-iteration density change.
+        Convergence is considered achieved when::
+
+            max(|rho_new - rho_old|) < tol_rho_change
+
+        Typical values range from ``1e-2`` to ``1e-4`` depending on mesh resolution.
+
+    tol_kkt_residual : float
+        Tolerance for the KKT-style stationarity residual.
+
+        For OC:
+            The residual is computed as the infinity norm of the Lagrangian
+            gradient ``dC/drho + λ * dV/drho`` over interior design elements.
+
+        For MOC / LogMOC:
+            A Lagrangian-like gradient norm based on the current volume-penalty
+            multiplier is used instead, serving as an approximate stationarity
+            measure.
+
+        Convergence is considered achieved when::
+
+            kkt_residual < tol_kkt_residual
     """
 
     dst_path: str = "./result/pytests"
@@ -166,6 +197,10 @@ class DensityMethodConfig():
     solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve"
     scaling: bool = False
     n_joblib: int = 1
+
+    check_convergence: bool = False
+    tol_rho_change: float = 2e-1
+    tol_kkt_residual: float = 5e-3
 
     @classmethod
     def from_defaults(cls, **args) -> 'DensityMethodConfig':
@@ -332,7 +367,7 @@ class DensityMethod(DensityMethodBase):
     Core driver for sensitivity-based density topology optimization.
 
     This class implements the common workflow shared by multiple
-    optimization strategies (e.g., OC, LogMOC). It handles
+    optimization strategies (e.g., OC, MOC). It handles
 
     - problem setup (scaling, restart, output directories),
     - finite element analysis (FEA) for elasticity / heat conduction,
@@ -437,6 +472,14 @@ class DensityMethod(DensityMethodBase):
         # self.recorder = self.add_recorder(tsk)
         self.schedulers = tools.Schedulers(self.cfg.dst_path)
 
+        # params for convergence check
+        self._rho_e_buffer: np.ndarray | None = None
+        self._dC_raw_buffer: np.ndarray | None = None
+        ele_vol_design = tsk.elements_volume[tsk.design_elements]
+        ele_vol_design_sum = np.sum(ele_vol_design)
+        self._dV_drho_design = ele_vol_design / ele_vol_design_sum
+        self.kkt_residual = None
+
     def add_recorder(
         self, tsk: sktopt.mesh.FEMDomain
     ) -> tools.HistoryCollection:
@@ -451,6 +494,9 @@ class DensityMethod(DensityMethodBase):
             recorder.add("u_max")
         recorder.add("compliance", ylog=True)
         recorder.add("scaling_rate", plot_type="min-max-mean-std")
+
+        recorder.add("rho_change_max")
+        recorder.add("kkt_residual")
         return recorder
 
     def params_latest(self):
@@ -697,6 +743,8 @@ class DensityMethod(DensityMethodBase):
         self.filter.update_radius(filter_radius)
 
         # Loop 1 - N
+        conv_rho = False
+        conv_kkt = False
         for iter_num in range(iter_begin, iter_end):
             logger.info(f"iterations: {iter_num} / {iter_end - 1}")
             (
@@ -793,6 +841,19 @@ class DensityMethod(DensityMethodBase):
             else:
                 rho[tsk.dirichlet_neumann_elements] = 1.0
 
+            #
+            #
+            #
+            rho_change_max = float(
+                np.max(np.abs(
+                    rho[tsk.design_elements] - rho_prev[tsk.design_elements])
+                )
+            )
+            self.recorder.feed_data("rho_change_max", rho_change_max)
+
+            #
+            #
+            #
             self.recorder.feed_data(
                 "rho_projected", rho_projected[tsk.design_elements]
             )
@@ -802,9 +863,37 @@ class DensityMethod(DensityMethodBase):
             u_max = u_max[0] if len(u_max) == 1 else np.array(u_max)
             self.recorder.feed_data("u_max", u_max)
 
+            if cfg.check_convergence:
+                conv_rho = rho_change_max < cfg.tol_rho_change
+                # kkt_residual = self.recorder.latest("kkt_residual")
+                kkt_residual = self.kkt_residual
+                vol_error = self.recorder.latest("vol_error")
+                if kkt_residual is None:
+                    raise ValueError(
+                        "kkt_residual is not computed in rho_update"
+                    )
+                if np.isfinite(kkt_residual):
+                    conv_kkt = abs(
+                        kkt_residual
+                    ) < cfg.tol_kkt_residual
+                else:
+                    conv_kkt = True
+
+                if conv_rho and conv_kkt:
+                    logger.info(
+                        f"Converged at iter {iter_num}: "
+                        f"rho_change_max={rho_change_max:.3e}, "
+                        f"vol_error={vol_error:.3e}, "
+                        f"kkt_residual={kkt_residual:.3e}"
+                    )
+                    # break
+
             if any(
-                (iter_num % (cfg.max_iters // cfg.record_times) == 0,
-                 iter_num == 1)
+                (
+                    iter_num % (cfg.max_iters // cfg.record_times) == 0,
+                    iter_num == 1,
+                    (conv_rho and conv_kkt)
+                )
             ):
                 logger.info(f"Saving at iteration {iter_num}")
                 self.recorder.print()
@@ -834,6 +923,8 @@ class DensityMethod(DensityMethodBase):
                     f"{cfg.dst_path}/data/{str(iter_num).zfill(6)}-rho.npz",
                     rho_design_elements=rho[tsk.design_elements]
                 )
+                if conv_rho and conv_kkt:
+                    break
 
         if cfg.scaling is True:
             self.unscale()

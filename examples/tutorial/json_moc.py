@@ -10,8 +10,8 @@ def msh_export():
 
     x_len = 8.0
     y_len = 6.0
-    z_len = 4.0
-    mesh_size = 0.2
+    z_len = 0.1
+    mesh_size = 0.1
     eps = mesh_size / 2.0
 
     mesh = sktopt.mesh.toy_problem.create_box_hex(
@@ -21,7 +21,7 @@ def msh_export():
         (0.0, 0.03), (0.0, y_len), (0.0, z_len)
     )
     neumann_in_range = sktopt.mesh.utils.get_points_in_range(
-        (x_len - eps, x_len+0.1), (y_len*2/5, y_len*3/5), (z_len-eps, z_len)
+        (x_len - mesh_size, x_len+0.1), (y_len*2/5, y_len*3/5), (0.0, z_len)
     )
     boundaries = {
         "dirichlet": dirichlet_in_range,
@@ -44,7 +44,7 @@ def get_task():
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=1)
     dirichlet_dir = "all"
-    neumann_dir_type = "u^3"
+    neumann_dir_type = "u^1"
     neumann_value = 100
     # Define it as a task
     tsk = sktopt.mesh.LinearElasticity.from_mesh_tags(
@@ -67,8 +67,16 @@ def get_cfg():
             target_value=3.0
         ),
         vol_frac=sktopt.tools.SchedulerConfig.constant(
-            target_value=0.6
+            target_value=0.3
         ),
+        mu_p=1e-1,
+        lambda_v=1e+5,
+        lambda_decay=0.20,
+        max_iters=200,
+        record_times=200,
+        check_convergence=False,
+        tol_rho_change=0.2,
+        tol_kkt_residual=0.01
     )
     return cfg
 

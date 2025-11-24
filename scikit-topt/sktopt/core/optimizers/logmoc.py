@@ -11,42 +11,50 @@ logger = mylogger(__name__)
 @dataclass
 class LogMOC_Config(common_density.DensityMethod_OC_Config):
     """
-    Configuration for log-space gradient update with optional mean-centering.
+    Configuration for a log-space, OC-like multiplicative density update.
 
-    This configuration supports a variant of log-space Lagrangian descent used in topology
-    optimization. The update is performed in the logarithmic domain to ensure strictly positive
-    densities and to simulate multiplicative behavior. Optionally, the computed update direction
-    can be centered (mean-subtracted) to improve numerical stability.
+    This configuration supports a variant of the Optimality Criteria (OC)
+    method implemented in :math:`\\log \\rho`-space. The update remains
+    multiplicative in :math:`\\rho`, but it is applied by adding a scaled
+    log-factor to :math:`\\log \\rho`. The dual variable associated with
+    the volume constraint is updated by an exponential moving average (EMA)
+    driven by the volume error.
 
-    This method differs from standard OC-based updates: it adds the volume constraint penalty
-    directly to the compliance sensitivity and applies the gradient step in log(ρ)-space:
+    Conceptually, the update has the form
 
-        log(ρ_new) = log(ρ) - η · (∂C/∂ρ + λ)
+    .. math::
 
-    Optionally (when enabled), the update direction is centered as:
+        \\rho^{\\text{new}}
+        = \\rho^{\\text{old}}
+          \\left(-\\frac{\\partial C / \\partial \\rho}{\\lambda_v}
+          \\right)^{\\eta},
 
-        Δ = (∂C/∂ρ + λ) - mean(∂C/∂ρ + λ)
+    where the ratio :math:`-\\partial C/\\partial \\rho / \\lambda_v`
+    is clamped to avoid numerical instabilities and move limits are
+    enforced in log-space.
 
     Attributes
     ----------
     interpolation : Literal["SIMP"]
-        Interpolation scheme used for material penalization. Currently only "SIMP" is supported.
-
+        Interpolation scheme used for material penalization. Currently
+        fixed to ``"SIMP"``.
     mu_p : float
-        Penalty weight for the volume constraint. This controls how strongly the constraint
-        influences the descent direction.
-
+        Gain used to convert the volume error into a dual update. Larger
+        values make the dual variable :attr:`lambda_v` react more strongly
+        to constraint violations.
     lambda_v : float
-        Initial Lagrange multiplier for the volume constraint.
-
+        Initial value for the volume-related dual variable. This is used
+        in the OC-like scaling term :math:`-\\partial C/\\partial \\rho
+        / \\lambda_v`.
     lambda_decay : float
-        Factor by which lambda_v decays over iterations. Smaller values cause λ to adapt more rapidly.
-
+        Decay factor in the EMA update of :attr:`lambda_v`. Values closer
+        to 1.0 yield slower, smoother updates; smaller values react more
+        quickly to changes in the volume error.
     """
 
     interpolation: Literal["SIMP"] = "SIMP"
-    mu_p: float = 3000.0
-    lambda_v: float = 10.0
+    mu_p: float = 1e-1
+    lambda_v: float = 1e+2
     lambda_decay: float = 0.70
 
 
@@ -108,48 +116,46 @@ def moc_log_update_logspace(
 # Lagrangian Dual MOC
 class LogMOC_Optimizer(common_density.DensityMethod):
     """
-    Topology optimization solver using log-space Lagrangian gradient descent.
+    Topology optimization solver using a log-space, OC-like multiplicative update.
 
-    This optimizer performs sensitivity-based topology optimization by applying
-    gradient descent on the Lagrangian (compliance + volume penalty) in the
-    logarithmic domain. The update is computed in log(ρ)-space to ensure positive
-    densities and simulate multiplicative behavior.
+    This optimizer implements a density-based compliance minimization
+    algorithm in which the classic OC multiplicative update is expressed
+    in log(ρ)-space. The design densities are updated according to a
+    smoothed ratio of sensitivities and a dual variable associated with
+    the volume constraint.
 
-    Unlike traditional Optimality Criteria (OC) methods, this approach adds the
-    volume constraint penalty λ directly to the compliance sensitivity, rather than
-    forming a multiplicative ratio. The update is then applied as:
+    In terms of ρ, the update has the conceptual form
 
-        log(ρ_new) = log(ρ) - η · (∂C/∂ρ + λ)
+    .. math::
 
-    which is equivalent to:
+        \\rho^{\\text{new}}
+        = \\rho^{\\text{old}}
+          \\left(-\\frac{\\partial C / \\partial \\rho}{\\lambda_v}
+          \\right)^{\\eta},
 
-        ρ_new = ρ · exp( - η · (∂C/∂ρ + λ) )
+    where :math:`\\lambda_v` is a dual variable updated by an exponential
+    moving average (EMA) driven by the volume constraint violation. The
+    implementation performs this update in log-space, enforces move limits
+    on :math:`\\log \\rho`, and finally clips the densities to the admissible
+    interval :math:`[\\rho_{\\min}, \\rho_{\\max}]`.
 
-    This method maintains positivity of the density field without explicit clipping
-    and offers improved numerical robustness for problems involving low volume fractions
-    or sharp sensitivity gradients.
-
-    Advantages
-    ----------
-    - Ensures positive densities via log-space formulation
-    - Simulates OC-like multiplicative update behavior
-    - Straightforward gradient descent formulation
-
-    Limitations
-    -----------
-    - Not derived from strict OC/KKT conditions
-    - May still require step size tuning and clipping for stability
-    - Involves logarithmic and exponential operations at each iteration
+    Compared to the classic OC method, this log-space variant can offer
+    improved numerical robustness while preserving the intuitive
+    multiplicative structure.
 
     Attributes
     ----------
-    config : LogGradientUpdateConfig
-        Configuration object specifying parameters such as mu_p, lambda_v,
-        decay schedules, and interpolation settings (currently SIMP only).
-
-    mesh, basis, etc. : inherited from common_density.DensityMethod
-        FEM components used to evaluate sensitivities and apply boundary conditions.
+    cfg : LogMOC_Config
+        Configuration object specifying the OC-like settings, including
+        :attr:`mu_p`, :attr:`lambda_v`, EMA decay factors, and bounds on
+        the densities and dual variables.
+    tsk : sktopt.mesh.FEMDomain
+        Finite element model (mesh, basis, boundary conditions and loads).
+    recorder : HistoryLogger
+        Logger that stores histories of selected quantities such as
+        ``-dC``, ``lambda_v``, volume error and KKT residuals.
     """
+
     def __init__(
         self,
         cfg: LogMOC_Config,
@@ -192,6 +198,12 @@ class LogMOC_Optimizer(common_density.DensityMethod):
     ):
         cfg = self.cfg
         tsk = self.tsk
+
+        if self._dC_raw_buffer is None:
+            self._dC_raw_buffer = np.empty_like(dC_drho_design_eles)
+
+        np.copyto(self._dC_raw_buffer, dC_drho_design_eles)
+
         eps = 1e-8
         if isinstance(percentile, float):
             scale = np.percentile(np.abs(dC_drho_design_eles), percentile)
@@ -222,9 +234,27 @@ class LogMOC_Optimizer(common_density.DensityMethod):
         # lam_e = self.lambda_v * \
         #     (elements_volume_design / (elements_volume_design_sum + 1e-10))
 
+        mask_int = (
+            (rho_design_eles > cfg.rho_min + 1e-6) &
+            (rho_design_eles < cfg.rho_max - 1e-6)
+        )
+
+        if np.any(mask_int):
+            # dL/dρ_i ≈ dC_raw_i + λ_eff * dV/drho_i
+            # The definition of λ_eff would be A or B
+            #   A: λ_eff = self.lambda_v
+            #   B: λ_eff = cfg.mu_p * self.lambda_v
+            lambda_eff = self.lambda_v  # or cfg.mu_p * self.lambda_v
+            dL = self._dC_raw_buffer[mask_int] \
+                + lambda_eff * self._dV_drho_design[mask_int]
+            self.kkt_residual = float(np.linalg.norm(dL, ord=np.inf))
+        else:
+            self.kkt_residual = 0.0
+
         self.recorder.feed_data("lambda_v", self.lambda_v)
         self.recorder.feed_data("vol_error", vol_error)
         self.recorder.feed_data("-dC", -dC_drho_design_eles)
+        self.recorder.feed_data("kkt_residual", self.kkt_residual)
 
         moc_log_update_logspace(
             rho_design_eles,
