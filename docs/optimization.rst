@@ -46,11 +46,8 @@ Here:
 - ``clip`` ensures the updated density stays within prescribed bounds,
 - optional move limits may also be enforced to restrict the maximum per-iteration change in :math:`\rho_e`.
 
-The OC method requires only element-wise sensitivities and a scalar multiplier update, 
-and therefore avoids reliance on general-purpose gradient-based optimizers such as MMA or SQP.
-
-
-### Bisection for the Volume Constraint
+Bisection for the Volume Constraint
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The Lagrange multiplier :math:\lambda enforcing the volume constraint is determined by a scalar bisection procedure.
 This procedure is the same for both OC and MOC formulations, since the volume constraint enters only through this scalar multiplier.
@@ -158,12 +155,14 @@ This is not part of the classical OC method but can improve stability in practic
 - Convergence may be sensitive to filtering and parameter settings.
 
 
-## Practical Notes for OC and MOC Implementations
+Practical Notes for OC and MOC Implementations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Both the classical OC method and its modified variants (MOC) rely on a few practical numerical settings that significantly affect robustness and convergence.
 The following guidelines summarize commonly used choices across the literature.
 
-### Parameter Guidelines
+Parameter Guidelines
+^^^^^^^^^^^^^^^^^^^^^^
 
 Several heuristic parameters appear in OC/MOC-style multiplicative updates:
 
@@ -193,7 +192,8 @@ Several heuristic parameters appear in OC/MOC-style multiplicative updates:
 
 These ranges are not strict but offer reliable starting points for most compliance-based problems.
 
-### Recommended Range for the Multiplier Bounds
+Recommended Range for the Multiplier Bounds
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The Lagrange multiplier :math:`\lambda` used in OC/MOC updates must be **strictly positive**, since the multiplicative update
 .. math::
