@@ -122,8 +122,7 @@ This will run a compliance minimization with OC method.</p>
 <h2>Task Definition<a class="headerlink" href="#task-definition" title="Link to this heading"></a></h2>
 <section id="shape-modeling-and-its-basis-function">
 <h3>Shape modeling and its basis function<a class="headerlink" href="#shape-modeling-and-its-basis-function" title="Link to this heading"></a></h3>
-<p>In this example, we use skfem.ElementHex1()
-<cite>ElementHex1</cite> represents a <strong>first-order (linear) hexahedral element</strong>.
+<p>In this example, we use skfem.ElementHex1(), which represents a <strong>first-order (linear) hexahedral element</strong>.
 Scikit-Topt currently supports:</p>
 <ul class="simple">
 <li><p>3D: Hexahedral P1 (<cite>ElementHex1</cite>)</p></li>
@@ -207,15 +206,16 @@ which scikit-topt interprets as boundary and subdomain tags.</p>
 <p>The results of the optimization are stored in the directory specified by cfg.dst_path.
 They include visualizations of the density distribution and graphs showing the evolution
 of optimization quantities such as compliance, volume fraction, and sensitivities.</p>
+<p>## Examples</p>
 <figure class="align-center" id="id1">
-<a class="reference internal image-reference" href="https://raw.githubusercontent.com/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg"><img alt="https://raw.githubusercontent.com/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg" src="https://raw.githubusercontent.com/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg" style="width: 400px;" />
+<a class="reference internal image-reference" href="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg"><img alt="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg" src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg" style="width: 400px;" />
 </a>
 <figcaption>
 <p><span class="caption-text">Multi-load condition visualization.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
 </figcaption>
 </figure>
 <figure class="align-center" id="id2">
-<a class="reference internal image-reference" href="https://raw.githubusercontent.com/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg"><img alt="https://raw.githubusercontent.com/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg" src="https://raw.githubusercontent.com/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg" style="width: 400px;" />
+<a class="reference internal image-reference" href="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg"><img alt="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg" src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg" style="width: 400px;" />
 </a>
 <figcaption>
 <p><span class="caption-text">Density distribution after optimization under multi-load conditions.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>

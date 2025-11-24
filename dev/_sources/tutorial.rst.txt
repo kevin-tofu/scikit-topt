@@ -36,8 +36,7 @@ Task Definition
 Shape modeling and its basis function
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In this example, we use skfem.ElementHex1() 
-`ElementHex1` represents a **first-order (linear) hexahedral element**.  
+In this example, we use skfem.ElementHex1(), which represents a **first-order (linear) hexahedral element**.  
 Scikit-Topt currently supports:
 
 - 3D: Hexahedral P1 (`ElementHex1`)
@@ -133,14 +132,15 @@ The results of the optimization are stored in the directory specified by cfg.dst
 They include visualizations of the density distribution and graphs showing the evolution
 of optimization quantities such as compliance, volume fraction, and sensitivities.
 
+## Examples 
 
-.. figure:: https://raw.githubusercontent.com/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg
+.. figure:: https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg
    :width: 400px
    :align: center
 
    Multi-load condition visualization.
 
-.. figure:: https://raw.githubusercontent.com/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg
+.. figure:: https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg
    :width: 400px
    :align: center
 

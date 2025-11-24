@@ -54,6 +54,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Optimization Algorithms in Density-Based Topology Optimization</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#optimality-criteria">Optimality Criteria</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#optimality-criteria-method-oc">Optimality Criteria Method (OC)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#bisection-for-the-volume-constraint">Bisection for the Volume Constraint</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#advantages">Advantages</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#disadvantages">Disadvantages</a></li>
 </ul>
@@ -62,6 +63,11 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#modified-optimality-criteria-moc-variants">Modified Optimality Criteria (MOC) Variants</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#log-space-update-method">Log-space Update Method</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#practical-notes-for-oc-and-moc-implementations">Practical Notes for OC and MOC Implementations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#parameter-guidelines">Parameter Guidelines</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#recommended-range-for-the-multiplier-bounds">Recommended Range for the Multiplier Bounds</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -126,9 +132,8 @@ It provides a closed-form multiplicative update rule for the design variables, d
 <li><p><code class="docutils literal notranslate"><span class="pre">clip</span></code> ensures the updated density stays within prescribed bounds,</p></li>
 <li><p>optional move limits may also be enforced to restrict the maximum per-iteration change in <span class="math notranslate nohighlight">\(\rho_e\)</span>.</p></li>
 </ul>
-<p>The OC method requires only element-wise sensitivities and a scalar multiplier update,
-and therefore avoids reliance on general-purpose gradient-based optimizers such as MMA or SQP.</p>
-<p>### Bisection for the Volume Constraint</p>
+<section id="bisection-for-the-volume-constraint">
+<h4>Bisection for the Volume Constraint<a class="headerlink" href="#bisection-for-the-volume-constraint" title="Link to this heading"></a></h4>
 <p>The Lagrange multiplier :math:lambda enforcing the volume constraint is determined by a scalar bisection procedure.
 This procedure is the same for both OC and MOC formulations, since the volume constraint enters only through this scalar multiplier.
 For each trial value of :math:lambda, the densities are tentatively updated using the OC/MOC rule, the resulting volume is evaluated, and the bisection bounds are adjusted accordingly.
@@ -151,6 +156,7 @@ while (λ_high − λ_low) / (λ_high + λ_low) &gt; tol:
 λ_final = λ
 </pre></div>
 </div>
+</section>
 <section id="advantages">
 <h4>Advantages<a class="headerlink" href="#advantages" title="Link to this heading"></a></h4>
 <ul class="simple">
@@ -217,10 +223,13 @@ This is not part of the classical OC method but can improve stability in practic
 <li><p>Volume constraint is not enforced exactly unless <span class="math notranslate nohighlight">\(\lambda_v\)</span> is solved consistently (e.g., via bisection).</p></li>
 <li><p>Convergence may be sensitive to filtering and parameter settings.</p></li>
 </ul>
-<p>## Practical Notes for OC and MOC Implementations</p>
+</section>
+<section id="practical-notes-for-oc-and-moc-implementations">
+<h3>Practical Notes for OC and MOC Implementations<a class="headerlink" href="#practical-notes-for-oc-and-moc-implementations" title="Link to this heading"></a></h3>
 <p>Both the classical OC method and its modified variants (MOC) rely on a few practical numerical settings that significantly affect robustness and convergence.
 The following guidelines summarize commonly used choices across the literature.</p>
-<p>### Parameter Guidelines</p>
+<section id="parameter-guidelines">
+<h4>Parameter Guidelines<a class="headerlink" href="#parameter-guidelines" title="Link to this heading"></a></h4>
 <p>Several heuristic parameters appear in OC/MOC-style multiplicative updates:</p>
 <ul class="simple">
 <li><p><strong>Move limits ** (move_limit, controls per-iteration change): typically **0.2–0.5</strong>.
@@ -240,7 +249,9 @@ Larger radius suppress numerical artifacts but remove small features.</p></li>
 Too small values lead to ill-conditioned stiffness matrices; too large values blur the void region.</p></li>
 </ul>
 <p>These ranges are not strict but offer reliable starting points for most compliance-based problems.</p>
-<p>### Recommended Range for the Multiplier Bounds</p>
+</section>
+<section id="recommended-range-for-the-multiplier-bounds">
+<h4>Recommended Range for the Multiplier Bounds<a class="headerlink" href="#recommended-range-for-the-multiplier-bounds" title="Link to this heading"></a></h4>
 <p>The Lagrange multiplier <span class="math notranslate nohighlight">\(\lambda\)</span> used in OC/MOC updates must be <strong>strictly positive</strong>, since the multiplicative update
 .. math::
 rho_e^{(t+1)} = rho_e^{(t)}left(frac{-partial C/partial rho_e}{lambda}right)^eta
@@ -256,6 +267,7 @@ and because the OC/MOC update is monotonic in <span class="math notranslate nohi
 using a wide positive interval does not increase computational cost.</p>
 <p>For implementation details and the correspondence with actual parameter
 definitions, see the <a class="reference internal" href="core.html#core-api"><span class="std std-ref">core module</span></a>.</p>
+</section>
 </section>
 </section>
 </section>
