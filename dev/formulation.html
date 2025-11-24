@@ -191,12 +191,12 @@ from FEM does not act directly on the design density. Instead, the design
 variable passes through two transformations:</p>
 <div class="math notranslate nohighlight">
 \[\rho
-\;\xrightarrow{\text{filter}}\;
+\quad\xrightarrow{\text{filter}}\quad
 \tilde{\rho}
-\;\xrightarrow{\text{projection}}\;
+\quad\xrightarrow{\text{projection}}\quad
 \hat{\rho}.\]</div>
-<p>The total derivative uses the chain rule:</p>
-<p>We denote by <span class="math notranslate nohighlight">\(\mathcal{F}\)</span> the (linear) density filter operator such that</p>
+<p>The total derivative uses the chain rule.</p>
+<p>We denote by <span class="math notranslate nohighlight">\(\mathcal{F}\)</span> the (linear) density–filter operator such that</p>
 <div class="math notranslate nohighlight">
 \[\tilde{\rho} = \mathcal{F}(\rho).\]</div>
 <p>Because <span class="math notranslate nohighlight">\(\mathcal{F}\)</span> is linear, its derivative with respect to
@@ -214,29 +214,19 @@ implemented via <code class="docutils literal notranslate"><span class="pre">fil
 \frac{\partial \tilde{\rho}}{\partial \rho}.\]</div>
 <p>Meaning of each term:</p>
 <ul class="simple">
-<li><p><span class="math notranslate nohighlight">\(\frac{\partial C}{\partial \hat{\rho}}\)</span>
-Raw compliance sensitivity obtained from FEM.</p></li>
-<li><p><span class="math notranslate nohighlight">\(\frac{\partial \hat{\rho}}{\partial \tilde{\rho}}\)</span>
-Derivative of the Heaviside-type projection.</p></li>
-<li><p><span class="math notranslate nohighlight">\(\frac{\partial \tilde{\rho}}{\partial \rho}\)</span>
-Adjoint of the density filter.
-For linear filters (including the Helmholtz filter), this corresponds to
-applying the transpose of the filter operator,
-written as <span class="math notranslate nohighlight">\(\mathcal{F}^T\)</span>, implemented via <cite>filter.gradient()</cite>.</p></li>
+<li><p><span class="math notranslate nohighlight">\(\frac{\partial C}{\partial \hat{\rho}}\)</span> — raw compliance sensitivity.</p></li>
+<li><p><span class="math notranslate nohighlight">\(\frac{\partial \hat{\rho}}{\partial \tilde{\rho}}\)</span> — projection derivative.</p></li>
+<li><p><span class="math notranslate nohighlight">\(\frac{\partial \tilde{\rho}}{\partial \rho}\)</span> — adjoint filter <span class="math notranslate nohighlight">\(\mathcal{F}^T\)</span>.</p></li>
 </ul>
-<p>Thus, the final sensitivity in Scikit-Topt is computed as:</p>
-<p>We denote by <span class="math notranslate nohighlight">\(W\)</span> the (discrete) linear filter operator such that</p>
-<div class="math notranslate nohighlight">
-\[\tilde{\rho} = W \rho.\]</div>
-<p>The total derivative then follows the chain rule:</p>
+<p>Thus, the final sensitivity in Scikit-Topt is</p>
 <div class="math notranslate nohighlight">
 \[\frac{\partial C}{\partial \rho}
 =
-\frac{\partial C}{\partial \hat{\rho}}
-\cdot
-\frac{\partial \hat{\rho}}{\partial \tilde{\rho}}
-\cdot
-\frac{\partial \tilde{\rho}}{\partial \rho}.\]</div>
+\mathcal{F}^{T}\!\left(
+   \frac{\partial \hat{\rho}}{\partial \tilde{\rho}}
+   \circ
+   \frac{\partial C}{\partial \hat{\rho}}
+\right),\]</div>
 <p>where <span class="math notranslate nohighlight">\(\circ\)</span> denotes element-wise multiplication.</p>
 <p>This “chain rule through filtering and projection’’ ensures that the update
 step (OC or MOC) is consistent with the filtered and projected densities used in the state equation</p>
