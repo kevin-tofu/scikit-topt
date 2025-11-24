@@ -211,7 +211,7 @@ two standard convergence checks widely used in OC/MOC methods:
    < \varepsilon_{\mathrm{KKT}}.
 
 
-If :class:`~sktopt.core.optimizers.DensityMethodConfig.check_convergence` is set to ``True``, convergence is declared only when both of the following conditions are satisfied:
+If :class:`~sktopt.core.DensityMethodConfig.check_convergence` is set to ``True``, convergence is declared only when both of the following conditions are satisfied:
 
 Next Steps
 ~~~~~~~~~~
