@@ -115,11 +115,13 @@ from FEM does not act directly on the design density. Instead, the design
 variable passes through two transformations:
 
 .. math::
+
    \rho
-   \xrightarrow{\text{filter}}
+   \;\xrightarrow{\text{filter}}\;
    \tilde{\rho}
-   \xrightarrow{\text{projection}}
+   \;\xrightarrow{\text{projection}}\;
    \hat{\rho}.
+
 
 The total derivative uses the chain rule:
 
