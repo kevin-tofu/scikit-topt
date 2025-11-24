@@ -21,7 +21,7 @@ def msh_export():
         (0.0, 0.03), (0.0, y_len), (0.0, z_len)
     )
     neumann_in_range = sktopt.mesh.utils.get_points_in_range(
-        (x_len - mesh_size, x_len+0.1), (y_len*2/5, y_len*3/5), (0.0, z_len)
+        (x_len-eps, x_len), (y_len-eps, y_len), (0.0, z_len)
     )
     boundaries = {
         "dirichlet": dirichlet_in_range,
@@ -44,7 +44,7 @@ def get_task():
     e = skfem.ElementVector(skfem.ElementHex1())
     basis = skfem.Basis(mesh, e, intorder=1)
     dirichlet_dir = "all"
-    neumann_dir_type = "u^1"
+    neumann_dir_type = "u^2"
     neumann_value = 100
     # Define it as a task
     tsk = sktopt.mesh.LinearElasticity.from_mesh_tags(
@@ -69,9 +69,12 @@ def get_cfg():
         vol_frac=sktopt.tools.SchedulerConfig.constant(
             target_value=0.3
         ),
-        mu_p=1e-1,
-        lambda_v=1e+5,
-        lambda_decay=0.20,
+        mu_p=3000,
+        lambda_v=1.0,
+        lambda_decay=0.90,
+        filter_radius=sktopt.tools.SchedulerConfig.constant(
+            target_value=0.2
+        ),
         max_iters=200,
         record_times=200,
         check_convergence=False,
