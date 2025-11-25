@@ -4,7 +4,6 @@ API Reference
 This section summarizes the main public API of Scikit-Topt.
 For full details, see the module-specific pages below.
 
-Full API documentation: :mod:`sktopt.core`
 
 .. toctree::
    :maxdepth: 1
@@ -14,9 +13,16 @@ Full API documentation: :mod:`sktopt.core`
 
 .. currentmodule:: sktopt.core
 
+**Key Classes**
 
+- :class:`DensityMethodConfig`
+- :class:`DensityMethod_OC_Config`
+- :class:`DensityMethod`
+- :class:`OC_Config`
+- :class:`OC_Optimizer`
+- :class:`LogMOC_Config`
+- :class:`LogMOC_Optimizer`
 
-Full API documentation: :mod:`sktopt.fea`
 
 .. toctree::
    :maxdepth: 1
@@ -25,6 +31,11 @@ Full API documentation: :mod:`sktopt.fea`
    fea
 
 .. currentmodule:: sktopt.fea
+
+**Key Classes**
+
+- :class:`FEM_SimpLinearElasticity`
+- :class:`FEM_SimpLinearHeatConduction`
 
 
 .. toctree::
@@ -35,6 +46,14 @@ Full API documentation: :mod:`sktopt.fea`
 
 .. currentmodule:: sktopt.tools
 
+**Key Utilities**
+
+- :class:`HistoryCollection`
+- :class:`SchedulerConfig`
+- :class:`SchedulerStepAccelerating`
+- :class:`SchedulerStep`
+- :class:`SchedulerSawtoothDecay`
+
 
 .. toctree::
    :maxdepth: 1
@@ -44,3 +63,15 @@ Full API documentation: :mod:`sktopt.fea`
    mesh.utils
 
 .. currentmodule:: sktopt.mesh
+
+**Key Modules & Utilities**
+
+- :mod:`sktopt.mesh.toy_problem`
+- :mod:`sktopt.mesh.loader`
+
+.. currentmodule:: sktopt.task
+
+**Task Classes**
+
+- :class:`LinearElasticity`
+- :class:`LinearHeatConduction`
