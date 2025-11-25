@@ -151,7 +151,7 @@ If you use Scikit Topt in your research or software, please cite it as:
   publisher    = {Zenodo},
   doi          = {10.5281/zenodo.15441499},
   url          = {https://doi.org/10.5281/zenodo.15441499},
-  note         = {Version 0.3.1}
+  note         = {Version 0.3.2}
 }
 ```
 
