@@ -14,13 +14,13 @@ Full API documentation: :mod:`sktopt.core`
 
 Key classes:
 
-- :class:`sktopt.DensityMethodConfig`
-- :class:`sktopt.DensityMethod_OC_Config`
-- :class:`sktopt.DensityMethod`
-- :class:`sktopt.OC_Config`
-- :class:`sktopt.OC_Optimizer`
-- :class:`sktopt.LogMOC_Config`
-- :class:`sktopt.LogMOC_Optimizer`
+- :class:`sktopt.core.DensityMethodConfig`
+- :class:`sktopt.core.DensityMethod_OC_Config`
+- :class:`sktopt.core.DensityMethod`
+- :class:`sktopt.core.OC_Config`
+- :class:`sktopt.core.OC_Optimizer`
+- :class:`sktopt.core.LogMOC_Config`
+- :class:`sktopt.core.LogMOC_Optimizer`
 
 
 Full API documentation: :mod:`sktopt.fea`
