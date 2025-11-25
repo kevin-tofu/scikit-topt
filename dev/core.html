@@ -53,11 +53,78 @@
 <li class="toctree-l1"><a class="reference internal" href="formulation.html">Topology Optimization Algorithm Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization Algorithms in Density-Based Topology Optimization</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="api.html">API Reference</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">sktopt.core</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">sktopt.core</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sktopt.core.DensityMethod"><code class="docutils literal notranslate"><span class="pre">DensityMethod</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethod.cfg"><code class="docutils literal notranslate"><span class="pre">DensityMethod.cfg</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethod.tsk"><code class="docutils literal notranslate"><span class="pre">DensityMethod.tsk</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethod.fem"><code class="docutils literal notranslate"><span class="pre">DensityMethod.fem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethod.schedulers"><code class="docutils literal notranslate"><span class="pre">DensityMethod.schedulers</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethod.initialize_params"><code class="docutils literal notranslate"><span class="pre">DensityMethod.initialize_params()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#sktopt.core.DensityMethodConfig"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.dst_path"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.dst_path</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.interpolation"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.interpolation</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.record_times"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.record_times</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.max_iters"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.max_iters</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.beta_eta"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.beta_eta</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.eta"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.eta</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.p"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.p</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.vol_frac"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.vol_frac</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.beta"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.beta</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.filter_type"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.filter_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.filter_radius"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.filter_radius</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.E_min_coeff"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.E_min_coeff</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.rho_min"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.rho_min</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.rho_max"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.rho_max</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.restart"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.restart</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.restart_from"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.restart_from</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.export_img"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.export_img</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.export_img_opaque"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.export_img_opaque</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.design_dirichlet"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.design_dirichlet</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.sensitivity_filter"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.sensitivity_filter</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.solver_option"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.solver_option</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.scaling"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.scaling</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.n_joblib"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.n_joblib</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.check_convergence"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.check_convergence</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.tol_rho_change"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.tol_rho_change</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethodConfig.tol_kkt_residual"><code class="docutils literal notranslate"><span class="pre">DensityMethodConfig.tol_kkt_residual</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#sktopt.core.DensityMethod_OC_Config"><code class="docutils literal notranslate"><span class="pre">DensityMethod_OC_Config</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethod_OC_Config.lambda_lower"><code class="docutils literal notranslate"><span class="pre">DensityMethod_OC_Config.lambda_lower</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethod_OC_Config.lambda_upper"><code class="docutils literal notranslate"><span class="pre">DensityMethod_OC_Config.lambda_upper</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethod_OC_Config.percentile"><code class="docutils literal notranslate"><span class="pre">DensityMethod_OC_Config.percentile</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.DensityMethod_OC_Config.move_limit"><code class="docutils literal notranslate"><span class="pre">DensityMethod_OC_Config.move_limit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#sktopt.core.LogMOC_Config"><code class="docutils literal notranslate"><span class="pre">LogMOC_Config</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.LogMOC_Config.interpolation"><code class="docutils literal notranslate"><span class="pre">LogMOC_Config.interpolation</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.LogMOC_Config.mu_p"><code class="docutils literal notranslate"><span class="pre">LogMOC_Config.mu_p</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.LogMOC_Config.lambda_v"><code class="docutils literal notranslate"><span class="pre">LogMOC_Config.lambda_v</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.LogMOC_Config.lambda_decay"><code class="docutils literal notranslate"><span class="pre">LogMOC_Config.lambda_decay</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#sktopt.core.LogMOC_Optimizer"><code class="docutils literal notranslate"><span class="pre">LogMOC_Optimizer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.LogMOC_Optimizer.cfg"><code class="docutils literal notranslate"><span class="pre">LogMOC_Optimizer.cfg</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.LogMOC_Optimizer.tsk"><code class="docutils literal notranslate"><span class="pre">LogMOC_Optimizer.tsk</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.LogMOC_Optimizer.recorder"><code class="docutils literal notranslate"><span class="pre">LogMOC_Optimizer.recorder</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#sktopt.core.OC_Config"><code class="docutils literal notranslate"><span class="pre">OC_Config</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.OC_Config.interpolation"><code class="docutils literal notranslate"><span class="pre">OC_Config.interpolation</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.OC_Config.eta"><code class="docutils literal notranslate"><span class="pre">OC_Config.eta</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#sktopt.core.OC_Optimizer"><code class="docutils literal notranslate"><span class="pre">OC_Optimizer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.core.OC_Optimizer.config"><code class="docutils literal notranslate"><span class="pre">OC_Optimizer.config</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="fea.html">sktopt.fea</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tools.html">sktopt.tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mesh.html">sktopt.mesh</a></li>
-<li class="toctree-l2"><a class="reference internal" href="mesh.utils.html">sktopt.mesh.utils</a></li>
 </ul>
 </li>
 </ul>
@@ -87,11 +154,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="sktopt-core">
-<span id="core-api"></span><h1>sktopt.core<a class="headerlink" href="#sktopt-core" title="Link to this heading"></a></h1>
+  <section id="module-sktopt.core">
+<span id="sktopt-core"></span><span id="core-api"></span><h1>sktopt.core<a class="headerlink" href="#module-sktopt.core" title="Link to this heading"></a></h1>
 <dl class="py class">
-<dt class="sig sig-object py">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">DensityMethod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DensityMethodConfig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tsk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">FEMDomain</span></span></em><span class="sig-paren">)</span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethod">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">DensityMethod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#sktopt.core.DensityMethodConfig" title="sktopt.core.DensityMethodConfig"><span class="pre">DensityMethodConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">tsk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mesh.html#sktopt.mesh.FEMDomain" title="sktopt.mesh.FEMDomain"><span class="pre">FEMDomain</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.core.DensityMethod" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethodBase</span></code></p>
 <p>Core driver for sensitivity-based density topology optimization.</p>
 <p>This class implements the common workflow shared by multiple
@@ -133,46 +200,46 @@ optimization in Scikit-Topt. All algorithm-specific update logic
 (e.g., OC / MOC density updates, dual variable handling) must be
 implemented in subclasses by overriding <code class="xref py py-meth docutils literal notranslate"><span class="pre">rho_update()</span></code>.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">cfg</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethod.cfg">
+<span class="sig-name descname"><span class="pre">cfg</span></span><a class="headerlink" href="#sktopt.core.DensityMethod.cfg" title="Link to this definition"></a></dt>
 <dd><p>Configuration object holding numerical and algorithmic settings,
 such as interpolation model, filters, continuation schedules,
 and solver options.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>DensityMethodConfig</p>
+<dd class="field-odd"><p><a class="reference internal" href="#sktopt.core.DensityMethodConfig" title="sktopt.core.DensityMethodConfig">DensityMethodConfig</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">tsk</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethod.tsk">
+<span class="sig-name descname"><span class="pre">tsk</span></span><a class="headerlink" href="#sktopt.core.DensityMethod.tsk" title="Link to this definition"></a></dt>
 <dd><p>Problem description including mesh, basis, boundary conditions,
 and load vectors.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>sktopt.mesh.FEMDomain</p>
+<dd class="field-odd"><p><a class="reference internal" href="mesh.html#sktopt.mesh.FEMDomain" title="sktopt.mesh.FEMDomain">sktopt.mesh.FEMDomain</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">fem</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethod.fem">
+<span class="sig-name descname"><span class="pre">fem</span></span><a class="headerlink" href="#sktopt.core.DensityMethod.fem" title="Link to this definition"></a></dt>
 <dd><p>Finite element solver used for state and sensitivity evaluation,
 constructed from <code class="docutils literal notranslate"><span class="pre">tsk</span></code> and <code class="docutils literal notranslate"><span class="pre">cfg</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>sktopt.fea.FEM_SimpLinearElasticity or           sktopt.fea.FEM_SimpLinearHeatConduction</p>
+<dd class="field-odd"><p><a class="reference internal" href="fea.html#sktopt.fea.FEM_SimpLinearElasticity" title="sktopt.fea.FEM_SimpLinearElasticity">sktopt.fea.FEM_SimpLinearElasticity</a> or           <a class="reference internal" href="fea.html#sktopt.fea.FEM_SimpLinearHeatConduction" title="sktopt.fea.FEM_SimpLinearHeatConduction">sktopt.fea.FEM_SimpLinearHeatConduction</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">schedulers</span></span></dt>
-<dd><p>Collection of <code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code> instances
+<dt class="sig sig-object py" id="sktopt.core.DensityMethod.schedulers">
+<span class="sig-name descname"><span class="pre">schedulers</span></span><a class="headerlink" href="#sktopt.core.DensityMethod.schedulers" title="Link to this definition"></a></dt>
+<dd><p>Collection of <a class="reference internal" href="tools.html#sktopt.tools.SchedulerConfig" title="sktopt.tools.SchedulerConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></a> instances
 controlling continuation of parameters such as <code class="docutils literal notranslate"><span class="pre">p</span></code>, <code class="docutils literal notranslate"><span class="pre">vol_frac</span></code>,
 <code class="docutils literal notranslate"><span class="pre">beta</span></code>, <code class="docutils literal notranslate"><span class="pre">move_limit</span></code>, <code class="docutils literal notranslate"><span class="pre">percentile</span></code>, and <code class="docutils literal notranslate"><span class="pre">filter_radius</span></code>.</p>
 <dl class="field-list simple">
@@ -183,8 +250,8 @@ controlling continuation of parameters such as <code class="docutils literal not
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">initialize_params</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethod.initialize_params">
+<span class="sig-name descname"><span class="pre">initialize_params</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.core.DensityMethod.initialize_params" title="Link to this definition"></a></dt>
 <dd><p>Initialize parameters and preallocate work arrays for density-based topology
 optimization using the SIMP method.</p>
 <p>This prepares all arrays required for the iterative loop. By preallocating and
@@ -225,20 +292,20 @@ reusing arrays in-place, repeated allocations are avoided and performance improv
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">DensityMethodConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dst_path:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'./result/pytests'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation:</span> <span class="pre">~typing.Literal['SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'RAMP']</span> <span class="pre">=</span> <span class="pre">'SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">record_times:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vol_frac:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_type:</span> <span class="pre">~typing.Literal['spacial'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'helmholtz']</span> <span class="pre">=</span> <span class="pre">'helmholtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_radius:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_from:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img_opaque:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_dirichlet:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity_filter:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">~typing.Literal['spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'cg_pyamg']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_convergence:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol_rho_change:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol_kkt_residual:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.005</span></span></em><span class="sig-paren">)</span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">DensityMethodConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dst_path:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'./result/pytests'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation:</span> <span class="pre">~typing.Literal['SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'RAMP']</span> <span class="pre">=</span> <span class="pre">'SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">record_times:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vol_frac:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_type:</span> <span class="pre">~typing.Literal['spacial'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'helmholtz']</span> <span class="pre">=</span> <span class="pre">'helmholtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_radius:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_from:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img_opaque:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_dirichlet:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity_filter:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">~typing.Literal['spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'cg_pyamg']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_convergence:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol_rho_change:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol_kkt_residual:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.005</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.core.DensityMethodConfig" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Configuration for density-based topology optimization (SIMP).</p>
 <p>This configuration collects the main numerical settings for
 density-based topology optimization, including interpolation models,
-continuation schedules (via <code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code>),
+continuation schedules (via <a class="reference internal" href="tools.html#sktopt.tools.SchedulerConfig" title="sktopt.tools.SchedulerConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></a>),
 filtering/projection parameters, and solver options. It is intended
 for sensitivity-based methods such as SIMP and RAMP and is shared by
 both OC and MOC-style update rules.</p>
 <section id="notes-on-continuation">
 <h2>Notes on continuation<a class="headerlink" href="#notes-on-continuation" title="Link to this heading"></a></h2>
 <p>Parameters that change during optimization are represented by
-<code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code>:</p>
+<a class="reference internal" href="tools.html#sktopt.tools.SchedulerConfig" title="sktopt.tools.SchedulerConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></a>:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">p</span></code>: Penalization power (e.g., 1.0 → 3.0).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">vol_frac</span></code>: Target volume fraction (often constant, e.g. 0.8).</p></li>
@@ -251,8 +318,8 @@ both OC and MOC-style update rules.</p>
 <code class="xref py py-func docutils literal notranslate"><span class="pre">SchedulerConfig.constant()</span></code>) and may include shape parameters
 such as <code class="docutils literal notranslate"><span class="pre">curvature</span></code> for accelerating schedules.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">dst_path</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.dst_path">
+<span class="sig-name descname"><span class="pre">dst_path</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.dst_path" title="Link to this definition"></a></dt>
 <dd><p>Output directory for results and logs.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -262,8 +329,8 @@ such as <code class="docutils literal notranslate"><span class="pre">curvature</
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">interpolation</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.interpolation">
+<span class="sig-name descname"><span class="pre">interpolation</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.interpolation" title="Link to this definition"></a></dt>
 <dd><p>Material interpolation model used for penalization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -273,8 +340,8 @@ such as <code class="docutils literal notranslate"><span class="pre">curvature</
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">record_times</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.record_times">
+<span class="sig-name descname"><span class="pre">record_times</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.record_times" title="Link to this definition"></a></dt>
 <dd><p>Number of snapshots recorded during optimization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -284,8 +351,8 @@ such as <code class="docutils literal notranslate"><span class="pre">curvature</
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">max_iters</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.max_iters">
+<span class="sig-name descname"><span class="pre">max_iters</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.max_iters" title="Link to this definition"></a></dt>
 <dd><p>Maximum number of optimization iterations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -295,8 +362,8 @@ such as <code class="docutils literal notranslate"><span class="pre">curvature</
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">beta_eta</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.beta_eta">
+<span class="sig-name descname"><span class="pre">beta_eta</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.beta_eta" title="Link to this definition"></a></dt>
 <dd><p>Additional damping parameter used in OC/MOC-style updates
 (for example, to smooth dual variables or stabilize
 multiplicative/log-space updates).</p>
@@ -308,8 +375,8 @@ multiplicative/log-space updates).</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">eta</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.eta">
+<span class="sig-name descname"><span class="pre">eta</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.eta" title="Link to this definition"></a></dt>
 <dd><p>Damping or learning-rate–like exponent used in the OC/MOC
 multiplicative update rule.</p>
 <dl class="field-list simple">
@@ -320,45 +387,45 @@ multiplicative update rule.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">p</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.p">
+<span class="sig-name descname"><span class="pre">p</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.p" title="Link to this definition"></a></dt>
 <dd><p>Continuation schedule for the penalization power.
 Default: <code class="docutils literal notranslate"><span class="pre">step(init_value=1.0,</span> <span class="pre">target_value=3.0,</span> <span class="pre">num_steps=3)</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></p>
+<dd class="field-odd"><p><a class="reference internal" href="tools.html#sktopt.tools.SchedulerConfig" title="sktopt.tools.SchedulerConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">vol_frac</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.vol_frac">
+<span class="sig-name descname"><span class="pre">vol_frac</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.vol_frac" title="Link to this definition"></a></dt>
 <dd><p>Schedule for the target volume fraction constraint.
 Default: <code class="docutils literal notranslate"><span class="pre">constant(target_value=0.8)</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></p>
+<dd class="field-odd"><p><a class="reference internal" href="tools.html#sktopt.tools.SchedulerConfig" title="sktopt.tools.SchedulerConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">beta</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.beta">
+<span class="sig-name descname"><span class="pre">beta</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.beta" title="Link to this definition"></a></dt>
 <dd><p>Continuation schedule for Heaviside / projection sharpness (β).
 Default: <code class="docutils literal notranslate"><span class="pre">step_accelerating(init_value=1.0,</span> <span class="pre">target_value=2.0,</span>
 <span class="pre">num_steps=3,</span> <span class="pre">curvature=2.0)</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></p>
+<dd class="field-odd"><p><a class="reference internal" href="tools.html#sktopt.tools.SchedulerConfig" title="sktopt.tools.SchedulerConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">filter_type</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.filter_type">
+<span class="sig-name descname"><span class="pre">filter_type</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.filter_type" title="Link to this definition"></a></dt>
 <dd><p>Type of filter applied to the density field (spatial or Helmholtz).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -368,20 +435,20 @@ Default: <code class="docutils literal notranslate"><span class="pre">step_accel
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">filter_radius</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.filter_radius">
+<span class="sig-name descname"><span class="pre">filter_radius</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.filter_radius" title="Link to this definition"></a></dt>
 <dd><p>Schedule for the filter radius.
 Default: <code class="docutils literal notranslate"><span class="pre">constant(target_value=0.01)</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></p>
+<dd class="field-odd"><p><a class="reference internal" href="tools.html#sktopt.tools.SchedulerConfig" title="sktopt.tools.SchedulerConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">E_min_coeff</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.E_min_coeff">
+<span class="sig-name descname"><span class="pre">E_min_coeff</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.E_min_coeff" title="Link to this definition"></a></dt>
 <dd><p>Proportional constant that defines the minimum Young’s modulus
 as <code class="docutils literal notranslate"><span class="pre">E_min_coeff</span> <span class="pre">*</span> <span class="pre">E0</span></code> (typically <span class="math notranslate nohighlight">\(10^{-3}\)</span>).</p>
 <dl class="field-list simple">
@@ -392,8 +459,8 @@ as <code class="docutils literal notranslate"><span class="pre">E_min_coeff</spa
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">rho_min</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.rho_min">
+<span class="sig-name descname"><span class="pre">rho_min</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.rho_min" title="Link to this definition"></a></dt>
 <dd><p>Minimum density clamp to avoid singular stiffness matrices.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -403,8 +470,8 @@ as <code class="docutils literal notranslate"><span class="pre">E_min_coeff</spa
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">rho_max</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.rho_max">
+<span class="sig-name descname"><span class="pre">rho_max</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.rho_max" title="Link to this definition"></a></dt>
 <dd><p>Maximum density clamp (typically 1.0).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -414,8 +481,8 @@ as <code class="docutils literal notranslate"><span class="pre">E_min_coeff</spa
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">restart</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.restart">
+<span class="sig-name descname"><span class="pre">restart</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.restart" title="Link to this definition"></a></dt>
 <dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, resume optimization from a saved state in <code class="docutils literal notranslate"><span class="pre">dst_path</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -425,8 +492,8 @@ as <code class="docutils literal notranslate"><span class="pre">E_min_coeff</spa
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">restart_from</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.restart_from">
+<span class="sig-name descname"><span class="pre">restart_from</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.restart_from" title="Link to this definition"></a></dt>
 <dd><p>Iteration index to resume from. Use <code class="docutils literal notranslate"><span class="pre">-1</span></code> to auto-detect the
 latest checkpoint.</p>
 <dl class="field-list simple">
@@ -437,8 +504,8 @@ latest checkpoint.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">export_img</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.export_img">
+<span class="sig-name descname"><span class="pre">export_img</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.export_img" title="Link to this definition"></a></dt>
 <dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, export images of the density field during optimization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -448,8 +515,8 @@ latest checkpoint.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">export_img_opaque</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.export_img_opaque">
+<span class="sig-name descname"><span class="pre">export_img_opaque</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.export_img_opaque" title="Link to this definition"></a></dt>
 <dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, use opaque rendering for exported images.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -459,8 +526,8 @@ latest checkpoint.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">design_dirichlet</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.design_dirichlet">
+<span class="sig-name descname"><span class="pre">design_dirichlet</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.design_dirichlet" title="Link to this definition"></a></dt>
 <dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, Dirichlet boundary elements are included in the
 design domain.</p>
 <dl class="field-list simple">
@@ -471,8 +538,8 @@ design domain.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">sensitivity_filter</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.sensitivity_filter">
+<span class="sig-name descname"><span class="pre">sensitivity_filter</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.sensitivity_filter" title="Link to this definition"></a></dt>
 <dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, apply filtering directly to sensitivity fields
 in addition to density filtering.</p>
 <dl class="field-list simple">
@@ -483,8 +550,8 @@ in addition to density filtering.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">solver_option</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.solver_option">
+<span class="sig-name descname"><span class="pre">solver_option</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.solver_option" title="Link to this definition"></a></dt>
 <dd><p>Linear solver for the state analysis.
 <code class="docutils literal notranslate"><span class="pre">&quot;cg_pyamg&quot;</span></code> enables multigrid-accelerated CG via PyAMG.</p>
 <dl class="field-list simple">
@@ -495,8 +562,8 @@ in addition to density filtering.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">scaling</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.scaling">
+<span class="sig-name descname"><span class="pre">scaling</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.scaling" title="Link to this definition"></a></dt>
 <dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, apply length/force scaling to normalize geometry
 and loads for improved numerical conditioning.</p>
 <dl class="field-list simple">
@@ -507,8 +574,8 @@ and loads for improved numerical conditioning.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">n_joblib</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.n_joblib">
+<span class="sig-name descname"><span class="pre">n_joblib</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.n_joblib" title="Link to this definition"></a></dt>
 <dd><p>Number of parallel workers used in joblib-enabled sections.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -518,8 +585,8 @@ and loads for improved numerical conditioning.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">check_convergence</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.check_convergence">
+<span class="sig-name descname"><span class="pre">check_convergence</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.check_convergence" title="Link to this definition"></a></dt>
 <dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code>, enable automatic convergence checking during optimization.
 Convergence is determined by two criteria:</p>
 <ol class="arabic simple">
@@ -535,8 +602,8 @@ Convergence is determined by two criteria:</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">tol_rho_change</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.tol_rho_change">
+<span class="sig-name descname"><span class="pre">tol_rho_change</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.tol_rho_change" title="Link to this definition"></a></dt>
 <dd><p>Tolerance for the maximum per-iteration density change.
 Convergence is considered achieved when:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">max</span><span class="p">(</span><span class="o">|</span><span class="n">rho_new</span> <span class="o">-</span> <span class="n">rho_old</span><span class="o">|</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">tol_rho_change</span>
@@ -551,8 +618,8 @@ Convergence is considered achieved when:</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">tol_kkt_residual</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethodConfig.tol_kkt_residual">
+<span class="sig-name descname"><span class="pre">tol_kkt_residual</span></span><a class="headerlink" href="#sktopt.core.DensityMethodConfig.tol_kkt_residual" title="Link to this definition"></a></dt>
 <dd><p>Tolerance for the KKT-style stationarity residual.</p>
 <dl class="simple">
 <dt>For OC:</dt><dd><p>The residual is computed as the infinity norm of the Lagrangian
@@ -578,18 +645,18 @@ measure.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">DensityMethod_OC_Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dst_path:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'./result/pytests'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation:</span> <span class="pre">~typing.Literal['SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'RAMP']</span> <span class="pre">=</span> <span class="pre">'SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">record_times:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vol_frac:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_type:</span> <span class="pre">~typing.Literal['spacial'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'helmholtz']</span> <span class="pre">=</span> <span class="pre">'helmholtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_radius:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_from:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img_opaque:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_dirichlet:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity_filter:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">~typing.Literal['spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'cg_pyamg']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_convergence:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol_rho_change:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol_kkt_residual:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_lower:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1e-07</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_upper:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">10000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percentile:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">move_limit:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethodConfig</span></code></p>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethod_OC_Config">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">DensityMethod_OC_Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dst_path:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'./result/pytests'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation:</span> <span class="pre">~typing.Literal['SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'RAMP']</span> <span class="pre">=</span> <span class="pre">'SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">record_times:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vol_frac:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_type:</span> <span class="pre">~typing.Literal['spacial'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'helmholtz']</span> <span class="pre">=</span> <span class="pre">'helmholtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_radius:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_from:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img_opaque:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_dirichlet:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity_filter:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">~typing.Literal['spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'cg_pyamg']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_convergence:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol_rho_change:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol_kkt_residual:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_lower:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1e-07</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_upper:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">10000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percentile:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">move_limit:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.core.DensityMethod_OC_Config" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#sktopt.core.DensityMethodConfig" title="sktopt.core.DensityMethodConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethodConfig</span></code></a></p>
 <p>Configuration class for OC-style density updates.</p>
-<p>This subclass of <code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethodConfig</span></code> adds parameters that are
+<p>This subclass of <a class="reference internal" href="#sktopt.core.DensityMethodConfig" title="sktopt.core.DensityMethodConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethodConfig</span></code></a> adds parameters that are
 specific to Optimality Criteria (OC) and related multiplicative update
 schemes. It controls the move-limit strategy, optional percentile-based
 sensitivity scaling, and the bracket for the Lagrange multiplier used
 in the volume-constraint bisection.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">lambda_lower</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethod_OC_Config.lambda_lower">
+<span class="sig-name descname"><span class="pre">lambda_lower</span></span><a class="headerlink" href="#sktopt.core.DensityMethod_OC_Config.lambda_lower" title="Link to this definition"></a></dt>
 <dd><p>Lower bound for the Lagrange multiplier used in the bisection
 enforcing the volume constraint. Must be strictly positive.</p>
 <dl class="field-list simple">
@@ -600,8 +667,8 @@ enforcing the volume constraint. Must be strictly positive.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">lambda_upper</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethod_OC_Config.lambda_upper">
+<span class="sig-name descname"><span class="pre">lambda_upper</span></span><a class="headerlink" href="#sktopt.core.DensityMethod_OC_Config.lambda_upper" title="Link to this definition"></a></dt>
 <dd><p>Upper bound for the Lagrange multiplier used in the bisection
 enforcing the volume constraint.</p>
 <dl class="field-list simple">
@@ -612,28 +679,28 @@ enforcing the volume constraint.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">percentile</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethod_OC_Config.percentile">
+<span class="sig-name descname"><span class="pre">percentile</span></span><a class="headerlink" href="#sktopt.core.DensityMethod_OC_Config.percentile" title="Link to this definition"></a></dt>
 <dd><p>Optional schedule for percentile-based scaling of sensitivity
 fields. When set to <code class="docutils literal notranslate"><span class="pre">SchedulerConfig.none()</span></code>, percentile
 scaling is disabled and raw sensitivities are used.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></p>
+<dd class="field-odd"><p><a class="reference internal" href="tools.html#sktopt.tools.SchedulerConfig" title="sktopt.tools.SchedulerConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">move_limit</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.DensityMethod_OC_Config.move_limit">
+<span class="sig-name descname"><span class="pre">move_limit</span></span><a class="headerlink" href="#sktopt.core.DensityMethod_OC_Config.move_limit" title="Link to this definition"></a></dt>
 <dd><p>Schedule for the OC move limit applied to density updates.
 By default, a sawtooth-decay schedule is used, e.g.
 <code class="docutils literal notranslate"><span class="pre">sawtooth_decay(&quot;move_limit&quot;,</span> <span class="pre">0.3,</span> <span class="pre">0.1,</span> <span class="pre">3)</span></code>, which gradually
 tightens the allowed per-iteration change in density.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></p>
+<dd class="field-odd"><p><a class="reference internal" href="tools.html#sktopt.tools.SchedulerConfig" title="sktopt.tools.SchedulerConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -641,9 +708,9 @@ tightens the allowed per-iteration change in density.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">LogMOC_Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dst_path:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'./result/pytests'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation:</span> <span class="pre">~typing.Literal['SIMP']</span> <span class="pre">=</span> <span class="pre">'SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">record_times:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vol_frac:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_type:</span> <span class="pre">~typing.Literal['spacial'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'helmholtz']</span> <span class="pre">=</span> <span class="pre">'helmholtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_radius:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_from:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img_opaque:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_dirichlet:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity_filter:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">~typing.Literal['spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'cg_pyamg']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_convergence:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol_rho_change:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol_kkt_residual:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_lower:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1e-07</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_upper:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">10000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percentile:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">move_limit:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_p:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_v:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_decay:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.7</span></span></em><span class="sig-paren">)</span></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethod_OC_Config</span></code></p>
+<dt class="sig sig-object py" id="sktopt.core.LogMOC_Config">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">LogMOC_Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dst_path:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'./result/pytests'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation:</span> <span class="pre">~typing.Literal['SIMP']</span> <span class="pre">=</span> <span class="pre">'SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">record_times:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vol_frac:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_type:</span> <span class="pre">~typing.Literal['spacial'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'helmholtz']</span> <span class="pre">=</span> <span class="pre">'helmholtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_radius:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_from:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img_opaque:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_dirichlet:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity_filter:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">~typing.Literal['spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'cg_pyamg']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_convergence:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol_rho_change:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol_kkt_residual:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_lower:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1e-07</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_upper:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">10000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percentile:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">move_limit:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_p:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_v:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_decay:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.7</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.core.LogMOC_Config" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#sktopt.core.DensityMethod_OC_Config" title="sktopt.core.DensityMethod_OC_Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethod_OC_Config</span></code></a></p>
 <p>Configuration for a log-space, OC-like multiplicative density update.</p>
 <p>This configuration supports a variant of the Optimality Criteria (OC)
 method implemented in <span class="math notranslate nohighlight">\(\log \rho\)</span>-space. The update remains
@@ -661,8 +728,8 @@ driven by the volume error.</p>
 is clamped to avoid numerical instabilities and move limits are
 enforced in log-space.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">interpolation</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.LogMOC_Config.interpolation">
+<span class="sig-name descname"><span class="pre">interpolation</span></span><a class="headerlink" href="#sktopt.core.LogMOC_Config.interpolation" title="Link to this definition"></a></dt>
 <dd><p>Interpolation scheme used for material penalization. Currently
 fixed to <code class="docutils literal notranslate"><span class="pre">&quot;SIMP&quot;</span></code>.</p>
 <dl class="field-list simple">
@@ -673,10 +740,10 @@ fixed to <code class="docutils literal notranslate"><span class="pre">&quot;SIMP
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">mu_p</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.LogMOC_Config.mu_p">
+<span class="sig-name descname"><span class="pre">mu_p</span></span><a class="headerlink" href="#sktopt.core.LogMOC_Config.mu_p" title="Link to this definition"></a></dt>
 <dd><p>Gain used to convert the volume error into a dual update. Larger
-values make the dual variable <code class="xref py py-attr docutils literal notranslate"><span class="pre">lambda_v</span></code> react more strongly
+values make the dual variable <a class="reference internal" href="#sktopt.core.LogMOC_Config.lambda_v" title="sktopt.core.LogMOC_Config.lambda_v"><code class="xref py py-attr docutils literal notranslate"><span class="pre">lambda_v</span></code></a> react more strongly
 to constraint violations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -686,8 +753,8 @@ to constraint violations.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">lambda_v</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.LogMOC_Config.lambda_v">
+<span class="sig-name descname"><span class="pre">lambda_v</span></span><a class="headerlink" href="#sktopt.core.LogMOC_Config.lambda_v" title="Link to this definition"></a></dt>
 <dd><p>Initial value for the volume-related dual variable. This is used
 in the OC-like scaling term <span class="math notranslate nohighlight">\(-\partial C/\partial \rho
 / \lambda_v\)</span>.</p>
@@ -699,9 +766,9 @@ in the OC-like scaling term <span class="math notranslate nohighlight">\(-\parti
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">lambda_decay</span></span></dt>
-<dd><p>Decay factor in the EMA update of <code class="xref py py-attr docutils literal notranslate"><span class="pre">lambda_v</span></code>. Values closer
+<dt class="sig sig-object py" id="sktopt.core.LogMOC_Config.lambda_decay">
+<span class="sig-name descname"><span class="pre">lambda_decay</span></span><a class="headerlink" href="#sktopt.core.LogMOC_Config.lambda_decay" title="Link to this definition"></a></dt>
+<dd><p>Decay factor in the EMA update of <a class="reference internal" href="#sktopt.core.LogMOC_Config.lambda_v" title="sktopt.core.LogMOC_Config.lambda_v"><code class="xref py py-attr docutils literal notranslate"><span class="pre">lambda_v</span></code></a>. Values closer
 to 1.0 yield slower, smoother updates; smaller values react more
 quickly to changes in the volume error.</p>
 <dl class="field-list simple">
@@ -714,9 +781,9 @@ quickly to changes in the volume error.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">LogMOC_Optimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LogMOC_Config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tsk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">FEMDomain</span></span></em><span class="sig-paren">)</span></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethod</span></code></p>
+<dt class="sig sig-object py" id="sktopt.core.LogMOC_Optimizer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">LogMOC_Optimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#sktopt.core.LogMOC_Config" title="sktopt.core.LogMOC_Config"><span class="pre">LogMOC_Config</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">tsk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mesh.html#sktopt.mesh.FEMDomain" title="sktopt.mesh.FEMDomain"><span class="pre">FEMDomain</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.core.LogMOC_Optimizer" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#sktopt.core.DensityMethod" title="sktopt.core.DensityMethod"><code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethod</span></code></a></p>
 <p>Topology optimization solver using a log-space, OC-like multiplicative update.</p>
 <p>This optimizer implements a density-based compliance minimization
 algorithm in which the classic OC multiplicative update is expressed
@@ -738,32 +805,32 @@ interval <span class="math notranslate nohighlight">\([\rho_{\min}, \rho_{\max}]
 improved numerical robustness while preserving the intuitive
 multiplicative structure.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">cfg</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.LogMOC_Optimizer.cfg">
+<span class="sig-name descname"><span class="pre">cfg</span></span><a class="headerlink" href="#sktopt.core.LogMOC_Optimizer.cfg" title="Link to this definition"></a></dt>
 <dd><p>Configuration object specifying the OC-like settings, including
 <code class="xref py py-attr docutils literal notranslate"><span class="pre">mu_p</span></code>, <code class="xref py py-attr docutils literal notranslate"><span class="pre">lambda_v</span></code>, EMA decay factors, and bounds on
 the densities and dual variables.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>LogMOC_Config</p>
+<dd class="field-odd"><p><a class="reference internal" href="#sktopt.core.LogMOC_Config" title="sktopt.core.LogMOC_Config">LogMOC_Config</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">tsk</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.LogMOC_Optimizer.tsk">
+<span class="sig-name descname"><span class="pre">tsk</span></span><a class="headerlink" href="#sktopt.core.LogMOC_Optimizer.tsk" title="Link to this definition"></a></dt>
 <dd><p>Finite element model (mesh, basis, boundary conditions and loads).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>sktopt.mesh.FEMDomain</p>
+<dd class="field-odd"><p><a class="reference internal" href="mesh.html#sktopt.mesh.FEMDomain" title="sktopt.mesh.FEMDomain">sktopt.mesh.FEMDomain</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">recorder</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.LogMOC_Optimizer.recorder">
+<span class="sig-name descname"><span class="pre">recorder</span></span><a class="headerlink" href="#sktopt.core.LogMOC_Optimizer.recorder" title="Link to this definition"></a></dt>
 <dd><p>Logger that stores histories of selected quantities such as
 <code class="docutils literal notranslate"><span class="pre">-dC</span></code>, <code class="docutils literal notranslate"><span class="pre">lambda_v</span></code>, volume error and KKT residuals.</p>
 <dl class="field-list simple">
@@ -776,17 +843,17 @@ the densities and dual variables.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">OC_Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dst_path:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'./result/pytests'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation:</span> <span class="pre">~typing.Literal['SIMP']</span> <span class="pre">=</span> <span class="pre">'SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">record_times:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vol_frac:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_type:</span> <span class="pre">~typing.Literal['spacial'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'helmholtz']</span> <span class="pre">=</span> <span class="pre">'helmholtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_radius:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_from:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img_opaque:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_dirichlet:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity_filter:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">~typing.Literal['spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'cg_pyamg']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_convergence:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol_rho_change:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol_kkt_residual:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_lower:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1e-07</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_upper:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">10000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percentile:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">move_limit:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethod_OC_Config</span></code></p>
+<dt class="sig sig-object py" id="sktopt.core.OC_Config">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">OC_Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dst_path:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'./result/pytests'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation:</span> <span class="pre">~typing.Literal['SIMP']</span> <span class="pre">=</span> <span class="pre">'SIMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">record_times:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_eta:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vol_frac:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_type:</span> <span class="pre">~typing.Literal['spacial'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'helmholtz']</span> <span class="pre">=</span> <span class="pre">'helmholtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_radius:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_from:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_img_opaque:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">design_dirichlet:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity_filter:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">~typing.Literal['spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'cg_pyamg']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaling:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_convergence:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol_rho_change:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol_kkt_residual:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_lower:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1e-07</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_upper:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">10000000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percentile:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">move_limit:</span> <span class="pre">~sktopt.tools.SchedulerConfig</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.core.OC_Config" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#sktopt.core.DensityMethod_OC_Config" title="sktopt.core.DensityMethod_OC_Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethod_OC_Config</span></code></a></p>
 <p>Optimality-Criteria (OC) configuration for density-based optimization.</p>
 <p>This class specializes <code class="xref py py-class docutils literal notranslate"><span class="pre">common_density.DensityMethod_OC_Config</span></code>
 for OC-style updates. The material interpolation is fixed to SIMP, and
 the projection threshold <code class="docutils literal notranslate"><span class="pre">eta</span></code> is controlled via a
-<code class="xref py py-class docutils literal notranslate"><span class="pre">sktopt.tools.SchedulerConfig</span></code>.</p>
+<a class="reference internal" href="tools.html#sktopt.tools.SchedulerConfig" title="sktopt.tools.SchedulerConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">sktopt.tools.SchedulerConfig</span></code></a>.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">interpolation</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.OC_Config.interpolation">
+<span class="sig-name descname"><span class="pre">interpolation</span></span><a class="headerlink" href="#sktopt.core.OC_Config.interpolation" title="Link to this definition"></a></dt>
 <dd><p>Material interpolation model. Fixed to “SIMP” for OC.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -796,14 +863,14 @@ the projection threshold <code class="docutils literal notranslate"><span class=
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">eta</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.OC_Config.eta">
+<span class="sig-name descname"><span class="pre">eta</span></span><a class="headerlink" href="#sktopt.core.OC_Config.eta" title="Link to this definition"></a></dt>
 <dd><p>Threshold (η) used in Heaviside projection / update logic.
 The default keeps η constant at 0.5 using a <code class="docutils literal notranslate"><span class="pre">Constant</span></code> scheduler.
 Pass a custom scheduler to run continuation (e.g., Step from 0.7 → 0.3).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>sktopt.tools.SchedulerConfig</p>
+<dd class="field-odd"><p><a class="reference internal" href="tools.html#sktopt.tools.SchedulerConfig" title="sktopt.tools.SchedulerConfig">sktopt.tools.SchedulerConfig</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -818,9 +885,9 @@ Pass a custom scheduler to run continuation (e.g., Step from 0.7 → 0.3).</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">OC_Optimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">OC_Config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tsk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">FEMDomain</span></span></em><span class="sig-paren">)</span></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethod</span></code></p>
+<dt class="sig sig-object py" id="sktopt.core.OC_Optimizer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.core.</span></span><span class="sig-name descname"><span class="pre">OC_Optimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#sktopt.core.OC_Config" title="sktopt.core.OC_Config"><span class="pre">OC_Config</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">tsk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mesh.html#sktopt.mesh.FEMDomain" title="sktopt.mesh.FEMDomain"><span class="pre">FEMDomain</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.core.OC_Optimizer" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#sktopt.core.DensityMethod" title="sktopt.core.DensityMethod"><code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethod</span></code></a></p>
 <p>Topology optimization solver using the classic Optimality Criteria (OC) method.
 This class implements the standard OC algorithm for compliance minimization problems.
 It uses a multiplicative density update formula derived from Karush-Kuhn-Tucker (KKT)
@@ -844,13 +911,13 @@ interpretability, and solid theoretical foundation.</p>
 <li><p>Well-established and widely validated in literature</p></li>
 </ul>
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">config</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.core.OC_Optimizer.config">
+<span class="sig-name descname"><span class="pre">config</span></span><a class="headerlink" href="#sktopt.core.OC_Optimizer.config" title="Link to this definition"></a></dt>
 <dd><p>Configuration object specifying the interpolation method, volume fraction,
 continuation settings, filter radius, and other numerical parameters.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>DensityMethodConfig</p>
+<dd class="field-odd"><p><a class="reference internal" href="#sktopt.core.DensityMethodConfig" title="sktopt.core.DensityMethodConfig">DensityMethodConfig</a></p>
 </dd>
 </dl>
 </dd></dl>
