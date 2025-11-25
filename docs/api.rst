@@ -50,8 +50,8 @@ For full details, see the module-specific pages below.
 
 - :class:`HistoryCollection`
 - :class:`SchedulerConfig`
-- :class:`SchedulerStepAccelerating`
 - :class:`SchedulerStep`
+- :class:`SchedulerStepAccelerating`
 - :class:`SchedulerSawtoothDecay`
 
 
@@ -60,18 +60,11 @@ For full details, see the module-specific pages below.
    :caption: Mesh and Task Utilities
 
    mesh
-   mesh.utils
 
 .. currentmodule:: sktopt.mesh
 
-**Key Modules & Utilities**
+**Key Modules**
 
-- :mod:`sktopt.mesh.toy_problem`
-- :mod:`sktopt.mesh.loader`
-
-.. currentmodule:: sktopt.task
-
-**Task Classes**
-
+- :class:`FEMDomain`
 - :class:`LinearElasticity`
 - :class:`LinearHeatConduction`

@@ -477,6 +477,48 @@ class SchedulerConfig:
 
 
 class Scheduler():
+    """
+    Scheduler for **discrete continuation** from an initial value to a target value.
+
+    This scheduler divides the iteration range into a fixed number of
+    equally-sized steps, and linearly interpolates the parameter value across
+    these steps. Each step produces a constant output, resulting in a staircase-
+    like transition.
+
+    Examples
+    --------
+    >>> cfg = SchedulerConfig.step(
+    ...     name="p",
+    ...     init_value=1.0,
+    ...     target_value=3.0,
+    ...     num_steps=5,
+    ...     iters_max=100
+    ... )
+    >>> scheduler = SchedulerStep("p", 1.0, 3.0, 5, 100)
+    >>> scheduler.value(1)
+    1.0
+    >>> scheduler.value(50)
+    2.0
+
+    Notes
+    -----
+    - This scheduler is appropriate for SIMP continuation (e.g., p = 1 → 3 → 4).
+    - The step index grows proportionally to the iteration count.
+    - Steps are evenly spaced unless `iters_max` is very small.
+
+    Parameters
+    ----------
+    name : str
+        Identifier for the scheduled parameter (e.g., ``"p"`` or ``"beta"``).
+    init_value : float
+        Starting value at the first step.
+    target_value : float
+        Final value at the last step.
+    num_steps : int
+        Number of discrete steps (including both endpoints).
+    iters_max : int
+        Total number of iterations used to map iteration → step.
+    """
     def __init__(
         self,
         name: str,
@@ -558,6 +600,53 @@ class Scheduler():
 
 
 class SchedulerStep(Scheduler):
+    """
+    Step-based continuation scheduler.
+
+    This scheduler implements a *discrete continuation* strategy in which
+    the parameter value (e.g., SIMP exponent ``p`` or projection sharpness
+    ``beta``) transitions from ``init_value`` to ``target_value`` across
+    ``num_steps`` equally sized stages. Each stage is active for
+    approximately ``iters_max / num_steps`` iterations.
+
+    Unlike gradual exponential schedules, this method produces distinct
+    “plateaus” in which the parameter remains constant for a block of
+    iterations before jumping to the next value. This is one of the common
+    continuation techniques used in density-based topology optimization.
+
+    Parameters
+    ----------
+    name : str
+        Identifier for the parameter being scheduled (e.g., ``"p"`` or ``"vol_frac"``).
+    init_value : float
+        Starting value of the scheduled parameter.
+    target_value : float
+        Final value of the scheduled parameter.
+    num_steps : int
+        Number of continuation steps (including both endpoints).
+    iters_max : int
+        Total number of iterations for the optimization process.
+
+    Notes
+    -----
+    - The actual scheduling logic is delegated to
+      :func:`schedule_step`.
+    - The value transitions linearly in ``num_steps`` discrete increments.
+
+    Examples
+    --------
+    >>> cfg = SchedulerConfig.step(
+    ...     name="p", init_value=1.0, target_value=3.0, num_steps=5, iters_max=100
+    ... )
+    >>> sched = Scheduler.from_config(cfg)
+    >>> sched.value(1)
+    1.0
+    >>> sched.value(50)
+    2.0
+    >>> sched.value(100)
+    3.0
+    """
+
     def __init__(
         self,
         name: str,
@@ -578,6 +667,53 @@ class SchedulerStep(Scheduler):
 
 
 class SchedulerStepAccelerating(Scheduler):
+    """
+    Nonlinear step-based continuation scheduler with acceleration.
+
+    This scheduler extends :class:`SchedulerStep` by introducing a
+    *curvature-controlled nonlinear interpolation*. Earlier stages change
+    slowly, while later stages accelerate more aggressively toward
+    ``target_value`` as determined by the ``curvature`` parameter.
+
+    Compared to the uniform Step schedule, this variant is useful when
+    early iterations require stability (small changes) and later iterations
+    benefit from rapid parameter adjustments.
+
+    Parameters
+    ----------
+    name : str
+        Identifier for the parameter being scheduled.
+    init_value : float
+        Starting value of the scheduled parameter.
+    target_value : float
+        Final value of the scheduled parameter.
+    num_steps : int
+        Number of discrete continuation steps.
+    iters_max : int, optional
+        Total number of optimization iterations.
+    curvature : float, optional
+        Nonlinearity exponent controlling acceleration.
+        Higher values → stronger acceleration near the final iterations.
+
+    Notes
+    -----
+    - Scheduling logic is delegated to :func:`schedule_step_accelerating`.
+    - Behaves similarly to a “power-law continuation”.
+    - Typically configured via :meth:`SchedulerConfig.step_accelerating`.
+
+    Examples
+    --------
+    >>> cfg = SchedulerConfig.step_accelerating(
+    ...     name="beta", init_value=1.0, target_value=8.0,
+    ...     num_steps=6, iters_max=120, curvature=3.0
+    ... )
+    >>> sched = Scheduler.from_config(cfg)
+    >>> sched.value(1)
+    1.0
+    >>> sched.value(100)  # accelerated toward the target
+    7.2
+    """
+
     def __init__(
         self,
         name: str,
@@ -599,6 +735,56 @@ class SchedulerStepAccelerating(Scheduler):
 
 
 class SchedulerSawtoothDecay(Scheduler):
+    """
+    Sawtooth-style cyclic decay scheduler.
+
+    This scheduler repeatedly decays a parameter from ``init_value`` to
+    ``target_value`` over each cycle, then resets sharply to ``init_value``.
+    The full optimization window of ``iters_max`` iterations is divided into
+    ``num_steps`` cycles.
+
+    This pattern is useful for:
+    - oscillatory move-limit control,
+    - alternating aggressive and conservative update phases,
+    - maintaining exploration ability in early cycles while enforcing
+      stability in later cycles.
+
+    Parameters
+    ----------
+    name : str
+        Name of the scheduled parameter (e.g., ``"move_limit"``).
+    init_value : float
+        Starting value at the beginning of each cycle.
+    target_value : float
+        Final (lowest) value reached at the end of each cycle.
+    num_steps : int
+        Number of decay cycles (sawtooth teeth).
+    iters_max : int, optional
+        Total iterations across which cycles are distributed.
+
+    Notes
+    -----
+    - Scheduling logic is delegated to :func:`schedule_sawtooth_decay`.
+    - Commonly used for move-limit modulation in OC/MOC updates.
+    - The value evolves linearly within each cycle.
+
+    Examples
+    --------
+    >>> cfg = SchedulerConfig.sawtooth_decay(
+    ...     name="move", init_value=0.3, target_value=0.1,
+    ...     iters_max=120, num_steps=4
+    ... )
+    >>> sched = Scheduler.from_config(cfg)
+    >>> sched.value(1)
+    0.3
+    >>> sched.value(30)
+    0.2
+    >>> sched.value(60)  # end of second cycle
+    0.1
+    >>> sched.value(61)  # reset at cycle 3
+    0.3
+    """
+
     def __init__(
         self,
         name: str,
