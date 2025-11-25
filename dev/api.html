@@ -52,11 +52,23 @@
 <li class="toctree-l1"><a class="reference internal" href="formulation.html">Topology Optimization Algorithm Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization Algorithms in Density-Based Topology Optimization</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="core.html">sktopt.core</a></li>
-<li class="toctree-l2"><a class="reference internal" href="fea.html">sktopt.fea</a></li>
-<li class="toctree-l2"><a class="reference internal" href="mesh.html">sktopt.mesh</a></li>
-<li class="toctree-l2"><a class="reference internal" href="mesh.utils.html">sktopt.mesh.utils</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tools.html">sktopt.tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#core-optimizers">Core Optimizers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="core.html">sktopt.core</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#finite-element-solvers">Finite Element Solvers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fea.html">sktopt.fea</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#tools">Tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tools.html">sktopt.tools</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#mesh-and-task-utilities">Mesh and Task Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="mesh.html">sktopt.mesh</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mesh.utils.html">sktopt.mesh.utils</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -87,19 +99,63 @@
              
   <section id="api-reference">
 <h1>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h1>
-<p>The following sections contain the API documentation for the core modules, classes, and functions.</p>
+<p>This section summarizes the main public API of Scikit-Topt.
+For full details, see the module-specific pages below.</p>
+<section id="core-optimizers">
+<h2>Core Optimizers<a class="headerlink" href="#core-optimizers" title="Link to this heading"></a></h2>
+<p>Key classes:</p>
+<ul class="simple">
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">sktopt.core.OC_Optimizer</span></code></p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">sktopt.core.LogMOC_Optimizer</span></code></p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">sktopt.core.DensityMethodConfig</span></code></p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">sktopt.core.OptimizationHistory</span></code></p></li>
+</ul>
+<p>Full API documentation: <code class="xref py py-mod docutils literal notranslate"><span class="pre">sktopt.core</span></code></p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Core Optimizers</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="core.html">sktopt.core</a></li>
 </ul>
 </div>
+</section>
+<section id="finite-element-solvers">
+<h2>Finite Element Solvers<a class="headerlink" href="#finite-element-solvers" title="Link to this heading"></a></h2>
+<p>Key classes:</p>
+<ul class="simple">
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">sktopt.fea.composer.LinearElasticity</span></code></p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">sktopt.fea.composer.SteadyStateHeatConduction</span></code></p></li>
+</ul>
+<p>Full API documentation: <code class="xref py py-mod docutils literal notranslate"><span class="pre">sktopt.fea</span></code></p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Finite Element Solvers</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="fea.html">sktopt.fea</a></li>
 </ul>
 </div>
+</section>
+<section id="tools">
+<h2>Tools<a class="headerlink" href="#tools" title="Link to this heading"></a></h2>
+<p>Key utilities:</p>
+<ul class="simple">
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">sktopt.tools.SchedulerConfig</span></code></p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">sktopt.tools.HistoryLogger</span></code></p></li>
+<li><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">sktopt.tools.logconf</span></code></p></li>
+</ul>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Tools to manage optimization</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tools.html">sktopt.tools</a></li>
+</ul>
+</div>
+</section>
+<section id="mesh-and-task-utilities">
+<h2>Mesh and Task Utilities<a class="headerlink" href="#mesh-and-task-utilities" title="Link to this heading"></a></h2>
+<p>Key utilities:</p>
+<ul class="simple">
+<li><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">sktopt.mesh.toy_problem</span></code></p></li>
+<li><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">sktopt.mesh.loader</span></code></p></li>
+<li><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">sktopt.mesh.utils</span></code></p></li>
+</ul>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Mesh and Task Utilities</span></p>
 <ul>
@@ -107,12 +163,7 @@
 <li class="toctree-l1"><a class="reference internal" href="mesh.utils.html">sktopt.mesh.utils</a></li>
 </ul>
 </div>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Tools to manage optimization</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="tools.html">sktopt.tools</a></li>
-</ul>
-</div>
+</section>
 </section>
 
 

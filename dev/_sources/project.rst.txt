@@ -4,6 +4,7 @@ Project
 
 **Purpose of this Project**
 
+The project name is **Scikit-Topt**, and the Python package name is `sktopt`.
 Scikit-Topt is a lightweight and flexible Python library for topology optimization  
 — a computational approach for determining the optimal shape and material layout of structures and components.
 
