@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Installation &mdash; scikit-topt 0.3.1 documentation</title>
+  <title>Installation &mdash; Scikit-Topt 0.3.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -14,7 +14,7 @@
     <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/installation.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=4621528c"></script>
+      <script src="_static/documentation_options.js?v=71d9d8e6"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -33,7 +33,7 @@
           
           
           <a href="index.html" class="icon icon-home">
-            scikit-topt
+            Scikit-Topt
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -48,7 +48,7 @@
 <li class="toctree-l1"><a class="reference internal" href="project.html">Project</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial Page</a></li>
-<li class="toctree-l1"><a class="reference internal" href="physics.html">Gourvan Equation and Weak Form</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Governing Equation and Weak Form</a></li>
 <li class="toctree-l1"><a class="reference internal" href="formulation.html">Topology Optimization Algorithm Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization Algorithms in Density-Based Topology Optimization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
@@ -60,7 +60,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">scikit-topt</a>
+          <a href="index.html">Scikit-Topt</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -80,8 +80,15 @@
              
   <section id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h1>
-<p>sktopt is a Python package that can be installed using pip or poetry.
-It is compatible with Python 3.11 - 3.12. To install sktopt, follow these steps:</p>
+<p>Scikit-Topt is a Python library distributed on PyPI as the package
+<code class="docutils literal notranslate"><span class="pre">scikit-topt</span></code> (imported as <code class="docutils literal notranslate"><span class="pre">sktopt</span></code>).
+It supports <strong>Python 3.10–3.13</strong>:</p>
+<ul class="simple">
+<li><p><strong>Python 3.10–3.12</strong>: fully supported and tested.</p></li>
+<li><p><strong>Python 3.13</strong>: core topology optimization works as normal,
+but VTK-based features (VTU export and image rendering) require
+PyVista/VTK, which do not currently provide wheels for Python 3.13.</p></li>
+</ul>
 <p><strong>Install sktopt</strong>:
 Open your terminal or command prompt and run one of the following commands:</p>
 <ul>

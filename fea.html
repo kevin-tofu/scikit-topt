@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>sktopt.fea &mdash; scikit-topt 0.3.1 documentation</title>
+  <title>sktopt.fea &mdash; Scikit-Topt 0.3.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -14,13 +14,13 @@
     <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/fea.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=4621528c"></script>
+      <script src="_static/documentation_options.js?v=71d9d8e6"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="sktopt.mesh" href="mesh.html" />
+    <link rel="next" title="sktopt.tools" href="tools.html" />
     <link rel="prev" title="sktopt.core" href="core.html" /> 
 </head>
 
@@ -33,7 +33,7 @@
           
           
           <a href="index.html" class="icon icon-home">
-            scikit-topt
+            Scikit-Topt
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -48,15 +48,31 @@
 <li class="toctree-l1"><a class="reference internal" href="project.html">Project</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial Page</a></li>
-<li class="toctree-l1"><a class="reference internal" href="physics.html">Gourvan Equation and Weak Form</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Governing Equation and Weak Form</a></li>
 <li class="toctree-l1"><a class="reference internal" href="formulation.html">Topology Optimization Algorithm Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization Algorithms in Density-Based Topology Optimization</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="api.html">API Reference</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="core.html">sktopt.core</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">sktopt.fea</a></li>
-<li class="toctree-l2"><a class="reference internal" href="mesh.html">sktopt.mesh</a></li>
-<li class="toctree-l2"><a class="reference internal" href="mesh.utils.html">sktopt.mesh.utils</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">sktopt.fea</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sktopt.fea.FEM_SimpLinearElasticity"><code class="docutils literal notranslate"><span class="pre">FEM_SimpLinearElasticity</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.fea.FEM_SimpLinearElasticity.task"><code class="docutils literal notranslate"><span class="pre">FEM_SimpLinearElasticity.task</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.fea.FEM_SimpLinearElasticity.E_max"><code class="docutils literal notranslate"><span class="pre">FEM_SimpLinearElasticity.E_max</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.fea.FEM_SimpLinearElasticity.E_min"><code class="docutils literal notranslate"><span class="pre">FEM_SimpLinearElasticity.E_min</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.fea.FEM_SimpLinearElasticity.density_interpolation"><code class="docutils literal notranslate"><span class="pre">FEM_SimpLinearElasticity.density_interpolation</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.fea.FEM_SimpLinearElasticity.solver_option"><code class="docutils literal notranslate"><span class="pre">FEM_SimpLinearElasticity.solver_option</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.fea.FEM_SimpLinearElasticity.n_joblib"><code class="docutils literal notranslate"><span class="pre">FEM_SimpLinearElasticity.n_joblib</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#sktopt.fea.FEM_SimpLinearHeatConduction"><code class="docutils literal notranslate"><span class="pre">FEM_SimpLinearHeatConduction</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.fea.FEM_SimpLinearHeatConduction.k_max"><code class="docutils literal notranslate"><span class="pre">FEM_SimpLinearHeatConduction.k_max</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.fea.FEM_SimpLinearHeatConduction.k_min"><code class="docutils literal notranslate"><span class="pre">FEM_SimpLinearHeatConduction.k_min</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.fea.FEM_SimpLinearHeatConduction._all"><code class="docutils literal notranslate"><span class="pre">FEM_SimpLinearHeatConduction.λ_all</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="tools.html">sktopt.tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mesh.html">sktopt.mesh</a></li>
 </ul>
 </li>
 </ul>
@@ -67,7 +83,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">scikit-topt</a>
+          <a href="index.html">Scikit-Topt</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -89,9 +105,9 @@
   <section id="sktopt-fea">
 <h1>sktopt.fea<a class="headerlink" href="#sktopt-fea" title="Link to this heading"></a></h1>
 <p>This package provides functions to handle finite element analysis</p>
-<dl class="py class">
-<dt class="sig sig-object py">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.fea.</span></span><span class="sig-name descname"><span class="pre">FEM_SimpLinearElasticity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task:</span> <span class="pre">LinearElasticity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density_interpolation:</span> <span class="pre">Callable</span> <span class="pre">=</span> <span class="pre">CPUDispatcher(&lt;function</span> <span class="pre">simp_interpolation&gt;)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">Literal['spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'cg_pyamg']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span></dt>
+<dl class="py class" id="module-sktopt.fea">
+<dt class="sig sig-object py" id="sktopt.fea.FEM_SimpLinearElasticity">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.fea.</span></span><span class="sig-name descname"><span class="pre">FEM_SimpLinearElasticity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task:</span> <span class="pre">LinearElasticity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density_interpolation:</span> <span class="pre">Callable</span> <span class="pre">=</span> <span class="pre">CPUDispatcher(&lt;function</span> <span class="pre">simp_interpolation&gt;)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">Literal['spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'cg_pyamg']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.fea.FEM_SimpLinearElasticity" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Finite Element solver for linear elasticity using SIMP interpolation.</p>
 <p>This class performs linear elastic FEM analysis where the Young’s modulus
@@ -105,7 +121,7 @@ optimization workflows, where element stiffness is expressed as:</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>task</strong> (<em>LinearElasticity</em>) – Predefined linear elasticity problem that includes mesh, material
+<li><p><strong>task</strong> (<a class="reference internal" href="mesh.html#sktopt.mesh.LinearElasticity" title="sktopt.mesh.LinearElasticity"><em>LinearElasticity</em></a>) – Predefined linear elasticity problem that includes mesh, material
 constants (E, ν), boundary conditions, load vectors, and basis
 definitions.</p></li>
 <li><p><strong>E_min_coeff</strong> (<em>float</em>) – <dl class="simple">
@@ -130,19 +146,19 @@ parallelization is used.</p></li>
 </dd>
 </dl>
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">task</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.fea.FEM_SimpLinearElasticity.task">
+<span class="sig-name descname"><span class="pre">task</span></span><a class="headerlink" href="#sktopt.fea.FEM_SimpLinearElasticity.task" title="Link to this definition"></a></dt>
 <dd><p>The underlying elasticity problem definition.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>LinearElasticity</p>
+<dd class="field-odd"><p><a class="reference internal" href="mesh.html#sktopt.mesh.LinearElasticity" title="sktopt.mesh.LinearElasticity">LinearElasticity</a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">E_max</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.fea.FEM_SimpLinearElasticity.E_max">
+<span class="sig-name descname"><span class="pre">E_max</span></span><a class="headerlink" href="#sktopt.fea.FEM_SimpLinearElasticity.E_max" title="Link to this definition"></a></dt>
 <dd><p>Maximum Young’s modulus (equal to <cite>task.E</cite>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -152,8 +168,8 @@ parallelization is used.</p></li>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">E_min</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.fea.FEM_SimpLinearElasticity.E_min">
+<span class="sig-name descname"><span class="pre">E_min</span></span><a class="headerlink" href="#sktopt.fea.FEM_SimpLinearElasticity.E_min" title="Link to this definition"></a></dt>
 <dd><p>Minimum Young’s modulus used for void regions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -163,8 +179,8 @@ parallelization is used.</p></li>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">density_interpolation</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.fea.FEM_SimpLinearElasticity.density_interpolation">
+<span class="sig-name descname"><span class="pre">density_interpolation</span></span><a class="headerlink" href="#sktopt.fea.FEM_SimpLinearElasticity.density_interpolation" title="Link to this definition"></a></dt>
 <dd><p>The SIMP / RAMP interpolation function used to compute material
 stiffness.</p>
 <dl class="field-list simple">
@@ -175,8 +191,8 @@ stiffness.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">solver_option</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.fea.FEM_SimpLinearElasticity.solver_option">
+<span class="sig-name descname"><span class="pre">solver_option</span></span><a class="headerlink" href="#sktopt.fea.FEM_SimpLinearElasticity.solver_option" title="Link to this definition"></a></dt>
 <dd><p>Selected linear solver backend.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -186,8 +202,8 @@ stiffness.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">n_joblib</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.fea.FEM_SimpLinearElasticity.n_joblib">
+<span class="sig-name descname"><span class="pre">n_joblib</span></span><a class="headerlink" href="#sktopt.fea.FEM_SimpLinearElasticity.n_joblib" title="Link to this definition"></a></dt>
 <dd><p>Number of parallel jobs for element computations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -225,21 +241,11 @@ stiffness.</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">fem</span><span class="o">.</span><span class="n">objectives_multi_load</span><span class="p">(</span><span class="n">rho</span><span class="p">)</span>  <span class="c1"># FEM compliaance given density</span>
 </pre></div>
 </div>
-<dl class="py method">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">energy_multi_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rho</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">u_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">objectives_multi_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rho</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">u_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.fea.</span></span><span class="sig-name descname"><span class="pre">FEM_SimpLinearHeatConduction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task:</span> <span class="pre">LinearHeatConduction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density_interpolation:</span> <span class="pre">Callable</span> <span class="pre">=</span> <span class="pre">CPUDispatcher(&lt;function</span> <span class="pre">simp_interpolation&gt;)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">Literal['spsolve']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span></dt>
+<dt class="sig sig-object py" id="sktopt.fea.FEM_SimpLinearHeatConduction">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.fea.</span></span><span class="sig-name descname"><span class="pre">FEM_SimpLinearHeatConduction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task:</span> <span class="pre">LinearHeatConduction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density_interpolation:</span> <span class="pre">Callable</span> <span class="pre">=</span> <span class="pre">CPUDispatcher(&lt;function</span> <span class="pre">simp_interpolation&gt;)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">Literal['spsolve']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.fea.FEM_SimpLinearHeatConduction" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Finite element solver for SIMP-based linear heat conduction problems
 with support for multi-load objectives and virtual Robin boundaries.</p>
@@ -251,7 +257,7 @@ topology optimization of boundary-dependent heat-transfer behavior.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>task</strong> (<em>LinearHeatConduction</em>) – Problem configuration containing mesh, basis, boundary conditions,
+<li><p><strong>task</strong> (<a class="reference internal" href="mesh.html#sktopt.mesh.LinearHeatConduction" title="sktopt.mesh.LinearHeatConduction"><em>LinearHeatConduction</em></a>) – Problem configuration containing mesh, basis, boundary conditions,
 load cases, and objective type.</p></li>
 <li><p><strong>E_min_coeff</strong> (<em>float</em>) – Minimum conductivity ratio used in the SIMP model. The actual minimum
 conductivity is <code class="docutils literal notranslate"><span class="pre">task.k</span> <span class="pre">*</span> <span class="pre">E_min_coeff</span></code>.</p></li>
@@ -265,8 +271,8 @@ Defaults to <code class="docutils literal notranslate"><span class="pre">compose
 </dd>
 </dl>
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">k_max</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.fea.FEM_SimpLinearHeatConduction.k_max">
+<span class="sig-name descname"><span class="pre">k_max</span></span><a class="headerlink" href="#sktopt.fea.FEM_SimpLinearHeatConduction.k_max" title="Link to this definition"></a></dt>
 <dd><p>Conductivity of solid material.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -276,8 +282,8 @@ Defaults to <code class="docutils literal notranslate"><span class="pre">compose
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">k_min</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.fea.FEM_SimpLinearHeatConduction.k_min">
+<span class="sig-name descname"><span class="pre">k_min</span></span><a class="headerlink" href="#sktopt.fea.FEM_SimpLinearHeatConduction.k_min" title="Link to this definition"></a></dt>
 <dd><p>Conductivity of void (or weak) material.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -287,8 +293,8 @@ Defaults to <code class="docutils literal notranslate"><span class="pre">compose
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">λ_all</span></span></dt>
+<dt class="sig sig-object py" id="sktopt.fea.FEM_SimpLinearHeatConduction._all">
+<span class="sig-name descname"><span class="pre">λ_all</span></span><a class="headerlink" href="#sktopt.fea.FEM_SimpLinearHeatConduction._all" title="Link to this definition"></a></dt>
 <dd><p>Stored adjoint fields for all load cases, computed during the last
 call to <code class="xref py py-meth docutils literal notranslate"><span class="pre">objectives_multi_load()</span></code>.</p>
 <dl class="field-list simple">
@@ -310,16 +316,6 @@ optimization over Robin boundaries.</p></li>
 the objectives are returned as a list (e.g., one compliance value per
 thermal load case).</p></li>
 </ul>
-<dl class="py method">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">energy_multi_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rho</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">u_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">objectives_multi_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rho</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">u_dofs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 </section>
@@ -329,7 +325,7 @@ thermal load case).</p></li>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="core.html" class="btn btn-neutral float-left" title="sktopt.core" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="mesh.html" class="btn btn-neutral float-right" title="sktopt.mesh" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="tools.html" class="btn btn-neutral float-right" title="sktopt.tools" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

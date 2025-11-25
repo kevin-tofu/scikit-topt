@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API Reference &mdash; scikit-topt 0.3.1 documentation</title>
+  <title>API Reference &mdash; Scikit-Topt 0.3.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -14,7 +14,7 @@
     <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/api.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=4621528c"></script>
+      <script src="_static/documentation_options.js?v=71d9d8e6"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -33,7 +33,7 @@
           
           
           <a href="index.html" class="icon icon-home">
-            scikit-topt
+            Scikit-Topt
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -48,15 +48,14 @@
 <li class="toctree-l1"><a class="reference internal" href="project.html">Project</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial Page</a></li>
-<li class="toctree-l1"><a class="reference internal" href="physics.html">Gourvan Equation and Weak Form</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Governing Equation and Weak Form</a></li>
 <li class="toctree-l1"><a class="reference internal" href="formulation.html">Topology Optimization Algorithm Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization Algorithms in Density-Based Topology Optimization</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="core.html">sktopt.core</a></li>
 <li class="toctree-l2"><a class="reference internal" href="fea.html">sktopt.fea</a></li>
-<li class="toctree-l2"><a class="reference internal" href="mesh.html">sktopt.mesh</a></li>
-<li class="toctree-l2"><a class="reference internal" href="mesh.utils.html">sktopt.mesh.utils</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tools.html">sktopt.tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mesh.html">sktopt.mesh</a></li>
 </ul>
 </li>
 </ul>
@@ -67,7 +66,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">scikit-topt</a>
+          <a href="index.html">Scikit-Topt</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -87,32 +86,61 @@
              
   <section id="api-reference">
 <h1>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h1>
-<p>This page provides detailed documentation for modules, classes and functions.</p>
+<p>This section summarizes the main public API of Scikit-Topt.
+For full details, see the module-specific pages below.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Core Optimizers</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="core.html">sktopt.core</a></li>
 </ul>
 </div>
+<p><strong>Key Classes</strong></p>
+<ul class="simple">
+<li><p><a class="reference internal" href="core.html#sktopt.core.DensityMethodConfig" title="sktopt.core.DensityMethodConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethodConfig</span></code></a></p></li>
+<li><p><a class="reference internal" href="core.html#sktopt.core.DensityMethod_OC_Config" title="sktopt.core.DensityMethod_OC_Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethod_OC_Config</span></code></a></p></li>
+<li><p><a class="reference internal" href="core.html#sktopt.core.DensityMethod" title="sktopt.core.DensityMethod"><code class="xref py py-class docutils literal notranslate"><span class="pre">DensityMethod</span></code></a></p></li>
+<li><p><a class="reference internal" href="core.html#sktopt.core.OC_Config" title="sktopt.core.OC_Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">OC_Config</span></code></a></p></li>
+<li><p><a class="reference internal" href="core.html#sktopt.core.OC_Optimizer" title="sktopt.core.OC_Optimizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">OC_Optimizer</span></code></a></p></li>
+<li><p><a class="reference internal" href="core.html#sktopt.core.LogMOC_Config" title="sktopt.core.LogMOC_Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogMOC_Config</span></code></a></p></li>
+<li><p><a class="reference internal" href="core.html#sktopt.core.LogMOC_Optimizer" title="sktopt.core.LogMOC_Optimizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogMOC_Optimizer</span></code></a></p></li>
+</ul>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Finite Element Solvers</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="fea.html">sktopt.fea</a></li>
 </ul>
 </div>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Mesh and Task Utilities</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="mesh.html">sktopt.mesh</a></li>
-<li class="toctree-l1"><a class="reference internal" href="mesh.utils.html">sktopt.mesh.utils</a></li>
+<p><strong>Key Classes</strong></p>
+<ul class="simple">
+<li><p><a class="reference internal" href="fea.html#sktopt.fea.FEM_SimpLinearElasticity" title="sktopt.fea.FEM_SimpLinearElasticity"><code class="xref py py-class docutils literal notranslate"><span class="pre">FEM_SimpLinearElasticity</span></code></a></p></li>
+<li><p><a class="reference internal" href="fea.html#sktopt.fea.FEM_SimpLinearHeatConduction" title="sktopt.fea.FEM_SimpLinearHeatConduction"><code class="xref py py-class docutils literal notranslate"><span class="pre">FEM_SimpLinearHeatConduction</span></code></a></p></li>
 </ul>
-</div>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Tools to manage optimization</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="tools.html">sktopt.tools</a></li>
 </ul>
 </div>
+<p><strong>Key Utilities</strong></p>
+<ul class="simple">
+<li><p><a class="reference internal" href="tools.html#sktopt.tools.HistoryCollection" title="sktopt.tools.HistoryCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">HistoryCollection</span></code></a></p></li>
+<li><p><a class="reference internal" href="tools.html#sktopt.tools.SchedulerConfig" title="sktopt.tools.SchedulerConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerConfig</span></code></a></p></li>
+<li><p><a class="reference internal" href="tools.html#sktopt.tools.SchedulerStep" title="sktopt.tools.SchedulerStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerStep</span></code></a></p></li>
+<li><p><a class="reference internal" href="tools.html#sktopt.tools.SchedulerStepAccelerating" title="sktopt.tools.SchedulerStepAccelerating"><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerStepAccelerating</span></code></a></p></li>
+<li><p><a class="reference internal" href="tools.html#sktopt.tools.SchedulerSawtoothDecay" title="sktopt.tools.SchedulerSawtoothDecay"><code class="xref py py-class docutils literal notranslate"><span class="pre">SchedulerSawtoothDecay</span></code></a></p></li>
+</ul>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Mesh and Task Utilities</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="mesh.html">sktopt.mesh</a></li>
+</ul>
+</div>
+<p><strong>Key Modules</strong></p>
+<ul class="simple">
+<li><p><a class="reference internal" href="mesh.html#sktopt.mesh.FEMDomain" title="sktopt.mesh.FEMDomain"><code class="xref py py-class docutils literal notranslate"><span class="pre">FEMDomain</span></code></a></p></li>
+<li><p><a class="reference internal" href="mesh.html#sktopt.mesh.LinearElasticity" title="sktopt.mesh.LinearElasticity"><code class="xref py py-class docutils literal notranslate"><span class="pre">LinearElasticity</span></code></a></p></li>
+<li><p><a class="reference internal" href="mesh.html#sktopt.mesh.LinearHeatConduction" title="sktopt.mesh.LinearHeatConduction"><code class="xref py py-class docutils literal notranslate"><span class="pre">LinearHeatConduction</span></code></a></p></li>
+</ul>
 </section>
 
 

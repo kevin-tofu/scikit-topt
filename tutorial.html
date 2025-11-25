@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tutorial Page &mdash; scikit-topt 0.3.1 documentation</title>
+  <title>Tutorial Page &mdash; Scikit-Topt 0.3.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -14,13 +14,13 @@
     <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/tutorial.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=4621528c"></script>
+      <script src="_static/documentation_options.js?v=71d9d8e6"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Gourvan Equation and Weak Form" href="physics.html" />
+    <link rel="next" title="Governing Equation and Weak Form" href="physics.html" />
     <link rel="prev" title="Installation" href="installation.html" /> 
 </head>
 
@@ -33,7 +33,7 @@
           
           
           <a href="index.html" class="icon icon-home">
-            scikit-topt
+            Scikit-Topt
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -58,13 +58,10 @@
 <li class="toctree-l3"><a class="reference internal" href="#task-configuration">Task Configuration</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#results-and-visualization">Results and Visualization</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id1">Results and Visualization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#results-and-visualization">Results and Visualization</a></li>
 </ul>
 </li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="physics.html">Gourvan Equation and Weak Form</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Governing Equation and Weak Form</a></li>
 <li class="toctree-l1"><a class="reference internal" href="formulation.html">Topology Optimization Algorithm Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="optimization.html">Optimization Algorithms in Density-Based Topology Optimization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
@@ -76,7 +73,7 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">scikit-topt</a>
+          <a href="index.html">Scikit-Topt</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -104,17 +101,18 @@ This will run a compliance minimization with OC method.</p>
 <h3>Optimizer Configuration, and Run<a class="headerlink" href="#optimizer-configuration-and-run" title="Link to this heading"></a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sktopt</span>
 
-<span class="n">cfg</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">LogMOC_Config</span><span class="p">(</span>
-     <span class="n">vol_frac</span><span class="o">=</span><span class="n">vol_frac</span><span class="o">=</span><span class="n">sktopt</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">SchedulerConfig</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span>
-         <span class="n">target_value</span><span class="o">=</span><span class="mf">0.6</span>
-     <span class="p">),</span>
-     <span class="n">max_iters</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
-     <span class="n">record_times</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
-     <span class="n">export_img</span><span class="o">=</span><span class="kc">True</span>
- <span class="p">)</span>
- <span class="n">optimizer</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">LogMOC_Optimizer</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">mytask</span><span class="p">)</span>
- <span class="n">optimizer</span><span class="o">.</span><span class="n">parameterize</span><span class="p">()</span>
- <span class="n">optimizer</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OC_Config</span><span class="p">(</span>
+    <span class="n">dst_path</span><span class="o">=</span><span class="s2">&quot;./result/tutorial_box_oc&quot;</span><span class="p">,</span>
+    <span class="n">vol_frac</span><span class="o">=</span><span class="n">sktopt</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">SchedulerConfig</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span>
+        <span class="n">target_value</span><span class="o">=</span><span class="mf">0.4</span>
+    <span class="p">),</span>
+    <span class="n">max_iters</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">record_times</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">export_img</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">OC_Optimizer</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">mytask</span><span class="p">)</span>
+<span class="n">optimizer</span><span class="o">.</span><span class="n">parameterize</span><span class="p">()</span>
+<span class="n">optimizer</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
 </pre></div>
 </div>
 <p>But before running the optimization, we need to set up the task configuration and the design variables.</p>
@@ -124,6 +122,12 @@ This will run a compliance minimization with OC method.</p>
 <h2>Task Definition<a class="headerlink" href="#task-definition" title="Link to this heading"></a></h2>
 <section id="shape-modeling-and-its-basis-function">
 <h3>Shape modeling and its basis function<a class="headerlink" href="#shape-modeling-and-its-basis-function" title="Link to this heading"></a></h3>
+<p>In this example, we use skfem.ElementHex1(), which represents a <strong>first-order (linear) hexahedral element</strong>.
+Scikit-Topt currently supports:</p>
+<ul class="simple">
+<li><p>3D: Hexahedral P1 (<cite>ElementHex1</cite>)</p></li>
+<li><p>3D Tetrahedral P1 (<cite>ElementTetP1</cite>)</p></li>
+</ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">skfem</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sktopt</span>
 
@@ -136,17 +140,23 @@ This will run a compliance minimization with OC method.</p>
     <span class="n">x_len</span><span class="p">,</span> <span class="n">y_len</span><span class="p">,</span> <span class="n">z_len</span><span class="p">,</span> <span class="n">mesh_size</span>
 <span class="p">)</span>
 <span class="n">e</span> <span class="o">=</span> <span class="n">skfem</span><span class="o">.</span><span class="n">ElementVector</span><span class="p">(</span><span class="n">skfem</span><span class="o">.</span><span class="n">ElementHex1</span><span class="p">())</span>
-<span class="n">basis</span> <span class="o">=</span> <span class="n">skfem</span><span class="o">.</span><span class="n">Basis</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">intorder</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">basis</span> <span class="o">=</span> <span class="n">skfem</span><span class="o">.</span><span class="n">Basis</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">intorder</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section id="load-basis-from-model-file">
 <h3>Load Basis from Model File<a class="headerlink" href="#load-basis-from-model-file" title="Link to this heading"></a></h3>
+<p>Scikit-Topt loads meshes via scikit-fem, which internally relies on meshio.
+Therefore, the library supports all mesh formats that meshio supports:</p>
+<p>Gmsh v2 (ASCII / binary)</p>
+<p>Gmsh v4 (ASCII / binary)</p>
+<p>When using .msh files, users may provide physical groups (surfaces/volumes)
+which scikit-topt interprets as boundary and subdomain tags.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">skfem</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sktopt</span>
 
 <span class="n">mesh_path</span> <span class="o">=</span> <span class="s2">&quot;./data/model.msh&quot;</span>
-<span class="n">basis</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">basis_from_file</span><span class="p">(</span><span class="n">mesh_path</span><span class="p">,</span> <span class="n">intorder</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">basis</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">basis_from_file</span><span class="p">(</span><span class="n">mesh_path</span><span class="p">,</span> <span class="n">intorder</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -179,7 +189,7 @@ This will run a compliance minimization with OC method.</p>
 <span class="n">e</span> <span class="o">=</span> <span class="n">skfem</span><span class="o">.</span><span class="n">ElementVector</span><span class="p">(</span><span class="n">skfem</span><span class="o">.</span><span class="n">ElementHex1</span><span class="p">())</span>
 <span class="n">basis</span> <span class="o">=</span> <span class="n">skfem</span><span class="o">.</span><span class="n">Basis</span><span class="p">(</span><span class="n">mesh</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">intorder</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 <span class="n">E0</span> <span class="o">=</span> <span class="mf">210e3</span>
-<span class="n">mytask</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">LinearElastisicity</span><span class="o">.</span><span class="n">from_mesh_tags</span><span class="p">(</span>
+<span class="n">mytask</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">LinearElasticity</span><span class="o">.</span><span class="n">from_mesh_tags</span><span class="p">(</span>
     <span class="n">basis</span><span class="p">,</span>
     <span class="s2">&quot;all&quot;</span><span class="p">,</span>
     <span class="n">force_dir_type</span><span class="p">,</span>
@@ -193,19 +203,28 @@ This will run a compliance minimization with OC method.</p>
 </section>
 <section id="results-and-visualization">
 <h2>Results and Visualization<a class="headerlink" href="#results-and-visualization" title="Link to this heading"></a></h2>
-<section id="id1">
-<h3>Results and Visualization<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
 <p>The results of the optimization are stored in the directory specified by cfg.dst_path.
-For example, it contains visualizations of the density distribution, as well as graphs showing the evolution of various parameters during the optimization process, such as the density field, volume fraction, and sensitivity values.</p>
-<a class="reference internal image-reference" href="https://raw.githubusercontent.com/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg"><img alt="multi-load-condition" class="align-center" src="https://raw.githubusercontent.com/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg" style="width: 400px;" />
+They include visualizations of the density distribution and graphs showing the evolution
+of optimization quantities such as compliance, volume fraction, and sensitivities.</p>
+<p>## Examples</p>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg"><img alt="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg" src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-condition.jpg" style="width: 400px;" />
 </a>
-<a class="reference internal image-reference" href="https://raw.githubusercontent.com/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg"><img alt="Multi-Load-condition-Density-Distribution" class="align-center" src="https://raw.githubusercontent.com/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg" style="width: 400px;" />
+<figcaption>
+<p><span class="caption-text">Multi-load condition visualization.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id2">
+<a class="reference internal image-reference" href="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg"><img alt="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg" src="https://media.githubusercontent.com/media/kevin-tofu/scikit-topt/master/assets/ex-multi-load-v-50.jpg" style="width: 400px;" />
 </a>
+<figcaption>
+<p><span class="caption-text">Density distribution after optimization under multi-load conditions.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
 <video width="640" height="360" controls>
   <source src="_static/animation-box-rho.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video></section>
-</section>
 </section>
 
 
@@ -213,7 +232,7 @@ For example, it contains visualizations of the density distribution, as well as 
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="physics.html" class="btn btn-neutral float-right" title="Gourvan Equation and Weak Form" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="physics.html" class="btn btn-neutral float-right" title="Governing Equation and Weak Form" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
