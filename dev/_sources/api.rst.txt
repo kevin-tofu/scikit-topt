@@ -4,16 +4,6 @@ API Reference
 This section summarizes the main public API of Scikit-Topt.
 For full details, see the module-specific pages below.
 
-Core Optimizers
----------------
-
-Key classes:
-
-- :class:`sktopt.core.OC_Optimizer`
-- :class:`sktopt.core.LogMOC_Optimizer`
-- :class:`sktopt.core.DensityMethodConfig`
-- :class:`sktopt.core.OptimizationHistory`
-
 Full API documentation: :mod:`sktopt.core`
 
 .. toctree::
@@ -22,14 +12,16 @@ Full API documentation: :mod:`sktopt.core`
 
    core
 
-
-Finite Element Solvers
-----------------------
-
 Key classes:
 
-- :class:`sktopt.fea.composer.LinearElasticity`
-- :class:`sktopt.fea.composer.SteadyStateHeatConduction`
+- :class:`sktopt.DensityMethodConfig`
+- :class:`sktopt.DensityMethod_OC_Config`
+- :class:`sktopt.DensityMethod`
+- :class:`sktopt.OC_Config`
+- :class:`sktopt.OC_Optimizer`
+- :class:`sktopt.LogMOC_Config`
+- :class:`sktopt.LogMOC_Optimizer`
+
 
 Full API documentation: :mod:`sktopt.fea`
 
@@ -40,14 +32,11 @@ Full API documentation: :mod:`sktopt.fea`
    fea
 
 
-Tools
------
+Key classes:
 
-Key utilities:
+- :class:`sktopt.fea.FEM_SimpLinearElasticity`
+- :class:`sktopt.fea.FEM_SimpLinearHeatConduction`
 
-- :class:`sktopt.tools.SchedulerConfig`
-- :class:`sktopt.tools.HistoryLogger`
-- :mod:`sktopt.tools.logconf`
 
 .. toctree::
    :maxdepth: 1
@@ -55,15 +44,13 @@ Key utilities:
 
    tools
 
-
-Mesh and Task Utilities
------------------------
-
 Key utilities:
 
-- :mod:`sktopt.mesh.toy_problem`
-- :mod:`sktopt.mesh.loader`
-- :mod:`sktopt.mesh.utils`
+- :class:`sktopt.tools.HistoryCollection`
+- :class:`sktopt.tools.SchedulerConfig`
+- :class:`sktopt.tools.SchedulerStepAccelerating`
+- :class:`sktopt.tools.SchedulerStep`
+- :class:`sktopt.tools.SchedulerSawtoothDecay`
 
 .. toctree::
    :maxdepth: 1
@@ -71,3 +58,13 @@ Key utilities:
 
    mesh
    mesh.utils
+
+Key utilities:
+
+- :class:`sktopt.tools.FEMDomain`
+- :class:`sktopt.tools.LinearElasticity`
+- :class:`sktopt.tools.LinearHeatConduction`
+- :mod:`sktopt.mesh.toy_problem`
+- :mod:`sktopt.mesh.loader`
+
+
