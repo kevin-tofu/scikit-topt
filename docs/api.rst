@@ -12,15 +12,8 @@ Full API documentation: :mod:`sktopt.core`
 
    core
 
-Key classes:
+.. currentmodule:: sktopt.core
 
-- :class:`sktopt.core.DensityMethodConfig`
-- :class:`sktopt.core.DensityMethod_OC_Config`
-- :class:`sktopt.core.DensityMethod`
-- :class:`sktopt.core.OC_Config`
-- :class:`sktopt.core.OC_Optimizer`
-- :class:`sktopt.core.LogMOC_Config`
-- :class:`sktopt.core.LogMOC_Optimizer`
 
 
 Full API documentation: :mod:`sktopt.fea`
@@ -31,11 +24,7 @@ Full API documentation: :mod:`sktopt.fea`
 
    fea
 
-
-Key classes:
-
-- :class:`sktopt.fea.FEM_SimpLinearElasticity`
-- :class:`sktopt.fea.FEM_SimpLinearHeatConduction`
+.. currentmodule:: sktopt.fea
 
 
 .. toctree::
@@ -44,13 +33,8 @@ Key classes:
 
    tools
 
-Key utilities:
+.. currentmodule:: sktopt.tools
 
-- :class:`sktopt.tools.HistoryCollection`
-- :class:`sktopt.tools.SchedulerConfig`
-- :class:`sktopt.tools.SchedulerStepAccelerating`
-- :class:`sktopt.tools.SchedulerStep`
-- :class:`sktopt.tools.SchedulerSawtoothDecay`
 
 .. toctree::
    :maxdepth: 1
@@ -59,12 +43,4 @@ Key utilities:
    mesh
    mesh.utils
 
-Key utilities:
-
-- :class:`sktopt.tools.FEMDomain`
-- :class:`sktopt.tools.LinearElasticity`
-- :class:`sktopt.tools.LinearHeatConduction`
-- :mod:`sktopt.mesh.toy_problem`
-- :mod:`sktopt.mesh.loader`
-
-
+.. currentmodule:: sktopt.mesh
