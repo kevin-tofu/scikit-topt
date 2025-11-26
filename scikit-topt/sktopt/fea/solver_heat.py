@@ -8,7 +8,6 @@ from scipy.sparse.linalg import LinearOperator
 import skfem
 from skfem.helpers import grad, dot
 import pyamg
-# import joblib
 
 # from sktopt.mesh import LinearHeatConduction
 from sktopt.fea import composer
@@ -19,8 +18,7 @@ logger = mylogger(__name__)
 def solve_scipy(
     K_csr, emit,
     dirichlet_dofs_list, dirichlet_values_list,
-    u_all,
-    n_joblib: int = 1
+    u_all
 ):
     def solve_system(
         dirichlet_dofs_loop, dirichlet_values_loop

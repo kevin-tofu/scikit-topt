@@ -145,86 +145,37 @@ def solve_multi_load(
     elem_func: Callable = composer.simp_interpolation,
     rtol: float = 1e-5,
     maxiter: int = None,
-    n_joblib: int = 1
-) -> float:
-    solver = 'spsolve' if solver == 'auto' else solver
-    n_dof = basis.N
-    assert u_all.shape == (n_dof, len(force_list))
+) -> np.ndarray:
+    """
+    Solve multi-load linear system using one LU factorization and
+    solving all RHS in a single call: lu.solve(F_stack).
 
+    This is the fastest and safest way for shared-stiffness multi-load problems.
+    """
+
+    # Assemble stiffness matrix
     K = composer.assemble_stiffness_matrix(
         basis, rho, E0, Emin, p, nu0, elem_func
     )
-    _maxiter = min(1000, max(300, n_dof // 5)) if maxiter is None else maxiter
     K_csr = K.tocsr()
 
-    # all_dofs = np.arange(n_dof)
-    # free_dofs = np.setdiff1d(all_dofs, dirichlet_dofs, assume_unique=True)
-    # K_e = K_csr[free_dofs, :][:, free_dofs]
-    # K_e, _ = skfem.enforce(
-    #     K_csr[free_dofs, :][:, free_dofs], force_list[0],
-    #     D=dirichlet_dofs
-    # )
-    # K_c, _, _, _ = skfem.condense(K_csr, force_list[0], D=dirichlet_dofs)
+    # Enforced K for first load (pattern only — K_e is reused)
     K_e, _ = skfem.enforce(K_csr, force_list[0], D=dirichlet_dofs)
+
+    # Build all RHS after enforcement
     F_stack = np.column_stack([
         skfem.enforce(K_csr, f, D=dirichlet_dofs)[1] for f in force_list
     ])
-    compliance_total = 0.0
-    u_all[:, :] = 0.0
-    if solver == 'spsolve':
-        try:
-            from joblib import Parallel, delayed, parallel_backend
-            if n_joblib > 1:
-                lu = scipy.sparse.linalg.splu(K_e.tocsc())
 
-                def solve_system(F_stack):
-                    return lu.solve(F_stack)
+    # LU factorization only once
+    lu = scipy.sparse.linalg.splu(K_e.tocsc())
 
-                with parallel_backend("threading"):
-                    u_all[:, :] = np.column_stack(
-                        Parallel(n_jobs=n_joblib)(
-                            delayed(solve_system)(F_stack[:, i]) for i in range(
-                                F_stack.shape[1]
-                            )
-                        )
-                    )
-                return F_stack
-        except ModuleNotFoundError as e:
-            logger.info(f"ModuleNotFoundError: {e}")
-            n_joblib = -1
+    # Solve all RHS at once (fastest)
+    u_sol = lu.solve(F_stack)      # shape = (ndof, nloads)
 
-        lu = scipy.sparse.linalg.splu(K_e.tocsc())
-        u_all[:, :] = np.column_stack(
-            [lu.solve(F_stack[:, i]) for i in range(F_stack.shape[1])]
-        )
+    # Store to user-provided array
+    u_all[:, :] = u_sol
 
-    else:
-        # choose preconditioner if needed
-        if solver == 'cg_jacobi':
-            M_diag = K_e.diagonal()
-            M_inv = 1.0 / M_diag
-            M = LinearOperator(K_e.shape, matvec=lambda x: M_inv * x)
-        elif solver == 'cg_pyamg':
-            ml = pyamg.smoothed_aggregation_solver(K_e)
-            M = ml.aspreconditioner()
-        else:
-            raise ValueError(f"Unknown solver: {solver}")
-
-        for i, _ in enumerate(force_list):
-            F_e = F_stack[:, i]
-            # _, F_e = skfem.enforce(K_csr, force, D=dirichlet_dofs)
-            u_e, info = scipy.sparse.linalg.cg(
-                K_e, F_e, M=M, rtol=rtol, maxiter=_maxiter
-            )
-            if info != 0:
-                logger.info(
-                    f"[warning] \
-                        CG did not converge for load case {i}: info = {info}"
-                )
-            u_all[:, i] = u_e
-            # compliance_total += F_e[free_dofs] @ u_e[free_dofs]
-
-    # compliance_total = np.sum(np.einsum('ij,ij->j', F_stack, u_all))
     return F_stack
 
 
@@ -240,19 +191,22 @@ def compute_compliance_basis_multi_load(
     elem_func: Callable = composer.simp_interpolation,
     rtol: float = 1e-5,
     maxiter: int = None,
-    n_joblib: int = 1
 ) -> np.ndarray:
+
     F_stack = solve_multi_load(
         basis, free_dofs, dirichlet_dofs, force_list,
         E0, Emin, p, nu0,
         rho,
         u_all,
-        solver=solver, elem_func=elem_func, rtol=rtol,
-        maxiter=maxiter, n_joblib=n_joblib
+        solver=solver,
+        elem_func=elem_func,
+        rtol=rtol,
+        maxiter=maxiter,
     )
 
-    # compliance_total = np.sum(np.einsum('ij,ij->j', F_stack, u_all))
+    # compliance for each load: fᵢ · uᵢ
     compliance_each = np.einsum('ij,ij->j', F_stack, u_all)
+
     return compliance_each
 
 
@@ -358,9 +312,6 @@ class FEM_SimpLinearElasticity():
         - "spsolve": direct SciPy sparse solver (robust, slower for large DOF)
         - "cg_pyamg": Conjugate Gradient with PyAMG multigrid preconditioner
             (fast for large problems)
-    n_joblib : float, optional
-        Number of parallel jobs for element-wise computations. If 1, no
-        parallelization is used.
 
     Attributes
     ----------
@@ -375,8 +326,6 @@ class FEM_SimpLinearElasticity():
         stiffness.
     solver_option : str
         Selected linear solver backend.
-    n_joblib : float
-        Number of parallel jobs for element computations.
 
     Notes
     -----
@@ -404,14 +353,12 @@ class FEM_SimpLinearElasticity():
         E_min_coeff: float,
         density_interpolation: Callable = composer.simp_interpolation,
         solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve",
-        n_joblib: float = 1
     ):
         self.task = task
         self.E_max = task.E * 1.0
         self.E_min = task.E * E_min_coeff
         self.density_interpolation = density_interpolation
         self.solver_option = solver_option
-        self.n_joblib = n_joblib
 
     def objectives_multi_load(
         self,
@@ -427,7 +374,6 @@ class FEM_SimpLinearElasticity():
             u_dofs,
             elem_func=self.density_interpolation,
             solver=self.solver_option,
-            n_joblib=self.n_joblib
         )
         return compliance_array
 
