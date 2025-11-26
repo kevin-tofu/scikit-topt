@@ -60,7 +60,6 @@
 <li class="toctree-l4"><a class="reference internal" href="#sktopt.fea.FEM_SimpLinearElasticity.E_min"><code class="docutils literal notranslate"><span class="pre">FEM_SimpLinearElasticity.E_min</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sktopt.fea.FEM_SimpLinearElasticity.density_interpolation"><code class="docutils literal notranslate"><span class="pre">FEM_SimpLinearElasticity.density_interpolation</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sktopt.fea.FEM_SimpLinearElasticity.solver_option"><code class="docutils literal notranslate"><span class="pre">FEM_SimpLinearElasticity.solver_option</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sktopt.fea.FEM_SimpLinearElasticity.n_joblib"><code class="docutils literal notranslate"><span class="pre">FEM_SimpLinearElasticity.n_joblib</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#sktopt.fea.FEM_SimpLinearHeatConduction"><code class="docutils literal notranslate"><span class="pre">FEM_SimpLinearHeatConduction</span></code></a><ul>
@@ -107,7 +106,7 @@
 <p>This package provides functions to handle finite element analysis</p>
 <dl class="py class" id="module-sktopt.fea">
 <dt class="sig sig-object py" id="sktopt.fea.FEM_SimpLinearElasticity">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.fea.</span></span><span class="sig-name descname"><span class="pre">FEM_SimpLinearElasticity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task:</span> <span class="pre">LinearElasticity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density_interpolation:</span> <span class="pre">Callable</span> <span class="pre">=</span> <span class="pre">CPUDispatcher(&lt;function</span> <span class="pre">simp_interpolation&gt;)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">Literal['spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'cg_pyamg']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.fea.FEM_SimpLinearElasticity" title="Link to this definition"></a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.fea.</span></span><span class="sig-name descname"><span class="pre">FEM_SimpLinearElasticity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task:</span> <span class="pre">LinearElasticity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density_interpolation:</span> <span class="pre">Callable</span> <span class="pre">=</span> <span class="pre">CPUDispatcher(&lt;function</span> <span class="pre">simp_interpolation&gt;)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">Literal['spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'cg_pyamg']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.fea.FEM_SimpLinearElasticity" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Finite Element solver for linear elasticity using SIMP interpolation.</p>
 <p>This class performs linear elastic FEM analysis where the Young’s modulus
@@ -140,8 +139,6 @@ interpolation function following SIMP/RAMP/etc. can be used.</p></li>
 <div><p>(fast for large problems)</p>
 </div></blockquote>
 </p></li>
-<li><p><strong>n_joblib</strong> (<em>float</em><em>, </em><em>optional</em>) – Number of parallel jobs for element-wise computations. If 1, no
-parallelization is used.</p></li>
 </ul>
 </dd>
 </dl>
@@ -201,17 +198,6 @@ stiffness.</p>
 </dl>
 </dd></dl>
 
-<dl class="py attribute">
-<dt class="sig sig-object py" id="sktopt.fea.FEM_SimpLinearElasticity.n_joblib">
-<span class="sig-name descname"><span class="pre">n_joblib</span></span><a class="headerlink" href="#sktopt.fea.FEM_SimpLinearElasticity.n_joblib" title="Link to this definition"></a></dt>
-<dd><p>Number of parallel jobs for element computations.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
 <p class="rubric">Notes</p>
 <ul class="simple">
 <li><dl class="simple">
@@ -245,7 +231,7 @@ stiffness.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="sktopt.fea.FEM_SimpLinearHeatConduction">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.fea.</span></span><span class="sig-name descname"><span class="pre">FEM_SimpLinearHeatConduction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task:</span> <span class="pre">LinearHeatConduction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density_interpolation:</span> <span class="pre">Callable</span> <span class="pre">=</span> <span class="pre">CPUDispatcher(&lt;function</span> <span class="pre">simp_interpolation&gt;)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">Literal['spsolve']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_joblib:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.fea.FEM_SimpLinearHeatConduction" title="Link to this definition"></a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.fea.</span></span><span class="sig-name descname"><span class="pre">FEM_SimpLinearHeatConduction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task:</span> <span class="pre">LinearHeatConduction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E_min_coeff:</span> <span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density_interpolation:</span> <span class="pre">Callable</span> <span class="pre">=</span> <span class="pre">CPUDispatcher(&lt;function</span> <span class="pre">simp_interpolation&gt;)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver_option:</span> <span class="pre">Literal['spsolve']</span> <span class="pre">=</span> <span class="pre">'spsolve'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">4</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.fea.FEM_SimpLinearHeatConduction" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Finite element solver for SIMP-based linear heat conduction problems
 with support for multi-load objectives and virtual Robin boundaries.</p>
@@ -266,7 +252,6 @@ Defaults to <code class="docutils literal notranslate"><span class="pre">compose
 <li><p><strong>solver_option</strong> (<em>{&quot;spsolve&quot;</em><em>, </em><em>&quot;cg_pyamg&quot;}</em><em>, </em><em>optional</em>) – Linear solver to use for the state equation of each load case.</p></li>
 <li><p><strong>q</strong> (<em>int</em><em>, </em><em>optional</em>) – Exponent for boundary interpolation in the virtual Robin model
 (often used to sharpen on/off behavior of boundary heat transfer).</p></li>
-<li><p><strong>n_joblib</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of parallel jobs for solving multiple load cases.</p></li>
 </ul>
 </dd>
 </dl>
