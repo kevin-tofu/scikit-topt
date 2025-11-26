@@ -18,27 +18,10 @@ from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 
 
-def compute_compliance_simp_basis(
-    basis, free_dofs, dirichlet_dofs, force,
-    E0, Emin, p, nu0,
-    rho,
-) -> tuple:
-    K = composer.assemble_stiffness_matrix(
-        basis, rho, E0,
-        Emin, p, nu0
-    )
-    K_e, F_e = skfem.enforce(K, force, D=dirichlet_dofs)
-    # u = scipy.sparse.linalg.spsolve(K_e, F_e)
-    u = skfem.solve(K_e, F_e)
-    f_free = force[free_dofs]
-    compliance = f_free @ u[free_dofs]
-    return (compliance, u)
-
-
 def solve_u(
-    K_cond: scipy.sparse.csc_matrix,
+    K_cond: scipy.sparse.spmatrix,
     F_cond: np.ndarray,
-    chosen_solver: Literal['cg_jacobi', 'spsolve', 'cg_pyamg'] = 'auto',
+    chosen_solver: Literal['cg_jacobi', 'spsolve', 'cg_pyamg'] = 'spsolve',
     rtol: float = 1e-8,
     maxiter: int = None,
 ) -> np.ndarray:
@@ -74,7 +57,7 @@ def solve_u(
             raise ValueError(f"Unknown solver: {chosen_solver}")
 
     except Exception as e:
-        print(f"Solver exception - {e}, falling back to spsolve.")
+        logger.warning(f"Solver exception - {e}, falling back to spsolve.")
         u_c = scipy.sparse.linalg.spsolve(K_cond, F_cond)
 
     return u_c
@@ -144,36 +127,92 @@ def solve_multi_load(
     solver: Literal['auto', 'cg_jacobi', 'spsolve', 'cg_pyamg'] = 'auto',
     elem_func: Callable = composer.simp_interpolation,
     rtol: float = 1e-5,
-    maxiter: int = None,
+    maxiter: int | None = None,
 ) -> np.ndarray:
     """
-    Solve multi-load linear system using one LU factorization and
-    solving all RHS in a single call: lu.solve(F_stack).
+    Solve a shared-stiffness linear elasticity problem for multiple load cases.
 
-    This is the fastest and safest way for shared-stiffness multi-load problems.
+    The stiffness matrix K(ρ) is assembled once, and Dirichlet boundary
+    conditions are enforced via `skfem.enforce`. All load cases share the
+    same Dirichlet DOF set; only the right-hand side (Neumann loads) differs.
+
+    This function uses a single LU factorization of the enforced matrix K_e
+    and solves all right-hand sides in one call:
+
+        u_all = lu.solve(F_stack)
+
+    which is typically the fastest and most robust approach for
+    shared-stiffness multi-load problems.
+
+    Parameters
+    ----------
+    basis : skfem.CellBasis
+        Finite element basis for the displacement field.
+    free_dofs : np.ndarray
+        Array of free DOF indices (currently unused; kept for API compatibility).
+    dirichlet_dofs : np.ndarray
+        DOF indices with Dirichlet boundary conditions, shared across all loads.
+    force_list : list of (n_dof,) ndarray
+        List of global load vectors, one per load case.
+    E0, Emin : float
+        Maximum and minimum Young's modulus values for the SIMP interpolation.
+    p : float
+        SIMP penalization exponent.
+    nu0 : float
+        Poisson's ratio (assumed constant).
+    rho : (n_elem,) ndarray
+        Element-wise density field.
+    u_all : (n_dof, n_loads) ndarray
+        Output array to store displacement solutions; each column is one load case.
+    solver : {'auto', 'cg_jacobi', 'spsolve', 'cg_pyamg'}, optional
+        Solver selector. For multi-load, only 'auto' and 'spsolve' are supported.
+        - 'auto' or 'spsolve': direct LU factorization (splu) is used.
+        - 'cg_jacobi', 'cg_pyamg': currently not implemented for multi-load.
+    elem_func : Callable, optional
+        Density interpolation function, e.g. SIMP or RAMP.
+    rtol : float, optional
+        Relative tolerance (unused for direct LU; kept for API compatibility).
+    maxiter : int or None, optional
+        Maximum number of iterations (unused for direct LU).
+
+    Returns
+    -------
+    F_stack : (n_dof, n_loads) ndarray
+        Stack of enforced right-hand sides for each load case.
     """
 
-    # Assemble stiffness matrix
+    # Multi-load currently supports only direct LU factorization.
+    if solver not in ('auto', 'spsolve'):
+        raise NotImplementedError(
+            "solve_multi_load currently supports only direct LU (solver "
+            "='auto' or 'spsolve'). Iterative solvers for multi-load are "
+            "not implemented."
+        )
+
+    # Assemble the global stiffness matrix with SIMP interpolation
     K = composer.assemble_stiffness_matrix(
         basis, rho, E0, Emin, p, nu0, elem_func
     )
     K_csr = K.tocsr()
 
-    # Enforced K for first load (pattern only — K_e is reused)
+    # Enforce Dirichlet BCs once to obtain the enforced matrix K_e.
+    # The pattern of K_e depends only on the Dirichlet DOF set, not on
+    # the particular load vector, so we can use the first load as a template.
     K_e, _ = skfem.enforce(K_csr, force_list[0], D=dirichlet_dofs)
 
-    # Build all RHS after enforcement
+    # Build all enforced right-hand sides and stack them column-wise.
     F_stack = np.column_stack([
-        skfem.enforce(K_csr, f, D=dirichlet_dofs)[1] for f in force_list
-    ])
+        skfem.enforce(K_csr, f, D=dirichlet_dofs)[1]
+        for f in force_list
+    ])  # shape: (n_dof, n_loads)
 
-    # LU factorization only once
+    # Perform a single LU factorization of K_e
     lu = scipy.sparse.linalg.splu(K_e.tocsc())
 
-    # Solve all RHS at once (fastest)
-    u_sol = lu.solve(F_stack)      # shape = (ndof, nloads)
+    # Solve all load cases in one call (multi-RHS solve)
+    u_sol = lu.solve(F_stack)      # shape: (n_dof, n_loads)
 
-    # Store to user-provided array
+    # Store the solutions in the provided array
     u_all[:, :] = u_sol
 
     return F_stack

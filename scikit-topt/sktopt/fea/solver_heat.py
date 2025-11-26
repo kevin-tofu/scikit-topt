@@ -15,46 +15,113 @@ from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 
 
-def solve_scipy(
-    K_csr, emit,
-    dirichlet_dofs_list, dirichlet_values_list,
-    u_all
-):
-    def solve_system(
-        dirichlet_dofs_loop, dirichlet_values_loop
-    ):
-        T_sol = skfem.solve(
-            *skfem.condense(
-                K_csr, emit, D=dirichlet_dofs_loop,
-                x=np.full(dirichlet_dofs_loop.N, dirichlet_values_loop)
-            )
+def solve_scipy_heat_multi_enforce(
+    K_csr: scipy.sparse.csr_matrix,
+    emit: np.ndarray,
+    dirichlet_dofs_list: list[skfem.Dofs],
+    dirichlet_values_list: list[float],
+    u_all: np.ndarray,
+) -> None:
+    """
+    General multi-load heat solver, no joblib.
+
+    - For each load i, applies enforce(K, emit, D_i, x_i) and solves.
+    - Does NOT assume all Dirichlet DOFs are identical across loads.
+    """
+
+    n_loads = len(dirichlet_values_list)
+    assert u_all.shape[1] == n_loads
+
+    for i in range(n_loads):
+        D_i = dirichlet_dofs_list[i]
+        val_i = dirichlet_values_list[i]
+
+        K_e_i, f_e_i = skfem.enforce(
+            K_csr, emit,
+            D=D_i,
+            x=np.full(D_i.N, val_i),
         )
-        return T_sol
+        lu_i = scipy.sparse.linalg.splu(K_e_i.tocsc())
+        u_all[:, i] = lu_i.solve(f_e_i)
 
-    try:
-        from joblib import Parallel, delayed, parallel_backend
-        if n_joblib > 1:
-            with parallel_backend("threading"):
-                u_all[:, :] = np.column_stack(
-                    Parallel(n_jobs=n_joblib)(
-                        delayed(solve_system)(
-                            dirichlet_dofs_list[i], dirichlet_values_list[i]
-                        ) for i in range(len(dirichlet_values_list))
-                    )
-                )
-            return
 
-    except ModuleNotFoundError as e:
-        logger.info(f"ModuleNotFoundError: {e}")
-        n_joblib = -1
+def solve_scipy(
+    K_csr,
+    emit,
+    dirichlet_dofs_list,
+    dirichlet_values_list,
+    u_all,
+):
+    """
+    Multi-load heat solver (no joblib, enforce-based).
 
-    u_all[:, :] = np.column_stack(
-        [
-            solve_system(
-                dirichlet_dofs_list[i], dirichlet_values_list[i]
-            ) for i in range(len(dirichlet_values_list))
-        ]
+    Assumptions
+    -----------
+    - All load cases share the *same* Dirichlet DOF set.
+      (i.e., dirichlet_dofs_list[i] are identical objects)
+    - Only the Dirichlet *values* differ across load cases.
+    - The RHS contribution "emit" is common to all load cases.
+
+    Method
+    ------
+    1. Build the enforced stiffness matrix K_e using the first load case.
+       (K_e depends on the Dirichlet DOF set D, not on the actual values)
+    2. Factorize K_e only once (LU).
+    3. For each load case, build only the enforced RHS f_e
+       using skfem.enforce(K, emit, D, x=value).
+    4. Stack all RHS vectors column-wise into F_stack.
+    5. Solve all RHS simultaneously using lu.solve(F_stack).
+       This is significantly faster than solving each load separately.
+
+    Parameters
+    ----------
+    K_csr : csr_matrix
+        Global conduction matrix.
+    emit : (n_dof,) ndarray
+        Load / emission vector (common to all load cases).
+    dirichlet_dofs_list : list of skfem.Dofs
+        List of Dirichlet DOF sets (all must be identical).
+    dirichlet_values_list : list of float
+        Dirichlet temperature values for each load case.
+    u_all : (n_dof, n_loads) ndarray
+        Output array to store all temperature solutions.
+    """
+    n_loads = len(dirichlet_values_list)
+    if n_loads == 0:
+        return
+
+    # Use the first Dirichlet DOF set as the representative
+    D0 = dirichlet_dofs_list[0]
+    val0 = dirichlet_values_list[0]
+
+    # Build the enforced stiffness matrix K_e (depends on D, not on value)
+    K_e, _ = skfem.enforce(
+        K_csr,
+        emit,
+        D=D0,
+        x=np.full(D0.N, val0),
     )
+
+    # Construct each load case RHS and stack them
+    F_cols = []
+    for D_i, val_i in zip(dirichlet_dofs_list, dirichlet_values_list):
+        # Only Dirichlet value differs; DOF set is the same
+        _, f_e_i = skfem.enforce(
+            K_csr,
+            emit,
+            D=D_i,
+            x=np.full(D_i.N, val_i),
+        )
+        F_cols.append(f_e_i)
+
+    # Column-wise stack => shape (n_dof, n_loads)
+    F_stack = np.column_stack(F_cols)
+
+    # Perform LU factorization only once
+    lu = scipy.sparse.linalg.splu(K_e.tocsc())
+
+    # Solve all load cases in one call (fastest)
+    u_all[:, :] = lu.solve(F_stack)
 
 
 def solve_multi_load(
@@ -70,8 +137,7 @@ def solve_multi_load(
     solver: Literal['auto', 'spsolve'] = 'auto',
     elem_func: Callable = composer.simp_interpolation,
     rtol: float = 1e-5,
-    maxiter: int = None,
-    n_joblib: int = 1,
+    maxiter: int = None
 ) -> list:
     solver = 'spsolve' if solver == 'auto' else solver
 
@@ -103,7 +169,7 @@ def solve_multi_load(
         solve_scipy(
             K_csr, emit,
             dirichlet_dofs_list, dirichlet_values_list,
-            u_all, n_joblib=n_joblib
+            u_all
         )
     else:
         raise NotImplementedError("")
@@ -456,8 +522,6 @@ class FEM_SimpLinearHeatConduction():
     q : int, optional
         Exponent for boundary interpolation in the virtual Robin model
         (often used to sharpen on/off behavior of boundary heat transfer).
-    n_joblib : int, optional
-        Number of parallel jobs for solving multiple load cases.
 
     Attributes
     ----------
@@ -488,15 +552,14 @@ class FEM_SimpLinearHeatConduction():
         E_min_coeff: float,
         density_interpolation: Callable = composer.simp_interpolation,
         solver_option: Literal["spsolve"] = "spsolve",
-        q: int = 4,
-        n_joblib: int = 1
+        q: int = 4
     ):
         self.task = task
         self.k_max = task.k * 1.0
         self.k_min = task.k * E_min_coeff
         self.density_interpolation = density_interpolation
         self.solver_option = solver_option
-        self.n_joblib = n_joblib
+        # self.n_joblib = n_joblib
         self.λ_all = None
         self.q = q
 
@@ -551,7 +614,7 @@ class FEM_SimpLinearHeatConduction():
             u_dofs,
             solver=self.solver_option,
             elem_func=self.density_interpolation,
-            n_joblib=self.n_joblib,
+            # n_joblib=self.n_joblib,
         )
 
         n_loads = u_dofs.shape[1]
@@ -610,7 +673,7 @@ class FEM_SimpLinearHeatConduction():
             solve_scipy(
                 K_csr, rhs_vec,
                 dirichlet_dofs_list, dirichlet_values_list,
-                λ_all, n_joblib=self.n_joblib
+                λ_all
             )
 
         elif objective == "averaged_temp":
@@ -622,7 +685,7 @@ class FEM_SimpLinearHeatConduction():
             solve_scipy(
                 K_csr, ones_emit,
                 dirichlet_dofs_list, dirichlet_values_list,
-                λ_all, n_joblib=self.n_joblib
+                λ_all
             )
 
         else:

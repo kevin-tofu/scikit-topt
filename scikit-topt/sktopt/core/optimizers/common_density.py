@@ -118,8 +118,6 @@ class DensityMethodConfig():
     scaling : bool
         If ``True``, apply length/force scaling to normalize geometry
         and loads for improved numerical conditioning.
-    n_joblib : int
-        Number of parallel workers used in joblib-enabled sections.
     check_convergence : bool
         If ``True``, enable automatic convergence checking during optimization.
         Convergence is determined by two criteria:
@@ -196,7 +194,6 @@ class DensityMethodConfig():
     sensitivity_filter: bool = False
     solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve"
     scaling: bool = False
-    n_joblib: int = 1
 
     check_convergence: bool = False
     tol_rho_change: float = 2e-1
@@ -455,15 +452,13 @@ class DensityMethod(DensityMethodBase):
             self.fem = fea.FEM_SimpLinearElasticity(
                 tsk, cfg.E_min_coeff,
                 density_interpolation=interpolation_funcs(cfg)[0],
-                solver_option=cfg.solver_option,
-                n_joblib=cfg.n_joblib
+                solver_option=cfg.solver_option
             )
         elif isinstance(tsk, sktopt.mesh.LinearHeatConduction):
             self.fem = fea.FEM_SimpLinearHeatConduction(
                 tsk, cfg.E_min_coeff,
                 density_interpolation=interpolation_funcs(cfg)[0],
-                solver_option=cfg.solver_option,
-                n_joblib=cfg.n_joblib
+                solver_option=cfg.solver_option
             )
         else:
             raise NotImplementedError(
