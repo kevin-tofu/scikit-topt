@@ -24,6 +24,30 @@ logging.getLogger("skfem").setLevel(logging.WARNING)
 
 
 @dataclass
+class DensityIterState:
+    rho: np.ndarray
+    rho_prev: np.ndarray
+    rho_filtered: np.ndarray
+    rho_projected: np.ndarray
+    dH_drho: np.ndarray
+    grad_filtered: np.ndarray
+    dC_drho_projected: np.ndarray
+    energy_mean: np.ndarray
+    dC_drho_full: np.ndarray
+    dC_drho_design_eles: np.ndarray
+    scaling_rate: np.ndarray
+    rho_design_eles: np.ndarray
+    rho_clip_lower: np.ndarray
+    rho_clip_upper: np.ndarray
+    u_dofs: np.ndarray
+    filter_radius: float
+    elements_volume_design: np.ndarray
+    elements_volume_design_sum: float
+    iter_begin: int
+    iter_end: int
+
+
+@dataclass
 class DensityMethodConfig():
     """
     Configuration for density-based topology optimization (SIMP).
@@ -466,6 +490,7 @@ class DensityMethod(DensityMethodBase):
             )
         # self.recorder = self.add_recorder(tsk)
         self.schedulers = tools.Schedulers(self.cfg.dst_path)
+        self._schedulers_initialized = False
 
         # params for convergence check
         self._rho_e_buffer: np.ndarray | None = None
@@ -474,6 +499,11 @@ class DensityMethod(DensityMethodBase):
         ele_vol_design_sum = np.sum(ele_vol_design)
         self._dV_drho_design = ele_vol_design / ele_vol_design_sum
         self.kkt_residual = None
+        # iterative state for partial runs
+        self._state: DensityIterState | None = None
+        self._iter_next: int | None = None
+        self._iter_end: int | None = None
+        self._completed: bool = False
 
     def add_recorder(
         self, tsk: sktopt.mesh.FEMDomain
@@ -541,6 +571,7 @@ class DensityMethod(DensityMethodBase):
 
         if export:
             self.schedulers.export()
+        self._schedulers_initialized = True
 
     def parameterize(self):
 
@@ -707,41 +738,155 @@ class DensityMethod(DensityMethodBase):
         )
 
     def optimize(self):
+        """Run optimization until ``cfg.max_iters`` (default behavior)."""
+        self._optimize_impl()
+
+    def optimize_steps(self, num_steps: int):
+        """
+        Run only ``num_steps`` iterations of the optimizer and record progress.
+
+        This is useful when an external driver wants to probe or checkpoint
+        intermediate states without waiting for the full ``max_iters`` loop.
+        """
+        if num_steps <= 0:
+            logger.info("optimize_steps called with non-positive num_steps; skipping.")
+            return
+        self._optimize_impl(num_steps)
+
+    def _ensure_state_initialized(self):
+        """Initialize schedulers and iteration state if not already done."""
+        if self._completed:
+            logger.info("Optimization already completed; skipping.")
+            return False
+
+        if not self._schedulers_initialized:
+            self.init_schedulers()
+
+        if self._state is None:
+            (
+                iter_begin,
+                iter_end,
+                rho,
+                rho_prev,
+                rho_filtered,
+                rho_projected,
+                dH_drho,
+                grad_filtered,
+                dC_drho_projected,
+                energy_mean,
+                dC_drho_full,
+                dC_drho_design_eles,
+                scaling_rate,
+                rho_design_eles,
+                rho_clip_lower,
+                rho_clip_upper,
+                u_dofs,
+                filter_radius
+            ) = self.initialize_params()
+            elements_volume_design = self.tsk.elements_volume[self.tsk.design_elements]
+            elements_volume_design_sum = np.sum(elements_volume_design)
+            self.filter.update_radius(filter_radius)
+            self._state = DensityIterState(
+                rho=rho,
+                rho_prev=rho_prev,
+                rho_filtered=rho_filtered,
+                rho_projected=rho_projected,
+                dH_drho=dH_drho,
+                grad_filtered=grad_filtered,
+                dC_drho_projected=dC_drho_projected,
+                energy_mean=energy_mean,
+                dC_drho_full=dC_drho_full,
+                dC_drho_design_eles=dC_drho_design_eles,
+                scaling_rate=scaling_rate,
+                rho_design_eles=rho_design_eles,
+                rho_clip_lower=rho_clip_lower,
+                rho_clip_upper=rho_clip_upper,
+                u_dofs=u_dofs,
+                filter_radius=filter_radius,
+                elements_volume_design=elements_volume_design,
+                elements_volume_design_sum=elements_volume_design_sum,
+                iter_begin=iter_begin,
+                iter_end=iter_end,
+            )
+            self._iter_next = iter_begin
+            self._iter_end = iter_end
+        return True
+
+    def _finalize(self):
+        """Finalize outputs after completing all iterations."""
+        if self._completed:
+            return
+        cfg = self.cfg
+        tsk = self.tsk
+        state = self._state
+        if state is None:
+            return
+        rho = state.rho
+        if cfg.scaling is True:
+            self.unscale()
+        visualization.rho_histo_plot(
+            rho[tsk.design_elements],
+            f"{self.cfg.dst_path}/mesh_rho/last.jpg"
+        )
+        visualization_mesh.export_submesh(
+            tsk, rho, 0.5, f"{cfg.dst_path}/cubic_top.vtu"
+        )
+        self.recorder.export_histories(fname="histories.npz")
+        self._completed = True
+
+    def _optimize_impl(self, max_steps: int | None = None):
         tsk = self.tsk
         cfg = self.cfg
         tsk.export_analysis_condition_on_mesh(cfg.dst_path)
         logger.info(f"dst_path : {cfg.dst_path}")
-        self.init_schedulers()
+        if not self._ensure_state_initialized():
+            return
         density_interpolation, dC_drho_func = interpolation_funcs(cfg)
-        (
-            iter_begin,
-            iter_end,
-            rho,
-            rho_prev,
-            rho_filtered,
-            rho_projected,
-            dH_drho,
-            grad_filtered,
-            dC_drho_projected,
-            energy_mean,
-            dC_drho_full,
-            dC_drho_design_eles,
-            scaling_rate,
-            rho_design_eles,
-            rho_clip_lower,
-            rho_clip_upper,
-            u_dofs,
-            filter_radius
-        ) = self.initialize_params()
-        elements_volume_design = tsk.elements_volume[tsk.design_elements]
-        elements_volume_design_sum = np.sum(elements_volume_design)
-        self.filter.update_radius(filter_radius)
+        state = self._state
+        assert state is not None
+
+        rho = state.rho
+        rho_prev = state.rho_prev
+        rho_filtered = state.rho_filtered
+        rho_projected = state.rho_projected
+        dH_drho = state.dH_drho
+        grad_filtered = state.grad_filtered
+        dC_drho_projected = state.dC_drho_projected
+        energy_mean = state.energy_mean
+        dC_drho_full = state.dC_drho_full
+        dC_drho_design_eles = state.dC_drho_design_eles
+        scaling_rate = state.scaling_rate
+        rho_design_eles = state.rho_design_eles
+        rho_clip_lower = state.rho_clip_lower
+        rho_clip_upper = state.rho_clip_upper
+        u_dofs = state.u_dofs
+        elements_volume_design = state.elements_volume_design
+        elements_volume_design_sum = state.elements_volume_design_sum
+        iter_begin = state.iter_begin
+        iter_end = state.iter_end
+
+        iter_start = self._iter_next if self._iter_next is not None else iter_begin
+        if iter_start >= iter_end:
+            self._finalize()
+            return
+
+        iter_limit = iter_end if max_steps is None \
+            else min(iter_start + max_steps, iter_end)
+        if max_steps is not None:
+            logger.info(
+                f"Limiting optimize to {max_steps} iterations "
+                f"(through iter {iter_limit - 1})"
+            )
 
         # Loop 1 - N
         conv_rho = False
         conv_kkt = False
-        for iter_num in range(iter_begin, iter_end):
-            logger.info(f"iterations: {iter_num} / {iter_end - 1}")
+        converged = False
+        for iter_num in range(iter_start, iter_limit):
+            logger.info(
+                f"iterations: {iter_num} / "
+                f"{(iter_end - 1) if max_steps is None else (iter_limit - 1)}"
+            )
             (
                 p,
                 vol_frac,
@@ -780,7 +925,7 @@ class DensityMethod(DensityMethodBase):
             energy = self.fem.energy_multi_load(
                 rho_projected, p, u_dofs,
             )
-            energy_mean = energy.mean(axis=1)
+            energy_mean[:] = energy.mean(axis=1)
             for task_loop in range(self.tsk.n_tasks):
 
                 u_max.append(np.abs(u_dofs[:, task_loop]).max())
@@ -887,7 +1032,8 @@ class DensityMethod(DensityMethodBase):
                 (
                     iter_num % (cfg.max_iters // cfg.record_times) == 0,
                     iter_num == 1,
-                    (conv_rho and conv_kkt)
+                    (conv_rho and conv_kkt),
+                    (iter_num == iter_limit - 1)
                 )
             ):
                 logger.info(f"Saving at iteration {iter_num}")
@@ -916,21 +1062,15 @@ class DensityMethod(DensityMethodBase):
                 )
                 np.savez_compressed(
                     f"{cfg.dst_path}/data/{str(iter_num).zfill(6)}-rho.npz",
-                    rho_design_elements=rho[tsk.design_elements]
+                rho_design_elements=rho[tsk.design_elements]
                 )
                 if conv_rho and conv_kkt:
+                    converged = True
                     break
 
-        if cfg.scaling is True:
-            self.unscale()
-        visualization.rho_histo_plot(
-            rho[tsk.design_elements],
-            f"{self.cfg.dst_path}/mesh_rho/last.jpg"
-        )
-        visualization_mesh.export_submesh(
-            tsk, rho, 0.5, f"{cfg.dst_path}/cubic_top.vtu"
-        )
-        self.recorder.export_histories(fname="histories.npz")
+        self._iter_next = (iter_num + 1) if 'iter_num' in locals() else iter_start
+        if converged or self._iter_next >= iter_end:
+            self._finalize()
 
     def rho_update(
         self,

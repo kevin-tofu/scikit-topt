@@ -1,3 +1,6 @@
+import os
+import tempfile
+
 import sktopt
 # import pytest
 
@@ -100,17 +103,18 @@ def define_task_heatconduction() -> sktopt.mesh.LinearHeatConduction:
     return mytask
 
 
-def oc_optimize(tsk) -> sktopt.core.OC_Optimizer:
+def oc_optimize(tsk, dst_path: str) -> sktopt.core.OC_Optimizer:
     cfg = sktopt.core.optimizers.OC_Config()
     cfg.max_iters = 1
-    cfg.record_times = 1
+    cfg.record_times = cfg.max_iters
+    cfg.dst_path = dst_path
     optimizer = sktopt.core.OC_Optimizer(cfg, tsk)
     optimizer.parameterize()
     optimizer.optimize()
     return optimizer
 
 
-def logmoc_optimize(tsk) -> sktopt.core.LogMOC_Optimizer:
+def logmoc_optimize(tsk, dst_path: str) -> sktopt.core.LogMOC_Optimizer:
     cfg = sktopt.core.optimizers.LogMOC_Config(
         p=sktopt.tools.SchedulerConfig(
             init_value=1.0, target_value=3.0,
@@ -122,7 +126,8 @@ def logmoc_optimize(tsk) -> sktopt.core.LogMOC_Optimizer:
         ),
     )
     cfg.max_iters = 1
-    cfg.record_times = 1
+    cfg.record_times = cfg.max_iters
+    cfg.dst_path = dst_path
     optimizer = sktopt.core.LogMOC_Optimizer(cfg, tsk)
     optimizer.parameterize()
     optimizer.optimize()
@@ -132,25 +137,24 @@ def logmoc_optimize(tsk) -> sktopt.core.LogMOC_Optimizer:
 def test_optimizers():
     import numpy as np
 
-    tsk1 = sktopt.mesh.toy_problem.toy_test()
-    oc_optimizer = oc_optimize(tsk1)
-    result1 = oc_optimizer.recorder.as_object_latest()
-    result1 = oc_optimizer.recorder.as_object()
-    assert oc_optimizer is not None, "OC optimizer returned None"
-    assert np.isfinite(result1.compliance), "OC compliance must be finite"
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tsk1 = sktopt.mesh.toy_problem.toy_test()
+        oc_optimizer = oc_optimize(tsk1, os.path.join(tmpdir, "oc_elasticity"))
+        result1 = oc_optimizer.recorder.as_object_latest()
+        assert oc_optimizer is not None, "OC optimizer returned None"
+        assert np.isfinite(result1.compliance), "OC compliance must be finite"
 
-    tsk2 = sktopt.mesh.toy_problem.toy2()
-    moc_optimizer = logmoc_optimize(tsk2)
-    result2 = moc_optimizer.recorder.as_object()
-    assert moc_optimizer is not None, "LogMOC optimizer returned None"
-    assert np.isfinite(result2.compliance), "LogMOC compliance must be finite"
-    
-    tsk3 = define_task_heatconduction()
-    oc_optimizer = oc_optimize(tsk3)
-    result1 = oc_optimizer.recorder.as_object_latest()
-    result1 = oc_optimizer.recorder.as_object()
-    assert oc_optimizer is not None, "OC optimizer returned None"
-    assert np.isfinite(result1.compliance), "OC compliance must be finite"
+        tsk2 = sktopt.mesh.toy_problem.toy2()
+        moc_optimizer = logmoc_optimize(tsk2, os.path.join(tmpdir, "logmoc"))
+        result2 = moc_optimizer.recorder.as_object_latest()
+        assert moc_optimizer is not None, "LogMOC optimizer returned None"
+        assert np.isfinite(result2.compliance), "LogMOC compliance must be finite"
+        
+        tsk3 = define_task_heatconduction()
+        oc_optimizer_hc = oc_optimize(tsk3, os.path.join(tmpdir, "oc_heat"))
+        result3 = oc_optimizer_hc.recorder.as_object_latest()
+        assert oc_optimizer_hc is not None, "OC optimizer returned None"
+        assert np.isfinite(result3.compliance), "OC compliance must be finite"
 
 
 if __name__ == "__main__":
