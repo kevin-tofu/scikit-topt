@@ -45,6 +45,12 @@ class DensityState:
     elements_volume_design_sum: float
     iter_begin: int
     iter_end: int
+    last_iter: int | None = None
+    compliance: float | None = None
+    u_max: float | np.ndarray | None = None
+    rho_change_max: float | None = None
+    kkt_residual: float | None = None
+    vol_error: float | None = None
 
 
 @dataclass
@@ -902,6 +908,7 @@ class DensityMethod(DensityMethodBase):
                 export_log=True,
                 precision=6
             )
+            state.last_iter = iter_num
 
             if filter_radius != self.filter.radius:
                 logger.info("--- Filter Update ---")
@@ -926,6 +933,7 @@ class DensityMethod(DensityMethodBase):
                 rho_projected, p, u_dofs,
             )
             energy_mean[:] = energy.mean(axis=1)
+            state.compliance = float(compliance_avg)
             for task_loop in range(self.tsk.n_tasks):
 
                 u_max.append(np.abs(u_dofs[:, task_loop]).max())
@@ -990,6 +998,7 @@ class DensityMethod(DensityMethodBase):
                 )
             )
             self.recorder.feed_data("rho_change_max", rho_change_max)
+            state.rho_change_max = rho_change_max
 
             #
             #
@@ -1002,6 +1011,7 @@ class DensityMethod(DensityMethodBase):
             self.recorder.feed_data("scaling_rate", scaling_rate)
             u_max = u_max[0] if len(u_max) == 1 else np.array(u_max)
             self.recorder.feed_data("u_max", u_max)
+            state.u_max = u_max
 
             if cfg.check_convergence:
                 conv_rho = rho_change_max < cfg.tol_rho_change
@@ -1012,12 +1022,14 @@ class DensityMethod(DensityMethodBase):
                     raise ValueError(
                         "kkt_residual is not computed in rho_update"
                     )
+                state.kkt_residual = kkt_residual
                 if np.isfinite(kkt_residual):
                     conv_kkt = abs(
                         kkt_residual
                     ) < cfg.tol_kkt_residual
                 else:
                     conv_kkt = True
+                state.vol_error = vol_error
 
                 if conv_rho and conv_kkt:
                     logger.info(
