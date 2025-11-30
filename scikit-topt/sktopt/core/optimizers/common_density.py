@@ -24,7 +24,7 @@ logging.getLogger("skfem").setLevel(logging.WARNING)
 
 
 @dataclass
-class DensityIterState:
+class DensityState:
     rho: np.ndarray
     rho_prev: np.ndarray
     rho_filtered: np.ndarray
@@ -500,7 +500,7 @@ class DensityMethod(DensityMethodBase):
         self._dV_drho_design = ele_vol_design / ele_vol_design_sum
         self.kkt_residual = None
         # iterative state for partial runs
-        self._state: DensityIterState | None = None
+        self._state: DensityState | None = None
         self._iter_next: int | None = None
         self._iter_end: int | None = None
         self._completed: bool = False
@@ -786,7 +786,7 @@ class DensityMethod(DensityMethodBase):
             elements_volume_design = self.tsk.elements_volume[self.tsk.design_elements]
             elements_volume_design_sum = np.sum(elements_volume_design)
             self.filter.update_radius(filter_radius)
-            self._state = DensityIterState(
+            self._state = DensityState(
                 rho=rho,
                 rho_prev=rho_prev,
                 rho_filtered=rho_filtered,

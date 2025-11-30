@@ -1,6 +1,7 @@
 from sktopt.core.optimizers.common_density import DensityMethodConfig
 from sktopt.core.optimizers.common_density import DensityMethod_OC_Config
 from sktopt.core.optimizers.common_density import DensityMethod
+from sktopt.core.optimizers.common_density import DensityState
 from sktopt.core.optimizers.oc import OC_Config
 from sktopt.core.optimizers.oc import OC_Optimizer
 from sktopt.core.optimizers.logmoc import LogMOC_Config
@@ -17,6 +18,7 @@ from sktopt.core.optimizers.logmoc import LogMOC_Optimizer
 DensityMethodConfig.__module__ = __name__
 DensityMethod_OC_Config.__module__ = __name__
 DensityMethod.__module__ = __name__
+DensityState.__module__ = __name__
 
 OC_Config.__module__ = __name__
 OC_Optimizer.__module__ = __name__
@@ -27,6 +29,7 @@ __all__ = [
     "DensityMethodConfig",
     "DensityMethod_OC_Config",
     "DensityMethod",
+    "DensityState",
     "OC_Config",
     "OC_Optimizer",
     "LogMOC_Config",
