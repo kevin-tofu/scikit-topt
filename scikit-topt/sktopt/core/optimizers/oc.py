@@ -181,50 +181,54 @@ class OC_Optimizer(common_density.DensityMethod):
 
         eps = 1e-6
         if isinstance(percentile, float):
-            scale = np.percentile(np.abs(dC_drho_design_eles), percentile)
-            # scale = max(scale, np.mean(np.abs(dC_drho_design_eles)), 1e-4)
-            # scale = np.median(np.abs(dC_drho_full[tsk.design_elements]))
-            self.running_scale = 0.6 * self.running_scale + \
-                (1 - 0.6) * scale if iter_num > 1 else scale
-            dC_drho_design_eles /= (self.running_scale + eps)
+            with self._timed_section("percentile_scale"):
+                scale = np.percentile(np.abs(dC_drho_design_eles), percentile)
+                # scale = max(scale, np.mean(np.abs(dC_drho_design_eles)), 1e-4)
+                # scale = np.median(np.abs(dC_drho_full[tsk.design_elements]))
+                self.running_scale = 0.6 * self.running_scale + \
+                    (1 - 0.6) * scale if iter_num > 1 else scale
+                dC_drho_design_eles /= (self.running_scale + eps)
         else:
             pass
 
         # store dC_drho_design_eles for kkt residual before scaling
-        np.copyto(self._dC_raw_buffer, dC_drho_design_eles)
-        np.copyto(self._rho_e_buffer, rho_design_eles)
+        with self._timed_section("copy_buffers"):
+            np.copyto(self._dC_raw_buffer, dC_drho_design_eles)
+            np.copyto(self._rho_e_buffer, rho_design_eles)
         # np.copyto(rho_e, rho_projected[tsk.design_elements])
         # rho_e = rho[tsk.design_elements]
         # rho_e = rho_design_eles.copy()
 
-        lmid, vol_error = bisection_with_projection(
-            dC_drho_design_eles,
-            self._rho_e_buffer, cfg.rho_min, cfg.rho_max, move_limit,
-            eta, eps, vol_frac,
-            beta, cfg.beta_eta,
-            scaling_rate, rho_design_eles,
-            rho_clip_lower, rho_clip_upper,
-            elements_volume_design, elements_volume_design_sum,
-            max_iter=1000, tolerance=1e-5,
-            l1=cfg.lambda_lower,
-            l2=cfg.lambda_upper
-        )
+        with self._timed_section("bisection"):
+            lmid, vol_error = bisection_with_projection(
+                dC_drho_design_eles,
+                self._rho_e_buffer, cfg.rho_min, cfg.rho_max, move_limit,
+                eta, eps, vol_frac,
+                beta, cfg.beta_eta,
+                scaling_rate, rho_design_eles,
+                rho_clip_lower, rho_clip_upper,
+                elements_volume_design, elements_volume_design_sum,
+                max_iter=1000, tolerance=1e-5,
+                l1=cfg.lambda_lower,
+                l2=cfg.lambda_upper
+            )
 
         #
         # compute kkt residual
         #
-        mask_int = (
-            (rho_design_eles > cfg.rho_min + 1e-6) &
-            (rho_design_eles < cfg.rho_max - 1e-6)
-        )
-        if np.any(mask_int):
-            # dL/dρ_i = dC/dρ_i + λ * dV/dρ_i
-            # KKT residual
-            dL = self._dC_raw_buffer[mask_int] + \
-                lmid * self._dV_drho_design[mask_int]
-            self.kkt_residual = float(np.linalg.norm(dL, ord=np.inf))
-        else:
-            self.kkt_residual = 0.0
+        with self._timed_section("kkt"):
+            mask_int = (
+                (rho_design_eles > cfg.rho_min + 1e-6) &
+                (rho_design_eles < cfg.rho_max - 1e-6)
+            )
+            if np.any(mask_int):
+                # dL/dρ_i = dC/dρ_i + λ * dV/dρ_i
+                # KKT residual
+                dL = self._dC_raw_buffer[mask_int] + \
+                    lmid * self._dV_drho_design[mask_int]
+                self.kkt_residual = float(np.linalg.norm(dL, ord=np.inf))
+            else:
+                self.kkt_residual = 0.0
 
         l_str = f"λ: {lmid:.4e}"
         vol_str = f"vol_error: {vol_error:.4f}"

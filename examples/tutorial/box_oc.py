@@ -67,9 +67,9 @@ def get_cfg():
         max_iters=50,
         record_times=50,
         filter_type="helmholtz",
-        check_convergence=True,
-        tol_rho_change=0.2,
-        tol_kkt_residual=5e-3
+        # check_convergence=True,
+        # tol_rho_change=0.2,
+        # tol_kkt_residual=5e-3
     )
     return cfg
 

@@ -241,6 +241,8 @@ class DensityMethodConfig():
         import json
         with open(f"{path}/cfg.json", "r") as f:
             data = json.load(f)
+        # Drop legacy keys that may linger in old configs.
+        data.pop("record_timing", None)
         return cls(**data)
 
     def export(self, path: str):
@@ -459,6 +461,7 @@ class DensityMethod(DensityMethodBase):
     ):
         self.cfg = cfg
         self.tsk = tsk
+        self.timer: tools.SectionTimer = tools.SectionTimer(hierarchical=True)
         if cfg.scaling is True:
             self.scale()
 
@@ -818,6 +821,23 @@ class DensityMethod(DensityMethodBase):
             self._iter_end = iter_end
         return True
 
+    def _timed_section(self, name: str):
+        return self.timer.section(name)
+
+    def _report_timing(self):
+        logger.info("--- Timing summary ---")
+        self.timer.report(logger_instance=logger)
+
+    def _save_timing_plot(self, filename: str | None = None):
+        if not self.timer.stats():
+            return
+        path = filename or os.path.join(self.cfg.dst_path, "timing.png")
+        try:
+            self.timer.save_plot(path, format_nested=True, stacked_nested=True)
+        except ValueError:
+            # Raised when no data; skip plot
+            pass
+
     def _finalize(self):
         """Finalize outputs after completing all iterations."""
         if self._completed:
@@ -915,130 +935,132 @@ class DensityMethod(DensityMethodBase):
                 self.filter.update_radius(filter_radius)
 
             logger.info("--- project and filter ---")
-            rho_prev[:] = rho[:]
-            rho_filtered[:] = self.filter.forward(rho)
-            projection.heaviside_projection_inplace(
-                rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
-            )
+            with self._timed_section("filter_and_project"):
+                rho_prev[:] = rho[:]
+                rho_filtered[:] = self.filter.forward(rho)
+                projection.heaviside_projection_inplace(
+                    rho_filtered, beta=beta, eta=cfg.beta_eta, out=rho_projected
+                )
             logger.info("--- compute compliance ---")
             dC_drho_design_eles[:] = 0.0
             dC_drho_full[:] = 0.0
             energy_mean[:] = 0.0
             u_max = list()
 
-            compliance_avg = self.fem.objectives_multi_load(
-                rho_projected, p, u_dofs
-            ).mean()
-            energy = self.fem.energy_multi_load(
-                rho_projected, p, u_dofs,
-            )
-            energy_mean[:] = energy.mean(axis=1)
-            state.compliance = float(compliance_avg)
-            for task_loop in range(self.tsk.n_tasks):
-
-                u_max.append(np.abs(u_dofs[:, task_loop]).max())
-                dH_drho[:] = 0.0
-                np.copyto(
-                    dC_drho_projected,
-                    dC_drho_func(
-                        rho_projected,
-                        energy[:, task_loop],
-                        self.tsk.material_coef,
-                        self.tsk.material_coef*cfg.E_min_coeff,
-                        p
+            with self._timed_section("objective_and_energy"):
+                with self._timed_section("objective"):
+                    compliance_avg = self.fem.objectives_multi_load(
+                        rho_projected, p, u_dofs
+                    ).mean()
+                with self._timed_section("energy"):
+                    energy = self.fem.energy_multi_load(
+                        rho_projected, p, u_dofs,
                     )
-                )
-                projection.heaviside_projection_derivative_inplace(
-                    rho_filtered,
-                    beta=beta, eta=cfg.beta_eta, out=dH_drho
-                )
-                np.multiply(dC_drho_projected, dH_drho, out=grad_filtered)
-                dC_drho_full[:] += self.filter.gradient(grad_filtered)
+                    energy_mean[:] = energy.mean(axis=1)
+                state.compliance = float(compliance_avg)
+            with self._timed_section("sensitivity"):
+                for task_loop in range(self.tsk.n_tasks):
+                    with self._timed_section("task_loop"):
+                        u_max.append(np.abs(u_dofs[:, task_loop]).max())
+                        dH_drho[:] = 0.0
+                        np.copyto(
+                            dC_drho_projected,
+                            dC_drho_func(
+                                rho_projected,
+                                energy[:, task_loop],
+                                self.tsk.material_coef,
+                                self.tsk.material_coef*cfg.E_min_coeff,
+                                p
+                            )
+                        )
+                        projection.heaviside_projection_derivative_inplace(
+                            rho_filtered,
+                            beta=beta, eta=cfg.beta_eta, out=dH_drho
+                        )
+                        np.multiply(dC_drho_projected, dH_drho, out=grad_filtered)
+                        dC_drho_full[:] += self.filter.gradient(grad_filtered)
 
             # print(f"dC_drho_full min/max {dC_drho_full.min()} {dC_drho_full.max()}")
             dC_drho_full /= tsk.n_tasks
             if cfg.sensitivity_filter:
                 logger.info("--- sensitivity filter ---")
-                filtered = self.filter.forward(dC_drho_full)
-                np.copyto(dC_drho_full, filtered)
+                with self._timed_section("sensitivity_filter"):
+                    filtered = self.filter.forward(dC_drho_full)
+                    np.copyto(dC_drho_full, filtered)
 
             dC_drho_design_eles[:] = dC_drho_full[tsk.design_elements]
             rho_design_eles[:] = rho[tsk.design_elements]
             logger.info("--- update density ---")
-            self.rho_update(
-                iter_num,
-                rho_design_eles,
-                rho_projected,
-                dC_drho_design_eles,
-                u_dofs,
-                energy_mean,
-                scaling_rate,
-                move_limit,
-                eta,
-                beta,
-                rho_clip_lower,
-                rho_clip_upper,
-                percentile,
-                elements_volume_design,
-                elements_volume_design_sum,
-                vol_frac
-            )
+            with self._timed_section("rho_update"):
+                self.rho_update(
+                    iter_num,
+                    rho_design_eles,
+                    rho_projected,
+                    dC_drho_design_eles,
+                    u_dofs,
+                    energy_mean,
+                    scaling_rate,
+                    move_limit,
+                    eta,
+                    beta,
+                    rho_clip_lower,
+                    rho_clip_upper,
+                    percentile,
+                    elements_volume_design,
+                    elements_volume_design_sum,
+                    vol_frac
+                )
             rho[tsk.design_elements] = rho_design_eles
             if cfg.design_dirichlet is True:
                 rho[tsk.neumann_elements] = 1.0
             else:
                 rho[tsk.dirichlet_neumann_elements] = 1.0
 
-            #
-            #
-            #
-            rho_change_max = float(
-                np.max(np.abs(
-                    rho[tsk.design_elements] - rho_prev[tsk.design_elements])
+            with self._timed_section("record_metrics"):
+                rho_change_max = float(
+                    np.max(np.abs(
+                        rho[tsk.design_elements] - rho_prev[tsk.design_elements])
+                    )
                 )
-            )
-            self.recorder.feed_data("rho_change_max", rho_change_max)
-            state.rho_change_max = rho_change_max
+                self.recorder.feed_data("rho_change_max", rho_change_max)
+                state.rho_change_max = rho_change_max
 
-            #
-            #
-            #
-            self.recorder.feed_data(
-                "rho_projected", rho_projected[tsk.design_elements]
-            )
-            self.recorder.feed_data("energy", energy_mean)
-            self.recorder.feed_data("compliance", compliance_avg)
-            self.recorder.feed_data("scaling_rate", scaling_rate)
-            u_max = u_max[0] if len(u_max) == 1 else np.array(u_max)
-            self.recorder.feed_data("u_max", u_max)
-            state.u_max = u_max
+                self.recorder.feed_data(
+                    "rho_projected", rho_projected[tsk.design_elements]
+                )
+                self.recorder.feed_data("energy", energy_mean)
+                self.recorder.feed_data("compliance", compliance_avg)
+                self.recorder.feed_data("scaling_rate", scaling_rate)
+                u_max = u_max[0] if len(u_max) == 1 else np.array(u_max)
+                self.recorder.feed_data("u_max", u_max)
+                state.u_max = u_max
 
-            if cfg.check_convergence:
-                conv_rho = rho_change_max < cfg.tol_rho_change
-                # kkt_residual = self.recorder.latest("kkt_residual")
-                kkt_residual = self.kkt_residual
-                vol_error = self.recorder.latest("vol_error")
-                if kkt_residual is None:
-                    raise ValueError(
-                        "kkt_residual is not computed in rho_update"
-                    )
-                state.kkt_residual = kkt_residual
-                if np.isfinite(kkt_residual):
-                    conv_kkt = abs(
-                        kkt_residual
-                    ) < cfg.tol_kkt_residual
-                else:
-                    conv_kkt = True
-                state.vol_error = vol_error
+                if cfg.check_convergence:
+                    conv_rho = rho_change_max < cfg.tol_rho_change
+                    # kkt_residual = self.recorder.latest("kkt_residual")
+                    kkt_residual = self.kkt_residual
+                    vol_error = self.recorder.latest("vol_error")
+                    if kkt_residual is None:
+                        raise ValueError(
+                            "kkt_residual is not computed in rho_update"
+                        )
+                    state.kkt_residual = kkt_residual
+                    if np.isfinite(kkt_residual):
+                        conv_kkt = abs(
+                            kkt_residual
+                        ) < cfg.tol_kkt_residual
+                    else:
+                        conv_kkt = True
+                    state.vol_error = vol_error
 
-                if conv_rho and conv_kkt:
-                    logger.info(
-                        f"Converged at iter {iter_num}: "
-                        f"rho_change_max={rho_change_max:.3e}, "
-                        f"vol_error={vol_error:.3e}, "
-                        f"kkt_residual={kkt_residual:.3e}"
-                    )
-                    # break
+                    if conv_rho and conv_kkt:
+                        logger.info(
+                            f"Converged at iter {iter_num}: "
+                            f"rho_change_max={rho_change_max:.3e}, "
+                            f"vol_error={vol_error:.3e}, "
+                            f"kkt_residual={kkt_residual:.3e}"
+                        )
+                        # break
 
             if any(
                 (
@@ -1049,33 +1071,36 @@ class DensityMethod(DensityMethodBase):
                 )
             ):
                 logger.info(f"Saving at iteration {iter_num}")
-                self.recorder.print()
-                self.recorder.export_progress()
+                with self._timed_section("export_iteration"):
+                    self.recorder.print()
+                    self.recorder.export_progress()
 
-                visualization.export_mesh_with_info(
-                    tsk.mesh,
-                    cell_data_names=["rho_projected", "energy"],
-                    cell_data_values=[rho_projected, energy_mean],
-                    filepath=cfg.vtu_path(iter_num)
-                )
-                visualization.write_mesh_with_info_as_image(
-                    mesh_path=cfg.vtu_path(iter_num),
-                    mesh_scalar_name="rho_projected",
-                    clim=(0.0, 1.0),
-                    image_path=cfg.image_path(iter_num, "rho_projected"),
-                    image_title=f"Iteration : {iter_num}"
-                )
-                visualization.write_mesh_with_info_as_image(
-                    mesh_path=cfg.vtu_path(iter_num),
-                    mesh_scalar_name="energy",
-                    clim=(0.0, np.max(energy)),
-                    image_path=cfg.image_path(iter_num, "energy"),
-                    image_title=f"Iteration : {iter_num}"
-                )
-                np.savez_compressed(
-                    f"{cfg.dst_path}/data/{str(iter_num).zfill(6)}-rho.npz",
-                rho_design_elements=rho[tsk.design_elements]
-                )
+                    visualization.export_mesh_with_info(
+                        tsk.mesh,
+                        cell_data_names=["rho_projected", "energy"],
+                        cell_data_values=[rho_projected, energy_mean],
+                        filepath=cfg.vtu_path(iter_num)
+                    )
+                    visualization.write_mesh_with_info_as_image(
+                        mesh_path=cfg.vtu_path(iter_num),
+                        mesh_scalar_name="rho_projected",
+                        clim=(0.0, 1.0),
+                        image_path=cfg.image_path(iter_num, "rho_projected"),
+                        image_title=f"Iteration : {iter_num}"
+                    )
+                    visualization.write_mesh_with_info_as_image(
+                        mesh_path=cfg.vtu_path(iter_num),
+                        mesh_scalar_name="energy",
+                        clim=(0.0, np.max(energy)),
+                        image_path=cfg.image_path(iter_num, "energy"),
+                        image_title=f"Iteration : {iter_num}"
+                    )
+                    np.savez_compressed(
+                        f"{cfg.dst_path}/data/{str(iter_num).zfill(6)}-rho.npz",
+                        rho_design_elements=rho[tsk.design_elements]
+                    )
+                with self._timed_section("timing_plot"):
+                    self._save_timing_plot()
                 if conv_rho and conv_kkt:
                     converged = True
                     break
@@ -1083,6 +1108,7 @@ class DensityMethod(DensityMethodBase):
         self._iter_next = (iter_num + 1) if 'iter_num' in locals() else iter_start
         if converged or self._iter_next >= iter_end:
             self._finalize()
+        self._report_timing()
 
     def rho_update(
         self,
