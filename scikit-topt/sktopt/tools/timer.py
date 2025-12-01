@@ -2,7 +2,7 @@ import time
 from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Callable, DefaultDict, Iterator, List, Optional
+from typing import Callable, DefaultDict, Dict, Iterator, List, Optional
 
 from sktopt.tools.logconf import mylogger
 
@@ -51,6 +51,8 @@ class SectionTimer:
         self._hierarchical = hierarchical
         self._sep = sep
         self._stack: List[str] = []
+        self._running_means: Dict[str, float] = {}
+        self._running_counts: Dict[str, int] = {}
 
     @contextmanager
     def section(self, name: str) -> Iterator[None]:
@@ -93,8 +95,12 @@ class SectionTimer:
     def reset(self, name: Optional[str] = None) -> None:
         if name is None:
             self._records.clear()
+            self._running_means.clear()
+            self._running_counts.clear()
         else:
             self._records.pop(name, None)
+            self._running_means.pop(name, None)
+            self._running_counts.pop(name, None)
 
     def stats(self) -> List[SectionStats]:
         stats: List[SectionStats] = []
@@ -163,6 +169,7 @@ class SectionTimer:
         color: str = "C0",
         format_nested: Optional[bool] = None,
         stacked_nested: bool = False,
+        moving_average: bool = False,
     ):
         """
         Plot timing results as a horizontal bar chart without relying on pyplot state.
@@ -189,6 +196,9 @@ class SectionTimer:
             for every section that has children: self-time (parent minus
             sum(children)) plus one segment per direct child. Sections without
             children are drawn as regular bars alongside the stacked groups.
+        moving_average : bool
+            If ``True``, plot exponential-free running averages using the
+            incremental mean update (no full history stored).
 
         Returns
         -------
@@ -314,6 +324,8 @@ class SectionTimer:
                 for name in names
             ]
         data = [metric_map[value](s) for s in stats]
+        if moving_average:
+            data = self._update_running_average(names, data)
 
         fig = None
         if ax is None:
@@ -342,6 +354,7 @@ class SectionTimer:
         show_legend: bool = True,
         legend_kwargs: Optional[dict] = None,
         show_total: bool = True,
+        moving_average: bool = False,
     ):
         """
         Plot timing results as a pie chart to show relative time share.
@@ -373,6 +386,9 @@ class SectionTimer:
             ``True``.
         show_total : bool
             If ``True``, append total runtime text to the title.
+        moving_average : bool
+            If ``True``, plot exponential-free running averages using the
+            incremental mean update (no full history stored).
 
         Returns
         -------
@@ -397,6 +413,8 @@ class SectionTimer:
 
         names = [s.name for s in stats]
         data = [metric_map[value](s) for s in stats]
+        if moving_average:
+            data = self._update_running_average(names, data)
         if all(v == 0 for v in data):
             raise ValueError("All timing values are zero; nothing to plot.")
         total = sum(data)
@@ -455,6 +473,7 @@ class SectionTimer:
         format_nested: Optional[bool] = None,
         stacked_nested: bool = False,
         kind: str = "pie",
+        moving_average: bool = False,
         **kwargs,
     ):
         """
@@ -474,6 +493,7 @@ class SectionTimer:
                 sort_by=sort_by,
                 value=value,
                 descending=descending,
+                moving_average=moving_average,
                 **kwargs,
             )
         if kind == "bar":
@@ -485,6 +505,7 @@ class SectionTimer:
                 color=color,
                 format_nested=format_nested,
                 stacked_nested=stacked_nested,
+                moving_average=moving_average,
                 **kwargs,
             )
         raise ValueError('kind must be one of {"pie", "bar"}')
@@ -500,6 +521,7 @@ class SectionTimer:
         format_nested: Optional[bool] = None,
         stacked_nested: bool = False,
         kind: str = "pie",
+        moving_average: bool = False,
         **kwargs,
     ) -> None:
         """
@@ -521,8 +543,21 @@ class SectionTimer:
             format_nested=format_nested,
             stacked_nested=stacked_nested,
             kind=kind,
+            moving_average=moving_average,
             **kwargs,
         )
         fig.tight_layout()
         fig.savefig(filepath, dpi=dpi)
         fig.clf()
+
+    def _update_running_average(self, names: List[str], data: List[float]) -> List[float]:
+        """Incremental mean update: new_avg = old_avg + (x - old_avg) / n."""
+        smoothed: List[float] = []
+        for name, val in zip(names, data):
+            prev_count = self._running_counts.get(name, 0) + 1
+            prev_mean = self._running_means.get(name, val)
+            new_mean = prev_mean + (val - prev_mean) / prev_count
+            self._running_counts[name] = prev_count
+            self._running_means[name] = new_mean
+            smoothed.append(new_mean)
+        return smoothed
