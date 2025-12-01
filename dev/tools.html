@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>sktopt.tools &mdash; Scikit-Topt 0.3.3 documentation</title>
+  <title>sktopt.tools &mdash; Scikit-Topt 0.3.4 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -14,7 +14,7 @@
     <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/tools.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=d5a15cff"></script>
+      <script src="_static/documentation_options.js?v=1e28cc32"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -86,6 +86,14 @@
 <li class="toctree-l3"><a class="reference internal" href="#sktopt.tools.SchedulerSawtoothDecay"><code class="docutils literal notranslate"><span class="pre">SchedulerSawtoothDecay</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#sktopt.tools.SchedulerStep"><code class="docutils literal notranslate"><span class="pre">SchedulerStep</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#sktopt.tools.SchedulerStepAccelerating"><code class="docutils literal notranslate"><span class="pre">SchedulerStepAccelerating</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sktopt.tools.SectionTimer"><code class="docutils literal notranslate"><span class="pre">SectionTimer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.tools.SectionTimer.plot"><code class="docutils literal notranslate"><span class="pre">SectionTimer.plot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.tools.SectionTimer.plot_bar"><code class="docutils literal notranslate"><span class="pre">SectionTimer.plot_bar()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.tools.SectionTimer.plot_pie"><code class="docutils literal notranslate"><span class="pre">SectionTimer.plot_pie()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.tools.SectionTimer.save_plot"><code class="docutils literal notranslate"><span class="pre">SectionTimer.save_plot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sktopt.tools.SectionTimer.wrap"><code class="docutils literal notranslate"><span class="pre">SectionTimer.wrap()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="mesh.html">sktopt.mesh</a></li>
@@ -685,6 +693,135 @@ Higher values → stronger acceleration near the final iterations.</p></li>
 <span class="go">7.2</span>
 </pre></div>
 </div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="sktopt.tools.SectionTimer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sktopt.tools.</span></span><span class="sig-name descname"><span class="pre">SectionTimer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clock</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hierarchical</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'&gt;'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.tools.SectionTimer" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Lightweight helper to measure how long named sections take.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">timer</span> <span class="o">=</span> <span class="n">SectionTimer</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">timer</span><span class="o">.</span><span class="n">section</span><span class="p">(</span><span class="s2">&quot;assemble&quot;</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="o">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">timer</span><span class="o">.</span><span class="n">section</span><span class="p">(</span><span class="s2">&quot;solve&quot;</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="o">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">timer</span><span class="o">.</span><span class="n">report</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>To track nested calls, enable <code class="docutils literal notranslate"><span class="pre">hierarchical</span></code> so section names
+are recorded with their call stack (e.g., <code class="docutils literal notranslate"><span class="pre">outer&gt;inner</span></code>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">timer</span> <span class="o">=</span> <span class="n">SectionTimer</span><span class="p">(</span><span class="n">hierarchical</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">timer</span><span class="o">.</span><span class="n">section</span><span class="p">(</span><span class="s2">&quot;outer&quot;</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">timer</span><span class="o">.</span><span class="n">section</span><span class="p">(</span><span class="s2">&quot;inner&quot;</span><span class="p">):</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="sktopt.tools.SectionTimer.plot">
+<span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sort_by</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'total'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'total'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">descending</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'C0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format_nested</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stacked_nested</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'pie'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">moving_average</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.tools.SectionTimer.plot" title="Link to this definition"></a></dt>
+<dd><p>Plot timing results choosing between pie (default) or bar chart.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kind</strong> (<em>{&quot;pie&quot;</em><em>, </em><em>&quot;bar&quot;}</em>) – Chart type. <code class="docutils literal notranslate"><span class="pre">&quot;pie&quot;</span></code> uses <a class="reference internal" href="#sktopt.tools.SectionTimer.plot_pie" title="sktopt.tools.SectionTimer.plot_pie"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plot_pie()</span></code></a> and is the default,
+<code class="docutils literal notranslate"><span class="pre">&quot;bar&quot;</span></code> uses <a class="reference internal" href="#sktopt.tools.SectionTimer.plot_bar" title="sktopt.tools.SectionTimer.plot_bar"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plot_bar()</span></code></a>.</p></li>
+<li><p><strong>parameters</strong> (<em>Other</em>) – Passed through to the selected plotting function.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sktopt.tools.SectionTimer.plot_bar">
+<span class="sig-name descname"><span class="pre">plot_bar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sort_by</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'total'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'total'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">descending</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'C0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format_nested</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stacked_nested</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">moving_average</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.tools.SectionTimer.plot_bar" title="Link to this definition"></a></dt>
+<dd><p>Plot timing results as a horizontal bar chart without relying on pyplot state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em><em>, </em><em>optional</em>) – Target axes. If omitted, a new Figure/Axes is created.</p></li>
+<li><p><strong>sort_by</strong> (<em>{&quot;total&quot;</em><em>, </em><em>&quot;avg&quot;</em><em>, </em><em>&quot;max&quot;</em><em>, </em><em>&quot;count&quot;</em><em>, </em><em>&quot;name&quot;}</em>) – Sorting key used before plotting.</p></li>
+<li><p><strong>value</strong> (<em>{&quot;total&quot;</em><em>, </em><em>&quot;avg&quot;</em><em>, </em><em>&quot;max&quot;</em><em>, </em><em>&quot;count&quot;}</em>) – Metric plotted on the x-axis.</p></li>
+<li><p><strong>descending</strong> (<em>bool</em>) – Sort order for <code class="docutils literal notranslate"><span class="pre">sort_by</span></code>.</p></li>
+<li><p><strong>color</strong> (<em>str</em>) – Bar color passed to Matplotlib.</p></li>
+<li><p><strong>format_nested</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> and the timer is hierarchical, indent nested section
+labels using <code class="docutils literal notranslate"><span class="pre">sep</span></code> for readability. Defaults to <code class="docutils literal notranslate"><span class="pre">hierarchical</span></code>
+flag used at construction time (ignored when <code class="docutils literal notranslate"><span class="pre">stacked_nested</span></code> is
+<code class="docutils literal notranslate"><span class="pre">True</span></code>).</p></li>
+<li><p><strong>stacked_nested</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> and hierarchical data are present, render a stacked bar
+for every section that has children: self-time (parent minus
+sum(children)) plus one segment per direct child. Sections without
+children are drawn as regular bars alongside the stacked groups.</p></li>
+<li><p><strong>moving_average</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, plot exponential-free running averages using the
+incremental mean update (no full history stored).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Figure/Axes containing the plot. If <code class="docutils literal notranslate"><span class="pre">ax</span></code> was provided,
+its parent figure is returned.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(matplotlib.figure.Figure, matplotlib.axes.Axes)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sktopt.tools.SectionTimer.plot_pie">
+<span class="sig-name descname"><span class="pre">plot_pie</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sort_by</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'total'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'total'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">descending</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">autopct</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'%.1f%%'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_pct_to_label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_legend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_total</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">moving_average</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.tools.SectionTimer.plot_pie" title="Link to this definition"></a></dt>
+<dd><p>Plot timing results as a pie chart to show relative time share.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em><em>, </em><em>optional</em>) – Target axes. If omitted, a new Figure/Axes is created.</p></li>
+<li><p><strong>sort_by</strong> (<em>{&quot;total&quot;</em><em>, </em><em>&quot;avg&quot;</em><em>, </em><em>&quot;max&quot;</em><em>, </em><em>&quot;count&quot;</em><em>, </em><em>&quot;name&quot;}</em>) – Sorting key used before plotting.</p></li>
+<li><p><strong>value</strong> (<em>{&quot;total&quot;</em><em>, </em><em>&quot;avg&quot;</em><em>, </em><em>&quot;max&quot;</em><em>, </em><em>&quot;count&quot;}</em>) – Metric used to size the wedges.</p></li>
+<li><p><strong>descending</strong> (<em>bool</em>) – Sort order for <code class="docutils literal notranslate"><span class="pre">sort_by</span></code>.</p></li>
+<li><p><strong>colors</strong> (<em>list</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Colors passed to Matplotlib <code class="docutils literal notranslate"><span class="pre">pie</span></code>.</p></li>
+<li><p><strong>autopct</strong> (<em>str</em>) – <code class="docutils literal notranslate"><span class="pre">autopct</span></code> string passed to Matplotlib <code class="docutils literal notranslate"><span class="pre">pie</span></code>.</p></li>
+<li><p><strong>label_threshold</strong> (<em>float</em>) – Minimum fraction (0-1) required to draw a text label on the wedge.
+Smaller slices omit the label to reduce clutter.</p></li>
+<li><p><strong>min_pct_to_label</strong> (<em>float</em>) – Minimum percent value to render <code class="docutils literal notranslate"><span class="pre">autopct</span></code> text. Use <code class="docutils literal notranslate"><span class="pre">None</span></code> to
+always show.</p></li>
+<li><p><strong>show_legend</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, draw a legend with all section names.</p></li>
+<li><p><strong>legend_kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Extra kwargs forwarded to <code class="docutils literal notranslate"><span class="pre">Axes.legend</span></code> when <code class="docutils literal notranslate"><span class="pre">show_legend</span></code> is
+<code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>show_total</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, append total runtime text to the title.</p></li>
+<li><p><strong>moving_average</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, plot exponential-free running averages using the
+incremental mean update (no full history stored).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Figure/Axes containing the plot. If <code class="docutils literal notranslate"><span class="pre">ax</span></code> was provided,
+its parent figure is returned.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(matplotlib.figure.Figure, matplotlib.axes.Axes)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sktopt.tools.SectionTimer.save_plot">
+<span class="sig-name descname"><span class="pre">save_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sort_by</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'total'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'total'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">descending</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'C0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dpi</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">150</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format_nested</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stacked_nested</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'pie'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">moving_average</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#sktopt.tools.SectionTimer.save_plot" title="Link to this definition"></a></dt>
+<dd><p>Render and save the timing plot to <code class="docutils literal notranslate"><span class="pre">filepath</span></code>.</p>
+<p>This helper builds its own Figure/Axes (no pyplot state), so it can be
+used safely inside loops.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sktopt.tools.SectionTimer.wrap">
+<span class="sig-name descname"><span class="pre">wrap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sktopt.tools.SectionTimer.wrap" title="Link to this definition"></a></dt>
+<dd><p>Decorator form of <code class="xref py py-meth docutils literal notranslate"><span class="pre">section()</span></code>.</p>
+<p>This is convenient for quickly instrumenting functions without
+rewriting call sites:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@timer</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="s2">&quot;my_step&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_step</span><span class="p">(</span><span class="o">...</span><span class="p">):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+</dd></dl>
+
 </dd></dl>
 
 </section>
