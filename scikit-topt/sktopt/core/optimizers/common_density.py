@@ -833,7 +833,13 @@ class DensityMethod(DensityMethodBase):
             return
         path = filename or os.path.join(self.cfg.dst_path, "timing.png")
         try:
-            self.timer.save_plot(path, format_nested=True, stacked_nested=True)
+            # Pie chart using self-time (children subtracted) to avoid重複計上
+            self.timer.save_plot(
+                path,
+                kind="pie",
+                use_self_time=True,
+                format_nested=True,
+            )
         except ValueError:
             # Raised when no data; skip plot
             pass
@@ -950,7 +956,7 @@ class DensityMethod(DensityMethodBase):
             with self._timed_section("objective_and_energy"):
                 with self._timed_section("objective"):
                     compliance_avg = self.fem.objectives_multi_load(
-                        rho_projected, p, u_dofs
+                        rho_projected, p, u_dofs, timer=self.timer
                     ).mean()
                 with self._timed_section("energy"):
                     energy = self.fem.energy_multi_load(

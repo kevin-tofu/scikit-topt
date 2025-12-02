@@ -119,6 +119,30 @@ class SectionTimer:
             )
         return stats
 
+    def _self_time_stats(self, stats: List[SectionStats]) -> List[SectionStats]:
+        sep = self._sep
+        totals = {s.name: s.total for s in stats}
+        children: DefaultDict[str, List[str]] = defaultdict(list)
+        for name in totals:
+            if sep in name:
+                parent = sep.join(name.split(sep)[:-1])
+                children[parent].append(name)
+        self_stats: List[SectionStats] = []
+        for s in stats:
+            child_total = sum(totals[ch] for ch in children.get(s.name, []))
+            self_time = max(s.total - child_total, 0.0)
+            avg = self_time / s.count if s.count else 0.0
+            self_stats.append(
+                SectionStats(
+                    name=s.name,
+                    count=s.count,
+                    total=self_time,
+                    avg=avg,
+                    max=self_time,  # self-time max is self-time total here
+                )
+            )
+        return self_stats
+
     def summary(
         self, sort_by: str = "total", descending: bool = True
     ) -> List[SectionStats]:
@@ -137,6 +161,25 @@ class SectionTimer:
             ) from exc
 
         return sorted(self.stats(), key=key_func, reverse=descending)
+
+    def summary_self_time(
+        self, sort_by: str = "total", descending: bool = True
+    ) -> List[SectionStats]:
+        stats = self._self_time_stats(self.stats())
+        key_map = {
+            "total": lambda s: s.total,
+            "avg": lambda s: s.avg,
+            "max": lambda s: s.max,
+            "count": lambda s: s.count,
+            "name": lambda s: s.name,
+        }
+        try:
+            key_func = key_map[sort_by]
+        except KeyError as exc:
+            raise ValueError(
+                'sort_by must be one of {"total", "avg", "max", "count", "name"}'
+            ) from exc
+        return sorted(stats, key=key_func, reverse=descending)
 
     def report(
         self,
@@ -170,6 +213,7 @@ class SectionTimer:
         format_nested: Optional[bool] = None,
         stacked_nested: bool = False,
         moving_average: bool = False,
+        use_self_time: bool = False,
     ):
         """
         Plot timing results as a horizontal bar chart without relying on pyplot state.
@@ -207,7 +251,11 @@ class SectionTimer:
             its parent figure is returned.
         """
 
-        stats = self.summary(sort_by=sort_by, descending=descending)
+        stats = (
+            self.summary_self_time(sort_by=sort_by, descending=descending)
+            if use_self_time
+            else self.summary(sort_by=sort_by, descending=descending)
+        )
         if not stats:
             raise ValueError("No timing data to plot.")
 
@@ -355,6 +403,7 @@ class SectionTimer:
         legend_kwargs: Optional[dict] = None,
         show_total: bool = True,
         moving_average: bool = False,
+        use_self_time: bool = False,
     ):
         """
         Plot timing results as a pie chart to show relative time share.
@@ -396,7 +445,11 @@ class SectionTimer:
             Figure/Axes containing the plot. If ``ax`` was provided,
             its parent figure is returned.
         """
-        stats = self.summary(sort_by=sort_by, descending=descending)
+        stats = (
+            self.summary_self_time(sort_by=sort_by, descending=descending)
+            if use_self_time
+            else self.summary(sort_by=sort_by, descending=descending)
+        )
         if not stats:
             raise ValueError("No timing data to plot.")
 
@@ -419,6 +472,10 @@ class SectionTimer:
             raise ValueError("All timing values are zero; nothing to plot.")
         total = sum(data)
         unit = "s" if value in ("total", "avg", "max") else ""
+        legend_labels = [
+            f"{n} ({val:.3f}{unit})" if unit else f"{n} ({val})"
+            for n, val in zip(names, data)
+        ]
 
         fig = None
         if ax is None:
@@ -451,7 +508,7 @@ class SectionTimer:
             suffix = f" (total {total:.3f}{unit})" if unit else f" (total {total:.0f})"
         else:
             suffix = ""
-        ax.set_title(f"Section timing share{suffix}")
+        ax.set_title(f"Section timing share{suffix}\n(legend shows each: seconds)")
         if show_legend:
             legend_opts = {
                 "bbox_to_anchor": (1.05, 0.5),
@@ -460,7 +517,7 @@ class SectionTimer:
             }
             if legend_kwargs:
                 legend_opts.update(legend_kwargs)
-            ax.legend(wedges, names, **legend_opts)
+            ax.legend(wedges, legend_labels, **legend_opts)
         return (fig or ax.figure), ax
 
     def plot(
@@ -474,6 +531,7 @@ class SectionTimer:
         stacked_nested: bool = False,
         kind: str = "pie",
         moving_average: bool = False,
+        use_self_time: bool = False,
         **kwargs,
     ):
         """
@@ -494,6 +552,7 @@ class SectionTimer:
                 value=value,
                 descending=descending,
                 moving_average=moving_average,
+                use_self_time=use_self_time,
                 **kwargs,
             )
         if kind == "bar":
@@ -506,6 +565,7 @@ class SectionTimer:
                 format_nested=format_nested,
                 stacked_nested=stacked_nested,
                 moving_average=moving_average,
+                use_self_time=use_self_time,
                 **kwargs,
             )
         raise ValueError('kind must be one of {"pie", "bar"}')
@@ -521,6 +581,7 @@ class SectionTimer:
         format_nested: Optional[bool] = None,
         stacked_nested: bool = False,
         kind: str = "pie",
+        use_self_time: bool = False,
         moving_average: bool = False,
         **kwargs,
     ) -> None:
@@ -530,7 +591,11 @@ class SectionTimer:
         This helper builds its own Figure/Axes (no pyplot state), so it can be
         used safely inside loops.
         """
-        stats = self.summary(sort_by=sort_by, descending=descending)
+        stats = (
+            self.summary_self_time(sort_by=sort_by, descending=descending)
+            if use_self_time
+            else self.summary(sort_by=sort_by, descending=descending)
+        )
         if not stats:
             raise ValueError("No timing data to plot.")
 
@@ -543,6 +608,7 @@ class SectionTimer:
             format_nested=format_nested,
             stacked_nested=stacked_nested,
             kind=kind,
+            use_self_time=use_self_time,
             moving_average=moving_average,
             **kwargs,
         )

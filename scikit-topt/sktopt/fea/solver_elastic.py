@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Callable, Literal
+from contextlib import contextmanager
 
 import numpy as np
 import scipy
@@ -71,10 +72,19 @@ def compute_compliance_basis(
     solver: Literal['auto', 'cg_jacobi', 'spsolve', 'cg_pyamg'] = 'auto',
     rtol: float = 1e-5,
     maxiter: int = None,
+    timer=None,
 ) -> tuple:
-    K = composer.assemble_stiffness_matrix(
-        basis, rho, E0, Emin, p, nu0, elem_func
-    )
+    def section(name: str):
+        if timer:
+            return timer.section(name)
+        @contextmanager
+        def _noop():
+            yield
+        return _noop()
+    with section("assemble"):
+        K = composer.assemble_stiffness_matrix(
+            basis, rho, E0, Emin, p, nu0, elem_func
+        )
     n_dof = K.shape[0]
     # Solver auto-selection
     if solver == 'auto':
@@ -95,11 +105,13 @@ def compute_compliance_basis(
     free_dofs = np.setdiff1d(all_dofs, dirichlet_dofs, assume_unique=True)
 
     # enforce
-    K_e, F_e = skfem.enforce(K_csr, force, D=dirichlet_dofs)
-    u = solve_u(
-        K_e, F_e, chosen_solver=chosen_solver,
-        rtol=rtol, maxiter=_maxiter
-    )
+    with section("enforce_bc"):
+        K_e, F_e = skfem.enforce(K_csr, force, D=dirichlet_dofs)
+    with section("solve"):
+        u = solve_u(
+            K_e, F_e, chosen_solver=chosen_solver,
+            rtol=rtol, maxiter=_maxiter
+        )
 
     # condense
     # K_c, F_c, U_c, I = skfem.condense(K, F, D=fixed_dofs)
@@ -128,6 +140,7 @@ def solve_multi_load(
     elem_func: Callable = composer.simp_interpolation,
     rtol: float = 1e-5,
     maxiter: int | None = None,
+    timer=None,
 ) -> np.ndarray:
     """
     Solve a shared-stiffness linear elasticity problem for multiple load cases.
@@ -181,6 +194,21 @@ def solve_multi_load(
         Stack of enforced right-hand sides for each load case.
     """
 
+    # fall back to single-load path to honor chosen solver/timer
+    if len(force_list) == 1:
+        compliance, u = compute_compliance_basis(
+            basis, free_dofs, dirichlet_dofs, force_list[0],
+            E0, Emin, p, nu0,
+            rho,
+            elem_func=elem_func,
+            solver=solver,
+            rtol=rtol,
+            maxiter=maxiter,
+            timer=timer,
+        )
+        u_all[:, 0] = u
+        return np.array([compliance])
+
     # Multi-load currently supports only direct LU factorization.
     if solver not in ('auto', 'spsolve'):
         raise NotImplementedError(
@@ -189,28 +217,41 @@ def solve_multi_load(
             "not implemented."
         )
 
+    def section(name: str):
+        if timer:
+            return timer.section(name)
+        @contextmanager
+        def _noop():
+            yield
+        return _noop()
+
     # Assemble the global stiffness matrix with SIMP interpolation
-    K = composer.assemble_stiffness_matrix(
-        basis, rho, E0, Emin, p, nu0, elem_func
-    )
+    with section("assemble"):
+        K = composer.assemble_stiffness_matrix(
+            basis, rho, E0, Emin, p, nu0, elem_func
+        )
     K_csr = K.tocsr()
 
     # Enforce Dirichlet BCs once to obtain the enforced matrix K_e.
     # The pattern of K_e depends only on the Dirichlet DOF set, not on
     # the particular load vector, so we can use the first load as a template.
-    K_e, _ = skfem.enforce(K_csr, force_list[0], D=dirichlet_dofs)
+    with section("enforce_bc"):
+        K_e, _ = skfem.enforce(K_csr, force_list[0], D=dirichlet_dofs)
 
     # Build all enforced right-hand sides and stack them column-wise.
-    F_stack = np.column_stack([
-        skfem.enforce(K_csr, f, D=dirichlet_dofs)[1]
-        for f in force_list
-    ])  # shape: (n_dof, n_loads)
+    with section("build_rhs"):
+        F_stack = np.column_stack([
+            skfem.enforce(K_csr, f, D=dirichlet_dofs)[1]
+            for f in force_list
+        ])  # shape: (n_dof, n_loads)
 
     # Perform a single LU factorization of K_e
-    lu = scipy.sparse.linalg.splu(K_e.tocsc())
+    with section("factorize"):
+        lu = scipy.sparse.linalg.splu(K_e.tocsc())
 
     # Solve all load cases in one call (multi-RHS solve)
-    u_sol = lu.solve(F_stack)      # shape: (n_dof, n_loads)
+    with section("solve"):
+        u_sol = lu.solve(F_stack)      # shape: (n_dof, n_loads)
 
     # Store the solutions in the provided array
     u_all[:, :] = u_sol
@@ -230,8 +271,25 @@ def compute_compliance_basis_multi_load(
     elem_func: Callable = composer.simp_interpolation,
     rtol: float = 1e-5,
     maxiter: int = None,
+    timer=None,
 ) -> np.ndarray:
 
+    # Single-load: use the iterative-capable path and keep timer granularity.
+    if len(force_list) == 1:
+        compliance, u = compute_compliance_basis(
+            basis, free_dofs, dirichlet_dofs, force_list[0],
+            E0, Emin, p, nu0,
+            rho,
+            elem_func=elem_func,
+            solver=solver,
+            rtol=rtol,
+            maxiter=maxiter,
+            timer=timer,
+        )
+        u_all[:, 0] = u
+        return np.array([compliance])
+
+    # Multi-load currently supports only direct LU factorization.
     F_stack = solve_multi_load(
         basis, free_dofs, dirichlet_dofs, force_list,
         E0, Emin, p, nu0,
@@ -241,10 +299,18 @@ def compute_compliance_basis_multi_load(
         elem_func=elem_func,
         rtol=rtol,
         maxiter=maxiter,
+        timer=timer,
     )
 
+    if F_stack.ndim == 1:
+        F_stack = F_stack[:, None]
+    if u_all.ndim == 1:
+        u_view = u_all[:, None]
+    else:
+        u_view = u_all
+
     # compliance for each load: fᵢ · uᵢ
-    compliance_each = np.einsum('ij,ij->j', F_stack, u_all)
+    compliance_each = np.einsum('ij,ij->j', F_stack, u_view)
 
     return compliance_each
 
@@ -402,7 +468,8 @@ class FEM_SimpLinearElasticity():
     def objectives_multi_load(
         self,
         rho: np.ndarray, p: float,
-        u_dofs: np.ndarray
+        u_dofs: np.ndarray,
+        timer=None
     ) -> np.ndarray:
 
         compliance_array = compute_compliance_basis_multi_load(
@@ -413,6 +480,7 @@ class FEM_SimpLinearElasticity():
             u_dofs,
             elem_func=self.density_interpolation,
             solver=self.solver_option,
+            timer=timer,
         )
         return compliance_array
 
