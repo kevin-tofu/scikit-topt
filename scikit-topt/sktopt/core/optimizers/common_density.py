@@ -839,6 +839,7 @@ class DensityMethod(DensityMethodBase):
                 kind="pie",
                 use_self_time=True,
                 format_nested=True,
+                value="avg",
             )
         except ValueError:
             # Raised when no data; skip plot
