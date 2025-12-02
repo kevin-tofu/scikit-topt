@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; Scikit-Topt 0.3.3 documentation</title>
+  <title>Index &mdash; Scikit-Topt 0.3.4 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -13,7 +13,7 @@
     <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/genindex.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=d5a15cff"></script>
+      <script src="_static/documentation_options.js?v=1e28cc32"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -97,6 +97,7 @@
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
  | <a href="#V"><strong>V</strong></a>
+ | <a href="#W"><strong>W</strong></a>
  | <a href="#Λ"><strong>Λ</strong></a>
  
 </div>
@@ -167,10 +168,12 @@
 </li>
       <li><a href="core.html#sktopt.core.DensityMethodConfig">DensityMethodConfig (class in sktopt.core)</a>
 </li>
-      <li><a href="core.html#sktopt.core.DensityMethodConfig.design_dirichlet">design_dirichlet (sktopt.core.DensityMethodConfig attribute)</a>
+      <li><a href="core.html#sktopt.core.DensityState">DensityState (class in sktopt.core)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core.html#sktopt.core.DensityMethodConfig.design_dirichlet">design_dirichlet (sktopt.core.DensityMethodConfig attribute)</a>
+</li>
       <li><a href="mesh.html#sktopt.mesh.FEMDomain.design_elements">design_elements (sktopt.mesh.FEMDomain attribute)</a>
 </li>
       <li><a href="mesh.html#sktopt.mesh.FEMDomain.dirichlet_dofs">dirichlet_dofs (sktopt.mesh.FEMDomain attribute)</a>
@@ -398,9 +401,13 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="core.html#sktopt.core.OC_Config">OC_Config (class in sktopt.core)</a>
 </li>
+      <li><a href="core.html#sktopt.core.OC_Optimizer">OC_Optimizer (class in sktopt.core)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="core.html#sktopt.core.OC_Optimizer">OC_Optimizer (class in sktopt.core)</a>
+      <li><a href="core.html#sktopt.core.DensityMethod.optimize">optimize() (sktopt.core.DensityMethod method)</a>
+</li>
+      <li><a href="core.html#sktopt.core.DensityMethod.optimize_steps">optimize_steps() (sktopt.core.DensityMethod method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -410,9 +417,15 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="core.html#sktopt.core.DensityMethodConfig.p">p (sktopt.core.DensityMethodConfig attribute)</a>
 </li>
+      <li><a href="core.html#sktopt.core.DensityMethod_OC_Config.percentile">percentile (sktopt.core.DensityMethod_OC_Config attribute)</a>
+</li>
+      <li><a href="tools.html#sktopt.tools.SectionTimer.plot">plot() (sktopt.tools.SectionTimer method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="core.html#sktopt.core.DensityMethod_OC_Config.percentile">percentile (sktopt.core.DensityMethod_OC_Config attribute)</a>
+      <li><a href="tools.html#sktopt.tools.SectionTimer.plot_bar">plot_bar() (sktopt.tools.SectionTimer method)</a>
+</li>
+      <li><a href="tools.html#sktopt.tools.SectionTimer.plot_pie">plot_pie() (sktopt.tools.SectionTimer method)</a>
 </li>
       <li><a href="tools.html#sktopt.tools.HistoryCollection.print">print() (sktopt.tools.HistoryCollection method)</a>
 </li>
@@ -442,6 +455,8 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="tools.html#sktopt.tools.SectionTimer.save_plot">save_plot() (sktopt.tools.SectionTimer method)</a>
+</li>
       <li><a href="tools.html#sktopt.tools.SchedulerConfig.sawtooth_decay">sawtooth_decay() (sktopt.tools.SchedulerConfig class method)</a>
 </li>
       <li><a href="core.html#sktopt.core.DensityMethodConfig.scaling">scaling (sktopt.core.DensityMethodConfig attribute)</a>
@@ -457,6 +472,8 @@
       <li><a href="tools.html#sktopt.tools.SchedulerStep">SchedulerStep (class in sktopt.tools)</a>
 </li>
       <li><a href="tools.html#sktopt.tools.SchedulerStepAccelerating">SchedulerStepAccelerating (class in sktopt.tools)</a>
+</li>
+      <li><a href="tools.html#sktopt.tools.SectionTimer">SectionTimer (class in sktopt.tools)</a>
 </li>
       <li><a href="core.html#sktopt.core.DensityMethodConfig.sensitivity_filter">sensitivity_filter (sktopt.core.DensityMethodConfig attribute)</a>
 </li>
@@ -536,6 +553,14 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="core.html#sktopt.core.DensityMethodConfig.vol_frac">vol_frac (sktopt.core.DensityMethodConfig attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="W">W</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="tools.html#sktopt.tools.SectionTimer.wrap">wrap() (sktopt.tools.SectionTimer method)</a>
 </li>
   </ul></td>
 </tr></table>
