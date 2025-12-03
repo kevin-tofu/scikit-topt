@@ -476,6 +476,7 @@ class SectionTimer:
             f"{n} ({val:.3f}{unit})" if unit else f"{n} ({val})"
             for n, val in zip(names, data)
         ]
+        value_label = {"total": "total", "avg": "avg", "max": "max", "count": "count"}.get(value, value)
 
         fig = None
         if ax is None:
@@ -505,10 +506,13 @@ class SectionTimer:
         )
         ax.axis("equal")
         if show_total:
-            suffix = f"(sum of slices {total:.3f}{unit})" if unit else f"(sum of slices {total:.0f})"
+            suffix = f"(total {total:.3f}{unit})" if unit else f"(total {total:.0f})"
         else:
             suffix = ""
-        ax.set_title(f"Section timing share {suffix}\n(legend shows each: {unit or 'count'})")
+        ax.set_title(
+            f"Section timing share {suffix}\n"
+            f"(values = {value_label} self-time in {unit or 'count'})"
+        )
         if show_legend:
             legend_opts = {
                 "bbox_to_anchor": (1.05, 0.5),

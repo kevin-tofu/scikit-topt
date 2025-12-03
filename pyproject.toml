@@ -1,6 +1,6 @@
 [project]
 name = "scikit-topt"
-version = "0.3.4"
+version = "0.3.5"
 description = "A lightweight, flexible Python library for topology optimization built on top of Scikit Libraries"
 authors = [
     { name = "Kevin-Tofu", email = "koheitech001@gmail.com" }
@@ -29,7 +29,7 @@ dependencies = [
 
 [tool.poetry]
 name = "scikit-topt"
-version = "0.3.4"
+version = "0.3.5"
 description = "A lightweight, flexible Python library for topology optimization built on top of Scikit Libraries"
 authors = ["Kevin-Tofu <koheitech001@gmail.com>"]
 readme = "README.md"

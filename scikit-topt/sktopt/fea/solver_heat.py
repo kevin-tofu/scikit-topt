@@ -565,7 +565,7 @@ class FEM_SimpLinearHeatConduction():
 
     def objectives_multi_load(
         self,
-        rho: np.ndarray, p: float, u_dofs: np.ndarray
+        rho: np.ndarray, p: float, u_dofs: np.ndarray, timer=None
     ) -> np.ndarray:
         dirichlet_nodes_list = self.task.dirichlet_nodes if isinstance(
             self.task.dirichlet_nodes, list

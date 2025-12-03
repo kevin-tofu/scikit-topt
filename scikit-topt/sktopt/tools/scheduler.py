@@ -166,6 +166,56 @@ def schedule_step_accelerating(
     return value
 
 
+def schedule_step_decelerating(
+    it: int,
+    total: int,
+    initial_value: float = 1.0,
+    target_value: float = 0.4,
+    num_steps: int = 10,
+    curvature: float = 3.0,
+    **args
+):
+    """
+    Step-function scheduler with decreasing step size.
+
+    The steps change rapidly at the beginning and gradually flatten out,
+    providing the opposite bias to :func:`schedule_step_accelerating`.
+
+    Parameters
+    ----------
+    it : int
+        Current iteration index.
+    total : int
+        Total number of iterations.
+    initial_value : float
+        Starting value.
+    target_value : float
+        Final target_value value.
+    num_steps : int
+        Number of steps (including initial_value and target_value).
+    curvature : float
+        Controls how quickly the steps decelerate (larger → faster early change).
+
+    Returns
+    -------
+    float
+        Scheduled value for the given iteration.
+    """
+    if total <= 0:
+        raise ValueError("total must be positive")
+    if num_steps <= 1:
+        return target_value
+
+    step_length = total / num_steps
+    step_index = min(int(it // step_length), num_steps - 1)
+
+    alpha = step_index / (num_steps - 1)
+    nonlinear_alpha = 1 - (1 - alpha) ** curvature
+
+    value = (1 - nonlinear_alpha) * initial_value + nonlinear_alpha * target_value
+    return value
+
+
 def schedule_sawtooth_decay(
     it: int,
     total: int,
@@ -213,7 +263,7 @@ def schedule_sawtooth_decay(
 
 _lit_schedulers = Literal[
     'Constant',
-    'Step', 'StepAccelerating', 'SawtoothDecay',
+    'Step', 'StepAccelerating', 'StepDecelerating', 'SawtoothDecay',
     'None'
 ]
 
@@ -249,15 +299,16 @@ class SchedulerConfig:
         - Used in SawtoothDecay to partition iterations into cycles.
         - Typically equals the outer optimizer's max_iters.
     curvature : float, optional
-        Shape parameter used in StepAccelerating.
+        Shape parameter used in StepAccelerating / StepDecelerating.
         - Example: curvature=2.0 accelerates change near the end.
         - Ignored in other schedulers.
-    scheduler_type : {"Constant", "Step", "StepAccelerating", "SawtoothDecay"}
+    scheduler_type : {"Constant", "Step", "StepAccelerating", "StepDecelerating", "SawtoothDecay"}
         Scheduling strategy:
           - **Constant**: fixed at ``target_value``.
           - **Step**: discrete continuation from ``init_value`` → ``target_value`` in
             ``num_steps`` increments.
           - **StepAccelerating**: like Step but transition rate controlled by ``curvature``.
+          - **StepDecelerating**: mirror of StepAccelerating (fast early changes, slows later).
           - **SawtoothDecay**: parameter decays linearly from ``init_value`` → ``target_value``
             within each cycle (cycle length = iters_max/num_steps), then resets to
             ``init_value`` at the start of the next cycle.
@@ -363,6 +414,15 @@ class SchedulerConfig:
                 raise ValueError("Should set num_steps")
             if curvature is None:
                 raise ValueError("Should set curvature")
+        elif scheduler_type == "StepDecelerating":
+            if init_value is None:
+                raise ValueError("Should set init_value")
+            if target_value is None:
+                raise ValueError("Should set target_value")
+            if num_steps is None:
+                raise ValueError("Should set num_steps")
+            if curvature is None:
+                raise ValueError("Should set curvature")
         elif scheduler_type == "SawtoothDecay":
             if init_value is None:
                 raise ValueError("Should set init_value")
@@ -447,6 +507,27 @@ class SchedulerConfig:
             iters_max=iters_max,
             curvature=curvature,
             scheduler_type="StepAccelerating",
+        )
+
+    @classmethod
+    def step_decelerating(
+        cls,
+        name: Optional[str] = None,
+        init_value: Optional[float] = None,
+        target_value: Optional[float] = None,
+        num_steps: Optional[int] = None,
+        iters_max: Optional[int] = None,
+        curvature=None
+    ) -> "SchedulerConfig":
+        """Factory for a StepDecelerating scheduler (nonlinear continuation that slows down)."""
+        return cls.from_defaults(
+            name=name,
+            init_value=init_value,
+            target_value=target_value,
+            num_steps=num_steps,
+            iters_max=iters_max,
+            curvature=curvature,
+            scheduler_type="StepDecelerating",
         )
 
     @classmethod
@@ -551,6 +632,8 @@ class Scheduler():
             func = schedule_step
         elif cfg.scheduler_type == 'StepAccelerating':
             func = schedule_step_accelerating
+        elif cfg.scheduler_type == 'StepDecelerating':
+            func = schedule_step_decelerating
         elif cfg.scheduler_type == 'SawtoothDecay':
             func = schedule_sawtooth_decay
         elif cfg.scheduler_type == 'None':
@@ -558,7 +641,7 @@ class Scheduler():
         else:
             options = [
                 'Constant',
-                'Step', 'StepAccelerating', 'SawtoothDecay',
+                'Step', 'StepAccelerating', 'StepDecelerating', 'SawtoothDecay',
                 'None'
             ]
             raise ValueError(
@@ -731,6 +814,36 @@ class SchedulerStepAccelerating(Scheduler):
             iters_max=iters_max,
             curvature=curvature,
             func=schedule_step_accelerating
+        )
+
+
+class SchedulerStepDecelerating(Scheduler):
+    """
+    Nonlinear step-based continuation scheduler with deceleration.
+
+    This is the mirror of :class:`SchedulerStepAccelerating`: the schedule
+    changes quickly at the beginning and gradually flattens as iterations
+    progress. Useful when you want aggressive early updates that stabilize
+    over time.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        init_value: float,
+        target_value: float,
+        num_steps: float,
+        iters_max: Optional[int] = None,
+        curvature: Optional[float] = None,
+    ):
+        super().__init__(
+            name,
+            init_value,
+            target_value,
+            num_steps,
+            iters_max=iters_max,
+            curvature=curvature,
+            func=schedule_step_decelerating
         )
 
 
