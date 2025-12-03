@@ -52,6 +52,7 @@ For full details, see the module-specific pages below.
 - :class:`SchedulerConfig`
 - :class:`SchedulerStep`
 - :class:`SchedulerStepAccelerating`
+- :class:`SchedulerStepDecelerating`
 - :class:`SchedulerSawtoothDecay`
 
 
