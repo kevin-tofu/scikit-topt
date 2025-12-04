@@ -58,14 +58,33 @@ def get_cfg():
     cfg = sktopt.core.optimizers.OC_Config(
         dst_path="./result/tutorial_box_oc",
         export_img=True,
-        p=sktopt.tools.SchedulerConfig.constant(
-            target_value=3.0
+        # soften the early steps to avoid a sudden volume drop
+        p=sktopt.tools.SchedulerConfig.step(
+            init_value=1.0,
+            target_value=3.0,
+            num_steps=10,
         ),
-        vol_frac=sktopt.tools.SchedulerConfig.constant(
-            target_value=0.6
+        vol_frac=sktopt.tools.SchedulerConfig.step(
+            init_value=0.8,   # start higher
+            target_value=0.6, # final target
+            num_steps=20,     # gradual tightening
         ),
-        max_iters=50,
-        record_times=50,
+        beta=sktopt.tools.SchedulerConfig.step_accelerating(
+            init_value=0.5,
+            target_value=8.0,
+            num_steps=30,
+            curvature=2.0,
+        ),
+        filter_radius=sktopt.tools.SchedulerConfig.constant(
+            target_value=0.8
+        ),
+        move_limit=sktopt.tools.SchedulerConfig.step(
+            init_value=0.01,  # conservative early moves
+            target_value=0.05,
+            num_steps=25,
+        ),
+        max_iters=60,
+        record_times=60,
         filter_type="helmholtz",
         # check_convergence=True,
         # tol_rho_change=0.2,

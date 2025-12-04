@@ -176,8 +176,10 @@ class OC_Optimizer(common_density.DensityMethod):
             self._rho_e_buffer = np.empty_like(rho_design_eles)
             self._dC_raw_buffer = np.empty_like(dC_drho_design_eles)
 
-        # rho_e = self._rho_e_buffer
-        # dC_raw = self._dC_raw_buffer
+        # Store raw dC/rho before any scaling for KKT residual.
+        with self._timed_section("copy_buffers"):
+            np.copyto(self._dC_raw_buffer, dC_drho_design_eles)
+            np.copyto(self._rho_e_buffer, rho_design_eles)
 
         eps = 1e-6
         if isinstance(percentile, float):
@@ -190,14 +192,6 @@ class OC_Optimizer(common_density.DensityMethod):
                 dC_drho_design_eles /= (self.running_scale + eps)
         else:
             pass
-
-        # store dC_drho_design_eles for kkt residual before scaling
-        with self._timed_section("copy_buffers"):
-            np.copyto(self._dC_raw_buffer, dC_drho_design_eles)
-            np.copyto(self._rho_e_buffer, rho_design_eles)
-        # np.copyto(rho_e, rho_projected[tsk.design_elements])
-        # rho_e = rho[tsk.design_elements]
-        # rho_e = rho_design_eles.copy()
 
         with self._timed_section("bisection"):
             lmid, vol_error = bisection_with_projection(
