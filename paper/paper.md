@@ -25,7 +25,7 @@ This technique can be applied to a wide range of physical simulations, including
 Scikit-Topt is a Python library that implements topology optimization algorithms. It provides tools for visualizing parameter transitions and optimization results, thereby facilitating algorithm tuning and comparative analysis of optimization strategies. The library is tested via GitHub Actions and includes documentation generated with Sphinx.
 Installation and usage instructions are available in the [GitHub repository](https://github.com/kevin-tofu/scikit-topt).
 
-This article describes version **v0.3.5** of *Scikit-Topt*.
+This article describes version **v0.3.6** of *Scikit-Topt*.
 
 
 # Statement of Need
@@ -94,7 +94,7 @@ mesh_path = "./data/model.msh"
 basis = sktopt.mesh.loader.basis_from_file(mesh_path, intorder=1)
 
 task = sktopt.mesh.task.LinearElastisicity.from_facets(
-    210e3, 0.30, basis, dirichlet_facets...
+    basis, dirichlet_facets...
 )
 cfg = sktopt.core.OC_Config(
     dst_path="./result",
