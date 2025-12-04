@@ -58,14 +58,37 @@ def get_cfg():
     cfg = sktopt.core.optimizers.OC_Config(
         dst_path="./result/tutorial_box_oc",
         export_img=True,
+        # use constant penalization
         p=sktopt.tools.SchedulerConfig.constant(
             target_value=3.0
         ),
+        # keep volume fixed for stability check
         vol_frac=sktopt.tools.SchedulerConfig.constant(
+            target_value=0.4
+        ),
+        # softer projection
+        beta=sktopt.tools.SchedulerConfig.constant(
             target_value=0.6
         ),
-        max_iters=50,
-        record_times=50,
+        filter_radius=sktopt.tools.SchedulerConfig.constant(
+            target_value=0.6
+        ),
+        move_limit=sktopt.tools.SchedulerConfig.constant(
+            target_value=0.1
+        ),
+        # standard eta
+        eta=sktopt.tools.SchedulerConfig.constant(
+            target_value=0.3
+        ),
+        # restore percentile scaling to normalize dC
+        percentile=sktopt.tools.SchedulerConfig.constant(
+            target_value=90.0
+        ),
+        # allow duals to move both lower and higher
+        lambda_lower=1e-14,
+        lambda_upper=1e10,
+        max_iters=60,
+        record_times=60,
         filter_type="helmholtz",
         # check_convergence=True,
         # tol_rho_change=0.2,

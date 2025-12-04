@@ -41,6 +41,9 @@ class OC_Config(common_density.DensityMethod_OC_Config):
             target_value=0.5
         )
     )
+    # clipping bounds for scaling_rate; default matches current behavior
+    scaling_rate_min: float = 0.7
+    scaling_rate_max: float = 1.3
 
 
 def bisection_with_projection(
@@ -50,6 +53,7 @@ def bisection_with_projection(
     scaling_rate, rho_design_eles,
     rho_clip_lower, rho_clip_upper,
     elements_volume, elements_volume_sum,
+    scaling_rate_min, scaling_rate_max,
     max_iter: int = 100,
     tolerance: float = 1e-4,
     vol_tol: float = 1e-4,
@@ -67,8 +71,8 @@ def bisection_with_projection(
         scaling_rate /= (lmid + eps)
         np.power(scaling_rate, eta, out=scaling_rate)
 
-        # Clip
-        np.clip(scaling_rate, 0.8, 1.2, out=scaling_rate)
+        # Clip using config bounds
+        np.clip(scaling_rate, scaling_rate_min, scaling_rate_max, out=scaling_rate)
         np.multiply(rho_e, scaling_rate, out=rho_design_eles)
         np.maximum(rho_e - move_limit, rho_min, out=rho_clip_lower)
         np.minimum(rho_e + move_limit, rho_max, out=rho_clip_upper)
@@ -80,7 +84,6 @@ def bisection_with_projection(
             rho_design_eles, beta=beta, eta=beta_eta, out=rho_design_eles
         )
 
-        # vol_error = np.mean(rho_design_eles) - vol_frac
         vol_error = np.sum(
             rho_design_eles * elements_volume
         ) / elements_volume_sum - vol_frac
@@ -176,8 +179,10 @@ class OC_Optimizer(common_density.DensityMethod):
             self._rho_e_buffer = np.empty_like(rho_design_eles)
             self._dC_raw_buffer = np.empty_like(dC_drho_design_eles)
 
-        # rho_e = self._rho_e_buffer
-        # dC_raw = self._dC_raw_buffer
+        # Store raw dC/rho before any scaling for KKT residual.
+        with self._timed_section("copy_buffers"):
+            np.copyto(self._dC_raw_buffer, dC_drho_design_eles)
+            np.copyto(self._rho_e_buffer, rho_design_eles)
 
         eps = 1e-6
         if isinstance(percentile, float):
@@ -189,15 +194,11 @@ class OC_Optimizer(common_density.DensityMethod):
                     (1 - 0.6) * scale if iter_num > 1 else scale
                 dC_drho_design_eles /= (self.running_scale + eps)
         else:
+            # fallback normalization when percentile is not used
+            # scale = np.max(np.abs(dC_drho_design_eles))
+            # if scale > 0:
+            #     dC_drho_design_eles /= (scale + eps)
             pass
-
-        # store dC_drho_design_eles for kkt residual before scaling
-        with self._timed_section("copy_buffers"):
-            np.copyto(self._dC_raw_buffer, dC_drho_design_eles)
-            np.copyto(self._rho_e_buffer, rho_design_eles)
-        # np.copyto(rho_e, rho_projected[tsk.design_elements])
-        # rho_e = rho[tsk.design_elements]
-        # rho_e = rho_design_eles.copy()
 
         with self._timed_section("bisection"):
             lmid, vol_error = bisection_with_projection(
@@ -208,6 +209,7 @@ class OC_Optimizer(common_density.DensityMethod):
                 scaling_rate, rho_design_eles,
                 rho_clip_lower, rho_clip_upper,
                 elements_volume_design, elements_volume_design_sum,
+                cfg.scaling_rate_min, cfg.scaling_rate_max,
                 max_iter=1000, tolerance=1e-5,
                 l1=cfg.lambda_lower,
                 l2=cfg.lambda_upper

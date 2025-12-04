@@ -56,6 +56,9 @@ class LogMOC_Config(common_density.DensityMethod_OC_Config):
     mu_p: float = 1e-1
     lambda_v: float = 1e+2
     lambda_decay: float = 0.70
+    # clipping bounds for log-space scaling_rate; defaults match previous behavior
+    scaling_rate_min: float = -0.50
+    scaling_rate_max: float = 0.50
 
 
 # log(x) = -0.4   →   x ≈ 0.670
@@ -74,7 +77,8 @@ def moc_log_update_logspace(
     dC, lambda_v, scaling_rate,
     eta, move_limit,
     rho_clip_lower, rho_clip_upper,
-    rho_min, rho_max
+    rho_min, rho_max,
+    clip_min, clip_max
 ):
     eps = 1e-10
     logger.info(f"dC: {dC.min()} {dC.max()}")
@@ -82,7 +86,7 @@ def moc_log_update_logspace(
     scaling_rate /= (lambda_v + eps)
     np.maximum(scaling_rate, eps, out=scaling_rate)
     np.log(scaling_rate, out=scaling_rate)
-    np.clip(scaling_rate, -0.50, 0.50, out=scaling_rate)
+    np.clip(scaling_rate, clip_min, clip_max, out=scaling_rate)
     np.clip(rho, rho_min, 1.0, out=rho)
     np.log(rho, out=rho_clip_lower)
 
@@ -266,6 +270,7 @@ class LogMOC_Optimizer(common_density.DensityMethod):
             move_limit,
             rho_clip_lower, rho_clip_upper,
             cfg.rho_min, 1.0,
+            cfg.scaling_rate_min, cfg.scaling_rate_max,
         )
 
 
