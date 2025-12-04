@@ -182,7 +182,8 @@ def _heat_energy_density_(w):
     gradT = w['Th'].grad  # shape: (3, nqp, nelems)
     k_elem = w['k_elem'].T  # (nelems, nqp)
     k_elem = k_elem[None, :, :]  # (1, nqp, nelems)
-    return k_elem * dot(gradT, gradT)
+    # use 0.5 * k |∇T|^2 so that dC/drho = -2 * energy * (dk/drho) / k
+    return 0.5 * k_elem * dot(gradT, gradT)
 
 
 def heat_energy_skfem(
