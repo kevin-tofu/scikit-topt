@@ -58,31 +58,35 @@ def get_cfg():
     cfg = sktopt.core.optimizers.OC_Config(
         dst_path="./result/tutorial_box_oc",
         export_img=True,
-        # soften the early steps to avoid a sudden volume drop
-        p=sktopt.tools.SchedulerConfig.step(
-            init_value=1.0,
-            target_value=3.0,
-            num_steps=10,
+        # use constant penalization
+        p=sktopt.tools.SchedulerConfig.constant(
+            target_value=3.0
         ),
-        vol_frac=sktopt.tools.SchedulerConfig.step(
-            init_value=0.8,   # start higher
-            target_value=0.6, # final target
-            num_steps=20,     # gradual tightening
+        # keep volume fixed for stability check
+        vol_frac=sktopt.tools.SchedulerConfig.constant(
+            target_value=0.4
         ),
-        beta=sktopt.tools.SchedulerConfig.step_accelerating(
-            init_value=0.5,
-            target_value=8.0,
-            num_steps=30,
-            curvature=2.0,
+        # softer projection
+        beta=sktopt.tools.SchedulerConfig.constant(
+            target_value=0.6
         ),
         filter_radius=sktopt.tools.SchedulerConfig.constant(
-            target_value=0.8
+            target_value=0.6
         ),
-        move_limit=sktopt.tools.SchedulerConfig.step(
-            init_value=0.01,  # conservative early moves
-            target_value=0.05,
-            num_steps=25,
+        move_limit=sktopt.tools.SchedulerConfig.constant(
+            target_value=0.1
         ),
+        # standard eta
+        eta=sktopt.tools.SchedulerConfig.constant(
+            target_value=0.3
+        ),
+        # restore percentile scaling to normalize dC
+        percentile=sktopt.tools.SchedulerConfig.constant(
+            target_value=90.0
+        ),
+        # allow duals to move both lower and higher
+        lambda_lower=1e-14,
+        lambda_upper=1e10,
         max_iters=60,
         record_times=60,
         filter_type="helmholtz",
