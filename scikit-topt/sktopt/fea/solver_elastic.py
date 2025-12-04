@@ -315,7 +315,7 @@ def compute_compliance_basis_multi_load(
     return compliance_each
 
 
-@Functional
+@skfem.Functional
 def _strain_energy_density_(w):
     grad = w['uh'].grad  # shape: (3, 3, nelems, nqp)
     symgrad = 0.5 * (grad + transpose(grad))  # same shape
