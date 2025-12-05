@@ -64,11 +64,14 @@ def get_cfg():
         ),
         # keep volume fixed for stability check
         vol_frac=sktopt.tools.SchedulerConfig.constant(
-            target_value=0.4
-        ),
-        # softer projection
-        beta=sktopt.tools.SchedulerConfig.constant(
             target_value=0.6
+        ),
+        # tighten projection only (others stay constant)
+        beta=sktopt.tools.SchedulerConfig.step_accelerating(
+            init_value=0.6,
+            target_value=4.0,
+            num_steps=4,
+            curvature=2.0
         ),
         filter_radius=sktopt.tools.SchedulerConfig.constant(
             target_value=0.6
@@ -81,9 +84,9 @@ def get_cfg():
             target_value=0.3
         ),
         # restore percentile scaling to normalize dC
-        percentile=sktopt.tools.SchedulerConfig.constant(
-            target_value=90.0
-        ),
+        # percentile=sktopt.tools.SchedulerConfig.constant(
+        #     target_value=90.0
+        # ),
         # allow duals to move both lower and higher
         lambda_lower=1e-14,
         lambda_upper=1e10,
