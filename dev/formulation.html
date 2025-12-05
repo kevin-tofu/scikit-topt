@@ -181,17 +181,15 @@ The filter is defined by the following partial differential equation (PDE):</p>
 <li><p><strong>Element-wise strain energy</strong>: it is calculated to derive sensitivity:</p>
 <div class="math notranslate nohighlight">
 \[\Psi_e = \tfrac{1}{2}\,\boldsymbol\epsilon^{T} \mathbf{C}(\rho_e)\,\boldsymbol\epsilon\]</div>
-<p>Because <span class="math notranslate nohighlight">\(\mathbf{C}(\rho)\)</span> scales linearly with
-<span class="math notranslate nohighlight">\(E(\rho)\)</span>, the compliance sensitivity uses the physical strain
-energy <span class="math notranslate nohighlight">\(\Psi_e\)</span> and a scaling of <span class="math notranslate nohighlight">\(2 / E(\rho_e)\)</span>:</p>
+<p>With SIMP, the raw elemental sensitivity used in the implementation is:</p>
 <div class="math notranslate nohighlight">
 \[\frac{\partial C}{\partial \rho_e}
 =
-- \frac{\partial E}{\partial \rho_e}
-  \frac{2\,\Psi_e}{E(\rho_e)}
+- \frac{\partial E}{\partial \rho_e}\,
+  \Psi_e
 =
--p \rho_e^{p-1} (E_0 - E_\text{min})
-  \frac{2\,\Psi_e}{E(\rho_e)}\]</div>
+-p \rho_e^{p-1} (E_0 - E_\text{min})\,
+  \Psi_e\]</div>
 </li>
 </ul>
 </section>
