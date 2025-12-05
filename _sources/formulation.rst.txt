@@ -107,19 +107,17 @@ Compliance Evaluation
 
      \Psi_e = \tfrac{1}{2}\,\boldsymbol\epsilon^{T} \mathbf{C}(\rho_e)\,\boldsymbol\epsilon
 
-  Because :math:`\mathbf{C}(\rho)` scales linearly with
-  :math:`E(\rho)`, the compliance sensitivity uses the physical strain
-  energy :math:`\Psi_e` and a scaling of :math:`2 / E(\rho_e)`:
+  With SIMP, the raw elemental sensitivity used in the implementation is:
 
   .. math::
 
      \frac{\partial C}{\partial \rho_e}
      =
-     - \frac{\partial E}{\partial \rho_e}
-       \frac{2\,\Psi_e}{E(\rho_e)}
+     - \frac{\partial E}{\partial \rho_e}\,
+       \Psi_e
      =
-     -p \rho_e^{p-1} (E_0 - E_\text{min})
-       \frac{2\,\Psi_e}{E(\rho_e)}
+     -p \rho_e^{p-1} (E_0 - E_\text{min})\,
+       \Psi_e
 
 Sensitivity Propagation Through Filtering and Projection
 --------------------------------------------------------
