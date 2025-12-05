@@ -81,9 +81,9 @@ def get_cfg():
             target_value=0.3
         ),
         # restore percentile scaling to normalize dC
-        percentile=sktopt.tools.SchedulerConfig.constant(
-            target_value=90.0
-        ),
+        # percentile=sktopt.tools.SchedulerConfig.constant(
+        #     target_value=90.0
+        # ),
         # allow duals to move both lower and higher
         lambda_lower=1e-14,
         lambda_upper=1e10,
