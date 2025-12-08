@@ -264,6 +264,7 @@ def schedule_sawtooth_decay(
 _lit_schedulers = Literal[
     'Constant',
     'Step', 'StepAccelerating', 'StepDecelerating', 'SawtoothDecay',
+    'StepToOne',
     'None'
 ]
 
@@ -283,15 +284,17 @@ class SchedulerConfig:
         Identifier for the schedule (e.g., "p", "vol_frac").
     init_value : float, optional
         Starting value of the parameter.
-        - Required for Step, StepAccelerating, SawtoothDecay.
+        - Required for Step, StepAccelerating, StepDecelerating, SawtoothDecay.
+        - Automatically inferred for StepToOne.
         - Ignored if Constant.
     target_value : float, optional
         Final value of the parameter.
-        - Required for Step, StepAccelerating, SawtoothDecay.
+        - Required for Step, StepAccelerating, StepDecelerating, SawtoothDecay.
+        - Fixed to 1.0 for StepToOne.
         - Used as fixed value if Constant.
     num_steps : int, optional
         Number of continuation steps or cycles.
-        - Step / StepAccelerating: number of increments between init and target.
+        - Step / StepAccelerating / StepDecelerating / StepToOne: number of increments between init and target.
         - SawtoothDecay: number of sawtooth cycles (restarts).
         - Ignored for Constant.
     iters_max : int, optional
@@ -302,7 +305,7 @@ class SchedulerConfig:
         Shape parameter used in StepAccelerating / StepDecelerating.
         - Example: curvature=2.0 accelerates change near the end.
         - Ignored in other schedulers.
-    scheduler_type : {"Constant", "Step", "StepAccelerating", "StepDecelerating", "SawtoothDecay"}
+    scheduler_type : {"Constant", "Step", "StepAccelerating", "StepDecelerating", "SawtoothDecay", "StepToOne"}
         Scheduling strategy:
           - **Constant**: fixed at ``target_value``.
           - **Step**: discrete continuation from ``init_value`` → ``target_value`` in
@@ -312,6 +315,8 @@ class SchedulerConfig:
           - **SawtoothDecay**: parameter decays linearly from ``init_value`` → ``target_value``
             within each cycle (cycle length = iters_max/num_steps), then resets to
             ``init_value`` at the start of the next cycle.
+          - **StepToOne**: like Step but automatically fixes ``target_value`` to ``1.0`` and
+            infers ``init_value`` from ``num_steps`` (``1.0 / num_steps``).
     """
 
     name: Optional[str] = None
@@ -345,15 +350,18 @@ class SchedulerConfig:
             Identifier for the schedule (e.g., "p", "vol_frac").
         init_value : float, optional
             Starting value of the parameter.
-            - Required for Step, StepAccelerating, SawtoothDecay.
+            - Required for Step, StepAccelerating, StepDecelerating, SawtoothDecay.
+            - Computed automatically for StepToOne.
             - Ignored if Constant.
         target_value : float, optional
             Final value of the parameter.
-            - Required for Step, StepAccelerating, SawtoothDecay.
+            - Required for Step, StepAccelerating, StepDecelerating, SawtoothDecay.
+            - Forced to 1.0 for StepToOne.
             - Used as fixed value if Constant.
         num_steps : int, optional
             Number of continuation steps or cycles.
-            - Step / StepAccelerating: number of increments from init → target.
+            - Step / StepAccelerating / StepDecelerating / StepToOne:
+              number of increments from init → target.
             - SawtoothDecay: number of sawtooth cycles.
             - Ignored if Constant.
         iters_max : int, optional
@@ -364,14 +372,17 @@ class SchedulerConfig:
             Shape parameter for StepAccelerating (default ≈ 2.0).
             Controls acceleration of the step transition.
             Ignored in other schedulers.
-        scheduler_type : {"Constant", "Step", "StepAccelerating", "SawtoothDecay"}, default="Constant"
+        scheduler_type : {"Constant", "Step", "StepAccelerating", "StepDecelerating", "SawtoothDecay", "StepToOne"}, default="Constant"
             Which scheduling strategy to use:
               - **Constant**: fixed value at ``target_value``.
               - **Step**: discrete continuation from ``init_value`` → ``target_value``
                 over ``num_steps`` stages.
               - **StepAccelerating**: like Step, but interpolation biased by ``curvature``.
+              - **StepDecelerating**: front-loaded change that slows down over time.
               - **SawtoothDecay**: linear decay from ``init_value`` → ``target_value``
                 within each cycle, resetting each time; ``iters_max`` defines total length.
+              - **StepToOne**: fixed target of 1.0 with the starting point inferred
+                from the number of steps (``1.0 / num_steps``).
 
         Returns
         -------
@@ -405,6 +416,15 @@ class SchedulerConfig:
                 raise ValueError("Should set target_value")
             if num_steps is None:
                 raise ValueError("Should set num_steps")
+        elif scheduler_type == "StepToOne":
+            if num_steps is None:
+                raise ValueError("Should set num_steps")
+            if num_steps <= 0:
+                raise ValueError("num_steps must be positive for StepToOne")
+            if target_value is not None and not math.isclose(target_value, 1.0):
+                raise ValueError("StepToOne fixes target_value to 1.0")
+            target_value = 1.0
+            init_value = 1.0 / num_steps
         elif scheduler_type == "StepAccelerating":
             if init_value is None:
                 raise ValueError("Should set init_value")
@@ -486,6 +506,24 @@ class SchedulerConfig:
             iters_max=iters_max,
             curvature=None,
             scheduler_type="Step",
+        )
+
+    @classmethod
+    def step_to_one(
+        cls,
+        name: Optional[str] = None,
+        num_steps: Optional[int] = None,
+        iters_max: Optional[int] = None,
+    ) -> "SchedulerConfig":
+        """Factory for a Step scheduler that always targets 1.0."""
+        return cls.from_defaults(
+            name=name,
+            init_value=None,
+            target_value=1.0,
+            num_steps=num_steps,
+            iters_max=iters_max,
+            curvature=None,
+            scheduler_type="StepToOne",
         )
 
     @classmethod
@@ -630,6 +668,11 @@ class Scheduler():
             cfg.curvature = None
         elif cfg.scheduler_type == 'Step':
             func = schedule_step
+        elif cfg.scheduler_type == 'StepToOne':
+            func = schedule_step
+            cfg.target_value = 1.0
+            if cfg.num_steps:
+                cfg.init_value = 1.0 / cfg.num_steps
         elif cfg.scheduler_type == 'StepAccelerating':
             func = schedule_step_accelerating
         elif cfg.scheduler_type == 'StepDecelerating':
@@ -642,6 +685,7 @@ class Scheduler():
             options = [
                 'Constant',
                 'Step', 'StepAccelerating', 'StepDecelerating', 'SawtoothDecay',
+                'StepToOne',
                 'None'
             ]
             raise ValueError(
@@ -742,6 +786,38 @@ class SchedulerStep(Scheduler):
             name,
             init_value,
             target_value,
+            num_steps,
+            iters_max=iters_max,
+            curvature=None,
+            func=schedule_step
+        )
+
+
+class SchedulerStepToOne(Scheduler):
+    """
+    Step-based scheduler with a fixed target of ``1.0``.
+
+    The schedule mirrors :class:`SchedulerStep` but automatically sets
+    ``target_value=1.0`` and infers ``init_value`` from ``num_steps``
+    (``1.0 / num_steps``). This is handy for ratios or blending factors
+    that should eventually reach one without explicitly specifying both
+    endpoints.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        num_steps: float,
+        iters_max: int
+    ):
+        if num_steps is None or num_steps <= 0:
+            raise ValueError("num_steps must be positive for SchedulerStepToOne")
+
+        init_value = 1.0 / num_steps
+        super().__init__(
+            name,
+            init_value,
+            1.0,
             num_steps,
             iters_max=iters_max,
             curvature=None,

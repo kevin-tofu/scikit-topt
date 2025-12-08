@@ -1,9 +1,13 @@
+from pathlib import Path
+
 import numpy as np
 
 from sktopt.tools.scheduler import (
     schedule_step,
     schedule_step_accelerating,
     schedule_step_decelerating,
+    Scheduler,
+    SchedulerConfig,
 )
 
 
@@ -62,3 +66,90 @@ def test_curvature_one_matches_linear_step():
 
     np.testing.assert_allclose(linear, decel)
     np.testing.assert_allclose(linear, accel)
+
+
+def test_step_to_one_autosets_init_and_target():
+    cfg = SchedulerConfig.step_to_one(name="x", num_steps=4, iters_max=8)
+    sched = Scheduler.from_config(cfg)
+
+    assert np.isclose(cfg.target_value, 1.0)
+    assert np.isclose(cfg.init_value, 0.25)
+    assert np.isclose(sched.value(1), 0.25)
+    assert np.isclose(sched.value(8), 1.0)
+
+
+def test_step_to_one_rejects_non_one_target():
+    with np.testing.assert_raises(ValueError):
+        SchedulerConfig.from_defaults(
+            name="x",
+            num_steps=3,
+            target_value=0.5,
+            scheduler_type="StepToOne",
+        )
+
+
+def test_plot_schedules_to_local_png():
+    import matplotlib
+
+    matplotlib.use("Agg")  # ensure headless-friendly backend
+    import matplotlib.pyplot as plt
+
+    total = 20
+    num_steps = 5
+    xs = np.arange(1, total + 1)
+
+    scheds = {
+        "Step": [
+            schedule_step(
+                it=i,
+                total=total,
+                initial_value=0.0,
+                target_value=1.0,
+                num_steps=num_steps,
+            )
+            for i in xs
+        ],
+        "Accelerating": [
+            schedule_step_accelerating(
+                it=i,
+                total=total,
+                initial_value=0.0,
+                target_value=1.0,
+                num_steps=num_steps,
+                curvature=2.0,
+            )
+            for i in xs
+        ],
+        "Decelerating": [
+            schedule_step_decelerating(
+                it=i,
+                total=total,
+                initial_value=0.0,
+                target_value=1.0,
+                num_steps=num_steps,
+                curvature=2.0,
+            )
+            for i in xs
+        ],
+    }
+
+    # Include the StepToOne scheduler via the factory to mirror real usage.
+    sto_cfg = SchedulerConfig.step_to_one(name="sto", num_steps=num_steps, iters_max=total)
+    sto_sched = Scheduler.from_config(sto_cfg)
+    scheds["StepToOne"] = [sto_sched.value(i) for i in xs]
+
+    fig, axes = plt.subplots(2, 2, figsize=(10, 8), sharex=True, sharey=True)
+    axes = axes.ravel()
+    for ax, (name, ys) in zip(axes, scheds.items()):
+        ax.plot(xs, ys, marker="o", linestyle="-")
+        ax.set_title(name)
+        ax.set_xlabel("Iteration")
+        ax.set_ylabel("Value")
+        ax.grid(True)
+
+    outfile = Path(__file__).parent / "scheduler_plots.png"
+    fig.tight_layout()
+    fig.savefig(outfile)
+    plt.close(fig)
+
+    assert outfile.exists()
