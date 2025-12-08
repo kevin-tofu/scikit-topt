@@ -537,7 +537,7 @@ class DensityMethod(DensityMethodBase):
             recorder.add("u_max")
         recorder.add("compliance", ylog=True)
         recorder.add("scaling_rate", plot_type="min-max-mean-std")
-        recorder.add("force_scale")
+        recorder.add("neumann_scale")
 
         recorder.add("rho_change_max")
         recorder.add("kkt_residual")
