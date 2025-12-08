@@ -566,7 +566,9 @@ class FEM_SimpLinearHeatConduction():
 
     def objectives_multi_load(
         self,
-        rho: np.ndarray, p: float, u_dofs: np.ndarray, timer=None
+        rho: np.ndarray, p: float, u_dofs: np.ndarray,
+        timer=None,
+        force_scale: float = 1.0,  # kept for interface parity; unused for heat
     ) -> np.ndarray:
         dirichlet_nodes_list = self.task.dirichlet_nodes if isinstance(
             self.task.dirichlet_nodes, list

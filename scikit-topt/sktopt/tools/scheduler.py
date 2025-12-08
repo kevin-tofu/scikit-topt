@@ -262,9 +262,9 @@ def schedule_sawtooth_decay(
 
 
 _lit_schedulers = Literal[
-    'Constant',
+    'Constant', 'ConstantOne',
     'Step', 'StepAccelerating', 'StepDecelerating', 'SawtoothDecay',
-    'StepToOne',
+    'StepToOne', 'StepAcceleratingToOne', 'StepDeceleratingToOne',
     'None'
 ]
 
@@ -305,9 +305,10 @@ class SchedulerConfig:
         Shape parameter used in StepAccelerating / StepDecelerating.
         - Example: curvature=2.0 accelerates change near the end.
         - Ignored in other schedulers.
-    scheduler_type : {"Constant", "Step", "StepAccelerating", "StepDecelerating", "SawtoothDecay", "StepToOne"}
+    scheduler_type : {"Constant", "ConstantOne", "Step", "StepAccelerating", "StepDecelerating", "SawtoothDecay", "StepToOne", "StepAcceleratingToOne", "StepDeceleratingToOne"}
         Scheduling strategy:
           - **Constant**: fixed at ``target_value``.
+          - **ConstantOne**: fixed at ``1.0`` (alias of Constant with target 1).
           - **Step**: discrete continuation from ``init_value`` → ``target_value`` in
             ``num_steps`` increments.
           - **StepAccelerating**: like Step but transition rate controlled by ``curvature``.
@@ -317,6 +318,10 @@ class SchedulerConfig:
             ``init_value`` at the start of the next cycle.
           - **StepToOne**: like Step but automatically fixes ``target_value`` to ``1.0`` and
             infers ``init_value`` from ``num_steps`` (``1.0 / num_steps``).
+          - **StepAcceleratingToOne**: accelerating variant with fixed target 1.0 and
+            inferred ``init_value`` (``1.0 / num_steps``).
+          - **StepDeceleratingToOne**: decelerating variant with fixed target 1.0 and
+            inferred ``init_value`` (``1.0 / num_steps``).
     """
 
     name: Optional[str] = None
@@ -372,9 +377,10 @@ class SchedulerConfig:
             Shape parameter for StepAccelerating (default ≈ 2.0).
             Controls acceleration of the step transition.
             Ignored in other schedulers.
-        scheduler_type : {"Constant", "Step", "StepAccelerating", "StepDecelerating", "SawtoothDecay", "StepToOne"}, default="Constant"
+        scheduler_type : {"Constant", "ConstantOne", "Step", "StepAccelerating", "StepDecelerating", "SawtoothDecay", "StepToOne", "StepAcceleratingToOne", "StepDeceleratingToOne"}, default="Constant"
             Which scheduling strategy to use:
               - **Constant**: fixed value at ``target_value``.
+              - **ConstantOne**: fixed to 1.0 regardless of provided values.
               - **Step**: discrete continuation from ``init_value`` → ``target_value``
                 over ``num_steps`` stages.
               - **StepAccelerating**: like Step, but interpolation biased by ``curvature``.
@@ -383,6 +389,8 @@ class SchedulerConfig:
                 within each cycle, resetting each time; ``iters_max`` defines total length.
               - **StepToOne**: fixed target of 1.0 with the starting point inferred
                 from the number of steps (``1.0 / num_steps``).
+              - **StepAcceleratingToOne** / **StepDeceleratingToOne**:
+                accelerating / decelerating variants with fixed target 1.0.
 
         Returns
         -------
@@ -409,6 +417,9 @@ class SchedulerConfig:
                 init_value = target_value
             if target_value is None:
                 raise ValueError("Should set target_value")
+        elif scheduler_type == "ConstantOne":
+            init_value = 1.0
+            target_value = 1.0
         elif scheduler_type == "Step":
             if init_value is None:
                 raise ValueError("Should set init_value")
@@ -423,6 +434,28 @@ class SchedulerConfig:
                 raise ValueError("num_steps must be positive for StepToOne")
             if target_value is not None and not math.isclose(target_value, 1.0):
                 raise ValueError("StepToOne fixes target_value to 1.0")
+            target_value = 1.0
+            init_value = 1.0 / num_steps
+        elif scheduler_type == "StepAcceleratingToOne":
+            if num_steps is None:
+                raise ValueError("Should set num_steps")
+            if num_steps <= 0:
+                raise ValueError("num_steps must be positive for StepAcceleratingToOne")
+            if curvature is None:
+                raise ValueError("Should set curvature")
+            if target_value is not None and not math.isclose(target_value, 1.0):
+                raise ValueError("StepAcceleratingToOne fixes target_value to 1.0")
+            target_value = 1.0
+            init_value = 1.0 / num_steps
+        elif scheduler_type == "StepDeceleratingToOne":
+            if num_steps is None:
+                raise ValueError("Should set num_steps")
+            if num_steps <= 0:
+                raise ValueError("num_steps must be positive for StepDeceleratingToOne")
+            if curvature is None:
+                raise ValueError("Should set curvature")
+            if target_value is not None and not math.isclose(target_value, 1.0):
+                raise ValueError("StepDeceleratingToOne fixes target_value to 1.0")
             target_value = 1.0
             init_value = 1.0 / num_steps
         elif scheduler_type == "StepAccelerating":
@@ -489,6 +522,22 @@ class SchedulerConfig:
         )
 
     @classmethod
+    def constant_one(
+        cls,
+        name: Optional[str] = None,
+    ) -> "SchedulerConfig":
+        """Factory for a Constant scheduler fixed at 1.0."""
+        return cls.from_defaults(
+            name=name,
+            init_value=1.0,
+            target_value=1.0,
+            num_steps=None,
+            iters_max=None,
+            curvature=None,
+            scheduler_type="ConstantOne",
+        )
+
+    @classmethod
     def step(
         cls,
         name: Optional[str] = None,
@@ -548,6 +597,25 @@ class SchedulerConfig:
         )
 
     @classmethod
+    def step_accelerating_to_one(
+        cls,
+        name: Optional[str] = None,
+        num_steps: Optional[int] = None,
+        iters_max: Optional[int] = None,
+        curvature=None
+    ) -> "SchedulerConfig":
+        """Factory for an accelerating Step scheduler with fixed target 1.0."""
+        return cls.from_defaults(
+            name=name,
+            init_value=None,
+            target_value=1.0,
+            num_steps=num_steps,
+            iters_max=iters_max,
+            curvature=curvature,
+            scheduler_type="StepAcceleratingToOne",
+        )
+
+    @classmethod
     def step_decelerating(
         cls,
         name: Optional[str] = None,
@@ -566,6 +634,25 @@ class SchedulerConfig:
             iters_max=iters_max,
             curvature=curvature,
             scheduler_type="StepDecelerating",
+        )
+
+    @classmethod
+    def step_decelerating_to_one(
+        cls,
+        name: Optional[str] = None,
+        num_steps: Optional[int] = None,
+        iters_max: Optional[int] = None,
+        curvature=None
+    ) -> "SchedulerConfig":
+        """Factory for a decelerating Step scheduler with fixed target 1.0."""
+        return cls.from_defaults(
+            name=name,
+            init_value=None,
+            target_value=1.0,
+            num_steps=num_steps,
+            iters_max=iters_max,
+            curvature=curvature,
+            scheduler_type="StepDeceleratingToOne",
         )
 
     @classmethod
@@ -666,6 +753,13 @@ class Scheduler():
             cfg.iters_max = None
             cfg.num_steps = None
             cfg.curvature = None
+        elif cfg.scheduler_type == 'ConstantOne':
+            func = schedule_constant
+            cfg.init_value = 1.0
+            cfg.target_value = 1.0
+            cfg.iters_max = None
+            cfg.num_steps = None
+            cfg.curvature = None
         elif cfg.scheduler_type == 'Step':
             func = schedule_step
         elif cfg.scheduler_type == 'StepToOne':
@@ -673,19 +767,29 @@ class Scheduler():
             cfg.target_value = 1.0
             if cfg.num_steps:
                 cfg.init_value = 1.0 / cfg.num_steps
+        elif cfg.scheduler_type == 'StepAcceleratingToOne':
+            func = schedule_step_accelerating
+            cfg.target_value = 1.0
+            if cfg.num_steps:
+                cfg.init_value = 1.0 / cfg.num_steps
         elif cfg.scheduler_type == 'StepAccelerating':
             func = schedule_step_accelerating
         elif cfg.scheduler_type == 'StepDecelerating':
             func = schedule_step_decelerating
+        elif cfg.scheduler_type == 'StepDeceleratingToOne':
+            func = schedule_step_decelerating
+            cfg.target_value = 1.0
+            if cfg.num_steps:
+                cfg.init_value = 1.0 / cfg.num_steps
         elif cfg.scheduler_type == 'SawtoothDecay':
             func = schedule_sawtooth_decay
         elif cfg.scheduler_type == 'None':
             func = None
         else:
             options = [
-                'Constant',
+                'Constant', 'ConstantOne',
                 'Step', 'StepAccelerating', 'StepDecelerating', 'SawtoothDecay',
-                'StepToOne',
+                'StepToOne', 'StepAcceleratingToOne', 'StepDeceleratingToOne',
                 'None'
             ]
             raise ValueError(
@@ -822,6 +926,60 @@ class SchedulerStepToOne(Scheduler):
             iters_max=iters_max,
             curvature=None,
             func=schedule_step
+        )
+
+
+class SchedulerStepAcceleratingToOne(Scheduler):
+    """Accelerating Step scheduler with fixed target 1.0."""
+
+    def __init__(
+        self,
+        name: str,
+        num_steps: float,
+        iters_max: Optional[int] = None,
+        curvature: Optional[float] = None,
+    ):
+        if num_steps is None or num_steps <= 0:
+            raise ValueError("num_steps must be positive for SchedulerStepAcceleratingToOne")
+        if curvature is None:
+            raise ValueError("curvature is required for SchedulerStepAcceleratingToOne")
+
+        init_value = 1.0 / num_steps
+        super().__init__(
+            name,
+            init_value,
+            1.0,
+            num_steps,
+            iters_max=iters_max,
+            curvature=curvature,
+            func=schedule_step_accelerating
+        )
+
+
+class SchedulerStepDeceleratingToOne(Scheduler):
+    """Decelerating Step scheduler with fixed target 1.0."""
+
+    def __init__(
+        self,
+        name: str,
+        num_steps: float,
+        iters_max: Optional[int] = None,
+        curvature: Optional[float] = None,
+    ):
+        if num_steps is None or num_steps <= 0:
+            raise ValueError("num_steps must be positive for SchedulerStepDeceleratingToOne")
+        if curvature is None:
+            raise ValueError("curvature is required for SchedulerStepDeceleratingToOne")
+
+        init_value = 1.0 / num_steps
+        super().__init__(
+            name,
+            init_value,
+            1.0,
+            num_steps,
+            iters_max=iters_max,
+            curvature=curvature,
+            func=schedule_step_decelerating
         )
 
 

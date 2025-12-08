@@ -110,6 +110,10 @@ class DensityMethodConfig():
         Continuation schedule for Heaviside / projection sharpness (β).
         Default: ``step_accelerating(init_value=1.0, target_value=2.0,
         num_steps=3, curvature=2.0)``.
+    neumann_scale : :class:`~sktopt.tools.SchedulerConfig`
+        Continuation scale applied multiplicatively to the Neumann force vector.
+        Only ``ConstantOne`` or ``StepToOne`` / ``Step*ToOne`` are allowed.
+        Default: constant 1.0 (no scaling).
     filter_type : {"spacial", "helmholtz"}
         Type of filter applied to the density field (spatial or Helmholtz).
     filter_radius : :class:`~sktopt.tools.SchedulerConfig`
@@ -203,6 +207,11 @@ class DensityMethodConfig():
             init_value=1.0, target_value=2.0,
             num_steps=3,
             curvature=2.0
+        )
+    )
+    neumann_scale: tools.SchedulerConfig = field(
+        default_factory=lambda: tools.SchedulerConfig.constant_one(
+            name="neumann_scale"
         )
     )
     filter_type: Literal[
@@ -528,6 +537,7 @@ class DensityMethod(DensityMethodBase):
             recorder.add("u_max")
         recorder.add("compliance", ylog=True)
         recorder.add("scaling_rate", plot_type="min-max-mean-std")
+        recorder.add("force_scale")
 
         recorder.add("rho_change_max")
         recorder.add("kkt_residual")
@@ -564,6 +574,15 @@ class DensityMethod(DensityMethodBase):
         self.schedulers.add_object_from_config(
             cfg.filter_radius, "filter_radius"
         )
+        allowed_force_types = {
+            "ConstantOne",
+            "StepToOne", "StepAcceleratingToOne", "StepDeceleratingToOne",
+        }
+        if cfg.neumann_scale.scheduler_type not in allowed_force_types:
+            raise ValueError(
+                f"neumann_scale must use one of {allowed_force_types}"
+            )
+        self.schedulers.add_object_from_config(cfg.neumann_scale, "neumann_scale")
         # self.schedulers.add_object_from_config(cfg.eta)
         if isinstance(cfg.eta, tools.SchedulerConfig):
             self.schedulers.add_object_from_config(cfg.eta, "eta")
@@ -921,6 +940,7 @@ class DensityMethod(DensityMethodBase):
                 f"{(iter_end - 1) if max_steps is None else (iter_limit - 1)}"
             )
             (
+                neumann_scale,
                 p,
                 vol_frac,
                 beta,
@@ -929,6 +949,7 @@ class DensityMethod(DensityMethodBase):
             ) = self.schedulers.values_as_list(
                 iter_num,
                 [
+                    'neumann_scale',
                     'p', 'vol_frac', 'beta', 'move_limit',
                     'eta', 'percentile', 'filter_radius'
                 ],
@@ -957,7 +978,8 @@ class DensityMethod(DensityMethodBase):
             with self._timed_section("objective_and_energy"):
                 with self._timed_section("objective"):
                     compliance_avg = self.fem.objectives_multi_load(
-                        rho_projected, p, u_dofs, timer=self.timer
+                        rho_projected, p, u_dofs, timer=self.timer,
+                        force_scale=neumann_scale
                     ).mean()
                 with self._timed_section("energy"):
                     energy = self.fem.energy_multi_load(
@@ -1040,6 +1062,7 @@ class DensityMethod(DensityMethodBase):
                 self.recorder.feed_data("scaling_rate", scaling_rate)
                 u_max = u_max[0] if len(u_max) == 1 else np.array(u_max)
                 self.recorder.feed_data("u_max", u_max)
+                self.recorder.feed_data("neumann_scale", neumann_scale)
                 state.u_max = u_max
 
                 if cfg.check_convergence:
