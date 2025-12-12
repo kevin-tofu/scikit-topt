@@ -41,7 +41,7 @@ Scikit-Topt addresses this gap by enabling users to track and visualize the prog
 # Purpose and Prior Art
 
 There are numerous open-source projects for topology optimization.
-Examples include FEniTop[@Jia2024], TopOpt.jl[@tarek2019topoptjl], Topology optimization using PETSc[@Smit2021], DL4TO[@Erzmann2023], and pytopo3d[@kim2025pytopo3d].
+Examples include FEniTop [@Jia2024], TopOpt.jl [@tarek2019topoptjl], Topology optimization using PETSc [@Smit2021], DL4TO[@Erzmann2023], and pytopo3d [@kim2025pytopo3d].
 However, many projects are specialized implementations targeted at specific problems and are not well-suited for solving general topology optimization tasks. Common limitations include:
 
 * Parameters and problem settings are hard-coded, limiting flexibility.
@@ -49,10 +49,10 @@ However, many projects are specialized implementations targeted at specific prob
 * They are not packaged properly or depend on outdated software, making installation and usage difficult.
 * They are not designed as standard experimental platforms, making it hard to compare algorithms across different parameters and case studies.
 
-Scikit-Topt avoids these issues by not including compiled code and depending only on Scipy[@Virtanen2020], a widely used and stable Python library, making packaging and installation straightforward.
-For finite element matrix assembly, it uses Scikit-FEM[@skfem], which also contains no compiled components.
+Scikit-Topt avoids these issues by not including compiled code and depending only on SciPy [@Virtanen2020], a widely used and stable Python library, making packaging and installation straightforward.
+For finite element matrix assembly, it uses Scikit-fem [@skfem], which also contains no compiled components.
 
-Furthermore, Scikit-Topt visualizes parameter transitions and material density evolution through Matplotlib[@Hunter2007] and PyVista[@Sullivan2019].
+Furthermore, Scikit-Topt visualizes parameter transitions and material density evolution through Matplotlib [@Hunter2007] and PyVista [@Sullivan2019].
 
 Scikit-Topt implements topology optimization algorithms based on the density method, and currently supports the following features:
 
@@ -63,7 +63,7 @@ Scikit-Topt implements topology optimization algorithms based on the density met
 
   * SciPy [@Virtanen2020]
   * PyAMG [@Bell2023]
-  * scikit-fem [@skfem]
+  * Scikit-fem [@skfem]
 
 ### **Density-Based Topology Optimization**
 
