@@ -25,8 +25,6 @@ This technique can be applied to a wide range of physical simulations, including
 Scikit-Topt is a Python library that implements topology optimization algorithms. It provides tools for visualizing parameter transitions and optimization results, thereby facilitating algorithm tuning and comparative analysis of optimization strategies. The library is tested via GitHub Actions and includes documentation generated with Sphinx.
 Installation and usage instructions are available in the [GitHub repository](https://github.com/kevin-tofu/scikit-topt).
 
-This article describes version **v0.3.7** of *Scikit-Topt*.
-
 
 # Statement of Need
 
@@ -83,8 +81,8 @@ Scikit-Topt implements topology optimization algorithms based on the density met
 # Usage Example
 
 The following example demonstrates how to use Scikit-Topt to perform topology optimization on an unstructured mesh using the Optimality Criteria (OC) method.
-First, a mesh is loaded using `scikit-fem`, and a `LinearElastisicity` object is defined with material properties and boundary conditions. Next, a configuration object for the optimizer is created, and the optimization process is launched.
-In this example, a `LinearElastisicity` is created from a mesh file using `scikit-fem`, which defines the FEM model, material properties, and boundary conditions. Then, `OC_Config` sets the optimization parameters such as volume fraction and iteration limits. Finally, the optimizer is executed.
+First, a mesh is loaded using `scikit-fem`, and a `LinearElasticity` object is defined with material properties and boundary conditions. Next, a configuration object for the optimizer is created, and the optimization process is launched.
+In this example, a `LinearElasticity` is created from a mesh file using `scikit-fem`, which defines the FEM model, material properties, and boundary conditions. Then, `OC_Config` sets the optimization parameters such as volume fraction and iteration limits. Finally, the optimizer is executed.
 
 ```python
 
@@ -93,7 +91,7 @@ import skfem, sktopt
 mesh_path = "./data/model.msh"
 basis = sktopt.mesh.loader.basis_from_file(mesh_path, intorder=1)
 
-task = sktopt.mesh.task.LinearElastisicity.from_facets(
+task = sktopt.mesh.task.LinearElasticity.from_facets(
     basis, dirichlet_facets...
 )
 cfg = sktopt.core.OC_Config(

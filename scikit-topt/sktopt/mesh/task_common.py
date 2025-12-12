@@ -30,7 +30,7 @@ class FEMDomain():
     This class holds material properties, boundary condition information,
     designable and non-designable element indices, as well as force vectors
     and volume data for each element. It is typically constructed using
-    `LinearElastisicity.from_defaults`.
+    `LinearElasticity.from_defaults`.
 
     Attributes
     ----------
