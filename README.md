@@ -1,6 +1,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/scikit-topt.svg?cacheSeconds=60)](https://pypi.org/project/scikit-topt/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![DOI](https://zenodo.org/badge/957674835.svg)](https://doi.org/10.5281/zenodo.15441499)
+[![status](https://joss.theoj.org/papers/25f8f5cdc6533084cf84d3b8583c96aa/status.svg)](https://joss.theoj.org/papers/25f8f5cdc6533084cf84d3b8583c96aa)
 [![Python Version](https://img.shields.io/pypi/pyversions/scikit-topt.svg)](https://pypi.org/project/scikit-topt/)
 [![PyPI Downloads](https://static.pepy.tech/badge/scikit-topt)](https://pepy.tech/projects/scikit-topt)
 ![CI](https://github.com/kevin-tofu/scikit-topt/actions/workflows/python-tests.yml/badge.svg)
@@ -150,7 +151,7 @@ If you use Scikit Topt in your research or software, please cite it as:
   publisher    = {Zenodo},
   doi          = {10.5281/zenodo.15441499},
   url          = {https://doi.org/10.5281/zenodo.15441499},
-  note         = {Version 0.3.7}
+  note         = {Version 0.3.8}
 }
 ```
 

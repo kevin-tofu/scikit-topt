@@ -469,12 +469,18 @@ class FEM_SimpLinearElasticity():
         self,
         rho: np.ndarray, p: float,
         u_dofs: np.ndarray,
-        timer=None
+        timer=None,
+        force_scale: float = 1.0
     ) -> np.ndarray:
+
+        force_list = self.task.neumann_linear if isinstance(
+            self.task.neumann_linear, list
+        ) else [self.task.neumann_linear]
+        force_list = [f * force_scale for f in force_list]
 
         compliance_array = compute_compliance_basis_multi_load(
             self.task.basis, self.task.free_dofs, self.task.dirichlet_dofs,
-            self.task.neumann_linear,
+            force_list,
             self.E_max, self.E_min, p, self.task.nu,
             rho,
             u_dofs,

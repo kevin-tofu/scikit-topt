@@ -9,7 +9,7 @@ authors:
     orcid: 0009-0008-2278-6418
     affiliation: 1
 affiliations:
- - name: AI Technology Office, Data Analytics R&D Dept, JTEKT Corporation
+ - name: JTEKT Corporation, Kariya, Japan
    index: 1
 date: 10 Jun 2025
 bibliography: paper.bib
