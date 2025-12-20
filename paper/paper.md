@@ -48,7 +48,7 @@ However, many projects are specialized implementations targeted at specific prob
 * They are not designed as standard experimental platforms, making it hard to compare algorithms across different parameters and case studies.
 
 Scikit-Topt avoids these issues by not including compiled code and depending only on SciPy [@Virtanen2020], a widely used and stable Python library, making packaging and installation straightforward.
-For finite element matrix assembly, it uses Scikit-fem [@skfem], which also contains no compiled components.
+For finite element matrix assembly, it uses scikit-fem [@skfem], which also contains no compiled components.
 
 Furthermore, Scikit-Topt visualizes parameter transitions and material density evolution through Matplotlib [@Hunter2007] and PyVista [@Sullivan2019].
 
@@ -61,7 +61,7 @@ Scikit-Topt implements topology optimization algorithms based on the density met
 
   * SciPy [@Virtanen2020]
   * PyAMG [@Bell2023]
-  * Scikit-fem [@skfem]
+  * scikit-fem [@skfem]
 
 ### **Density-Based Topology Optimization**
 
@@ -108,8 +108,7 @@ optimizer.parameterize()
 optimizer.optimize()
 ```
 
-During the optimization process, intermediate density fields are automatically visualized and saved using PyVista and Matplotlib.  
-This enables users to monitor the convergence behavior and spatial evolution of the material distribution.
+During the optimization process, intermediate density fields are automatically visualized and saved using PyVista and Matplotlib. This enables users to monitor the convergence behavior and spatial evolution of the material distribution.
 An example is shown below. The left figure shows the boundary conditions, while the right shows the optimized density distribution:
 
 
