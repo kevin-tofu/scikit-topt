@@ -8,12 +8,14 @@
 import os
 import shutil
 import sys
+from datetime import datetime
+
 sys.path.insert(0, os.path.abspath('../scikit-topt'))
 
 
 project = 'Scikit-Topt'
-copyright = '2025, Kohei Watanabe'
 author = 'Kohei Watanabe'
+copyright = f"{datetime.now().year}, {author}"
 release = '0.3.8'
 
 # -- General configuration ---------------------------------------------------
@@ -45,3 +47,11 @@ html_meta = {
 }
 
 html_baseurl = 'https://kevin-tofu.github.io/scikit-topt/'
+
+on_rtd = os.environ.get("READTHEDOCS") == "True"
+if on_rtd:
+    # RTD
+    html_baseurl = "https://scikit-topt.readthedocs.io/en/latest/"
+else:
+    # GitHub Pages
+    html_baseurl = "https://kevin-tofu.github.io/scikit-topt/"
