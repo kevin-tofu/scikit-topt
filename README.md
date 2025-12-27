@@ -149,7 +149,7 @@ If you use Scikit Topt in your research or software, please cite it as:
   title        = {{Scikit-Topt: A Python Library for Algorithm Development in Topology Optimization}},
   year         = {2025},
   publisher    = {Zenodo},
-  doi          = {10.5281/zenodo.15441499},
+  doi          = {10.21105/joss.09092},
   url          = {https://doi.org/10.5281/zenodo.15441499},
   note         = {Version 0.3.8}
 }

@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the JOSS paper below."
+
+title: "Scikit-Topt"
+version: 0.3.8
+date-released: 2025-12-26
+
+authors:
+  - family-names: Watanabe
+    given-names: Kohei
+    orcid: https://orcid.org/0009-0008-2278-6418
+
+preferred-citation:
+  type: article
+  title: "Scikit-Topt: A Python Library for Algorithm Development in Topology Optimization"
+  authors:
+    - family-names: Watanabe
+      given-names: Kohei
+      orcid: https://orcid.org/0009-0008-2278-6418
+  journal: "Journal of Open Source Software"
+  year: 2025
+  volume: 10
+  issue: 116
+  pages: 9092
+  doi: 10.21105/joss.09092
