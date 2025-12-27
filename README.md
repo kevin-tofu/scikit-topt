@@ -144,14 +144,14 @@ Scikit-Topt is standing on the shoulders of proverbial giants. In particular, I 
 If you use Scikit Topt in your research or software, please cite it as:
 
 ```bibtex
-@misc{Scikit-Topt2025,
-  author       = {Watanabe, Kohei},
-  title        = {{Scikit-Topt: A Python Library for Algorithm Development in Topology Optimization}},
-  year         = {2025},
-  publisher    = {Zenodo},
-  doi          = {10.21105/joss.09092},
-  url          = {https://doi.org/10.5281/zenodo.15441499},
-  note         = {Version 0.3.8}
+@article{Watanabe_Scikit-Topt_A_Python_2025,
+author = {Watanabe, Kohei},
+doi = {10.21105/joss.09092},
+journal = {Journal of Open Source Software},
+number = {116},
+title = {{Scikit-Topt: A Python Library for Algorithm Development in Topology Optimization}},
+volume = {10},
+year = {2025}
 }
 ```
 
