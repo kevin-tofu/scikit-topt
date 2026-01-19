@@ -146,9 +146,10 @@ class DensityMethodConfig():
         If ``True``, apply filtering directly to sensitivity fields
         in addition to density filtering.
 
-    solver_option : {"spsolve", "cg_pyamg"}
+    solver_option : {"spsolve", "cg_pyamg", "petsc"}
         Linear solver for the state analysis.
         ``"cg_pyamg"`` enables multigrid-accelerated CG via PyAMG.
+        ``"petsc"`` uses PETSc CG + GAMG (requires petsc4py; single-load only).
     scaling : bool
         If ``True``, apply length/force scaling to normalize geometry
         and loads for improved numerical conditioning.
@@ -231,7 +232,7 @@ class DensityMethodConfig():
     export_img_opaque: bool = False
     design_dirichlet: bool = False
     sensitivity_filter: bool = False
-    solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve"
+    solver_option: Literal["spsolve", "cg_pyamg", "petsc"] = "spsolve"
     scaling: bool = False
 
     check_convergence: bool = False

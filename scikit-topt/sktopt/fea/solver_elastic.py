@@ -15,6 +15,7 @@ from skfem.helpers import transpose
 import pyamg
 
 from sktopt.fea import composer
+from sktopt.fea.solver_petsc import solve_u_petsc
 from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 
@@ -22,7 +23,7 @@ logger = mylogger(__name__)
 def solve_u(
     K_cond: scipy.sparse.spmatrix,
     F_cond: np.ndarray,
-    chosen_solver: Literal['cg_jacobi', 'spsolve', 'cg_pyamg'] = 'spsolve',
+    chosen_solver: Literal['cg_jacobi', 'spsolve', 'cg_pyamg', 'petsc'] = 'spsolve',
     rtol: float = 1e-8,
     maxiter: int = None,
 ) -> np.ndarray:
@@ -54,6 +55,12 @@ def solve_u(
             info = 0
             logger.info("Direct solver used: spsolve")
 
+        elif chosen_solver == 'petsc':
+            u_c, info = solve_u_petsc(
+                K_cond, F_cond, rtol=rtol, maxiter=maxiter
+            )
+            logger.info(f"PETSc CG (GAMG) solver info: {info}")
+
         else:
             raise ValueError(f"Unknown solver: {chosen_solver}")
 
@@ -69,7 +76,7 @@ def compute_compliance_basis(
     E0, Emin, p, nu0,
     rho,
     elem_func: Callable = composer.simp_interpolation,
-    solver: Literal['auto', 'cg_jacobi', 'spsolve', 'cg_pyamg'] = 'auto',
+    solver: Literal['auto', 'cg_jacobi', 'spsolve', 'cg_pyamg', 'petsc'] = 'auto',
     rtol: float = 1e-5,
     maxiter: int = None,
     timer=None,
@@ -136,7 +143,7 @@ def solve_multi_load(
     E0: float, Emin: float, p: float, nu0: float,
     rho: np.ndarray,
     u_all: np.ndarray,
-    solver: Literal['auto', 'cg_jacobi', 'spsolve', 'cg_pyamg'] = 'auto',
+    solver: Literal['auto', 'cg_jacobi', 'spsolve', 'cg_pyamg', 'petsc'] = 'auto',
     elem_func: Callable = composer.simp_interpolation,
     rtol: float = 1e-5,
     maxiter: int | None = None,
@@ -177,7 +184,7 @@ def solve_multi_load(
         Element-wise density field.
     u_all : (n_dof, n_loads) ndarray
         Output array to store displacement solutions; each column is one load case.
-    solver : {'auto', 'cg_jacobi', 'spsolve', 'cg_pyamg'}, optional
+    solver : {'auto', 'cg_jacobi', 'spsolve', 'cg_pyamg', 'petsc'}, optional
         Solver selector. For multi-load, only 'auto' and 'spsolve' are supported.
         - 'auto' or 'spsolve': direct LU factorization (splu) is used.
         - 'cg_jacobi', 'cg_pyamg': currently not implemented for multi-load.
@@ -267,7 +274,7 @@ def compute_compliance_basis_multi_load(
     E0: float, Emin: float, p: float, nu0: float,
     rho: np.ndarray,
     u_all: np.ndarray,
-    solver: Literal['auto', 'cg_jacobi', 'spsolve', 'cg_pyamg'] = 'auto',
+    solver: Literal['auto', 'cg_jacobi', 'spsolve', 'cg_pyamg', 'petsc'] = 'auto',
     elem_func: Callable = composer.simp_interpolation,
     rtol: float = 1e-5,
     maxiter: int = None,
@@ -412,11 +419,12 @@ class FEM_SimpLinearElasticity():
         A function f(ρ) that returns an interpolated stiffness multiplier.
         Defaults to `composer.simp_interpolation` (ρᵖ). Any custom
         interpolation function following SIMP/RAMP/etc. can be used.
-    solver_option : {"spsolve", "cg_pyamg"}, optional
+    solver_option : {"spsolve", "cg_pyamg", "petsc"}, optional
         Linear solver backend.
         - "spsolve": direct SciPy sparse solver (robust, slower for large DOF)
         - "cg_pyamg": Conjugate Gradient with PyAMG multigrid preconditioner
             (fast for large problems)
+        - "petsc": PETSc CG + GAMG (requires petsc4py; single-load only)
 
     Attributes
     ----------
@@ -457,7 +465,7 @@ class FEM_SimpLinearElasticity():
         self, task: "LinearElasticity",
         E_min_coeff: float,
         density_interpolation: Callable = composer.simp_interpolation,
-        solver_option: Literal["spsolve", "cg_pyamg"] = "spsolve",
+        solver_option: Literal["spsolve", "cg_pyamg", "petsc"] = "spsolve",
     ):
         self.task = task
         self.E_max = task.E * 1.0

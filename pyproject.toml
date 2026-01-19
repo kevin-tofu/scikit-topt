@@ -27,6 +27,11 @@ dependencies = [
     "scipy (>=1.15.2,<2.0.0)",
 ]
 
+[project.optional-dependencies]
+petsc = [
+    "petsc4py==3.23.6",
+]
+
 [tool.poetry]
 name = "scikit-topt"
 version = "0.3.8"
@@ -48,6 +53,10 @@ pyamg = ">=5.2.1,<6.0.0"
 pyproject-toml = ">=0.1.0,<0.2.0"
 pyvista = { version = ">=0.44.2,<0.45.0", python = ">=3.10,<3.13" }
 imageio = ">=2.37.0,<3.0.0"
+petsc4py = { version = "==3.23.6", optional = true }
+
+[tool.poetry.extras]
+petsc = ["petsc4py"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
