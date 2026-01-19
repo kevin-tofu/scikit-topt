@@ -87,7 +87,7 @@ def moc_log_update_logspace(
     np.maximum(scaling_rate, eps, out=scaling_rate)
     np.log(scaling_rate, out=scaling_rate)
     np.clip(scaling_rate, clip_min, clip_max, out=scaling_rate)
-    np.clip(rho, rho_min, 1.0, out=rho)
+    np.clip(rho, rho_min, rho_max, out=rho)
     np.log(rho, out=rho_clip_lower)
 
     # rho_clip_upper = exp(rho_clip_lower) = rho (real space)
@@ -211,7 +211,6 @@ class LogMOC_Optimizer(common_density.DensityMethod):
         eps = 1e-8
         if isinstance(percentile, float):
             scale = np.percentile(np.abs(dC_drho_design_eles), percentile)
-            self.recorder.feed_data("-dC", -dC_drho_design_eles)
             self.running_scale = 0.2 * self.running_scale + \
                 (1 - 0.2) * scale if iter_num > 1 else scale
             logger.info(f"running_scale: {self.running_scale}")
@@ -269,7 +268,7 @@ class LogMOC_Optimizer(common_density.DensityMethod):
             eta,
             move_limit,
             rho_clip_lower, rho_clip_upper,
-            cfg.rho_min, 1.0,
+            cfg.rho_min, cfg.rho_max,
             cfg.scaling_rate_min, cfg.scaling_rate_max,
         )
 

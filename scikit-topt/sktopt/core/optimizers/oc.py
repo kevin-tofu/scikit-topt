@@ -64,8 +64,9 @@ def bisection_with_projection(
     # while abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
     # while abs(l2 - l1) > tolerance * (l1 + l2) / 2.0:
     iter_num = 0
-    while abs(l2 - l1) > tolerance:
-        lmid = 0.5 * (l1 + l2)
+    lmid = 0.5 * (l1 + l2)
+    vol_error = 0.0
+    while True:
         # must be dC < 0
         np.negative(dC, out=scaling_rate)
         scaling_rate /= (lmid + eps)
@@ -90,15 +91,17 @@ def bisection_with_projection(
 
         if abs(vol_error) < vol_tol:
             break
-
         if iter_num >= max_iter:
             break
+        if abs(l2 - l1) <= tolerance:
+            break
 
-        iter_num += 1
         if vol_error > 0:
             l1 = lmid
         else:
             l2 = lmid
+        iter_num += 1
+        lmid = 0.5 * (l1 + l2)
 
     return lmid, vol_error
 
@@ -185,6 +188,7 @@ class OC_Optimizer(common_density.DensityMethod):
             np.copyto(self._rho_e_buffer, rho_design_eles)
 
         eps = 1e-6
+        kkt_scale = 1.0
         if isinstance(percentile, float):
             with self._timed_section("percentile_scale"):
                 scale = np.percentile(np.abs(dC_drho_design_eles), percentile)
@@ -193,6 +197,7 @@ class OC_Optimizer(common_density.DensityMethod):
                 self.running_scale = 0.6 * self.running_scale + \
                     (1 - 0.6) * scale if iter_num > 1 else scale
                 dC_drho_design_eles /= (self.running_scale + eps)
+                kkt_scale = self.running_scale + eps
         else:
             # fallback normalization when percentile is not used
             # scale = np.max(np.abs(dC_drho_design_eles))
@@ -227,7 +232,7 @@ class OC_Optimizer(common_density.DensityMethod):
                 # dL/dρ_i = dC/dρ_i + λ * dV/dρ_i
                 # KKT residual
                 dL = self._dC_raw_buffer[mask_int] + \
-                    lmid * self._dV_drho_design[mask_int]
+                    (lmid * kkt_scale) * self._dV_drho_design[mask_int]
                 self.kkt_residual = float(np.linalg.norm(dL, ord=np.inf))
             else:
                 self.kkt_residual = 0.0
