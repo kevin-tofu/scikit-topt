@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass
 from typing import Callable, Literal
 from contextlib import contextmanager
 
@@ -15,18 +16,70 @@ from skfem.helpers import transpose
 import pyamg
 
 from sktopt.fea import composer
-from sktopt.fea.solver_petsc import solve_u_petsc
+from sktopt.fea.solver_petsc import (
+    PETScOptions,
+    petsc_options_for_solver,
+    solve_u_petsc,
+    solve_u_petsc_multi,
+)
 from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
+
+ElasticSolver = Literal[
+    'cg_jacobi', 'spsolve', 'cg_pyamg', 'petsc', 'petsc_spdirect'
+]
+SolverSelector = Literal['auto'] | ElasticSolver
+
+
+@dataclass(frozen=True)
+class LinearSolverConfig:
+    solver: SolverSelector = "spsolve"
+    rtol: float = 1e-8
+    maxiter: int | None = None
+    petsc_options: PETScOptions | None = None
+    allow_fallback_to_spsolve: bool = False
+
+
+def normalize_linear_solver_config(
+    solver: SolverSelector | LinearSolverConfig,
+    rtol: float = 1e-8,
+    maxiter: int | None = None,
+    petsc_options: PETScOptions | None = None,
+    allow_fallback_to_spsolve: bool = False,
+) -> LinearSolverConfig:
+    if isinstance(solver, LinearSolverConfig):
+        return solver
+    return LinearSolverConfig(
+        solver=solver,
+        rtol=rtol,
+        maxiter=maxiter,
+        petsc_options=petsc_options,
+        allow_fallback_to_spsolve=allow_fallback_to_spsolve,
+    )
 
 
 def solve_u(
     K_cond: scipy.sparse.spmatrix,
     F_cond: np.ndarray,
-    chosen_solver: Literal['cg_jacobi', 'spsolve', 'cg_pyamg', 'petsc'] = 'spsolve',
+    chosen_solver: ElasticSolver | LinearSolverConfig = 'spsolve',
     rtol: float = 1e-8,
     maxiter: int = None,
+    petsc_options: PETScOptions | None = None,
+    allow_fallback_to_spsolve: bool = False,
 ) -> np.ndarray:
+    solver_cfg = normalize_linear_solver_config(
+        chosen_solver,
+        rtol=rtol,
+        maxiter=maxiter,
+        petsc_options=petsc_options,
+        allow_fallback_to_spsolve=allow_fallback_to_spsolve,
+    )
+    chosen_solver = solver_cfg.solver
+    rtol = solver_cfg.rtol
+    maxiter = solver_cfg.maxiter
+    petsc_options = solver_cfg.petsc_options
+    allow_fallback_to_spsolve = solver_cfg.allow_fallback_to_spsolve
+
     try:
         if chosen_solver == 'cg_jacobi':
             M_diag = K_cond.diagonal()
@@ -57,14 +110,33 @@ def solve_u(
 
         elif chosen_solver == 'petsc':
             u_c, info = solve_u_petsc(
-                K_cond, F_cond, rtol=rtol, maxiter=maxiter
+                K_cond,
+                F_cond,
+                rtol=rtol,
+                maxiter=maxiter,
+                petsc_options=petsc_options,
             )
             logger.info(f"PETSc CG (GAMG) solver info: {info}")
+
+        elif chosen_solver == 'petsc_spdirect':
+            u_c, info = solve_u_petsc(
+                K_cond,
+                F_cond,
+                rtol=rtol,
+                maxiter=maxiter,
+                petsc_options=petsc_options_for_solver(
+                    chosen_solver,
+                    petsc_options,
+                ),
+            )
+            logger.info(f"PETSc sparse direct solver info: {info}")
 
         else:
             raise ValueError(f"Unknown solver: {chosen_solver}")
 
     except Exception as e:
+        if not allow_fallback_to_spsolve:
+            raise
         logger.warning(f"Solver exception - {e}, falling back to spsolve.")
         u_c = scipy.sparse.linalg.spsolve(K_cond, F_cond)
 
@@ -76,11 +148,25 @@ def compute_compliance_basis(
     E0, Emin, p, nu0,
     rho,
     elem_func: Callable = composer.simp_interpolation,
-    solver: Literal['auto', 'cg_jacobi', 'spsolve', 'cg_pyamg', 'petsc'] = 'auto',
+    solver_config: LinearSolverConfig | None = None,
+    solver: SolverSelector | LinearSolverConfig = 'auto',
     rtol: float = 1e-5,
     maxiter: int = None,
+    petsc_options: PETScOptions | None = None,
     timer=None,
 ) -> tuple:
+    """
+    Assemble and solve a single-load compliance problem.
+
+    Parameters
+    ----------
+    solver_config : LinearSolverConfig, optional
+        Preferred solver configuration. When provided, it takes precedence
+        over ``solver``, ``rtol``, ``maxiter``, and ``petsc_options``.
+    solver, rtol, maxiter, petsc_options : optional
+        Legacy convenience inputs retained for backward compatibility.
+        These are normalized into a :class:`LinearSolverConfig` internally.
+    """
     def section(name: str):
         if timer:
             return timer.section(name)
@@ -94,7 +180,13 @@ def compute_compliance_basis(
         )
     n_dof = K.shape[0]
     # Solver auto-selection
-    if solver == 'auto':
+    solver_cfg = (
+        solver_config if solver_config is not None else
+        normalize_linear_solver_config(
+            solver, rtol=rtol, maxiter=maxiter, petsc_options=petsc_options
+        )
+    )
+    if solver_cfg.solver == 'auto':
         if n_dof < 1000:
             chosen_solver = 'spsolve'
         elif n_dof < 30000:
@@ -104,9 +196,12 @@ def compute_compliance_basis(
             chosen_solver = 'cg_pyamg'
             # chosen_solver = 'cg_jacobi'
     else:
-        chosen_solver = solver
+        chosen_solver = solver_cfg.solver
 
-    _maxiter = min(1000, max(300, n_dof // 5)) if maxiter is None else maxiter
+    _maxiter = (
+        min(1000, max(300, n_dof // 5))
+        if solver_cfg.maxiter is None else solver_cfg.maxiter
+    )
     K_csr = K.tocsr()
     all_dofs = np.arange(K_csr.shape[0])
     free_dofs = np.setdiff1d(all_dofs, dirichlet_dofs, assume_unique=True)
@@ -116,8 +211,15 @@ def compute_compliance_basis(
         K_e, F_e = skfem.enforce(K_csr, force, D=dirichlet_dofs)
     with section("solve"):
         u = solve_u(
-            K_e, F_e, chosen_solver=chosen_solver,
-            rtol=rtol, maxiter=_maxiter
+            K_e,
+            F_e,
+            chosen_solver=LinearSolverConfig(
+                solver=chosen_solver,
+                rtol=solver_cfg.rtol,
+                maxiter=_maxiter,
+                petsc_options=solver_cfg.petsc_options,
+                allow_fallback_to_spsolve=(solver_cfg.solver == 'auto'),
+            ),
         )
 
     # condense
@@ -143,10 +245,12 @@ def solve_multi_load(
     E0: float, Emin: float, p: float, nu0: float,
     rho: np.ndarray,
     u_all: np.ndarray,
-    solver: Literal['auto', 'cg_jacobi', 'spsolve', 'cg_pyamg', 'petsc'] = 'auto',
+    solver: SolverSelector | LinearSolverConfig = 'auto',
+    solver_config: LinearSolverConfig | None = None,
     elem_func: Callable = composer.simp_interpolation,
     rtol: float = 1e-5,
     maxiter: int | None = None,
+    petsc_options: PETScOptions | None = None,
     timer=None,
 ) -> np.ndarray:
     """
@@ -184,16 +288,21 @@ def solve_multi_load(
         Element-wise density field.
     u_all : (n_dof, n_loads) ndarray
         Output array to store displacement solutions; each column is one load case.
-    solver : {'auto', 'cg_jacobi', 'spsolve', 'cg_pyamg', 'petsc'}, optional
-        Solver selector. For multi-load, only 'auto' and 'spsolve' are supported.
+    solver_config : LinearSolverConfig, optional
+        Preferred solver configuration for the shared stiffness system.
+        When provided, it takes precedence over ``solver``, ``rtol``,
+        ``maxiter``, and ``petsc_options``.
+    solver : {'auto', 'cg_jacobi', 'spsolve', 'cg_pyamg', 'petsc', 'petsc_spdirect'}, optional
+        Legacy convenience selector for the shared stiffness system.
         - 'auto' or 'spsolve': direct LU factorization (splu) is used.
+        - 'petsc': solve each RHS with a reused PETSc KSP object.
+        - 'petsc_spdirect': solve each RHS with PETSc sparse direct solve.
         - 'cg_jacobi', 'cg_pyamg': currently not implemented for multi-load.
     elem_func : Callable, optional
         Density interpolation function, e.g. SIMP or RAMP.
-    rtol : float, optional
-        Relative tolerance (unused for direct LU; kept for API compatibility).
-    maxiter : int or None, optional
-        Maximum number of iterations (unused for direct LU).
+    rtol, maxiter, petsc_options : optional
+        Legacy convenience inputs retained for backward compatibility.
+        These are normalized into ``solver_config`` internally.
 
     Returns
     -------
@@ -202,26 +311,32 @@ def solve_multi_load(
     """
 
     # fall back to single-load path to honor chosen solver/timer
+    solver_cfg = (
+        solver_config if solver_config is not None else
+        normalize_linear_solver_config(
+            solver, rtol=rtol, maxiter=maxiter, petsc_options=petsc_options
+        )
+    )
+
     if len(force_list) == 1:
         compliance, u = compute_compliance_basis(
             basis, free_dofs, dirichlet_dofs, force_list[0],
             E0, Emin, p, nu0,
             rho,
             elem_func=elem_func,
-            solver=solver,
-            rtol=rtol,
-            maxiter=maxiter,
+            solver_config=solver_cfg,
             timer=timer,
         )
         u_all[:, 0] = u
         return np.array([compliance])
 
-    # Multi-load currently supports only direct LU factorization.
-    if solver not in ('auto', 'spsolve'):
+    # Multi-load currently supports direct LU or PETSc.
+    if solver_cfg.solver not in ('auto', 'spsolve', 'petsc', 'petsc_spdirect'):
         raise NotImplementedError(
-            "solve_multi_load currently supports only direct LU (solver "
-            "='auto' or 'spsolve'). Iterative solvers for multi-load are "
-            "not implemented."
+            "solve_multi_load currently supports only direct LU "
+            "(solver='auto' or 'spsolve') or PETSc "
+            "(solver='petsc' or 'petsc_spdirect'). "
+            "Other iterative solvers for multi-load are not implemented."
         )
 
     def section(name: str):
@@ -252,13 +367,27 @@ def solve_multi_load(
             for f in force_list
         ])  # shape: (n_dof, n_loads)
 
-    # Perform a single LU factorization of K_e
-    with section("factorize"):
-        lu = scipy.sparse.linalg.splu(K_e.tocsc())
+    if solver_cfg.solver in ("petsc", "petsc_spdirect"):
+        _petsc_options = petsc_options_for_solver(
+            solver_cfg.solver, solver_cfg.petsc_options
+        )
+        with section("solve"):
+            u_sol, infos = solve_u_petsc_multi(
+                K_e,
+                F_stack,
+                rtol=solver_cfg.rtol,
+                maxiter=solver_cfg.maxiter,
+                petsc_options=_petsc_options,
+            )
+        logger.info(f"PETSc multi-load solver info: {infos}")
+    else:
+        # Perform a single LU factorization of K_e
+        with section("factorize"):
+            lu = scipy.sparse.linalg.splu(K_e.tocsc())
 
-    # Solve all load cases in one call (multi-RHS solve)
-    with section("solve"):
-        u_sol = lu.solve(F_stack)      # shape: (n_dof, n_loads)
+        # Solve all load cases in one call (multi-RHS solve)
+        with section("solve"):
+            u_sol = lu.solve(F_stack)      # shape: (n_dof, n_loads)
 
     # Store the solutions in the provided array
     u_all[:, :] = u_sol
@@ -274,12 +403,32 @@ def compute_compliance_basis_multi_load(
     E0: float, Emin: float, p: float, nu0: float,
     rho: np.ndarray,
     u_all: np.ndarray,
-    solver: Literal['auto', 'cg_jacobi', 'spsolve', 'cg_pyamg', 'petsc'] = 'auto',
+    solver: SolverSelector | LinearSolverConfig = 'auto',
+    solver_config: LinearSolverConfig | None = None,
     elem_func: Callable = composer.simp_interpolation,
     rtol: float = 1e-5,
     maxiter: int = None,
+    petsc_options: PETScOptions | None = None,
     timer=None,
 ) -> np.ndarray:
+    """
+    Compute compliance values for one or more load cases.
+
+    Parameters
+    ----------
+    solver_config : LinearSolverConfig, optional
+        Preferred solver configuration. When provided, it takes precedence
+        over ``solver``, ``rtol``, ``maxiter``, and ``petsc_options``.
+    solver, rtol, maxiter, petsc_options : optional
+        Legacy convenience inputs retained for backward compatibility.
+    """
+
+    solver_cfg = (
+        solver_config if solver_config is not None else
+        normalize_linear_solver_config(
+            solver, rtol=rtol, maxiter=maxiter, petsc_options=petsc_options
+        )
+    )
 
     # Single-load: use the iterative-capable path and keep timer granularity.
     if len(force_list) == 1:
@@ -288,9 +437,7 @@ def compute_compliance_basis_multi_load(
             E0, Emin, p, nu0,
             rho,
             elem_func=elem_func,
-            solver=solver,
-            rtol=rtol,
-            maxiter=maxiter,
+            solver_config=solver_cfg,
             timer=timer,
         )
         u_all[:, 0] = u
@@ -302,10 +449,8 @@ def compute_compliance_basis_multi_load(
         E0, Emin, p, nu0,
         rho,
         u_all,
-        solver=solver,
+        solver_config=solver_cfg,
         elem_func=elem_func,
-        rtol=rtol,
-        maxiter=maxiter,
         timer=timer,
     )
 
@@ -419,12 +564,18 @@ class FEM_SimpLinearElasticity():
         A function f(ρ) that returns an interpolated stiffness multiplier.
         Defaults to `composer.simp_interpolation` (ρᵖ). Any custom
         interpolation function following SIMP/RAMP/etc. can be used.
-    solver_option : {"spsolve", "cg_pyamg", "petsc"}, optional
-        Linear solver backend.
+    solver_config : LinearSolverConfig, optional
+        Preferred normalized solver configuration.
+    solver_option : {"spsolve", "cg_pyamg", "petsc", "petsc_spdirect"}, optional
+        Legacy convenience backend selector used only when
+        ``solver_config`` is not provided.
         - "spsolve": direct SciPy sparse solver (robust, slower for large DOF)
         - "cg_pyamg": Conjugate Gradient with PyAMG multigrid preconditioner
             (fast for large problems)
-        - "petsc": PETSc CG + GAMG (requires petsc4py; single-load only)
+        - "petsc": PETSc CG + GAMG (requires petsc4py; supports multi-load
+          by reusing the same KSP across RHS vectors)
+        - "petsc_spdirect": PETSc sparse direct solve via KSP/PC
+          preonly+lu
 
     Attributes
     ----------
@@ -438,7 +589,11 @@ class FEM_SimpLinearElasticity():
         The SIMP / RAMP interpolation function used to compute material
         stiffness.
     solver_option : str
-        Selected linear solver backend.
+        Selected linear solver backend derived from ``solver_config``.
+    petsc_options : PETScOptions or None
+        PETSc-specific options derived from ``solver_config``.
+    solver_config : LinearSolverConfig
+        Normalized linear solver configuration used for state solves.
 
     Notes
     -----
@@ -456,7 +611,7 @@ class FEM_SimpLinearElasticity():
     ...     task=my_task,
     ...     E_min_coeff=1e-3,
     ...     density_interpolation=composer.simp_interpolation,
-    ...     solver_option="spsolve",
+    ...     solver_config=LinearSolverConfig(solver="spsolve"),
     ... )
     >>> u = fem.objectives_multi_load(rho)  # FEM compliaance given density
     """
@@ -465,13 +620,25 @@ class FEM_SimpLinearElasticity():
         self, task: "LinearElasticity",
         E_min_coeff: float,
         density_interpolation: Callable = composer.simp_interpolation,
-        solver_option: Literal["spsolve", "cg_pyamg", "petsc"] = "spsolve",
+        solver_config: LinearSolverConfig | None = None,
+        solver_option: Literal[
+            "spsolve", "cg_pyamg", "petsc", "petsc_spdirect"
+        ] = "spsolve",
+        petsc_options: PETScOptions | None = None,
     ):
         self.task = task
         self.E_max = task.E * 1.0
         self.E_min = task.E * E_min_coeff
         self.density_interpolation = density_interpolation
-        self.solver_option = solver_option
+        self.solver_config = (
+            solver_config if solver_config is not None else
+            normalize_linear_solver_config(
+                solver_option,
+                petsc_options=petsc_options,
+            )
+        )
+        self.solver_option = self.solver_config.solver
+        self.petsc_options = self.solver_config.petsc_options
 
     def objectives_multi_load(
         self,
@@ -493,7 +660,7 @@ class FEM_SimpLinearElasticity():
             rho,
             u_dofs,
             elem_func=self.density_interpolation,
-            solver=self.solver_option,
+            solver_config=self.solver_config,
             timer=timer,
         )
         return compliance_array

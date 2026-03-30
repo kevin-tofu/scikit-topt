@@ -11,8 +11,12 @@ import pyamg
 
 # from sktopt.mesh import LinearHeatConduction
 from sktopt.fea import composer
+from sktopt.fea.solver_elastic import LinearSolverConfig, normalize_linear_solver_config
 from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
+
+HeatSolver = Literal["spsolve"]
+HeatSolverSelector = Literal["auto", "spsolve"]
 
 
 def solve_scipy_heat_multi_enforce(
@@ -134,12 +138,17 @@ def solve_multi_load(
     k0: float, kmin: float, p: float,
     rho: np.ndarray,
     u_all: np.ndarray,
-    solver: Literal['auto', 'spsolve'] = 'auto',
+    solver: HeatSolverSelector | LinearSolverConfig = 'auto',
+    solver_config: LinearSolverConfig | None = None,
     elem_func: Callable = composer.simp_interpolation,
     rtol: float = 1e-5,
     maxiter: int = None
 ) -> list:
-    solver = 'spsolve' if solver == 'auto' else solver
+    solver_cfg = (
+        solver_config if solver_config is not None else
+        normalize_linear_solver_config(solver, rtol=rtol, maxiter=maxiter)
+    )
+    solver_name = 'spsolve' if solver_cfg.solver == 'auto' else solver_cfg.solver
 
     K = composer.assemble_conduction_matrix(
         basis, rho, k0, kmin, p, elem_func
@@ -165,7 +174,7 @@ def solve_multi_load(
         basis.get_dofs(nodes=loop) for loop in dirichlet_nodes_list
     ]
 
-    if solver == "spsolve":
+    if solver_name == "spsolve":
         solve_scipy(
             K_csr, emit,
             dirichlet_dofs_list, dirichlet_values_list,
@@ -518,8 +527,11 @@ class FEM_SimpLinearHeatConduction():
     density_interpolation : Callable, optional
         Interpolation function for SIMP (or RAMP) mapping ρ → k(ρ).
         Defaults to ``composer.simp_interpolation``.
-    solver_option : {"spsolve", "cg_pyamg"}, optional
-        Linear solver to use for the state equation of each load case.
+    solver_config : LinearSolverConfig, optional
+        Preferred normalized solver configuration.
+    solver_option : {"spsolve"}, optional
+        Legacy convenience solver selector used only when ``solver_config``
+        is not provided.
     q : int, optional
         Exponent for boundary interpolation in the virtual Robin model
         (often used to sharpen on/off behavior of boundary heat transfer).
@@ -552,6 +564,7 @@ class FEM_SimpLinearHeatConduction():
         self, task: "LinearHeatConduction",
         E_min_coeff: float,
         density_interpolation: Callable = composer.simp_interpolation,
+        solver_config: LinearSolverConfig | None = None,
         solver_option: Literal["spsolve"] = "spsolve",
         q: int = 4
     ):
@@ -559,7 +572,11 @@ class FEM_SimpLinearHeatConduction():
         self.k_max = task.k * 1.0
         self.k_min = task.k * E_min_coeff
         self.density_interpolation = density_interpolation
-        self.solver_option = solver_option
+        self.solver_config = (
+            solver_config if solver_config is not None else
+            normalize_linear_solver_config(solver_option)
+        )
+        self.solver_option = self.solver_config.solver
         # self.n_joblib = n_joblib
         self.λ_all = None
         self.q = q
@@ -615,7 +632,7 @@ class FEM_SimpLinearHeatConduction():
             self.k_max, self.k_min, p,
             rho,
             u_dofs,
-            solver=self.solver_option,
+            solver_config=self.solver_config,
             elem_func=self.density_interpolation,
             # n_joblib=self.n_joblib,
         )

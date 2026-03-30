@@ -17,6 +17,8 @@ from sktopt import fea
 from sktopt.fea import composer
 from sktopt import filters
 from sktopt.core import misc
+from sktopt.fea.solver_petsc import PETScOptions, normalize_petsc_options
+from sktopt.fea.solver_elastic import LinearSolverConfig, normalize_linear_solver_config
 from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 import logging
@@ -146,10 +148,22 @@ class DensityMethodConfig():
         If ``True``, apply filtering directly to sensitivity fields
         in addition to density filtering.
 
-    solver_option : {"spsolve", "cg_pyamg", "petsc"}
-        Linear solver for the state analysis.
+    solver_option : {"spsolve", "cg_pyamg", "petsc", "petsc_spdirect"}
+        Legacy convenience selector for the state-analysis solver.
         ``"cg_pyamg"`` enables multigrid-accelerated CG via PyAMG.
-        ``"petsc"`` uses PETSc CG + GAMG (requires petsc4py; single-load only).
+        ``"petsc"`` uses PETSc CG + GAMG (requires petsc4py).
+        ``"petsc_spdirect"`` uses PETSc sparse direct solve
+        (``ksp_type=preonly``, ``pc_type=lu``).
+    petsc_options : PETScOptions
+        Legacy convenience PETSc options used to build ``solver_config``.
+        Additional PETSc-specific options are forwarded only when
+        ``solver_option`` is ``"petsc"`` or ``"petsc_spdirect"``.
+        Supported keys currently include ``ksp_type``, ``pc_type``,
+        ``pc_factor_mat_solver_type``, ``options_prefix``,
+        and ``use_set_from_options``.
+    solver_config : LinearSolverConfig
+        Normalized solver configuration derived from ``solver_option`` and
+        ``petsc_options`` during initialization.
     scaling : bool
         If ``True``, apply length/force scaling to normalize geometry
         and loads for improved numerical conditioning.
@@ -232,7 +246,10 @@ class DensityMethodConfig():
     export_img_opaque: bool = False
     design_dirichlet: bool = False
     sensitivity_filter: bool = False
-    solver_option: Literal["spsolve", "cg_pyamg", "petsc"] = "spsolve"
+    solver_option: Literal[
+        "spsolve", "cg_pyamg", "petsc", "petsc_spdirect"
+    ] = "spsolve"
+    petsc_options: PETScOptions = field(default_factory=PETScOptions)
     scaling: bool = False
 
     check_convergence: bool = False
@@ -245,6 +262,13 @@ class DensityMethodConfig():
         valid_keys = sig.parameters.keys()
         filtered_args = {k: v for k, v in args.items() if k in valid_keys}
         return cls(**filtered_args)
+
+    def __post_init__(self):
+        self.petsc_options = normalize_petsc_options(self.petsc_options)
+        self.solver_config = normalize_linear_solver_config(
+            self.solver_option,
+            petsc_options=self.petsc_options,
+        )
 
     @classmethod
     def import_from(cls, path: str) -> 'DensityMethodConfig':
@@ -495,13 +519,13 @@ class DensityMethod(DensityMethodBase):
             self.fem = fea.FEM_SimpLinearElasticity(
                 tsk, cfg.E_min_coeff,
                 density_interpolation=interpolation_funcs(cfg)[0],
-                solver_option=cfg.solver_option
+                solver_config=cfg.solver_config,
             )
         elif isinstance(tsk, sktopt.mesh.LinearHeatConduction):
             self.fem = fea.FEM_SimpLinearHeatConduction(
                 tsk, cfg.E_min_coeff,
                 density_interpolation=interpolation_funcs(cfg)[0],
-                solver_option=cfg.solver_option
+                solver_config=cfg.solver_config,
             )
         else:
             raise NotImplementedError(
