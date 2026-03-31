@@ -16,7 +16,7 @@ from skfem.helpers import transpose
 import pyamg
 
 from sktopt.fea import composer
-from sktopt.fea.solver_petsc import (
+from sktopt.fea._petsc_compat import (
     PETScOptions,
     petsc_options_for_solver,
     solve_u_petsc,

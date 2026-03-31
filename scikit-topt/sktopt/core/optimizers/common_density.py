@@ -17,7 +17,7 @@ from sktopt import fea
 from sktopt.fea import composer
 from sktopt import filters
 from sktopt.core import misc
-from sktopt.fea.solver_petsc import PETScOptions, normalize_petsc_options
+from sktopt.fea._petsc_compat import PETScOptions, normalize_petsc_options
 from sktopt.fea.solver_elastic import LinearSolverConfig, normalize_linear_solver_config
 from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
