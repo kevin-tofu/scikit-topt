@@ -11,12 +11,17 @@ import pyamg
 
 # from sktopt.mesh import LinearHeatConduction
 from sktopt.fea import composer
+from sktopt.fea._petsc_compat import (
+    PETScOptions,
+    petsc_options_for_solver,
+    solve_u_petsc_multi,
+)
 from sktopt.fea.solver_elastic import LinearSolverConfig, normalize_linear_solver_config
 from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
 
-HeatSolver = Literal["spsolve"]
-HeatSolverSelector = Literal["auto", "spsolve"]
+HeatSolver = Literal["spsolve", "petsc", "petsc_spdirect"]
+HeatSolverSelector = Literal["auto", "spsolve", "petsc", "petsc_spdirect"]
 
 
 def solve_scipy_heat_multi_enforce(
@@ -128,6 +133,68 @@ def solve_scipy(
     u_all[:, :] = lu.solve(F_stack)
 
 
+def solve_heat_system_multi(
+    K_csr: scipy.sparse.csr_matrix,
+    emit: np.ndarray,
+    dirichlet_dofs_list: list[skfem.Dofs],
+    dirichlet_values_list: list[float],
+    u_all: np.ndarray,
+    solver_config: LinearSolverConfig,
+) -> scipy.sparse.csr_matrix:
+    solver_name = "spsolve" if solver_config.solver == "auto" else solver_config.solver
+
+    if solver_name not in {"spsolve", "petsc", "petsc_spdirect"}:
+        raise NotImplementedError(
+            "Heat multi-load solve currently supports only direct LU "
+            "(solver='auto' or 'spsolve') or PETSc "
+            "(solver='petsc' or 'petsc_spdirect')."
+        )
+
+    n_loads = len(dirichlet_values_list)
+    if n_loads == 0:
+        u_all[:, :] = 0.0
+        return K_csr
+
+    D0 = dirichlet_dofs_list[0]
+    val0 = dirichlet_values_list[0]
+    K_e, _ = skfem.enforce(
+        K_csr,
+        emit,
+        D=D0,
+        x=np.full(D0.N, val0),
+    )
+
+    F_stack = np.column_stack([
+        skfem.enforce(
+            K_csr,
+            emit,
+            D=D_i,
+            x=np.full(D_i.N, val_i),
+        )[1]
+        for D_i, val_i in zip(dirichlet_dofs_list, dirichlet_values_list)
+    ])
+
+    if solver_name in {"petsc", "petsc_spdirect"}:
+        petsc_options = petsc_options_for_solver(
+            solver_name,
+            solver_config.petsc_options,
+        )
+        u_sol, infos = solve_u_petsc_multi(
+            K_e,
+            F_stack,
+            rtol=solver_config.rtol,
+            maxiter=solver_config.maxiter,
+            petsc_options=petsc_options,
+        )
+        logger.info(f"PETSc heat multi-load solver info: {infos}")
+    else:
+        lu = scipy.sparse.linalg.splu(K_e.tocsc())
+        u_sol = lu.solve(F_stack)
+
+    u_all[:, :] = u_sol
+    return K_e.tocsr()
+
+
 def solve_multi_load(
     basis: skfem.Basis,
     free_dofs: np.ndarray,
@@ -174,14 +241,14 @@ def solve_multi_load(
         basis.get_dofs(nodes=loop) for loop in dirichlet_nodes_list
     ]
 
-    if solver_name == "spsolve":
-        solve_scipy(
-            K_csr, emit,
-            dirichlet_dofs_list, dirichlet_values_list,
-            u_all
-        )
-    else:
-        raise NotImplementedError("")
+    solve_heat_system_multi(
+        K_csr,
+        emit,
+        dirichlet_dofs_list,
+        dirichlet_values_list,
+        u_all,
+        solver_cfg,
+    )
 
     return K_csr, emit, dirichlet_dofs_list
 
@@ -565,7 +632,7 @@ class FEM_SimpLinearHeatConduction():
         E_min_coeff: float,
         density_interpolation: Callable = composer.simp_interpolation,
         solver_config: LinearSolverConfig | None = None,
-        solver_option: Literal["spsolve"] = "spsolve",
+        solver_option: Literal["spsolve", "petsc", "petsc_spdirect"] = "spsolve",
         q: int = 4
     ):
         self.task = task
@@ -690,10 +757,13 @@ class FEM_SimpLinearHeatConduction():
 
             # solve adjoint K λ = ∂J/∂T
             λ_all = np.zeros_like(u_dofs)
-            solve_scipy(
-                K_csr, rhs_vec,
-                dirichlet_dofs_list, dirichlet_values_list,
-                λ_all
+            solve_heat_system_multi(
+                K_csr,
+                rhs_vec,
+                dirichlet_dofs_list,
+                dirichlet_values_list,
+                λ_all,
+                self.solver_config,
             )
 
         elif objective == "averaged_temp":
@@ -702,10 +772,13 @@ class FEM_SimpLinearHeatConduction():
 
             λ_all = np.zeros_like(u_dofs)
             ones_emit = np.ones_like(emit)
-            solve_scipy(
-                K_csr, ones_emit,
-                dirichlet_dofs_list, dirichlet_values_list,
-                λ_all
+            solve_heat_system_multi(
+                K_csr,
+                ones_emit,
+                dirichlet_dofs_list,
+                dirichlet_values_list,
+                λ_all,
+                self.solver_config,
             )
 
         else:

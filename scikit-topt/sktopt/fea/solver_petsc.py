@@ -112,10 +112,7 @@ def petsc_options_for_solver(
     direct_options = direct_petsc_options()
     if petsc_options is None:
         return direct_options
-    if isinstance(petsc_options, dict):
-        petsc_options = merge_petsc_options(direct_options, petsc_options)
-    else:
-        petsc_options = normalize_petsc_options(petsc_options)
+    petsc_options = merge_petsc_options(direct_options, petsc_options)
     if petsc_options.ksp_type != direct_options.ksp_type:
         raise ValueError(
             "chosen_solver='petsc_spdirect' requires ksp_type='preonly'"

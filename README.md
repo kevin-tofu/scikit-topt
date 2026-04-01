@@ -139,6 +139,19 @@ If Scikit-Topt cannot load PETSc, first check that:
 - the PETSc shared libraries are visible in your library search path
 - `PETSC_DIR` and `PETSC_ARCH` point to the same PETSc build used for `petsc4py`
 
+To benchmark the PETSc multi-load elasticity path used in the OC optimizer:
+
+```bash
+bash base_multi-load-oc-petsc.sh
+```
+
+The benchmark script defaults to the PETSc sparse-direct path. To test the
+iterative PETSc path instead:
+
+```bash
+SOLVER_OPTION=petsc bash base_multi-load-oc-petsc.sh
+```
+
 ### Optional: Enable off-screen rendering
 
 If you want to visualize the optimized density distribution with mesh as an image,

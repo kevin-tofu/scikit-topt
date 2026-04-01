@@ -17,7 +17,11 @@ from sktopt import fea
 from sktopt.fea import composer
 from sktopt import filters
 from sktopt.core import misc
-from sktopt.fea._petsc_compat import PETScOptions, normalize_petsc_options
+from sktopt.fea._petsc_compat import (
+    PETScOptions,
+    normalize_petsc_options,
+    petsc_options_for_solver,
+)
 from sktopt.fea.solver_elastic import LinearSolverConfig, normalize_linear_solver_config
 from sktopt.tools.logconf import mylogger
 logger = mylogger(__name__)
@@ -264,7 +268,43 @@ class DensityMethodConfig():
         return cls(**filtered_args)
 
     def __post_init__(self):
-        self.petsc_options = normalize_petsc_options(self.petsc_options)
+        if self.solver_option == "petsc_spdirect":
+            if isinstance(self.petsc_options, PETScOptions):
+                default_opts = PETScOptions()
+                override: dict[str, object] = {}
+                if self.petsc_options.ksp_type != default_opts.ksp_type:
+                    override["ksp_type"] = self.petsc_options.ksp_type
+                if self.petsc_options.pc_type != default_opts.pc_type:
+                    override["pc_type"] = self.petsc_options.pc_type
+                if self.petsc_options.pc_factor_mat_solver_type is not None:
+                    override["pc_factor_mat_solver_type"] = (
+                        self.petsc_options.pc_factor_mat_solver_type
+                    )
+                if self.petsc_options.options_prefix is not None:
+                    override["options_prefix"] = self.petsc_options.options_prefix
+                if (
+                    self.petsc_options.use_set_from_options
+                    != default_opts.use_set_from_options
+                ):
+                    override["use_set_from_options"] = (
+                        self.petsc_options.use_set_from_options
+                    )
+                petsc_input: PETScOptions | dict[str, object] | None = (
+                    override or None
+                )
+            else:
+                petsc_input = self.petsc_options
+            self.petsc_options = petsc_options_for_solver(
+                self.solver_option,
+                petsc_input,
+            )
+        elif self.solver_option == "petsc":
+            self.petsc_options = petsc_options_for_solver(
+                self.solver_option,
+                self.petsc_options,
+            )
+        else:
+            self.petsc_options = normalize_petsc_options(self.petsc_options)
         self.solver_config = normalize_linear_solver_config(
             self.solver_option,
             petsc_options=self.petsc_options,
@@ -1136,20 +1176,22 @@ class DensityMethod(DensityMethodBase):
                         cell_data_values=[rho_projected, energy_mean],
                         filepath=cfg.vtu_path(iter_num)
                     )
-                    visualization.write_mesh_with_info_as_image(
-                        mesh_path=cfg.vtu_path(iter_num),
-                        mesh_scalar_name="rho_projected",
-                        clim=(0.0, 1.0),
-                        image_path=cfg.image_path(iter_num, "rho_projected"),
-                        image_title=f"Iteration : {iter_num}"
-                    )
-                    visualization.write_mesh_with_info_as_image(
-                        mesh_path=cfg.vtu_path(iter_num),
-                        mesh_scalar_name="energy",
-                        clim=(0.0, np.max(energy)),
-                        image_path=cfg.image_path(iter_num, "energy"),
-                        image_title=f"Iteration : {iter_num}"
-                    )
+                    if cfg.export_img:
+                        visualization.write_mesh_with_info_as_image(
+                            mesh_path=cfg.vtu_path(iter_num),
+                            mesh_scalar_name="rho_projected",
+                            clim=(0.0, 1.0),
+                            image_path=cfg.image_path(iter_num, "rho_projected"),
+                            image_title=f"Iteration : {iter_num}"
+                        )
+                    if cfg.export_img:
+                        visualization.write_mesh_with_info_as_image(
+                            mesh_path=cfg.vtu_path(iter_num),
+                            mesh_scalar_name="energy",
+                            clim=(0.0, np.max(energy)),
+                            image_path=cfg.image_path(iter_num, "energy"),
+                            image_title=f"Iteration : {iter_num}"
+                        )
                     np.savez_compressed(
                         f"{cfg.dst_path}/data/{str(iter_num).zfill(6)}-rho.npz",
                         rho_design_elements=rho[tsk.design_elements]
