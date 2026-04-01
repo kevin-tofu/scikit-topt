@@ -81,10 +81,63 @@ only visualization-related features are restricted.
 pip install scikit-topt
 ```
 
+With PETSc support:
+```bash
+pip install "scikit-topt[petsc4py]"
+```
+
+The legacy alias below is also available:
+```bash
+pip install "scikit-topt[petsc]"
+```
+
 ### Using poetry
 ```bash
 poetry add scikit-topt
 ```
+
+With PETSc support:
+```bash
+poetry add scikit-topt -E petsc4py
+```
+
+`petsc4py` requires a working PETSc installation. If PETSc is not already
+available on your system, install PETSc first and then install the extra above.
+
+### PETSc Runtime Setup
+
+The `petsc4py` extra installs the Python bindings only. At runtime, PETSc shared
+libraries must also be discoverable by your Python environment.
+
+Common environment variables are:
+
+- `PETSC_DIR`: PETSc installation root
+- `PETSC_ARCH`: PETSc build architecture name
+- `LD_LIBRARY_PATH`: shared-library search path on Linux
+
+Typical Linux example:
+
+```bash
+export PETSC_DIR=/path/to/petsc
+export PETSC_ARCH=arch-linux-c-opt
+export LD_LIBRARY_PATH="$PETSC_DIR/$PETSC_ARCH/lib:$LD_LIBRARY_PATH"
+```
+
+If PETSc was installed by a package manager or a preconfigured HPC module, these
+variables may already be set for you. In that case, no extra manual setup is
+needed.
+
+You can validate the runtime with:
+
+```bash
+python -c "from petsc4py import PETSc; print(PETSc.Sys.getVersion())"
+```
+
+If Scikit-Topt cannot load PETSc, first check that:
+
+- `petsc4py` imports successfully
+- the PETSc shared libraries are visible in your library search path
+- `PETSC_DIR` and `PETSC_ARCH` point to the same PETSc build used for `petsc4py`
 
 ### Optional: Enable off-screen rendering
 

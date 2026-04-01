@@ -28,6 +28,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+petsc4py = [
+    "petsc4py>=3.24,<3.25",
+]
 petsc = [
     "petsc4py>=3.24,<3.25",
 ]
@@ -56,6 +59,7 @@ imageio = ">=2.37.0,<3.0.0"
 petsc4py = { version = ">=3.24,<3.25", optional = true }
 
 [tool.poetry.extras]
+petsc4py = ["petsc4py"]
 petsc = ["petsc4py"]
 
 [tool.poetry.group.dev.dependencies]
