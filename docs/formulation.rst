@@ -105,19 +105,11 @@ Compliance Evaluation
 
   .. math::
 
-     \Psi_e = \tfrac{1}{2}\,\boldsymbol\epsilon^{T} \mathbf{C}(\rho_e)\,\boldsymbol\epsilon
+     \frac{\partial C}{\partial \rho}
+     = -p \rho^{p-1} (E_0 - E_\text{min}) \epsilon^T \mathbf{D} \epsilon
 
-  With SIMP, the raw elemental sensitivity used in the implementation is:
-
-  .. math::
-
-     \frac{\partial C}{\partial \rho_e}
-     =
-     - \frac{\partial E}{\partial \rho_e}\,
-       \Psi_e
-     =
-     -p \rho_e^{p-1} (E_0 - E_\text{min})\,
-       \Psi_e
+  Here, :math:`\mathbf{D}` denotes the constitutive tensor used in the
+  element-wise sensitivity expression.
 
 Sensitivity Propagation Through Filtering and Projection
 --------------------------------------------------------
