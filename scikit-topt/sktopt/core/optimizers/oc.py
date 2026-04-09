@@ -1,79 +1,61 @@
-from typing import Literal
+import os
+from contextlib import contextmanager
 from dataclasses import dataclass, field
+from typing import Literal
+
 import numpy as np
 import sktopt
-from sktopt.core import projection
 from sktopt.core import misc
+from sktopt.core import projection
 from sktopt.core.optimizers import common_density
 from sktopt.tools.logconf import mylogger
+
 logger = mylogger(__name__)
 
 
-@dataclass
-class OC_Config(common_density.DensityMethod_OC_Config):
-    """
-    Optimality-Criteria (OC) configuration for density-based optimization.
-
-    This class specializes :class:`common_density.DensityMethod_OC_Config`
-    for OC-style updates. The material interpolation is fixed to SIMP, and
-    the projection threshold ``eta`` is controlled via a
-    :class:`sktopt.tools.SchedulerConfig`.
-
-    Attributes
-    ----------
-    interpolation : {"SIMP"}
-        Material interpolation model. Fixed to "SIMP" for OC.
-    eta : sktopt.tools.SchedulerConfig
-        Threshold (η) used in Heaviside projection / update logic.
-        The default keeps η constant at 0.5 using a ``Constant`` scheduler.
-        Pass a custom scheduler to run continuation (e.g., Step from 0.7 → 0.3).
-
-    Notes
-    -----
-    - Other continuation parameters (e.g., ``p``, ``beta``, ``vol_frac``,
-      ``filter_radius``) are inherited from the parent config if present there.
-    - To override ``eta`` from outside, provide a pre-built
-      :class:`SchedulerConfig` at construction time.
-    """
-    interpolation: Literal["SIMP"] = "SIMP"
-    eta: sktopt.tools.SchedulerConfig = field(
-        default_factory=lambda: sktopt.tools.SchedulerConfig.constant(
-            target_value=0.5
-        )
-    )
-    # clipping bounds for scaling_rate; default matches current behavior
-    scaling_rate_min: float = 0.7
-    scaling_rate_max: float = 1.3
-
-
-def bisection_with_projection(
-    dC, rho_e, rho_min, rho_max, move_limit,
-    eta, eps, vol_frac,
-    beta, beta_eta,
-    scaling_rate, rho_design_eles,
-    rho_clip_lower, rho_clip_upper,
-    elements_volume, elements_volume_sum,
-    scaling_rate_min, scaling_rate_max,
+def bisection_with_physical_volume(
+    dC,
+    rho_e,
+    rho_full,
+    design_elements,
+    filter_obj,
+    rho_min,
+    rho_max,
+    move_limit,
+    eta,
+    eps,
+    vol_frac,
+    beta,
+    beta_eta,
+    scaling_rate,
+    rho_design_eles,
+    rho_clip_lower,
+    rho_clip_upper,
+    elements_volume,
+    elements_volume_sum,
+    scaling_rate_min,
+    scaling_rate_max,
+    rho_full_candidate,
+    rho_filtered_candidate,
+    rho_projected_candidate,
     max_iter: int = 100,
     tolerance: float = 1e-4,
     vol_tol: float = 1e-4,
     l1: float = 1e-7,
-    l2: float = 1e+7
+    l2: float = 1e+7,
 ):
-    # for _ in range(100):
-    # while abs(l2 - l1) <= tolerance * (l1 + l2) / 2.0:
-    # while abs(l2 - l1) > tolerance * (l1 + l2) / 2.0:
     iter_num = 0
     lmid = 0.5 * (l1 + l2)
     vol_error = 0.0
     while True:
-        # must be dC < 0
         np.negative(dC, out=scaling_rate)
         scaling_rate /= (lmid + eps)
         np.power(scaling_rate, eta, out=scaling_rate)
+        np.clip(
+            scaling_rate, scaling_rate_min, scaling_rate_max,
+            out=scaling_rate
+        )
 
-        # Clip using config bounds
-        np.clip(scaling_rate, scaling_rate_min, scaling_rate_max, out=scaling_rate)
         np.multiply(rho_e, scaling_rate, out=rho_design_eles)
         np.maximum(rho_e - move_limit, rho_min, out=rho_clip_lower)
         np.minimum(rho_e + move_limit, rho_max, out=rho_clip_upper)
@@ -81,12 +63,19 @@ def bisection_with_projection(
             rho_design_eles, rho_clip_lower, rho_clip_upper,
             out=rho_design_eles
         )
+
+        np.copyto(rho_full_candidate, rho_full)
+        rho_full_candidate[design_elements] = rho_design_eles
+        np.copyto(rho_filtered_candidate, filter_obj.forward(rho_full_candidate))
         projection.heaviside_projection_inplace(
-            rho_design_eles, beta=beta, eta=beta_eta, out=rho_design_eles
+            rho_filtered_candidate,
+            beta=beta,
+            eta=beta_eta,
+            out=rho_projected_candidate,
         )
 
         vol_error = np.sum(
-            rho_design_eles * elements_volume
+            rho_projected_candidate[design_elements] * elements_volume
         ) / elements_volume_sum - vol_frac
 
         if abs(vol_error) < vol_tol:
@@ -106,40 +95,20 @@ def bisection_with_projection(
     return lmid, vol_error
 
 
+@dataclass
+class OC_Config(common_density.DensityMethod_OC_Config):
+    interpolation: Literal["SIMP"] = "SIMP"
+    eta: sktopt.tools.SchedulerConfig = field(
+        default_factory=lambda: sktopt.tools.SchedulerConfig.constant(
+            target_value=0.5
+        )
+    )
+    scaling_rate_min: float = 0.7
+    scaling_rate_max: float = 1.3
+    sensitivity_scale_floor: float = 1e-12
+
+
 class OC_Optimizer(common_density.DensityMethod):
-    """
-    Topology optimization solver using the classic Optimality Criteria (OC) method.
-    This class implements the standard OC algorithm for compliance minimization problems.
-    It uses a multiplicative density update formula derived from Karush-Kuhn-Tucker (KKT)
-    optimality conditions under volume constraints.
-
-    The update rule typically takes the form:
-        ρ_new = clamp(ρ * sqrt(-dC / λ), ρ_min, ρ_max)
-    where:
-        - dC is the sensitivity of the compliance objective,
-        - λ is a Lagrange multiplier for the volume constraint.
-
-    This method is widely used in structural optimization due to its simplicity,
-    interpretability, and solid theoretical foundation.
-
-    Advantages
-    ----------
-    - Simple and easy to implement
-    - Intuitive update rule based on physical insight
-    - Well-established and widely validated in literature
-
-    Attributes
-    ----------
-
-    config : DensityMethodConfig
-        Configuration object specifying the interpolation method, volume fraction,
-        continuation settings, filter radius, and other numerical parameters.
-
-    mesh, basis, etc. : inherited from common_density.DensityMethod
-        FEM components required for simulation, including boundary conditions and loads.
-
-    """
-
     def __init__(
         self,
         cfg: OC_Config,
@@ -156,6 +125,26 @@ class OC_Optimizer(common_density.DensityMethod):
         super().init_schedulers(False)
         if export:
             self.schedulers.export()
+
+    @contextmanager
+    def _scaled_sensitivity_mode(self):
+        previous = os.environ.get("SCITOPT_SENSITIVITY_MODE")
+        os.environ["SCITOPT_SENSITIVITY_MODE"] = "current"
+        try:
+            yield
+        finally:
+            if previous is None:
+                os.environ.pop("SCITOPT_SENSITIVITY_MODE", None)
+            else:
+                os.environ["SCITOPT_SENSITIVITY_MODE"] = previous
+
+    def optimize(self):
+        with self._scaled_sensitivity_mode():
+            super().optimize()
+
+    def optimize_steps(self, num_steps: int):
+        with self._scaled_sensitivity_mode():
+            super().optimize_steps(num_steps)
 
     def rho_update(
         self,
@@ -174,76 +163,87 @@ class OC_Optimizer(common_density.DensityMethod):
         percentile: float | None,
         elements_volume_design: np.ndarray,
         elements_volume_design_sum: float,
-        vol_frac: float
+        vol_frac: float,
     ):
+        del rho_projected, u_dofs, strain_energy_mean
         cfg = self.cfg
-        # tsk = self.tsk
+        tsk = self.tsk
+        state = self._state
+        if state is None:
+            raise RuntimeError("Optimizer state is not initialized.")
         if self._rho_e_buffer is None:
             self._rho_e_buffer = np.empty_like(rho_design_eles)
             self._dC_raw_buffer = np.empty_like(dC_drho_design_eles)
+        if not hasattr(self, "_rho_full_candidate"):
+            self._rho_full_candidate = np.empty_like(state.rho)
+            self._rho_filtered_candidate = np.empty_like(state.rho)
+            self._rho_projected_candidate = np.empty_like(state.rho)
 
-        # Store raw dC/rho before any scaling for KKT residual.
         with self._timed_section("copy_buffers"):
             np.copyto(self._dC_raw_buffer, dC_drho_design_eles)
             np.copyto(self._rho_e_buffer, rho_design_eles)
 
-        eps = 1e-6
-        kkt_scale = 1.0
-        if isinstance(percentile, float):
-            with self._timed_section("percentile_scale"):
+        eps = 1e-12
+        with self._timed_section("percentile_scale"):
+            if isinstance(percentile, float):
                 scale = np.percentile(np.abs(dC_drho_design_eles), percentile)
-                # scale = max(scale, np.mean(np.abs(dC_drho_design_eles)), 1e-4)
-                # scale = np.median(np.abs(dC_drho_full[tsk.design_elements]))
-                self.running_scale = 0.6 * self.running_scale + \
-                    (1 - 0.6) * scale if iter_num > 1 else scale
-                dC_drho_design_eles /= (self.running_scale + eps)
-                kkt_scale = self.running_scale + eps
-        else:
-            # fallback normalization when percentile is not used
-            # scale = np.max(np.abs(dC_drho_design_eles))
-            # if scale > 0:
-            #     dC_drho_design_eles /= (scale + eps)
-            pass
+            else:
+                scale = np.max(np.abs(dC_drho_design_eles))
+            scale = max(scale, cfg.sensitivity_scale_floor)
+            self.running_scale = 0.6 * self.running_scale + \
+                (1 - 0.6) * scale if iter_num > 1 else scale
+            dC_drho_design_eles /= self.running_scale
+            kkt_scale = self.running_scale
 
         with self._timed_section("bisection"):
-            lmid, vol_error = bisection_with_projection(
+            lmid, vol_error = bisection_with_physical_volume(
                 dC_drho_design_eles,
-                self._rho_e_buffer, cfg.rho_min, cfg.rho_max, move_limit,
-                eta, eps, vol_frac,
-                beta, cfg.beta_eta,
-                scaling_rate, rho_design_eles,
-                rho_clip_lower, rho_clip_upper,
-                elements_volume_design, elements_volume_design_sum,
-                cfg.scaling_rate_min, cfg.scaling_rate_max,
-                max_iter=1000, tolerance=1e-5,
+                self._rho_e_buffer,
+                state.rho,
+                tsk.design_elements,
+                self.filter,
+                cfg.rho_min,
+                cfg.rho_max,
+                move_limit,
+                eta,
+                eps,
+                vol_frac,
+                beta,
+                cfg.beta_eta,
+                scaling_rate,
+                rho_design_eles,
+                rho_clip_lower,
+                rho_clip_upper,
+                elements_volume_design,
+                elements_volume_design_sum,
+                cfg.scaling_rate_min,
+                cfg.scaling_rate_max,
+                self._rho_full_candidate,
+                self._rho_filtered_candidate,
+                self._rho_projected_candidate,
+                max_iter=1000,
+                tolerance=1e-5,
                 l1=cfg.lambda_lower,
-                l2=cfg.lambda_upper
+                l2=cfg.lambda_upper,
             )
 
-        #
-        # compute kkt residual
-        #
         with self._timed_section("kkt"):
             mask_int = (
                 (rho_design_eles > cfg.rho_min + 1e-6) &
                 (rho_design_eles < cfg.rho_max - 1e-6)
             )
             if np.any(mask_int):
-                # dL/dρ_i = dC/dρ_i + λ * dV/dρ_i
-                # KKT residual
                 dL = self._dC_raw_buffer[mask_int] + \
                     (lmid * kkt_scale) * self._dV_drho_design[mask_int]
                 self.kkt_residual = float(np.linalg.norm(dL, ord=np.inf))
             else:
                 self.kkt_residual = 0.0
 
-        l_str = f"λ: {lmid:.4e}"
-        vol_str = f"vol_error: {vol_error:.4f}"
-        rho_str = f"mean(rho): {np.mean(rho_design_eles):.4f}"
-        kkt_str = f"kkt_res: {self.kkt_residual:.4e}"
-        message = f"{l_str}, {vol_str}, {rho_str}, {kkt_str}"
-
-        logger.info(message)
+        logger.info(
+            f"λ: {lmid:.4e}, vol_error: {vol_error:.4f}, "
+            f"mean(rho): {np.mean(rho_design_eles):.4f}, "
+            f"kkt_res: {self.kkt_residual:.4e}"
+        )
         self.recorder.feed_data("lmid", lmid)
         self.recorder.feed_data("vol_error", vol_error)
         self.recorder.feed_data("-dC", -dC_drho_design_eles)
@@ -251,15 +251,11 @@ class OC_Optimizer(common_density.DensityMethod):
 
 
 if __name__ == '__main__':
-
     import argparse
     from sktopt.mesh import toy_problem
 
-    parser = argparse.ArgumentParser(
-        description=''
-    )
+    parser = argparse.ArgumentParser(description='')
     parser = misc.add_common_arguments(parser)
-
     parser.add_argument(
         '--eta_init', '-ETI', type=float, default=0.01, help=''
     )
@@ -279,9 +275,6 @@ if __name__ == '__main__':
 
     print("load toy problem")
     print("generate OC_Config")
-    # cfg = OC_Config.from_defaults(
-    #     **vars(args)
-    # )
     cfg = OC_Config.from_defaults(
         **misc.args2OC_Config_dict(vars(args))
     )
@@ -289,8 +282,5 @@ if __name__ == '__main__':
     optimizer = OC_Optimizer(cfg, tsk)
     print("parameterize")
     optimizer.parameterize()
-    # optimizer.parameterize(preprocess=False)
-    # optimizer.load_parameters()
     print("optimize")
     optimizer.optimize()
-    # optimizer.optimize_org()

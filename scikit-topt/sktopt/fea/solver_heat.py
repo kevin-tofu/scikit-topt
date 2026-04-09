@@ -572,6 +572,59 @@ def get_robin_virtual(
     return robin_virtual_bilinear, robin_virtual_linear
 
 
+@skfem.LinearForm
+def _robin_compliance_explicit_grad_(v, w):
+    rho = w['rho']
+    Th = w['Th']
+    T_env = w['T_env']
+    h = w['h']
+    p = w['p']
+    q = w['q']
+
+    grad_rho = rho.grad
+    interface = np.sqrt(np.sum(grad_rho**2, axis=0))
+    interface_safe = np.maximum(interface, 1e-12)
+
+    a = (rho**p) * ((1.0 - rho)**q)
+    da = (
+        p * (rho**(p - 1.0)) * ((1.0 - rho)**q)
+        - q * (rho**p) * ((1.0 - rho)**(q - 1.0))
+    )
+    phi = 2.0 * T_env * Th - Th * Th
+    return h * (
+        da * interface * phi * v
+        + a * phi * dot(grad_rho / interface_safe, grad(v))
+    )
+
+
+def _element_to_nodal_average(
+    basis: skfem.Basis,
+    rho: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    t = basis.mesh.t
+    nvert = basis.mesh.nvertices
+    nloc = t.shape[0]
+
+    rho_nodal = np.zeros(nvert, dtype=float)
+    count = np.zeros(nvert, dtype=float)
+    np.add.at(rho_nodal, t.ravel(), np.repeat(rho, nloc))
+    np.add.at(count, t.ravel(), 1.0)
+    rho_nodal /= np.maximum(count, 1.0)
+    return rho_nodal, count
+
+
+def _nodal_gradient_to_element_gradient(
+    basis: skfem.Basis,
+    nodal_grad: np.ndarray,
+    count: np.ndarray,
+) -> np.ndarray:
+    t = basis.mesh.t
+    elem_grad = np.zeros(t.shape[1], dtype=float)
+    for local_nodes in t:
+        elem_grad += nodal_grad[local_nodes] / np.maximum(count[local_nodes], 1.0)
+    return elem_grad
+
+
 class FEM_SimpLinearHeatConduction():
     """
     Finite element solver for SIMP-based linear heat conduction problems
@@ -647,6 +700,7 @@ class FEM_SimpLinearHeatConduction():
         # self.n_joblib = n_joblib
         self.λ_all = None
         self.q = q
+        self._warned_robin_compliance = False
 
     def objectives_multi_load(
         self,
@@ -661,29 +715,34 @@ class FEM_SimpLinearHeatConduction():
             self.task.dirichlet_values, list
         ) else [self.task.dirichlet_values]
 
-        robin_virtual_bilinear, robin_virtual_linear = get_robin_virtual(
-            self.task.robin_coefficient, self.task.robin_bc_value,
-            p, self.q
-        )
         basis = self.task.basis
+        robin_bilinear = list(self.task.robin_bilinear or [])
+        robin_linear = list(self.task.robin_linear or [])
+        rho_nodal = None
 
-        t = basis.mesh.t
-        nvert = basis.mesh.nvertices
-        k = t.shape[0]
+        if self.task.robin_coefficient is not None:
+            robin_virtual_bilinear, robin_virtual_linear = get_robin_virtual(
+                self.task.robin_coefficient, self.task.robin_bc_value,
+                p, self.q
+            )
 
-        rho_nodal = np.zeros(nvert, dtype=float)
-        count = np.zeros(nvert, dtype=float)
-        np.add.at(rho_nodal, t.ravel(), np.repeat(rho, k))
-        np.add.at(count,     t.ravel(), 1)
-        rho_nodal /= np.maximum(count, 1.0)
-        # to fem field
-        rho_field = basis.interpolate(rho_nodal)
-        K_virtual = robin_virtual_bilinear.assemble(
-            self.task.basis, rho=rho_field
-        )
-        f_virtual = robin_virtual_linear.assemble(
-            self.task.basis, rho=rho_field
-        )
+            t = basis.mesh.t
+            nvert = basis.mesh.nvertices
+            k = t.shape[0]
+
+            rho_nodal = np.zeros(nvert, dtype=float)
+            count = np.zeros(nvert, dtype=float)
+            np.add.at(rho_nodal, t.ravel(), np.repeat(rho, k))
+            np.add.at(count,     t.ravel(), 1)
+            rho_nodal /= np.maximum(count, 1.0)
+
+            rho_field = basis.interpolate(rho_nodal)
+            robin_bilinear.append(
+                robin_virtual_bilinear.assemble(self.task.basis, rho=rho_field)
+            )
+            robin_linear.append(
+                robin_virtual_linear.assemble(self.task.basis, rho=rho_field)
+            )
 
         if self.task.design_robin_boundary is True:
             self.task.update_robin_bc(rho, p)
@@ -694,8 +753,8 @@ class FEM_SimpLinearHeatConduction():
         K_csr, emit, dirichlet_dofs_list = solve_multi_load(
             basis, self.task.free_dofs,
             dirichlet_nodes_list, dirichlet_values_list,
-            self.task.robin_bilinear+[K_virtual],
-            self.task.robin_linear+[f_virtual],
+            robin_bilinear,
+            robin_linear,
             self.k_max, self.k_min, p,
             rho,
             u_dofs,
@@ -710,6 +769,19 @@ class FEM_SimpLinearHeatConduction():
 
         objective = self.task.objective
 
+        if (
+            objective == "compliance"
+            and self.task.robin_coefficient is not None
+            and not self._warned_robin_compliance
+        ):
+            logger.warning(
+                "Heat objective='compliance' with Robin boundaries evaluates "
+                "T^T K T, which includes Dirichlet reaction work and does not "
+                "match the pure conduction compliance interpretation. Prefer "
+                "objective='heat_exchange' for Robin-driven thermal design."
+            )
+            self._warned_robin_compliance = True
+
         if objective == "compliance":
             for i in range(n_loads):
                 T_i = u_dofs[:, i]
@@ -717,6 +789,10 @@ class FEM_SimpLinearHeatConduction():
             λ_all = -2.0 * u_dofs
 
         elif objective == "heat_exchange":
+            if rho_nodal is None:
+                raise RuntimeError(
+                    "heat_exchange objective requires Robin boundary data."
+                )
             cbasis = skfem.CellBasis(basis.mesh, basis.elem)
             rhoh = cbasis.interpolate(rho_nodal)
 
@@ -817,3 +893,57 @@ class FEM_SimpLinearHeatConduction():
             )
         else:
             raise ValueError(f"Unknown objective: {self.task.objective}")
+
+    def compliance_sensitivity_multi_load(
+        self,
+        rho: np.ndarray,
+        p: float,
+        u_dofs: np.ndarray,
+    ) -> np.ndarray:
+        energy = heat_energy_skfem_multi(
+            self.task.basis, rho, u_dofs,
+            self.k_max, self.k_min, p,
+            elem_func=self.density_interpolation
+        )
+        n_elem, n_loads = energy.shape
+        grad_all = np.zeros((n_elem, n_loads), dtype=float)
+
+        for i in range(n_loads):
+            from sktopt.core import derivatives
+
+            grad_all[:, i] = derivatives.dC_drho_simp(
+                rho, energy[:, i], self.k_max, self.k_min, p
+            )
+
+        if self.task.objective != "compliance" or self.task.robin_coefficient is None:
+            return grad_all
+
+        basis = self.task.basis
+        rho_nodal, count = _element_to_nodal_average(basis, rho)
+        rho_field = basis.interpolate(rho_nodal)
+        Th_all = [basis.interpolate(u_dofs[:, i]) for i in range(n_loads)]
+
+        h_list = self.task.robin_coefficient if isinstance(
+            self.task.robin_coefficient, list
+        ) else [self.task.robin_coefficient]
+        Tenv_list = self.task.robin_bc_value if isinstance(
+            self.task.robin_bc_value, list
+        ) else [self.task.robin_bc_value]
+
+        for h, T_env in zip(h_list, Tenv_list):
+            T_env_field = basis.interpolate(np.full(basis.N, T_env))
+            for i, Th in enumerate(Th_all):
+                nodal_grad = _robin_compliance_explicit_grad_.assemble(
+                    basis,
+                    rho=rho_field,
+                    Th=Th,
+                    T_env=T_env_field,
+                    h=float(h),
+                    p=float(p),
+                    q=float(self.q),
+                )
+                grad_all[:, i] += _nodal_gradient_to_element_gradient(
+                    basis, nodal_grad, count
+                )
+
+        return grad_all

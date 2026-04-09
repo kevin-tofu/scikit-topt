@@ -4,8 +4,12 @@ from sktopt.core.optimizers.common_density import DensityMethod
 from sktopt.core.optimizers.common_density import DensityState
 from sktopt.core.optimizers.oc import OC_Config
 from sktopt.core.optimizers.oc import OC_Optimizer
+from sktopt.core.optimizers.oc_scaled import OCScaled_Config
+from sktopt.core.optimizers.oc_scaled import OCScaled_Optimizer
 from sktopt.core.optimizers.logmoc import LogMOC_Config
 from sktopt.core.optimizers.logmoc import LogMOC_Optimizer
+from sktopt.core.optimizers.logmoc_scaled import LogMOCScaled_Config
+from sktopt.core.optimizers.logmoc_scaled import LogMOCScaled_Optimizer
 # from sktopt.core.optimizers.linearmoc import LinearMOC_Config
 # from sktopt.core.optimizers.linearmoc import LinearMOC_Optimizer
 # from sktopt.core.optimizers.loglagrangian import LogLagrangian_Config
@@ -22,8 +26,12 @@ DensityState.__module__ = __name__
 
 OC_Config.__module__ = __name__
 OC_Optimizer.__module__ = __name__
+OCScaled_Config.__module__ = __name__
+OCScaled_Optimizer.__module__ = __name__
 LogMOC_Config.__module__ = __name__
 LogMOC_Optimizer.__module__ = __name__
+LogMOCScaled_Config.__module__ = __name__
+LogMOCScaled_Optimizer.__module__ = __name__
 
 __all__ = [
     "DensityMethodConfig",
@@ -32,8 +40,12 @@ __all__ = [
     "DensityState",
     "OC_Config",
     "OC_Optimizer",
+    "OCScaled_Config",
+    "OCScaled_Optimizer",
     "LogMOC_Config",
     "LogMOC_Optimizer",
+    "LogMOCScaled_Config",
+    "LogMOCScaled_Optimizer",
     # "LinearMOC_Config",
     # "LinearMOC_Optimizer",
     # "LogLagrangian_Config",

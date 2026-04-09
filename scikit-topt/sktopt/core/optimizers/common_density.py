@@ -592,6 +592,8 @@ class DensityMethod(DensityMethodBase):
         self, tsk: sktopt.mesh.FEMDomain
     ) -> tools.HistoryCollection:
         recorder = tools.HistoryCollection(self.cfg.dst_path)
+        objective_name = self._objective_history_name(tsk)
+        objective_ylog = self._objective_history_ylog(tsk)
         recorder.add("rho_projected", plot_type="min-max-mean-std")
         recorder.add("energy", plot_type="min-max-mean-std")
         recorder.add("vol_error")
@@ -600,13 +602,23 @@ class DensityMethod(DensityMethodBase):
             recorder.add("u_max", plot_type="min-max-mean-std")
         else:
             recorder.add("u_max")
-        recorder.add("compliance", ylog=True)
+        recorder.add(objective_name, ylog=objective_ylog)
         recorder.add("scaling_rate", plot_type="min-max-mean-std")
         recorder.add("neumann_scale")
 
         recorder.add("rho_change_max")
         recorder.add("kkt_residual")
         return recorder
+
+    def _objective_history_name(self, tsk: sktopt.mesh.FEMDomain) -> str:
+        if isinstance(tsk, sktopt.mesh.LinearHeatConduction):
+            return str(tsk.objective)
+        return "compliance"
+
+    def _objective_history_ylog(self, tsk: sktopt.mesh.FEMDomain) -> bool:
+        if isinstance(tsk, sktopt.mesh.LinearHeatConduction):
+            return tsk.objective == "compliance"
+        return True
 
     def params_latest(self):
         return self.recorder.as_object_latest()
@@ -1053,20 +1065,31 @@ class DensityMethod(DensityMethodBase):
                     energy_mean[:] = energy.mean(axis=1)
                 state.compliance = float(compliance_avg)
             with self._timed_section("sensitivity"):
+                custom_sensitivity = None
+                if hasattr(self.fem, "compliance_sensitivity_multi_load"):
+                    custom_sensitivity = self.fem.compliance_sensitivity_multi_load(
+                        rho_projected, p, u_dofs
+                    )
                 for task_loop in range(self.tsk.n_tasks):
                     with self._timed_section("task_loop"):
                         u_max.append(np.abs(u_dofs[:, task_loop]).max())
                         dH_drho[:] = 0.0
-                        np.copyto(
-                            dC_drho_projected,
-                            dC_drho_func(
-                                rho_projected,
-                                energy[:, task_loop],
-                                self.tsk.material_coef,
-                                self.tsk.material_coef*cfg.E_min_coeff,
-                                p
+                        if custom_sensitivity is not None:
+                            np.copyto(
+                                dC_drho_projected,
+                                custom_sensitivity[:, task_loop]
                             )
-                        )
+                        else:
+                            np.copyto(
+                                dC_drho_projected,
+                                dC_drho_func(
+                                    rho_projected,
+                                    energy[:, task_loop],
+                                    self.tsk.material_coef,
+                                    self.tsk.material_coef*cfg.E_min_coeff,
+                                    p
+                                )
+                            )
                         projection.heaviside_projection_derivative_inplace(
                             rho_filtered,
                             beta=beta, eta=cfg.beta_eta, out=dH_drho
@@ -1123,7 +1146,10 @@ class DensityMethod(DensityMethodBase):
                     "rho_projected", rho_projected[tsk.design_elements]
                 )
                 self.recorder.feed_data("energy", energy_mean)
-                self.recorder.feed_data("compliance", compliance_avg)
+                self.recorder.feed_data(
+                    self._objective_history_name(tsk),
+                    compliance_avg
+                )
                 self.recorder.feed_data("scaling_rate", scaling_rate)
                 u_max = u_max[0] if len(u_max) == 1 else np.array(u_max)
                 self.recorder.feed_data("u_max", u_max)

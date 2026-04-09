@@ -144,7 +144,7 @@ class LinearHeatConduction(FEMDomain):
     k: float  # thermal conductivity
     robin_bilinear: Optional[list] = None
     robin_linear: Optional[list] = None
-    objective: Literal["compliance"] = "compliance"
+    objective: Literal["compliance", "heat_exchange", "averaged_temp"] = "compliance"
 
     def update_robin_bc(self, rho: np.ndarray, p: float):
         robin_bilinear, robin_linear = assemble_surface_robin(
@@ -179,11 +179,14 @@ class LinearHeatConduction(FEMDomain):
         design_robin_boundary: bool | None,
         design_elements: np.ndarray,
         k: float,
-        objective: Literal["compliance"] = "compliance"
+        objective: Literal["compliance", "heat_exchange", "averaged_temp"] = "compliance"
     ) -> 'LinearHeatConduction':
 
-        if objective not in ["compliance"]:
-            raise ValueError("should be compliance")
+        if objective not in ["compliance", "heat_exchange", "averaged_temp"]:
+            raise ValueError(
+                "objective must be one of "
+                "'compliance', 'heat_exchange', or 'averaged_temp'"
+            )
 
         dirichlet_dir = None
         neumann_facets_ids = None
@@ -252,7 +255,7 @@ class LinearHeatConduction(FEMDomain):
         robin_bc_value: float | list[float],
         design_robin_boundary: bool | None,
         k: float,
-        objective: Literal["compliance"] = "compliance"
+        objective: Literal["compliance", "heat_exchange", "averaged_temp"] = "compliance"
     ) -> 'FEMDomain':
         import re
 
