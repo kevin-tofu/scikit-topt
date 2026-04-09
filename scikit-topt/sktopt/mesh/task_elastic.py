@@ -115,11 +115,13 @@ class LinearElasticity(FEMDomain):
 
     @property
     def force(self):
-        return self.neumann_values
+        if len(self.neumann_linear) == 1:
+            return self.neumann_linear[0]
+        return self.neumann_linear
 
     @force.setter
     def force(self, value):
-        self.neumann_values = value
+        self.neumann_linear = value
 
     @property
     def force_elements(self):

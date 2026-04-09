@@ -528,16 +528,20 @@ if __name__ == '__main__':
     def test_3():
         import sktopt
         from sktopt.mesh import toy_problem
+        from sktopt.fea import solver_elastic
 
-        tsk = toy_problem.toy_msh("plate-0.2.msh")
+        tsk = toy_problem.toy_msh(msh_path="plate-0.2.msh")
         rho = np.ones(tsk.all_elements.shape)
+        E0 = tsk.E
+        Emin = 1e-3 * E0
+        nu0 = tsk.nu
         K0 = assemble_stiffness_matrix(
-            tsk.basis, rho, tsk.E0, tsk.Emin, 1.0, tsk.nu0
+            tsk.basis, rho, E0, Emin, 1.0, nu0
         )
         # K1 = assemble_stiffness_matrix_numba(
-        #     tsk.basis, rho, tsk.E0, tsk.Emin, 1.0, tsk.nu0
+        #     tsk.basis, rho, E0, Emin, 1.0, nu0
         # )
-        lam, mu = lame_parameters(tsk.E0, tsk.nu0)
+        lam, mu = lame_parameters(E0, nu0)
 
         def C(T):
             return 2. * mu * T + lam * eye(trace(T), T.shape[0])
@@ -550,15 +554,15 @@ if __name__ == '__main__':
         K2 = stiffness.assemble(tsk.basis)
 
         # print("tsk.dirichlet_nodes", tsk.dirichlet_nodes)
-        K0_e, F0_e = skfem.enforce(K0, _F, D=tsk.dirichlet_nodes)
-        # K1_e, F1_e = skfem.enforce(K1, _F, D=tsk.dirichlet_nodes)
-        K2_e, F2_e = skfem.enforce(K2, _F, D=tsk.dirichlet_nodes)
+        K0_e, F0_e = skfem.enforce(K0, _F, D=tsk.dirichlet_dofs)
+        # K1_e, F1_e = skfem.enforce(K1, _F, D=tsk.dirichlet_dofs)
+        K2_e, F2_e = skfem.enforce(K2, _F, D=tsk.dirichlet_dofs)
 
         # U1_e = scipy.sparse.linalg.spsolve(K1_e, F1_e)
         # U2_e = scipy.sparse.linalg.spsolve(K2_e, F2_e)
-        U0_e = sktopt.fea.solver.solve_u(K0_e, F0_e, chosen_solver="cg_pyamg")
-        # U1_e = sktopt.fea.solver.solve_u(K1_e, F1_e, chosen_solver="cg_pyamg")
-        U2_e = sktopt.fea.solver.solve_u(K2_e, F2_e, chosen_solver="cg_pyamg")
+        U0_e = solver_elastic.solve_u(K0_e, F0_e, chosen_solver="cg_pyamg")
+        # U1_e = solver_elastic.solve_u(K1_e, F1_e, chosen_solver="cg_pyamg")
+        U2_e = solver_elastic.solve_u(K2_e, F2_e, chosen_solver="cg_pyamg")
 
         print("U0_e ave :", np.average(U0_e))
         # print("U1_e ave :", np.average(U1_e))
@@ -587,16 +591,16 @@ if __name__ == '__main__':
         # U1_e = scipy.sparse.linalg.spsolve(K1_e, F1_e)
         # u = U1_e
         # u = tsk.basis.interpolate(U0_e)
-        compliance, u_compliance = sktopt.fea.solver.compute_compliance_basis(
-            tsk.basis, tsk.free_nodes, tsk.dirichlet_nodes, _F,
-            tsk.E0, tsk.Emin, 1.0, tsk.nu0,
+        compliance, u_compliance = solver_elastic.compute_compliance_basis(
+            tsk.basis, tsk.free_dofs, tsk.dirichlet_dofs, _F,
+            E0, Emin, 1.0, nu0,
             rho,
             elem_func=simp_interpolation,
             # solver="spsolve"
         )
         strain = strain_energy_skfem(
             tsk.basis, rho, u_compliance,
-            tsk.E0, tsk.Emin, 1.0, tsk.nu0,
+            E0, Emin, 1.0, nu0,
             elem_func=simp_interpolation
         )
 
@@ -646,20 +650,23 @@ if __name__ == '__main__':
         from skfem.helpers import ddot
         import sktopt
         from sktopt.mesh import toy_problem
+        from sktopt.fea import solver_elastic
 
-        tsk = toy_problem.toy_msh("plate-0.2.msh")
+        tsk = toy_problem.toy_msh(msh_path="plate-0.2.msh")
         rho = np.ones(tsk.all_elements.shape)
+        E0 = tsk.E
+        nu0 = tsk.nu
 
         K0 = assemble_stiffness_matrix(
-            tsk.basis, rho, tsk.E0, 0.0, 1.0, tsk.nu0
+            tsk.basis, rho, E0, 0.0, 1.0, nu0
         )
         _F = tsk.force
-        K_e, F_e = skfem.enforce(K0, _F, D=tsk.dirichlet_nodes)
-        u = sktopt.fea.solver.solve_u(K_e, F_e, chosen_solver="cg_pyamg")
+        K_e, F_e = skfem.enforce(K0, _F, D=tsk.dirichlet_dofs)
+        u = solver_elastic.solve_u(K_e, F_e, chosen_solver="cg_pyamg")
         print(
-            "np.sum(u[tsk.dirichlet_nodes]):", np.sum(u[tsk.dirichlet_nodes])
+            "np.sum(u[tsk.dirichlet_dofs]):", np.sum(u[tsk.dirichlet_dofs])
         )
-        lam, mu = lame_parameters(tsk.E0, tsk.nu0)
+        lam, mu = lame_parameters(E0, nu0)
 
         def C(strain):
             return 2.0 * mu * strain + lam * eye(
