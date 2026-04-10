@@ -1,6 +1,6 @@
 [project]
 name = "scikit-topt"
-version = "0.3.8"
+version = "0.3.9"
 description = "A lightweight, flexible Python library for topology optimization built on top of Scikit Libraries"
 authors = [
     { name = "Kevin-Tofu", email = "koheitech001@gmail.com" }
