@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Topology Optimization Algorithm Overview &mdash; Scikit-Topt 0.3.8 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
     <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/formulation.html" />
@@ -180,16 +180,10 @@ The filter is defined by the following partial differential equation (PDE):</p>
 </li>
 <li><p><strong>Element-wise strain energy</strong>: it is calculated to derive sensitivity:</p>
 <div class="math notranslate nohighlight">
-\[\Psi_e = \tfrac{1}{2}\,\boldsymbol\epsilon^{T} \mathbf{C}(\rho_e)\,\boldsymbol\epsilon\]</div>
-<p>With SIMP, the raw elemental sensitivity used in the implementation is:</p>
-<div class="math notranslate nohighlight">
-\[\frac{\partial C}{\partial \rho_e}
-=
-- \frac{\partial E}{\partial \rho_e}\,
-  \Psi_e
-=
--p \rho_e^{p-1} (E_0 - E_\text{min})\,
-  \Psi_e\]</div>
+\[\frac{\partial C}{\partial \rho}
+= -p \rho^{p-1} (E_0 - E_\text{min}) \epsilon^T \mathbf{D} \epsilon\]</div>
+<p>Here, <span class="math notranslate nohighlight">\(\mathbf{D}\)</span> denotes the constitutive tensor used in the
+element-wise sensitivity expression.</p>
 </li>
 </ul>
 </section>
@@ -299,7 +293,7 @@ two standard convergence checks widely used in OC/MOC methods:</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2025, Kohei Watanabe.</p>
+    <p>&#169; Copyright 2026, Kohei Watanabe.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

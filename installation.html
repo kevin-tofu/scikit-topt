@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Installation &mdash; Scikit-Topt 0.3.8 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
     <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/installation.html" />
@@ -46,7 +46,13 @@
               <p class="caption" role="heading"><span class="caption-text">Content</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="project.html">Project</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#standard-installation">Standard Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#petsc-optional-installation">PETSc Optional Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#petsc-runtime-setup">PETSc Runtime Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#verify-the-installation">Verify the Installation</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial Page</a></li>
 <li class="toctree-l1"><a class="reference internal" href="physics.html">Governing Equation and Weak Form</a></li>
 <li class="toctree-l1"><a class="reference internal" href="formulation.html">Topology Optimization Algorithm Overview</a></li>
@@ -89,8 +95,9 @@ It supports <strong>Python 3.10–3.13</strong>:</p>
 but VTK-based features (VTU export and image rendering) require
 PyVista/VTK, which do not currently provide wheels for Python 3.13.</p></li>
 </ul>
-<p><strong>Install sktopt</strong>:
-Open your terminal or command prompt and run one of the following commands:</p>
+<section id="standard-installation">
+<h2>Standard Installation<a class="headerlink" href="#standard-installation" title="Link to this heading"></a></h2>
+<p>Open your terminal or command prompt and run one of the following commands:</p>
 <ul>
 <li><p>Using pip:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">scikit</span><span class="o">-</span><span class="n">topt</span>
@@ -103,11 +110,68 @@ Open your terminal or command prompt and run one of the following commands:</p>
 </div>
 </li>
 </ul>
-<p><strong>Verify the installation</strong>:
-After the installation is complete, you can verify that sktopt is installed correctly by running the following command:</p>
+<p>This installs the standard solver stack and does <strong>not</strong> require PETSc.
+Typical workflows using <code class="docutils literal notranslate"><span class="pre">solver_option=&quot;spsolve&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;cg_pyamg&quot;</span></code>
+work without <code class="docutils literal notranslate"><span class="pre">petsc4py</span></code>.</p>
+</section>
+<section id="petsc-optional-installation">
+<h2>PETSc Optional Installation<a class="headerlink" href="#petsc-optional-installation" title="Link to this heading"></a></h2>
+<p>If you want to use the PETSc-backed solver paths
+(<code class="docutils literal notranslate"><span class="pre">solver_option=&quot;petsc&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;petsc_spdirect&quot;</span></code>), install the optional
+extra:</p>
+<ul>
+<li><p>Using pip:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="s2">&quot;scikit-topt[petsc4py]&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Legacy alias with pip:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="s2">&quot;scikit-topt[petsc]&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Using poetry:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">poetry</span> <span class="n">add</span> <span class="n">scikit</span><span class="o">-</span><span class="n">topt</span> <span class="o">-</span><span class="n">E</span> <span class="n">petsc4py</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">petsc4py</span></code> extra installs the Python bindings only. A working PETSc
+installation must also be available at runtime.</p>
+</section>
+<section id="petsc-runtime-setup">
+<h2>PETSc Runtime Setup<a class="headerlink" href="#petsc-runtime-setup" title="Link to this heading"></a></h2>
+<p>Common PETSc runtime environment variables are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">PETSC_DIR</span></code>: PETSc installation root</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PETSC_ARCH</span></code>: PETSc build architecture name</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LD_LIBRARY_PATH</span></code>: shared-library search path on Linux</p></li>
+</ul>
+<p>Typical Linux example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">PETSC_DIR</span><span class="o">=/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">petsc</span>
+<span class="n">export</span> <span class="n">PETSC_ARCH</span><span class="o">=</span><span class="n">arch</span><span class="o">-</span><span class="n">linux</span><span class="o">-</span><span class="n">c</span><span class="o">-</span><span class="n">opt</span>
+<span class="n">export</span> <span class="n">LD_LIBRARY_PATH</span><span class="o">=</span><span class="s2">&quot;$PETSC_DIR/$PETSC_ARCH/lib:$LD_LIBRARY_PATH&quot;</span>
+</pre></div>
+</div>
+<p>If PETSc was installed by a package manager or an HPC module, these may
+already be configured for you.</p>
+<p>You can validate the PETSc runtime with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;from petsc4py import PETSc; print(PETSc.Sys.getVersion())&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="verify-the-installation">
+<h2>Verify the Installation<a class="headerlink" href="#verify-the-installation" title="Link to this heading"></a></h2>
+<p>After installation is complete, verify that <code class="docutils literal notranslate"><span class="pre">sktopt</span></code> imports correctly:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import sktopt; print(sktopt.__version__)&quot;</span>
 </pre></div>
 </div>
+<p>If you installed the PETSc extra, also verify that <code class="docutils literal notranslate"><span class="pre">petsc4py</span></code> imports
+correctly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;from petsc4py import PETSc; print(PETSc.Sys.getVersion())&quot;</span>
+</pre></div>
+</div>
+</section>
 </section>
 
 
@@ -121,7 +185,7 @@ After the installation is complete, you can verify that sktopt is installed corr
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2025, Kohei Watanabe.</p>
+    <p>&#169; Copyright 2026, Kohei Watanabe.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
