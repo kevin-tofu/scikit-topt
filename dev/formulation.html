@@ -180,16 +180,10 @@ The filter is defined by the following partial differential equation (PDE):</p>
 </li>
 <li><p><strong>Element-wise strain energy</strong>: it is calculated to derive sensitivity:</p>
 <div class="math notranslate nohighlight">
-\[\Psi_e = \tfrac{1}{2}\,\boldsymbol\epsilon^{T} \mathbf{C}(\rho_e)\,\boldsymbol\epsilon\]</div>
-<p>With SIMP, the raw elemental sensitivity used in the implementation is:</p>
-<div class="math notranslate nohighlight">
-\[\frac{\partial C}{\partial \rho_e}
-=
-- \frac{\partial E}{\partial \rho_e}\,
-  \Psi_e
-=
--p \rho_e^{p-1} (E_0 - E_\text{min})\,
-  \Psi_e\]</div>
+\[\frac{\partial C}{\partial \rho}
+= -p \rho^{p-1} (E_0 - E_\text{min}) \epsilon^T \mathbf{D} \epsilon\]</div>
+<p>Here, <span class="math notranslate nohighlight">\(\mathbf{D}\)</span> denotes the constitutive tensor used in the
+element-wise sensitivity expression.</p>
 </li>
 </ul>
 </section>
@@ -280,7 +274,7 @@ two standard convergence checks widely used in OC/MOC methods:</p>
 <div class="math notranslate nohighlight">
 \[\left\| \nabla_\rho L(\rho, \lambda) \right\|
 &lt; \varepsilon_{\mathrm{KKT}}.\]</div>
-<p>If <a class="reference internal" href="core.html#sktopt.core.DensityMethodConfig.check_convergence" title="sktopt.core.DensityMethodConfig.check_convergence"><code class="xref py py-class docutils literal notranslate"><span class="pre">check_convergence</span></code></a> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, convergence is declared only when both of the following conditions are satisfied:</p>
+<p>If <code class="xref py py-class docutils literal notranslate"><span class="pre">check_convergence</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, convergence is declared only when both of the following conditions are satisfied:</p>
 <section id="next-steps">
 <h3>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h3>
 <p>Refer to the individual components below for deeper explanation:</p>
