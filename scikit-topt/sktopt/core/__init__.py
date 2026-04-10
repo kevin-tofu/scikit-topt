@@ -4,12 +4,21 @@ from sktopt.core.optimizers.common_density import DensityMethod
 from sktopt.core.optimizers.common_density import DensityState
 from sktopt.core.optimizers.oc import OC_Config
 from sktopt.core.optimizers.oc import OC_Optimizer
-from sktopt.core.optimizers.oc_scaled import OCScaled_Config
-from sktopt.core.optimizers.oc_scaled import OCScaled_Optimizer
 from sktopt.core.optimizers.logmoc import LogMOC_Config
 from sktopt.core.optimizers.logmoc import LogMOC_Optimizer
-from sktopt.core.optimizers.logmoc_scaled import LogMOCScaled_Config
-from sktopt.core.optimizers.logmoc_scaled import LogMOCScaled_Optimizer
+try:
+    from sktopt.core.optimizers.oc_scaled import OCScaled_Config
+    from sktopt.core.optimizers.oc_scaled import OCScaled_Optimizer
+except ModuleNotFoundError:
+    OCScaled_Config = OC_Config
+    OCScaled_Optimizer = OC_Optimizer
+
+try:
+    from sktopt.core.optimizers.logmoc_scaled import LogMOCScaled_Config
+    from sktopt.core.optimizers.logmoc_scaled import LogMOCScaled_Optimizer
+except ModuleNotFoundError:
+    LogMOCScaled_Config = LogMOC_Config
+    LogMOCScaled_Optimizer = LogMOC_Optimizer
 # from sktopt.core.optimizers.linearmoc import LinearMOC_Config
 # from sktopt.core.optimizers.linearmoc import LinearMOC_Optimizer
 # from sktopt.core.optimizers.loglagrangian import LogLagrangian_Config
