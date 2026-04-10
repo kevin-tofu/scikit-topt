@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.abspath('../scikit-topt'))
 project = 'Scikit-Topt'
 author = 'Kohei Watanabe'
 copyright = f"{datetime.now().year}, {author}"
-release = '0.3.8'
+release = '0.3.9'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
