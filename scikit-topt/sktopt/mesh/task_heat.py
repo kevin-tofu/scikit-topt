@@ -145,6 +145,7 @@ class LinearHeatConduction(FEMDomain):
     robin_bilinear: Optional[list] = None
     robin_linear: Optional[list] = None
     objective: Literal["compliance", "heat_exchange", "averaged_temp"] = "compliance"
+    avg_temp_weight: float = 0.0
 
     def update_robin_bc(self, rho: np.ndarray, p: float):
         robin_bilinear, robin_linear = assemble_surface_robin(
@@ -179,7 +180,8 @@ class LinearHeatConduction(FEMDomain):
         design_robin_boundary: bool | None,
         design_elements: np.ndarray,
         k: float,
-        objective: Literal["compliance", "heat_exchange", "averaged_temp"] = "compliance"
+        objective: Literal["compliance", "heat_exchange", "averaged_temp"] = "compliance",
+        avg_temp_weight: float = 0.0,
     ) -> 'LinearHeatConduction':
 
         if objective not in ["compliance", "heat_exchange", "averaged_temp"]:
@@ -243,7 +245,7 @@ class LinearHeatConduction(FEMDomain):
             base.fixed_elements,
             base.dirichlet_neumann_elements,
             base.elements_volume,
-            k, robin_bilinear, robin_linear, objective
+            k, robin_bilinear, robin_linear, objective, avg_temp_weight
         )
 
     @classmethod
@@ -255,7 +257,8 @@ class LinearHeatConduction(FEMDomain):
         robin_bc_value: float | list[float],
         design_robin_boundary: bool | None,
         k: float,
-        objective: Literal["compliance", "heat_exchange", "averaged_temp"] = "compliance"
+        objective: Literal["compliance", "heat_exchange", "averaged_temp"] = "compliance",
+        avg_temp_weight: float = 0.0,
     ) -> 'FEMDomain':
         import re
 
@@ -314,5 +317,5 @@ class LinearHeatConduction(FEMDomain):
             robin_bc_value,
             design_robin_boundary,
             design_elements,
-            k, objective
+            k, objective, avg_temp_weight
         )

@@ -842,6 +842,37 @@ class FEM_SimpLinearHeatConduction():
                 self.solver_config,
             )
 
+            if self.task.avg_temp_weight != 0.0:
+                hx_vals = np.asarray(J_list, dtype=float)
+                avg_vals = np.sum(u_dofs, axis=0).astype(float, copy=False)
+                λ_avg = np.zeros_like(u_dofs)
+                ones_emit = np.ones_like(emit)
+                solve_heat_system_multi(
+                    K_csr,
+                    ones_emit,
+                    dirichlet_dofs_list,
+                    dirichlet_values_list,
+                    λ_avg,
+                    self.solver_config,
+                )
+                if n_loads > 1:
+                    hx_scale = max(float(np.mean(np.abs(hx_vals))), 1.0e-12)
+                    avg_scale = max(float(np.mean(np.abs(avg_vals))), 1.0e-12)
+                    hx_vals /= hx_scale
+                    avg_vals /= avg_scale
+                    J_list = list(
+                        hx_vals + self.task.avg_temp_weight * avg_vals
+                    )
+                    λ_all /= hx_scale
+                    λ_all += (
+                        self.task.avg_temp_weight / avg_scale
+                    ) * λ_avg
+                else:
+                    J_list = list(
+                        hx_vals + self.task.avg_temp_weight * avg_vals
+                    )
+                    λ_all += self.task.avg_temp_weight * λ_avg
+
         elif objective == "averaged_temp":
             for i in range(n_loads):
                 J_list.append(float(np.sum(u_dofs[:, i])))

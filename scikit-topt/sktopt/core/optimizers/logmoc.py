@@ -22,6 +22,15 @@ class LogMOC_Config(common_density.DensityMethod_OC_Config):
     lagrangian_clip: float = 1.0
     lagrangian_percentile: float = 95.0
     lagrangian_scale_floor: float = 1e-8
+    normalize_volume_chain: bool = False
+    volume_chain_percentile: float = 95.0
+    volume_chain_scale_floor: float = 1e-8
+    volume_chain_gain: float = 1.0
+    volume_chain_gain_under: float | None = None
+    dual_update: Literal["ema", "augmented"] = "ema"
+    filter_lagrangian: bool = False
+    center_lagrangian: bool = False
+    center_objective: bool = False
 
 
 def lagrangian_log_update(
@@ -69,11 +78,14 @@ class LogMOC_Optimizer(common_density.DensityMethod):
         self.recorder.add("-dC", plot_type="min-max-mean-std", ylog=True)
         self.recorder.add("lambda_v", ylog=False)
         self.recorder.add("constraint_coeff", ylog=False)
+        self.recorder.add("dV_chain", plot_type="min-max-mean-std", ylog=True)
+        self.recorder.add("volume_chain_scale", ylog=True)
         self.lambda_v = cfg.lambda_v
         self._dL_buffer = None
         self._dV_chain_design = None
         self._dV_projected_full = None
         self._dV_filtered_full = None
+        self._dL_full = None
 
     def rho_update(
         self,
@@ -110,8 +122,14 @@ class LogMOC_Optimizer(common_density.DensityMethod):
                 raise RuntimeError("Optimizer state is not initialized.")
             self._dV_projected_full = np.zeros_like(state.rho)
             self._dV_filtered_full = np.zeros_like(state.rho)
+            self._dL_full = np.zeros_like(state.rho)
 
         np.copyto(self._dC_raw_buffer, dC_drho_design_eles)
+        if cfg.center_objective:
+            dC_mean = np.sum(
+                self._dC_raw_buffer * elements_volume_design
+            ) / elements_volume_design_sum
+            self._dC_raw_buffer -= dC_mean
         np.copyto(self._dV_projected_full, 0.0)
         self._dV_projected_full[tsk.design_elements] = (
             elements_volume_design / elements_volume_design_sum
@@ -123,10 +141,17 @@ class LogMOC_Optimizer(common_density.DensityMethod):
             out=self._dV_filtered_full,
         )
         self._dV_filtered_full *= self._dV_projected_full
-        np.copyto(
-            self._dV_projected_full,
-            self.filter.gradient(self._dV_filtered_full)
-        )
+        dV_backprop = self.filter.gradient(self._dV_filtered_full)
+        if (
+            np.allclose(dV_backprop, 0.0)
+            and np.any(self._dV_filtered_full > 0.0)
+        ):
+            # Helmholtz nodal gradient clamps positive values to zero, which
+            # destroys the volume-constraint adjoint for positive test fields.
+            # The filter operator is self-adjoint in this setting, so falling
+            # back to the forward application preserves the intended chain.
+            dV_backprop = self.filter.forward(self._dV_filtered_full)
+        np.copyto(self._dV_projected_full, dV_backprop)
         np.copyto(
             self._dV_chain_design,
             self._dV_projected_full[tsk.design_elements]
@@ -137,12 +162,39 @@ class LogMOC_Optimizer(common_density.DensityMethod):
         ) / elements_volume_design_sum
         vol_error = volume - vol_frac
 
+        volume_chain_scale = 1.0
+        if cfg.normalize_volume_chain:
+            obj_scale = np.percentile(
+                np.abs(self._dC_raw_buffer),
+                cfg.lagrangian_percentile,
+            )
+            vol_scale = np.percentile(
+                np.abs(self._dV_chain_design),
+                cfg.volume_chain_percentile,
+            )
+            obj_scale = max(obj_scale, cfg.lagrangian_scale_floor)
+            vol_scale = max(vol_scale, cfg.volume_chain_scale_floor)
+            chain_gain = cfg.volume_chain_gain
+            if (
+                cfg.volume_chain_gain_under is not None
+                and vol_error < 0.0
+            ):
+                chain_gain = cfg.volume_chain_gain_under
+            volume_chain_scale = chain_gain * (obj_scale / vol_scale)
+            self._dV_chain_design *= volume_chain_scale
+
         penalty = cfg.mu_p * vol_error
-        if iter_num > 1:
-            self.lambda_v = cfg.lambda_decay * self.lambda_v + \
-                (1.0 - cfg.lambda_decay) * penalty
+        if cfg.dual_update == "augmented":
+            if iter_num > 1:
+                self.lambda_v += penalty
+            else:
+                self.lambda_v = penalty
         else:
-            self.lambda_v = penalty
+            if iter_num > 1:
+                self.lambda_v = cfg.lambda_decay * self.lambda_v + \
+                    (1.0 - cfg.lambda_decay) * penalty
+            else:
+                self.lambda_v = penalty
         self.lambda_v = np.clip(
             self.lambda_v, cfg.lambda_lower, cfg.lambda_upper
         )
@@ -151,6 +203,16 @@ class LogMOC_Optimizer(common_density.DensityMethod):
 
         np.copyto(self._dL_buffer, self._dC_raw_buffer)
         self._dL_buffer += constraint_coeff * self._dV_chain_design
+        if cfg.filter_lagrangian:
+            np.copyto(self._dL_full, 0.0)
+            self._dL_full[tsk.design_elements] = self._dL_buffer
+            np.copyto(self._dL_full, self.filter.forward(self._dL_full))
+            np.copyto(self._dL_buffer, self._dL_full[tsk.design_elements])
+        if cfg.center_lagrangian:
+            dL_mean = np.sum(
+                self._dL_buffer * elements_volume_design
+            ) / elements_volume_design_sum
+            self._dL_buffer -= dL_mean
 
         scale_percentile = cfg.lagrangian_percentile
         if isinstance(percentile, float):
@@ -177,6 +239,8 @@ class LogMOC_Optimizer(common_density.DensityMethod):
         self.recorder.feed_data("constraint_coeff", constraint_coeff)
         self.recorder.feed_data("vol_error", vol_error)
         self.recorder.feed_data("-dC", -self._dC_raw_buffer)
+        self.recorder.feed_data("dV_chain", np.abs(self._dV_chain_design))
+        self.recorder.feed_data("volume_chain_scale", volume_chain_scale)
         self.recorder.feed_data("dL", self._dL_buffer)
         self.recorder.feed_data("kkt_residual", self.kkt_residual)
 
@@ -221,6 +285,45 @@ if __name__ == '__main__':
     parser.add_argument(
         '--lagrangian_scale_floor', type=float, default=1e-8, help=''
     )
+    parser.add_argument(
+        '--normalize_volume_chain',
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help='',
+    )
+    parser.add_argument(
+        '--volume_chain_percentile', type=float, default=95.0, help=''
+    )
+    parser.add_argument(
+        '--volume_chain_scale_floor', type=float, default=1e-8, help=''
+    )
+    parser.add_argument(
+        '--volume_chain_gain', type=float, default=1.0, help=''
+    )
+    parser.add_argument(
+        '--dual_update',
+        choices=['ema', 'augmented'],
+        default='augmented',
+        help='',
+    )
+    parser.add_argument(
+        '--filter_lagrangian',
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help='',
+    )
+    parser.add_argument(
+        '--center_lagrangian',
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help='',
+    )
+    parser.add_argument(
+        '--center_objective',
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help='',
+    )
     args = parser.parse_args()
 
     if args.task_name == "toy1":
@@ -232,9 +335,12 @@ if __name__ == '__main__':
     else:
         tsk = toy_problem.toy_msh(args.task_name, args.mesh_path)
 
-    cfg = LogMOC_Config.from_defaults(
-        **misc.args2OC_Config_dict(vars(args))
-    )
+    cfg_kwargs = misc.args2OC_Config_dict(vars(args))
+    cfg_kwargs = {
+        key: value for key, value in cfg_kwargs.items()
+        if value is not None
+    }
+    cfg = LogMOC_Config.from_defaults(**cfg_kwargs)
     optimizer = LogMOC_Optimizer(cfg, tsk)
     optimizer.parameterize()
     optimizer.optimize()

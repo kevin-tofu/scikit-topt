@@ -5,7 +5,8 @@ import sktopt
 
 def get_task_0(
     multiple_robin: bool = True,
-    design_robin_boundary: bool = True
+    design_robin_boundary: bool = True,
+    avg_temp_weight: float = 0.2,
 ):
 
     x_len = 8.0
@@ -77,14 +78,16 @@ def get_task_0(
     basis = skfem.Basis(mesh, e, intorder=1)
     k = 10.0
     # objective = "averaged_temp"
-    objective = "compliance"
+    objective = "heat_exchange"
     mytask = sktopt.mesh.LinearHeatConduction.from_mesh_tags(
         basis,
         dirichlet_value,
         robin_coefficient,
         robin_bc_value,
         design_robin_boundary,
-        k, objective
+        k,
+        objective,
+        avg_temp_weight=avg_temp_weight,
     )
     return mytask
 

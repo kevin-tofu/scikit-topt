@@ -1211,10 +1211,19 @@ class DensityMethod(DensityMethodBase):
                             image_title=f"Iteration : {iter_num}"
                         )
                     if cfg.export_img:
+                        energy_min = float(np.min(energy))
+                        energy_max = float(np.max(energy))
+                        if energy_min == energy_max:
+                            energy_clim = (
+                                energy_min - 1.0e-12,
+                                energy_max + 1.0e-12,
+                            )
+                        else:
+                            energy_clim = (energy_min, energy_max)
                         visualization.write_mesh_with_info_as_image(
                             mesh_path=cfg.vtu_path(iter_num),
                             mesh_scalar_name="energy",
-                            clim=(0.0, np.max(energy)),
+                            clim=energy_clim,
                             image_path=cfg.image_path(iter_num, "energy"),
                             image_title=f"Iteration : {iter_num}"
                         )
