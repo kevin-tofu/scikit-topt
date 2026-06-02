@@ -1,6 +1,6 @@
 [project]
 name = "scikit-topt"
-version = "0.3.9"
+version = "0.3.10"
 description = "A lightweight, flexible Python library for topology optimization built on top of Scikit Libraries"
 authors = [
     { name = "Kevin-Tofu", email = "koheitech001@gmail.com" }
@@ -37,7 +37,7 @@ petsc = [
 
 [tool.poetry]
 name = "scikit-topt"
-version = "0.3.9"
+version = "0.3.10"
 description = "A lightweight, flexible Python library for topology optimization built on top of Scikit Libraries"
 authors = ["Kevin-Tofu <koheitech001@gmail.com>"]
 readme = "README.md"

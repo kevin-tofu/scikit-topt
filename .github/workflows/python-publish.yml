@@ -39,6 +39,18 @@ jobs:
       - name: Run tests
         run: PYTHONPATH=scikit-topt poetry run pytest
 
+      - name: Check release tag matches package version
+        run: |
+          PACKAGE_VERSION="$(poetry version -s)"
+          RELEASE_TAG="${{ github.event.release.tag_name }}"
+          RELEASE_VERSION="${RELEASE_TAG#v}"
+          echo "Package version: ${PACKAGE_VERSION}"
+          echo "Release tag: ${RELEASE_TAG}"
+          if [ "${PACKAGE_VERSION}" != "${RELEASE_VERSION}" ]; then
+            echo "Release tag ${RELEASE_TAG} does not match package version ${PACKAGE_VERSION}."
+            exit 1
+          fi
+
       - name: Build with Poetry
         run: poetry build
 

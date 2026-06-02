@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite the JOSS paper below."
 
 title: "Scikit-Topt"
-version: 0.3.8
+version: 0.3.10
 date-released: 2025-12-26
 
 authors:
