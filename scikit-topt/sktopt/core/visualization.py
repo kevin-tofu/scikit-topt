@@ -1,6 +1,7 @@
 import os
 import warnings
 import glob
+import logging
 from typing import Optional
 
 import numpy as np
@@ -8,6 +9,9 @@ import imageio.v2 as imageio
 import skfem
 import meshio
 import matplotlib.pyplot as plt
+
+
+logger = logging.getLogger(__name__)
 
 
 class XvfbWarning(UserWarning):
@@ -195,7 +199,7 @@ def images2gif(
     file_pattern = f"{dir_path}/mesh_rho/info_{prefix}-*.jpg"
     image_files = sorted(glob.glob(file_pattern))
     if len(image_files) == 0:
-        print("Files not found")
+        logger.warning("Files not found: %s", file_pattern)
         return
 
     if skip_frame > 0:

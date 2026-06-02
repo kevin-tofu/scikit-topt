@@ -1,5 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
+import logging
 from typing import Optional
 from typing import Literal
 import numpy as np
@@ -12,6 +13,9 @@ from scipy.sparse.linalg import LinearOperator
 import pyamg
 import skfem
 from sktopt.filters.base import BaseFilter
+
+
+logger = logging.getLogger(__name__)
 
 
 def compute_tet_volumes(mesh):
@@ -332,7 +336,7 @@ def apply_helmholtz_filter_cg(
         if maxiter is None else maxiter
     rhs = V @ rho_element
     rho_filtered, info = cg(A, rhs, M=M, rtol=rtol, maxiter=_maxiter)
-    print("helmholtz_filter_cg-info: ", info)
+    logger.debug("helmholtz_filter_cg info: %s", info)
     if info > 0:
         raise RuntimeError("helmholtz_filter_cg does not converge")
     return rho_filtered
@@ -387,7 +391,7 @@ def apply_filter_gradient_cg(
         if maxiter is None else maxiter
 
     ret, info = cg(A, V @ vec, M=M, rtol=rtol, maxiter=_maxiter)
-    print("filter_gradient_cg-info: ", info)
+    logger.debug("filter_gradient_cg info: %s", info)
     if info > 0:
         raise RuntimeError("filter_gradient_cg does not converge")
     return ret
@@ -490,7 +494,7 @@ class HelmholtzFilterElement(BaseFilter):
         )
         # print(f"preprocess : {solver_option}")
         ret.preprocess(solver_option)
-        print(ret.solver_option)
+        logger.debug("HelmholtzFilterElement solver_option: %s", ret.solver_option)
         return ret
 
     # @classmethod
@@ -607,13 +611,13 @@ def test_main():
     for loop in range(1, 21):
         rho_0 = filter_0.forward(rho_0)
         rho_var = np.var(rho_0)
-        print(f"loop: {loop} rho_var: {rho_var:04f}")
+        logger.info("loop: %s rho_var: %04f", loop, rho_var)
 
     rho_1 = np.copy(rho)
     for loop in range(1, 21):
         rho_1 = filter_1.forward(rho_1)
         rho_var = np.var(rho_1)
-        print(f"loop: {loop} rho_var: {rho_var:04f}")
+        logger.info("loop: %s rho_var: %04f", loop, rho_var)
 
     #
     # compare analytic gradient with numeric
@@ -627,8 +631,8 @@ def test_main():
     fwd2 = filter_0.forward(rho - eps * v)
     fd = (fwd1 - fwd2) / (2 * eps)
 
-    print("dot(fd, v) =", np.dot(fd, v))
-    print("dot(grad, v) =", np.dot(v_grad, v))
+    logger.info("dot(fd, v) = %s", np.dot(fd, v))
+    logger.info("dot(grad, v) = %s", np.dot(v_grad, v))
 
 
 if __name__ == '__main__':

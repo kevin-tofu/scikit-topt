@@ -1,9 +1,13 @@
 import pathlib
+import logging
 import numpy as np
 
 import meshio
 import skfem
 from skfem.models.elasticity import linear_elasticity
+
+
+logger = logging.getLogger(__name__)
 
 
 def basis_from_file(
@@ -67,4 +71,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     stiffness_mat = load_stiffness_matrix(args.mesh_path, E=args.E, nu=args.nu)
     save_npz(args.output, stiffness_mat)
-    print(f"Stiffness matrix saved to {args.output}")
+    logger.info("Stiffness matrix saved to %s", args.output)

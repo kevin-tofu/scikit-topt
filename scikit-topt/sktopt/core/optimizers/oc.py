@@ -273,14 +273,14 @@ if __name__ == '__main__':
     else:
         tsk = toy_problem.toy_msh(args.task_name, args.mesh_path)
 
-    print("load toy problem")
-    print("generate OC_Config")
+    logger.info("load toy problem")
+    logger.info("generate OC_Config")
     cfg = OC_Config.from_defaults(
         **misc.args2OC_Config_dict(vars(args))
     )
-    print("optimizer")
+    logger.info("optimizer")
     optimizer = OC_Optimizer(cfg, tsk)
-    print("parameterize")
+    logger.info("parameterize")
     optimizer.parameterize()
-    print("optimize")
+    logger.info("optimize")
     optimizer.optimize()

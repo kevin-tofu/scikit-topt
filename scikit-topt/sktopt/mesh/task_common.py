@@ -1,5 +1,6 @@
 from typing import Union, List, Literal, Optional
 from dataclasses import dataclass
+import logging
 
 import numpy as np
 import skfem
@@ -9,6 +10,9 @@ from scipy.spatial import cKDTree
 import matplotlib.pyplot as plt
 from sktopt.mesh import utils
 from sktopt.fea import composer
+
+
+logger = logging.getLogger(__name__)
 
 
 _lit_bc = Literal['u^1', 'u^2', 'u^3', 'all']
@@ -236,13 +240,15 @@ class FEMDomain():
             basis.mesh, [free_dofs]
         )
         elements_volume = composer.get_elements_volume(basis.mesh)
-        print(
-            f"all_elements: {all_elements.shape}",
-            f"design_elements: {design_elements.shape}",
-            f"fixed_elements: {fixed_elements.shape}",
-            f"dirichlet_neumann_elements: {dirichlet_neumann_elements.shape}",
-            f"neumann_elements: {neumann_elements}",
-            f"robin_elements: {robin_elements}"
+        logger.debug(
+            "all_elements: %s design_elements: %s fixed_elements: %s "
+            "dirichlet_neumann_elements: %s neumann_elements: %s robin_elements: %s",
+            all_elements.shape,
+            design_elements.shape,
+            fixed_elements.shape,
+            dirichlet_neumann_elements.shape,
+            neumann_elements,
+            robin_elements,
         )
         return cls(
             basis,
@@ -434,19 +440,22 @@ class FEMDomain():
         dists_elem, _ = tree_elems.query(element_centers, k=2)
         element_nearest_dists = dists_elem[:, 1]
 
-        print("===Distance between nodes ===")
-        print(f"min:    {np.min(node_nearest_dists):.4f}")
-        print(f"max:    {np.max(node_nearest_dists):.4f}")
-        print(f"mean:   {np.mean(node_nearest_dists):.4f}")
-        print(f"median: {np.median(node_nearest_dists):.4f}")
-        print(f"std:    {np.std(node_nearest_dists):.4f}")
-
-        print("\n=== Distance between elements ===")
-        print(f"min:    {np.min(element_nearest_dists):.4f}")
-        print(f"max:    {np.max(element_nearest_dists):.4f}")
-        print(f"mean:   {np.mean(element_nearest_dists):.4f}")
-        print(f"median: {np.median(element_nearest_dists):.4f}")
-        print(f"std:    {np.std(element_nearest_dists):.4f}")
+        logger.info(
+            "Distance between nodes: min=%.4f max=%.4f mean=%.4f median=%.4f std=%.4f",
+            np.min(node_nearest_dists),
+            np.max(node_nearest_dists),
+            np.mean(node_nearest_dists),
+            np.median(node_nearest_dists),
+            np.std(node_nearest_dists),
+        )
+        logger.info(
+            "Distance between elements: min=%.4f max=%.4f mean=%.4f median=%.4f std=%.4f",
+            np.min(element_nearest_dists),
+            np.max(element_nearest_dists),
+            np.mean(element_nearest_dists),
+            np.median(element_nearest_dists),
+            np.std(element_nearest_dists),
+        )
 
         plt.clf()
         fig, axs = plt.subplots(2, 3, figsize=(14, 6))

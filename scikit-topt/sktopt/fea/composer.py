@@ -1,5 +1,6 @@
 from typing import Callable
 from collections import defaultdict
+import logging
 
 import scipy
 from numba import njit, prange
@@ -14,6 +15,9 @@ from skfem import Functional
 # from skfem import asm, LinearForm
 
 import numpy as np
+
+
+logger = logging.getLogger(__name__)
 
 
 @njit
@@ -173,7 +177,7 @@ def _get_elements_volume_tet(t_conn, p_coords) -> np.ndarray:
         vol = np.dot(np.cross(v1, v2), v3) / 6.0
 
         if vol < -1e-12:
-            print("Element", e, "has negative volume:", vol)
+            logger.warning("Element %s has negative volume: %s", e, vol)
             raise ValueError("!!!")
         elements_volume[e] = vol
 
@@ -564,15 +568,15 @@ if __name__ == '__main__':
         # U1_e = solver_elastic.solve_u(K1_e, F1_e, chosen_solver="cg_pyamg")
         U2_e = solver_elastic.solve_u(K2_e, F2_e, chosen_solver="cg_pyamg")
 
-        print("U0_e ave :", np.average(U0_e))
+        logger.debug("U0_e ave: %s", np.average(U0_e))
         # print("U1_e ave :", np.average(U1_e))
-        print("U2_e ave:", np.average(U2_e))
-        print("U0_e max :", np.max(U0_e))
+        logger.debug("U2_e ave: %s", np.average(U2_e))
+        logger.debug("U0_e max: %s", np.max(U0_e))
         # print("U1_e max :", np.max(U1_e))
-        print("U2_e max:", np.max(U2_e))
-        print("U0_e min :", np.min(U0_e))
+        logger.debug("U2_e max: %s", np.max(U2_e))
+        logger.debug("U0_e min: %s", np.min(U0_e))
         # print("U1_e min :", np.min(U1_e))
-        print("U2_e min:", np.min(U2_e))
+        logger.debug("U2_e min: %s", np.min(U2_e))
 
         if isinstance(tsk.mesh, skfem.MeshTet):
             mesh_type = "tetra"
@@ -604,11 +608,11 @@ if __name__ == '__main__':
             elem_func=simp_interpolation
         )
 
-        print(np.average(np.abs(U0_e)))
-        print(np.average(np.abs(u_compliance)))
-        print("u diff :", np.sum((U0_e - u_compliance)**2))
+        logger.debug("U0_e abs ave: %s", np.average(np.abs(U0_e)))
+        logger.debug("u_compliance abs ave: %s", np.average(np.abs(u_compliance)))
+        logger.debug("u diff: %s", np.sum((U0_e - u_compliance)**2))
         strain_min_max = (strain.max()/2, strain.max())
-        print(f"strain_min_max: {strain_min_max}")
+        logger.debug("strain_min_max: %s", strain_min_max)
         mesh_path = "strain.vtu"
         cell_outputs = dict()
         # cell_outputs["strain"] = [np.linalg.norm(u, axis=0)]
@@ -663,8 +667,9 @@ if __name__ == '__main__':
         _F = tsk.force
         K_e, F_e = skfem.enforce(K0, _F, D=tsk.dirichlet_dofs)
         u = solver_elastic.solve_u(K_e, F_e, chosen_solver="cg_pyamg")
-        print(
-            "np.sum(u[tsk.dirichlet_dofs]):", np.sum(u[tsk.dirichlet_dofs])
+        logger.debug(
+            "np.sum(u[tsk.dirichlet_dofs]): %s",
+            np.sum(u[tsk.dirichlet_dofs]),
         )
         lam, mu = lame_parameters(E0, nu0)
 
@@ -682,22 +687,22 @@ if __name__ == '__main__':
         uh = tsk.basis.interpolate(u)
         total_U = strain_energy_density.assemble(tsk.basis, uh=uh)
         element_U = strain_energy_density.elemental(tsk.basis, uh=uh)
-        print(f"Total Strain Energy = {total_U}")
+        logger.debug("Total Strain Energy = %s", total_U)
         # print("The Strain Energy Each =", element_U)
         elem_energy_simp = strain_energy_skfem(
             tsk.basis, np.ones(tsk.mesh.nelements), u,
             1.0, 0.0, 1.0, 0.3
         )
         # print("The Strain Energy Each =", elem_energy_simp)
-        print("Difference =", np.sum((elem_energy_simp - element_U)**2))
+        logger.debug("Difference = %s", np.sum((elem_energy_simp - element_U)**2))
 
         stress = stress_tensor_skfem(
             tsk.basis, np.ones(tsk.mesh.nelements), u,
             1.0, 0.0, 1.0, 0.3
         )
-        print("stress:", stress.shape)
+        logger.debug("stress: %s", stress.shape)
         von_mises = von_mises_from_stress_tensor(stress)
-        print("von_mises:", von_mises.shape)
+        logger.debug("von_mises: %s", von_mises.shape)
 
     # test_1()
     # test_2()

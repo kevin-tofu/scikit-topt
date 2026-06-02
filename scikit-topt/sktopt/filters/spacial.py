@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Callable, Optional, Tuple, Literal
+import logging
 
 import numpy as np
 
@@ -8,6 +9,9 @@ from scipy.sparse import coo_matrix, csr_matrix, diags
 
 import skfem
 from sktopt.filters.base import BaseFilter
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_element_centers(mesh: skfem.Mesh) -> np.ndarray:
@@ -189,13 +193,13 @@ if __name__ == '__main__':
     for loop in range(1, 21):
         rho_0 = filter_0.forward(rho_0)
         rho_var = np.var(rho_0)
-        print(f"loop: {loop} rho_var: {rho_var:04f}")
+        logger.info("loop: %s rho_var: %04f", loop, rho_var)
 
     rho_1 = np.copy(rho)
     for loop in range(1, 21):
         rho_1 = filter_1.forward(rho_1)
         rho_var = np.var(rho_1)
-        print(f"loop: {loop} rho_var: {rho_var:04f}")
+        logger.info("loop: %s rho_var: %04f", loop, rho_var)
 
     #
     # compare analytic gradient with numeric
@@ -209,5 +213,5 @@ if __name__ == '__main__':
     fwd2 = filter_0.forward(rho - eps * v)
     fd = (fwd1 - fwd2) / (2 * eps)
 
-    print("dot(fd, v) =", np.dot(fd, v))
-    print("dot(grad, v) =", np.dot(v_grad, v))
+    logger.info("dot(fd, v) = %s", np.dot(fd, v))
+    logger.info("dot(grad, v) = %s", np.dot(v_grad, v))

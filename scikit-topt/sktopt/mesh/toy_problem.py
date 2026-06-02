@@ -1,10 +1,14 @@
 import pathlib
+import logging
 import numpy as np
 import skfem
 from skfem import MeshTet
 import meshio
 from sktopt.mesh import task_elastic
 from sktopt.mesh import utils
+
+
+logger = logging.getLogger(__name__)
 
 
 def create_box_hex(x_len, y_len, z_len, mesh_size):
@@ -192,7 +196,7 @@ def toy_msh(
     eps = np.min(dists) * 0.8
     # eps = np.min(dists) * 1.2
     # eps = np.min(dists) * 5.0
-    print(f"eps: {eps}")
+    logger.debug("eps: %s", eps)
     # mesh = skfem.MeshTet.from_mesh(meshio.read(msh_path))
     if isinstance(mesh, skfem.MeshTet):
         e = skfem.ElementVector(skfem.ElementTetP1())
@@ -200,7 +204,7 @@ def toy_msh(
         e = skfem.ElementVector(skfem.ElementHex1())
     else:
         raise ValueError("")
-    print("basis")
+    logger.debug("basis")
     # basis = skfem.Basis(mesh, e, intorder=2)
     basis = skfem.Basis(mesh, e, intorder=3)
     dirichlet_in_range = utils.get_points_in_range(
@@ -239,7 +243,7 @@ def toy_msh(
         (0.0, x_len), (0.0, y_len), (0.0, z_len)
     )
     design_elements = basis.mesh.elements_satisfying(desing_in_range)
-    print("generate config")
+    logger.debug("generate config")
     E0 = 210e3
     return task_elastic.LinearElasticity.from_facets(
         basis,
@@ -265,4 +269,4 @@ if __name__ == '__main__':
         tsk.free_dofs, tsk.dirichlet_dofs, tsk.force,
         tsk.E0, tsk.Emin, p, tsk.nu0, rho
     )
-    print("compliance: ", compliance)
+    logger.info("compliance: %s", compliance)

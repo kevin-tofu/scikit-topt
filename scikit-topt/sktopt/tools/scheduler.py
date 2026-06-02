@@ -1276,6 +1276,7 @@ class Schedulers():
                 ax[p, q].axis("off")
 
             fig.tight_layout()
-            print(f"{self.dst_path}/schedule-{page_index}-{fname}")
-            fig.savefig(f"{self.dst_path}/schedule-{page_index}-{fname}")
+            image_path = f"{self.dst_path}/schedule-{page_index}-{fname}"
+            logger.info("Saving scheduler plot to %s", image_path)
+            fig.savefig(image_path)
             plt.close("all")
