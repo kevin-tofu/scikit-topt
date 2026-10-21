@@ -254,7 +254,7 @@ stiffness.</p>
 <span class="gp">... </span>    <span class="n">task</span><span class="o">=</span><span class="n">my_task</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">E_min_coeff</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">density_interpolation</span><span class="o">=</span><span class="n">composer</span><span class="o">.</span><span class="n">simp_interpolation</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">solver_config</span><span class="o">=</span><span class="n">LinearSolverConfig</span><span class="p">(</span><span class="n">solver</span><span class="o">=</span><span class="s2">&quot;spsolve&quot;</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="n">solver_config</span><span class="o">=</span><span class="n">LinearSolverConfig</span><span class="p">(</span><span class="n">solver</span><span class="o">=</span><span class="s2">"spsolve"</span><span class="p">),</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">fem</span><span class="o">.</span><span class="n">objectives_multi_load</span><span class="p">(</span><span class="n">rho</span><span class="p">)</span>  <span class="c1"># FEM compliaance given density</span>
 </pre></div>

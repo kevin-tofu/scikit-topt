@@ -121,12 +121,12 @@ work without <code class="docutils literal notranslate"><span class="pre">petsc4
 extra:</p>
 <ul>
 <li><p>Using pip:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="s2">&quot;scikit-topt[petsc4py]&quot;</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="s2">"scikit-topt[petsc4py]"</span>
 </pre></div>
 </div>
 </li>
 <li><p>Legacy alias with pip:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="s2">&quot;scikit-topt[petsc]&quot;</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="s2">"scikit-topt[petsc]"</span>
 </pre></div>
 </div>
 </li>
@@ -150,25 +150,25 @@ installation must also be available at runtime.</p>
 <p>Typical Linux example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">PETSC_DIR</span><span class="o">=/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">petsc</span>
 <span class="n">export</span> <span class="n">PETSC_ARCH</span><span class="o">=</span><span class="n">arch</span><span class="o">-</span><span class="n">linux</span><span class="o">-</span><span class="n">c</span><span class="o">-</span><span class="n">opt</span>
-<span class="n">export</span> <span class="n">LD_LIBRARY_PATH</span><span class="o">=</span><span class="s2">&quot;$PETSC_DIR/$PETSC_ARCH/lib:$LD_LIBRARY_PATH&quot;</span>
+<span class="n">export</span> <span class="n">LD_LIBRARY_PATH</span><span class="o">=</span><span class="s2">"$PETSC_DIR/$PETSC_ARCH/lib:$LD_LIBRARY_PATH"</span>
 </pre></div>
 </div>
 <p>If PETSc was installed by a package manager or an HPC module, these may
 already be configured for you.</p>
 <p>You can validate the PETSc runtime with:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;from petsc4py import PETSc; print(PETSc.Sys.getVersion())&quot;</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">"from petsc4py import PETSc; print(PETSc.Sys.getVersion())"</span>
 </pre></div>
 </div>
 </section>
 <section id="verify-the-installation">
 <h2>Verify the Installation<a class="headerlink" href="#verify-the-installation" title="Link to this heading"></a></h2>
 <p>After installation is complete, verify that <code class="docutils literal notranslate"><span class="pre">sktopt</span></code> imports correctly:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import sktopt; print(sktopt.__version__)&quot;</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">"import sktopt; print(sktopt.__version__)"</span>
 </pre></div>
 </div>
 <p>If you installed the PETSc extra, also verify that <code class="docutils literal notranslate"><span class="pre">petsc4py</span></code> imports
 correctly:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;from petsc4py import PETSc; print(PETSc.Sys.getVersion())&quot;</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">"from petsc4py import PETSc; print(PETSc.Sys.getVersion())"</span>
 </pre></div>
 </div>
 </section>

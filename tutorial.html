@@ -102,7 +102,7 @@ This will run a compliance minimization with OC method.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sktopt</span>
 
 <span class="n">cfg</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">OC_Config</span><span class="p">(</span>
-    <span class="n">dst_path</span><span class="o">=</span><span class="s2">&quot;./result/tutorial_box_oc&quot;</span><span class="p">,</span>
+    <span class="n">dst_path</span><span class="o">=</span><span class="s2">"./result/tutorial_box_oc"</span><span class="p">,</span>
     <span class="n">vol_frac</span><span class="o">=</span><span class="n">sktopt</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">SchedulerConfig</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span>
         <span class="n">target_value</span><span class="o">=</span><span class="mf">0.4</span>
     <span class="p">),</span>
@@ -155,7 +155,7 @@ which scikit-topt interprets as boundary and subdomain tags.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">skfem</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sktopt</span>
 
-<span class="n">mesh_path</span> <span class="o">=</span> <span class="s2">&quot;./data/model.msh&quot;</span>
+<span class="n">mesh_path</span> <span class="o">=</span> <span class="s2">"./data/model.msh"</span>
 <span class="n">basis</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">basis_from_file</span><span class="p">(</span><span class="n">mesh_path</span><span class="p">,</span> <span class="n">intorder</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -165,7 +165,7 @@ which scikit-topt interprets as boundary and subdomain tags.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dirichlet_in_range</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">get_points_in_range</span><span class="p">(</span>
     <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y_len</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">z_len</span><span class="p">)</span>
 <span class="p">)</span>
-<span class="n">dirichlet_dir</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span>
+<span class="n">dirichlet_dir</span> <span class="o">=</span> <span class="s2">"all"</span>
 
 <span class="n">eps</span> <span class="o">=</span> <span class="n">mesh_size</span>
 <span class="n">force_in_range_0</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">get_points_in_range</span><span class="p">(</span>
@@ -174,16 +174,16 @@ which scikit-topt interprets as boundary and subdomain tags.</p>
 <span class="n">force_in_range_1</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">get_points_in_range</span><span class="p">(</span>
     <span class="p">(</span><span class="n">x_len</span><span class="p">,</span> <span class="n">x_len</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">eps</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">z_len</span><span class="p">)</span>
 <span class="p">)</span>
-<span class="n">force_dir_type</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;u^2&quot;</span><span class="p">,</span> <span class="s2">&quot;u^2&quot;</span><span class="p">]</span>
+<span class="n">force_dir_type</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"u^2"</span><span class="p">,</span> <span class="s2">"u^2"</span><span class="p">]</span>
 <span class="n">force_value</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">]</span>
 
 <span class="n">boundaries</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;dirichlet&quot;</span><span class="p">:</span> <span class="n">dirichlet_in_range</span><span class="p">,</span>
-    <span class="s2">&quot;force_0&quot;</span><span class="p">:</span> <span class="n">force_in_range_0</span><span class="p">,</span>
-    <span class="s2">&quot;force_1&quot;</span><span class="p">:</span> <span class="n">force_in_range_1</span>
+    <span class="s2">"dirichlet"</span><span class="p">:</span> <span class="n">dirichlet_in_range</span><span class="p">,</span>
+    <span class="s2">"force_0"</span><span class="p">:</span> <span class="n">force_in_range_0</span><span class="p">,</span>
+    <span class="s2">"force_1"</span><span class="p">:</span> <span class="n">force_in_range_1</span>
 <span class="p">}</span>
 <span class="n">mesh</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">with_boundaries</span><span class="p">(</span><span class="n">boundaries</span><span class="p">)</span>
-<span class="n">subdomains</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;design&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">nelements</span><span class="p">))}</span>
+<span class="n">subdomains</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"design"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">mesh</span><span class="o">.</span><span class="n">nelements</span><span class="p">))}</span>
 <span class="n">mesh</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">with_subdomains</span><span class="p">(</span><span class="n">subdomains</span><span class="p">)</span>
 
 <span class="n">e</span> <span class="o">=</span> <span class="n">skfem</span><span class="o">.</span><span class="n">ElementVector</span><span class="p">(</span><span class="n">skfem</span><span class="o">.</span><span class="n">ElementHex1</span><span class="p">())</span>
@@ -191,7 +191,7 @@ which scikit-topt interprets as boundary and subdomain tags.</p>
 <span class="n">E0</span> <span class="o">=</span> <span class="mf">210e3</span>
 <span class="n">mytask</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">LinearElasticity</span><span class="o">.</span><span class="n">from_mesh_tags</span><span class="p">(</span>
     <span class="n">basis</span><span class="p">,</span>
-    <span class="s2">&quot;all&quot;</span><span class="p">,</span>
+    <span class="s2">"all"</span><span class="p">,</span>
     <span class="n">force_dir_type</span><span class="p">,</span>
     <span class="n">force_value</span><span class="p">,</span>
     <span class="n">E0</span><span class="p">,</span>
