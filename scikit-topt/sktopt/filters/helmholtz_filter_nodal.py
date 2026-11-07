@@ -5,8 +5,8 @@ import logging
 import numpy as np
 from scipy.sparse.linalg import spsolve
 
-import skfem
-from skfem.helpers import dot, grad
+from sktopt.skfem_loader import skfem
+from sktopt.skfem_loader import dot, grad
 
 from sktopt.filters.base import BaseFilter
 

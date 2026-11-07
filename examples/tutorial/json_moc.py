@@ -1,6 +1,6 @@
 import numpy as np
-import skfem
-from skfem.io.json import to_file, from_file
+from sktopt.skfem_loader import skfem
+from sktopt.skfem_loader import to_file, from_file
 # import meshio
 
 import sktopt

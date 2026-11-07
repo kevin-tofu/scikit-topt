@@ -3,9 +3,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-import skfem
-
-
+from sktopt.skfem_loader import skfem
 @dataclass
 class BaseFilter():
     mesh: skfem.Mesh

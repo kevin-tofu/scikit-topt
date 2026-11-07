@@ -7,7 +7,7 @@ import sktopt
 
 def define_task_elasticity() -> sktopt.mesh.LinearElasticity:
 
-    import skfem
+    from sktopt.skfem_loader import skfem
     x_len, y_len, z_len = 1.0, 1.0, 1.0
     element_size = 0.1
     e = skfem.ElementVector(skfem.ElementHex1())
@@ -52,7 +52,7 @@ def define_task_elasticity() -> sktopt.mesh.LinearElasticity:
 
 def define_task_heatconduction() -> sktopt.mesh.LinearHeatConduction:
     import numpy as np
-    import skfem
+    from sktopt.skfem_loader import skfem
     x_len = 8.0
     y_len = 8.0
     z_len = 1.0

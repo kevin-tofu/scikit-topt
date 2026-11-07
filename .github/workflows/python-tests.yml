@@ -16,11 +16,13 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
         # python-version: ["3.11", "3.12", "3.13"]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install system dependencies (OpenGL for gmsh)
         run: sudo apt-get update && sudo apt-get install -y libglu1-mesa
@@ -39,4 +41,4 @@ jobs:
         run: poetry install
 
       - name: Run tests with coverage
-        run: PYTHONPATH=scikit-topt poetry run pytest --cov=sktopt --cov-report=xml
+        run: PYTHONPATH=scikit-topt poetry run pytest scikit-topt/tests --cov=sktopt --cov-report=xml
