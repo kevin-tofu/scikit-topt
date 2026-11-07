@@ -128,7 +128,10 @@ Scikit-Topt currently supports:</p>
 <li><p>3D: Hexahedral P1 (<cite>ElementHex1</cite>)</p></li>
 <li><p>3D Tetrahedral P1 (<cite>ElementTetP1</cite>)</p></li>
 </ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">skfem</span>
+<p>The finite-element backend defaults to <code class="docutils literal notranslate"><span class="pre">skfem</span></code>. To select the native backend,
+set <code class="docutils literal notranslate"><span class="pre">SKTOPT_FEM_BACKEND=skfemntv</span></code> before starting Python. Both backends are
+loaded through <code class="docutils literal notranslate"><span class="pre">sktopt.skfem_loader</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sktopt.skfem_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">skfem</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sktopt</span>
 
 <span class="n">x_len</span> <span class="o">=</span> <span class="mf">8.0</span>
@@ -152,7 +155,7 @@ Therefore, the library supports all mesh formats that meshio supports:</p>
 <p>Gmsh v4 (ASCII / binary)</p>
 <p>When using .msh files, users may provide physical groups (surfaces/volumes)
 which scikit-topt interprets as boundary and subdomain tags.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">skfem</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sktopt.skfem_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">skfem</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sktopt</span>
 
 <span class="n">mesh_path</span> <span class="o">=</span> <span class="s2">"./data/model.msh"</span>

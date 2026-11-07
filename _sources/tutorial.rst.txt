@@ -42,10 +42,14 @@ Scikit-Topt currently supports:
 - 3D: Hexahedral P1 (`ElementHex1`)
 - 3D Tetrahedral P1 (`ElementTetP1`)
 
+The finite-element backend defaults to ``skfem``. To select the native backend,
+set ``SKTOPT_FEM_BACKEND=skfemntv`` before starting Python. Both backends are
+loaded through ``sktopt.skfem_loader``.
+
 
 .. code-block:: python
 
-    import skfem
+    from sktopt.skfem_loader import skfem
     import sktopt
 
     x_len = 8.0
@@ -76,7 +80,7 @@ which scikit-topt interprets as boundary and subdomain tags.
 
 .. code-block:: python
 
-    import skfem
+    from sktopt.skfem_loader import skfem
     import sktopt
 
     mesh_path = "./data/model.msh"
