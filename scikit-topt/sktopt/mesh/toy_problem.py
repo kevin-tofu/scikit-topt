@@ -36,11 +36,6 @@ def create_box_hex(x_len, y_len, z_len, mesh_size):
     z = np.linspace(0, z_len, nz + 1)
 
     mesh = skfem.MeshHex.init_tensor(x, y, z)
-    if skfem.__name__ == "skfemntv":
-        # Native Hex1 basis and facet tables use their own local corner order.
-        # The legacy orientation correction below is defined for scikit-fem's
-        # local corner order and would corrupt the native element connectivity.
-        return mesh
     t_fixed = utils.fix_hexahedron_orientation(mesh.t, mesh.p)
     return skfem.MeshHex(mesh.p, t_fixed)
 

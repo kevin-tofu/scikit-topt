@@ -53,6 +53,18 @@ if skfem.__name__ == "skfemntv":
             if not _name.startswith("_") and not hasattr(skfem, _name):
                 setattr(skfem, _name, getattr(_compat, _name))
 
+        # The upstream solver helpers accept scikit-fem's DofsView class,
+        # while skfemntv returns its own DofsView. Route these calls through
+        # the native wrappers, which normalize native selections first.
+        try:
+            _native_utils = importlib.import_module("skfemntv.utils")
+        except ImportError:
+            _native_utils = None
+        if _native_utils is not None:
+            for _name in ("condense", "enforce", "penalize", "solve"):
+                if hasattr(_native_utils, _name):
+                    setattr(skfem, _name, getattr(_native_utils, _name))
+
 
 def __getattr__(name: str) -> Any:
     """Expose backend symbols and its common submodule APIs from this loader."""
