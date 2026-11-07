@@ -3,9 +3,8 @@ from dataclasses import dataclass
 import logging
 
 import numpy as np
-import skfem
-
-from skfem import FacetBasis, asm, LinearForm
+from sktopt.skfem_loader import skfem
+from sktopt.skfem_loader import FacetBasis, asm, LinearForm
 from scipy.spatial import cKDTree
 import matplotlib.pyplot as plt
 from sktopt.mesh import utils

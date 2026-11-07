@@ -5,14 +5,14 @@ import logging
 import scipy
 from numba import njit, prange
 
-import skfem
-from skfem import Basis, asm
-from skfem.helpers import dot, ddot, sym_grad, trace, eye, grad
-from skfem.assembly import BilinearForm
-from skfem.helpers import transpose
-from skfem.models.elasticity import lame_parameters
-from skfem import Functional
-# from skfem import asm, LinearForm
+from sktopt.skfem_loader import skfem
+from sktopt.skfem_loader import Basis, asm
+from sktopt.skfem_loader import dot, ddot, sym_grad, trace, eye, grad
+from sktopt.skfem_loader import BilinearForm
+from sktopt.skfem_loader import transpose
+from sktopt.skfem_loader import lame_parameters
+from sktopt.skfem_loader import Functional
+# from sktopt.skfem_loader import asm, LinearForm
 
 import numpy as np
 
@@ -651,7 +651,7 @@ if __name__ == '__main__':
 
     @profile
     def test_4():
-        from skfem.helpers import ddot
+        from sktopt.skfem_loader import ddot
         import sktopt
         from sktopt.mesh import toy_problem
         from sktopt.fea import solver_elastic

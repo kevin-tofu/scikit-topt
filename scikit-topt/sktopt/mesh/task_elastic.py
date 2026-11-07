@@ -2,9 +2,8 @@ from typing import Union, List, Literal
 from dataclasses import dataclass
 
 import numpy as np
-import skfem
-
-from skfem import FacetBasis, asm, LinearForm
+from sktopt.skfem_loader import skfem
+from sktopt.skfem_loader import FacetBasis, asm, LinearForm
 from sktopt.mesh import FEMDomain
 
 

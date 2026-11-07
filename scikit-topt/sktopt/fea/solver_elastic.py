@@ -8,11 +8,11 @@ import scipy
 from scipy.sparse.linalg import LinearOperator
 
 
-import skfem
-from skfem.models.elasticity import lame_parameters
-from skfem import Functional
-from skfem.helpers import ddot, sym_grad, trace, eye
-from skfem.helpers import transpose
+from sktopt.skfem_loader import skfem
+from sktopt.skfem_loader import lame_parameters
+from sktopt.skfem_loader import Functional
+from sktopt.skfem_loader import ddot, sym_grad, trace, eye
+from sktopt.skfem_loader import transpose
 import pyamg
 
 from sktopt.fea import composer

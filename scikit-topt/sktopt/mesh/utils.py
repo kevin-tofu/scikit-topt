@@ -2,9 +2,7 @@ from collections import defaultdict
 import numpy as np
 from scipy.sparse import csr_matrix
 from numba import njit, prange
-import skfem
-
-
+from sktopt.skfem_loader import skfem
 def get_points_in_range(x_rng, y_rng, z_rng):
     def in_range(x):
         return (

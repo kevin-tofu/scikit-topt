@@ -11,7 +11,7 @@ from scipy.sparse.linalg import cg
 from scipy.sparse.linalg import LinearOperator
 
 import pyamg
-import skfem
+from sktopt.skfem_loader import skfem
 from sktopt.filters.base import BaseFilter
 
 
