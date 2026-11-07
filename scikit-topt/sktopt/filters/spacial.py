@@ -7,7 +7,7 @@ import numpy as np
 from scipy.spatial import cKDTree
 from scipy.sparse import coo_matrix, csr_matrix, diags
 
-import skfem
+from sktopt.skfem_loader import skfem
 from sktopt.filters.base import BaseFilter
 
 
@@ -172,7 +172,7 @@ class SpacialFilter(BaseFilter):
 
 if __name__ == '__main__':
 
-    # import skfem
+    # from sktopt.skfem_loader import skfem
     import sktopt
     from sktopt.fea import composer
     x_len, y_len, z_len = 1.0, 1.0, 1.0

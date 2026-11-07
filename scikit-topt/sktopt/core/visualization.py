@@ -6,7 +6,7 @@ from typing import Optional
 
 import numpy as np
 import imageio.v2 as imageio
-import skfem
+from sktopt.skfem_loader import skfem
 import meshio
 import matplotlib.pyplot as plt
 

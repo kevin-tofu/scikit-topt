@@ -96,6 +96,16 @@ pip install "scikit-topt[petsc]"
 poetry add scikit-topt
 ```
 
+The FEM assembly backend defaults to `skfem`. To use the native backend,
+install it with `poetry add scikit-fem-native` and set the backend before
+starting Python:
+
+```bash
+SKTOPT_FEM_BACKEND=skfemntv python your_script.py
+```
+
+The same setting can be `skfem` to select the default backend explicitly.
+
 With PETSc support:
 ```bash
 poetry add scikit-topt -E petsc4py

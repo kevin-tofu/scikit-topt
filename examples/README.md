@@ -3,9 +3,12 @@
  This section illustrates a typical workflow for running a topology-optimization problem with scikit-fem as the FEM backend and scikit-topt for problem setup and optimization.
  See more details in Python scripts in this directory.
 
+The examples use ``skfem`` by default. To select scikit-fem-native, set
+``SKTOPT_FEM_BACKEND=skfemntv`` before running the Python script.
+
 ### Load Mesh file from file.
 ```Python
-import skfem
+from sktopt.skfem_loader import skfem
 import sktopt
 
 mesh_path = "./data/model.msh"
@@ -14,7 +17,7 @@ basis = sktopt.mesh.loader.basis_from_file(
 )
 
 
-from skfem.io.json import from_file
+from sktopt.skfem_loader import from_file
 mesh = from_file("./data/mesh.json")
 ```
 

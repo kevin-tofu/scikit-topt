@@ -1,8 +1,8 @@
 import pathlib
 import logging
 import numpy as np
-import skfem
-from skfem import MeshTet
+from sktopt.skfem_loader import skfem
+from sktopt.skfem_loader import MeshTet
 import meshio
 from sktopt.mesh import task_elastic
 from sktopt.mesh import utils
@@ -36,9 +36,12 @@ def create_box_hex(x_len, y_len, z_len, mesh_size):
     z = np.linspace(0, z_len, nz + 1)
 
     mesh = skfem.MeshHex.init_tensor(x, y, z)
+    if skfem.__name__ == "skfemntv":
+        # MeshHex.init_tensor already uses the native backend's supported
+        # vertex ordering. The legacy permutation below changes that ordering.
+        return mesh
     t_fixed = utils.fix_hexahedron_orientation(mesh.t, mesh.p)
-    mesh_fixed = skfem.MeshHex(mesh.p, t_fixed)
-    return mesh_fixed
+    return skfem.MeshHex(mesh.p, t_fixed)
 
 
 def create_box_tet(x_len, y_len, z_len, mesh_size):

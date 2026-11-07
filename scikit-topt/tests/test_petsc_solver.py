@@ -252,8 +252,7 @@ def test_solve_u_rejects_inconsistent_petsc_spdirect_options(monkeypatch):
 
 
 def test_solve_multi_load_dispatches_to_petsc(monkeypatch):
-    import skfem
-
+    from sktopt.skfem_loader import skfem
     from sktopt.mesh.toy_problem import create_box_hex
 
     _install_fake_petsc(monkeypatch)
@@ -294,8 +293,7 @@ def test_solve_multi_load_dispatches_to_petsc(monkeypatch):
 
 
 def test_solve_multi_load_accepts_linear_solver_config(monkeypatch):
-    import skfem
-
+    from sktopt.skfem_loader import skfem
     from sktopt.mesh.toy_problem import create_box_hex
 
     _install_fake_petsc(monkeypatch)
@@ -368,8 +366,7 @@ def test_fem_heat_prefers_solver_config_over_legacy_options():
 
 
 def test_heat_solve_multi_load_dispatches_to_petsc(monkeypatch):
-    import skfem
-
+    from sktopt.skfem_loader import skfem
     from sktopt.mesh.toy_problem import create_box_hex
 
     _install_fake_petsc(monkeypatch)
@@ -404,8 +401,7 @@ def test_heat_solve_multi_load_dispatches_to_petsc(monkeypatch):
 
 
 def test_heat_solve_multi_load_dispatches_to_petsc_spdirect(monkeypatch):
-    import skfem
-
+    from sktopt.skfem_loader import skfem
     from sktopt.mesh.toy_problem import create_box_hex
 
     _install_fake_petsc(monkeypatch)
@@ -446,8 +442,7 @@ def test_heat_solve_multi_load_dispatches_to_petsc_spdirect(monkeypatch):
 
 
 def test_fem_heat_averaged_temp_uses_petsc_for_state_and_adjoint(monkeypatch):
-    import skfem
-
+    from sktopt.skfem_loader import skfem
     from sktopt.mesh.toy_problem import create_box_hex
 
     _install_fake_petsc(monkeypatch)
@@ -489,8 +484,7 @@ def test_fem_heat_averaged_temp_uses_petsc_for_state_and_adjoint(monkeypatch):
 
 
 def test_solve_multi_load_dispatches_to_petsc_spdirect(monkeypatch):
-    import skfem
-
+    from sktopt.skfem_loader import skfem
     from sktopt.mesh.toy_problem import create_box_hex
 
     _install_fake_petsc(monkeypatch)

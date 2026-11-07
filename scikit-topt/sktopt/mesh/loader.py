@@ -3,8 +3,8 @@ import logging
 import numpy as np
 
 import meshio
-import skfem
-from skfem.models.elasticity import linear_elasticity
+from sktopt.skfem_loader import skfem
+from sktopt.skfem_loader import linear_elasticity
 
 
 logger = logging.getLogger(__name__)

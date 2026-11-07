@@ -1,5 +1,5 @@
 import numpy as np
-import skfem
+from sktopt.skfem_loader import skfem
 import sktopt
 
 

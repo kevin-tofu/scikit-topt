@@ -5,8 +5,8 @@ import numpy as np
 import scipy
 from scipy.sparse.linalg import LinearOperator
 
-import skfem
-from skfem.helpers import grad, dot
+from sktopt.skfem_loader import skfem
+from sktopt.skfem_loader import grad, dot
 import pyamg
 
 # from sktopt.mesh import LinearHeatConduction
