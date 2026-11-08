@@ -35,7 +35,6 @@ def test_mma_one_step_is_comparable_to_oc():
         task_mma = sktopt.mesh.toy_problem.toy_test()
         mma_cfg = sktopt.core.MMA_Config(
             **_shared_config(os.path.join(tmpdir, "mma")),
-            mma_maxeval=40,
         )
         mma = sktopt.core.MMA_Optimizer(mma_cfg, task_mma)
         mma.parameterize()
@@ -48,7 +47,62 @@ def test_mma_one_step_is_comparable_to_oc():
         assert oc_result.compliance > 0.0
         assert mma_result.compliance > 0.0
         assert abs(mma_result.vol_error) < 1e-3
-        assert mma_result.rho_change_max > 1e-6
+        assert np.max(np.abs(
+            mma._state.rho[mma.tsk.design_elements] - 0.8
+        )) > 1e-6
         assert max(oc_result.compliance, mma_result.compliance) / min(
             oc_result.compliance, mma_result.compliance
         ) < 1.2
+
+
+def test_mma_volume_constraint_gradient_matches_finite_difference():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        task = sktopt.mesh.toy_problem.toy_test()
+        cfg = sktopt.core.MMA_Config(**_shared_config(
+            os.path.join(tmpdir, "mma-gradient")
+        ))
+        optimizer = sktopt.core.MMA_Optimizer(cfg, task)
+        optimizer.parameterize()
+        optimizer._ensure_state_initialized()
+        state = optimizer._state
+        design = task.design_elements
+        volumes = task.elements_volume[design]
+        x = state.rho[design].copy()
+        value, gradient = optimizer._volume_constraint_value_gradient(
+            x,
+            state.rho,
+            design,
+            volumes,
+            volumes.sum(),
+            beta=1.0,
+            vol_frac=0.8,
+        )
+        direction = np.random.default_rng(7).normal(size=x.size)
+        direction /= np.linalg.norm(direction)
+        step = 1e-6
+        plus = optimizer._volume_constraint_value(
+            x + step * direction,
+            state.rho,
+            design,
+            volumes,
+            volumes.sum(),
+            beta=1.0,
+            vol_frac=0.8,
+        )
+        minus = optimizer._volume_constraint_value(
+            x - step * direction,
+            state.rho,
+            design,
+            volumes,
+            volumes.sum(),
+            beta=1.0,
+            vol_frac=0.8,
+        )
+        finite_difference = (plus - minus) / (2.0 * step)
+        assert np.isfinite(value)
+        np.testing.assert_allclose(
+            gradient @ direction,
+            finite_difference,
+            rtol=1e-5,
+            atol=1e-8,
+        )

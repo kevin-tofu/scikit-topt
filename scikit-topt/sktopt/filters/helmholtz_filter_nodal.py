@@ -236,6 +236,78 @@ class HelmholtzFilterNodal(BaseFilter):
         v_elem_filtered = np.minimum(v_elem_filtered, 0.0)
         return v_elem_filtered
 
+    def gradient_exact(self, v_ele: np.ndarray) -> np.ndarray:
+        """Apply the transpose Jacobian of :meth:`forward` to ``v_ele``.
+
+        ``gradient`` above is a sensitivity smoothing heuristic used by the
+        legacy OC update.  MMA needs the derivative of the actual filtered
+        density map, so this method applies the adjoint of each linear stage.
+        """
+        basis = skfem.Basis(self.mesh, infer_element_from_mesh(self.mesh))
+        n_nodes = self.mesh.p.shape[1]
+        elements = self.mesh.t.T
+        values = np.asarray(v_ele, dtype=float)
+        if values.shape != (elements.shape[0],):
+            raise ValueError("v_ele must have one entry per mesh element")
+
+        # Adjoint of node_to_element_density: each element stores the mean of
+        # its nodal values.
+        node_adjoint = np.zeros(n_nodes, dtype=float)
+        np.add.at(node_adjoint, elements.ravel(), np.repeat(
+            values / elements.shape[1], elements.shape[1]
+        ))
+
+        @skfem.BilinearForm
+        def helmholtz(u, v, w):
+            return u * v + (self.radius ** 2) * dot(grad(u), grad(v))
+
+        @skfem.BilinearForm
+        def mass(u, v, w):
+            return u * v
+
+        operator = skfem.asm(helmholtz, basis).tocsr()
+        mass_matrix = skfem.asm(mass, basis).tocsr()
+        if self.design_mask is None:
+            fixed_nodes = np.array([], dtype=int)
+        else:
+            fixed_nodes = np.unique(
+                self.mesh.t[:, ~self.design_mask].ravel()
+            )
+        free_nodes = np.setdiff1d(np.arange(n_nodes), fixed_nodes)
+        if free_nodes.size == 0:
+            return np.zeros_like(values)
+
+        from scipy.sparse.linalg import spsolve
+
+        adjoint_free = spsolve(
+            operator[free_nodes][:, free_nodes].T,
+            node_adjoint[free_nodes],
+        )
+        # The forward Helmholtz RHS is the consistent mass matrix times the
+        # nodal input, including contributions from prescribed output nodes.
+        input_node_adjoint = np.asarray(
+            mass_matrix[free_nodes, :].T @ adjoint_free
+        ).reshape(-1)
+
+        # Adjoint of volume-weighted element_to_node_density_averaging.
+        result = np.zeros_like(values)
+        if self.design_mask is None:
+            design_mask = np.ones(values.size, dtype=bool)
+        else:
+            design_mask = np.asarray(self.design_mask, dtype=bool)
+        node_weight = np.zeros(n_nodes, dtype=float)
+        np.add.at(
+            node_weight,
+            elements.ravel(),
+            np.repeat(self.elements_volume, elements.shape[1]),
+        )
+        node_weight[node_weight == 0.0] = 1.0
+        element_contribution = np.sum(
+            input_node_adjoint[elements] / node_weight[elements], axis=1
+        ) * self.elements_volume
+        result[design_mask] = element_contribution[design_mask]
+        return result
+
 
 def test_main():
 

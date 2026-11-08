@@ -528,6 +528,8 @@ class DensityMethod(DensityMethodBase):
         ``beta``, ``move_limit``, ``percentile``, and ``filter_radius``.
     """
 
+    exact_filter_gradient = False
+
     def __init__(
         self,
         cfg: DensityMethodConfig,
@@ -1095,7 +1097,14 @@ class DensityMethod(DensityMethodBase):
                             beta=beta, eta=cfg.beta_eta, out=dH_drho
                         )
                         np.multiply(dC_drho_projected, dH_drho, out=grad_filtered)
-                        dC_drho_full[:] += self.filter.gradient(grad_filtered)
+                        if self.exact_filter_gradient:
+                            dC_drho_full[:] += self.filter.gradient_exact(
+                                grad_filtered
+                            )
+                        else:
+                            dC_drho_full[:] += self.filter.gradient(
+                                grad_filtered
+                            )
 
             # print(f"dC_drho_full min/max {dC_drho_full.min()} {dC_drho_full.max()}")
             dC_drho_full /= tsk.n_tasks

@@ -1,4 +1,4 @@
-"""MMA density update integrated with the shared density optimizer loop."""
+"""Moving-asymptote density update for the shared density optimizer loop."""
 
 from __future__ import annotations
 
@@ -14,31 +14,277 @@ from sktopt.core.optimizers import common_density
 class MMA_Config(common_density.DensityMethod_OC_Config):
     """Settings for the Method of Moving Asymptotes density update."""
 
-    mma_maxeval: int = 50
-    mma_xtol_rel: float = 1e-5
+    mma_dual_tolerance: float = 1e-9
+    mma_dual_max_iterations: int = 100
+    mma_asymptote_initial: float = 0.5
+    mma_asymptote_increase: float = 1.2
+    mma_asymptote_decrease: float = 0.7
+    mma_asymptote_minimum: float = 0.01
+    mma_asymptote_maximum: float = 10.0
+    mma_regularization: float = 1e-5
     volume_constraint_tolerance: float = 1e-6
 
     def __post_init__(self):
         super().__post_init__()
-        if self.mma_maxeval < 1:
-            raise ValueError("mma_maxeval must be positive")
-        if self.mma_xtol_rel <= 0.0:
-            raise ValueError("mma_xtol_rel must be positive")
+        if self.mma_dual_tolerance <= 0.0:
+            raise ValueError("mma_dual_tolerance must be positive")
+        if self.mma_dual_max_iterations < 1:
+            raise ValueError("mma_dual_max_iterations must be positive")
+        if self.mma_asymptote_initial <= 0.0:
+            raise ValueError("mma_asymptote_initial must be positive")
+        if self.mma_asymptote_increase < 1.0:
+            raise ValueError("mma_asymptote_increase must be at least one")
+        if not 0.0 < self.mma_asymptote_decrease <= 1.0:
+            raise ValueError("mma_asymptote_decrease must be in (0, 1]")
+        if not 0.0 < self.mma_asymptote_minimum < self.mma_asymptote_maximum:
+            raise ValueError("invalid MMA asymptote distance limits")
+        if self.mma_regularization <= 0.0:
+            raise ValueError("mma_regularization must be positive")
         if self.volume_constraint_tolerance < 0.0:
             raise ValueError("volume_constraint_tolerance cannot be negative")
 
 
-class MMA_Optimizer(common_density.DensityMethod):
-    """Density optimizer using NLopt's MMA algorithm for each design update.
+@dataclass
+class _MMAHistory:
+    """Design and asymptote history retained between outer FEM iterations."""
 
-    The shared density driver evaluates compliance and its filtered gradient.
-    MMA minimizes the first-order compliance model subject to the physical,
-    filtered-and-projected volume constraint.
+    previous: np.ndarray | None = None
+    previous_previous: np.ndarray | None = None
+    lower_asymptote: np.ndarray | None = None
+    upper_asymptote: np.ndarray | None = None
+
+    def asymptotes(
+        self,
+        x: np.ndarray,
+        lower_bound: np.ndarray,
+        upper_bound: np.ndarray,
+        cfg: MMA_Config,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        span = upper_bound - lower_bound
+        if self.lower_asymptote is None or self.upper_asymptote is None:
+            distance = cfg.mma_asymptote_initial * span
+            return x - distance, x + distance
+
+        factor = np.ones_like(x)
+        if self.previous is not None and self.previous_previous is not None:
+            trend = (x - self.previous) * (self.previous - self.previous_previous)
+            factor[trend > 0.0] = cfg.mma_asymptote_increase
+            factor[trend < 0.0] = cfg.mma_asymptote_decrease
+
+        lower = x - factor * (self.previous - self.lower_asymptote)
+        upper = x + factor * (self.upper_asymptote - self.previous)
+        min_distance = cfg.mma_asymptote_minimum * span
+        max_distance = cfg.mma_asymptote_maximum * span
+        lower = np.minimum(x - min_distance, np.maximum(x - max_distance, lower))
+        upper = np.maximum(x + min_distance, np.minimum(x + max_distance, upper))
+        return lower, upper
+
+    def advance(
+        self,
+        x: np.ndarray,
+        lower_asymptote: np.ndarray,
+        upper_asymptote: np.ndarray,
+    ) -> None:
+        if self.previous is not None:
+            self.previous_previous = self.previous.copy()
+        self.previous = x.copy()
+        self.lower_asymptote = lower_asymptote.copy()
+        self.upper_asymptote = upper_asymptote.copy()
+
+
+def _reciprocal_coefficients(
+    gradient: np.ndarray,
+    x: np.ndarray,
+    lower_asymptote: np.ndarray,
+    upper_asymptote: np.ndarray,
+    regularization: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Build the convex reciprocal approximation matching value gradient."""
+    upper_distance = upper_asymptote - x
+    lower_distance = x - lower_asymptote
+    positive = np.maximum(gradient, 0.0)
+    negative = np.maximum(-gradient, 0.0)
+    p = (positive + regularization) * upper_distance**2
+    q = (negative + regularization) * lower_distance**2
+    return p, q
+
+
+def _approximation_value(
+    x: np.ndarray,
+    x0: np.ndarray,
+    f0: float,
+    p: np.ndarray,
+    q: np.ndarray,
+    lower_asymptote: np.ndarray,
+    upper_asymptote: np.ndarray,
+) -> float:
+    """Evaluate the MMA approximation anchored at ``(x0, f0)``."""
+    return float(
+        f0
+        + np.sum(p * (
+            1.0 / (upper_asymptote - x)
+            - 1.0 / (upper_asymptote - x0)
+        ))
+        + np.sum(q * (
+            1.0 / (x - lower_asymptote)
+            - 1.0 / (x0 - lower_asymptote)
+        ))
+    )
+
+
+def _solve_one_constraint_subproblem(
+    *,
+    x0: np.ndarray,
+    objective_gradient: np.ndarray,
+    constraint_value: float,
+    constraint_gradient: np.ndarray,
+    lower_asymptote: np.ndarray,
+    upper_asymptote: np.ndarray,
+    lower_bound: np.ndarray,
+    upper_bound: np.ndarray,
+    regularization: float,
+    dual_tolerance: float,
+    dual_max_iterations: int,
+) -> tuple[np.ndarray, float, float]:
+    """Solve the separable MMA subproblem with one inequality constraint.
+
+    The primal variables have a closed form for a given nonnegative dual
+    multiplier.  A bracketed dual bisection then enforces the volume
+    constraint.  All function evaluations inside this solve use the current
+    convex MMA approximations; the FEM model is reevaluated by the outer loop.
     """
+    p0, q0 = _reciprocal_coefficients(
+        objective_gradient, x0, lower_asymptote, upper_asymptote,
+        regularization,
+    )
+    p1, q1 = _reciprocal_coefficients(
+        constraint_gradient, x0, lower_asymptote, upper_asymptote,
+        regularization,
+    )
+
+    def primal(dual: float) -> np.ndarray:
+        p = np.maximum(p0 + dual * p1, np.finfo(float).tiny)
+        q = np.maximum(q0 + dual * q1, np.finfo(float).tiny)
+        sqrt_p = np.sqrt(p)
+        sqrt_q = np.sqrt(q)
+        candidate = (
+            sqrt_q * upper_asymptote + sqrt_p * lower_asymptote
+        ) / (sqrt_p + sqrt_q)
+        return np.clip(candidate, lower_bound, upper_bound)
+
+    def constraint_approximation(x: np.ndarray) -> float:
+        return _approximation_value(
+            x, x0, constraint_value, p1, q1,
+            lower_asymptote, upper_asymptote,
+        )
+
+    x_unconstrained = primal(0.0)
+    if constraint_approximation(x_unconstrained) <= 0.0:
+        return x_unconstrained, 0.0, constraint_approximation(x_unconstrained)
+
+    dual_lower = 0.0
+    dual_upper = 1.0
+    x_upper = primal(dual_upper)
+    while (
+        constraint_approximation(x_upper) > 0.0
+        and dual_upper < 1e30
+    ):
+        dual_upper *= 2.0
+        x_upper = primal(dual_upper)
+
+    if constraint_approximation(x_upper) > 0.0:
+        return x_upper, dual_upper, constraint_approximation(x_upper)
+
+    for _ in range(dual_max_iterations):
+        dual_mid = 0.5 * (dual_lower + dual_upper)
+        x_mid = primal(dual_mid)
+        value_mid = constraint_approximation(x_mid)
+        if value_mid > 0.0:
+            dual_lower = dual_mid
+        else:
+            dual_upper = dual_mid
+            x_upper = x_mid
+        if dual_upper - dual_lower <= dual_tolerance * max(1.0, dual_upper):
+            break
+    return x_upper, dual_upper, constraint_approximation(x_upper)
+
+
+class MMA_Optimizer(common_density.DensityMethod):
+    """Density optimizer using a stateful moving-asymptote subproblem."""
+
+    exact_filter_gradient = True
 
     def __init__(self, cfg: MMA_Config, tsk):
         super().__init__(cfg, tsk)
         self.recorder = self.add_recorder(tsk)
+        self._mma_history = _MMAHistory()
+
+    def _volume_constraint_value_gradient(
+        self,
+        x: np.ndarray,
+        rho_full_base: np.ndarray,
+        design: np.ndarray,
+        elements_volume_design: np.ndarray,
+        elements_volume_design_sum: float,
+        beta: float,
+        vol_frac: float,
+    ) -> tuple[float, np.ndarray]:
+        rho_full = rho_full_base.copy()
+        rho_full[design] = x
+        rho_filtered = self.filter.forward(rho_full)
+        rho_projected = np.empty_like(rho_full)
+        projection.heaviside_projection_inplace(
+            rho_filtered,
+            beta=beta,
+            eta=self.cfg.beta_eta,
+            out=rho_projected,
+        )
+        value = float(
+            np.sum(rho_projected[design] * elements_volume_design)
+            / elements_volume_design_sum
+            - vol_frac
+        )
+
+        derivative = np.empty_like(rho_full)
+        projection.heaviside_projection_derivative_inplace(
+            rho_filtered,
+            beta=beta,
+            eta=self.cfg.beta_eta,
+            out=derivative,
+        )
+        volume_gradient = np.zeros_like(rho_full)
+        volume_gradient[design] = (
+            elements_volume_design / elements_volume_design_sum
+        )
+        np.multiply(volume_gradient, derivative, out=volume_gradient)
+        gradient = self.filter.gradient_exact(volume_gradient)
+        return value, gradient[design]
+
+    def _volume_constraint_value(
+        self,
+        x: np.ndarray,
+        rho_full_base: np.ndarray,
+        design: np.ndarray,
+        elements_volume_design: np.ndarray,
+        elements_volume_design_sum: float,
+        beta: float,
+        vol_frac: float,
+    ) -> float:
+        rho_full = rho_full_base.copy()
+        rho_full[design] = x
+        rho_filtered = self.filter.forward(rho_full)
+        rho_projected = np.empty_like(rho_full)
+        projection.heaviside_projection_inplace(
+            rho_filtered,
+            beta=beta,
+            eta=self.cfg.beta_eta,
+            out=rho_projected,
+        )
+        return float(
+            np.sum(rho_projected[design] * elements_volume_design)
+            / elements_volume_design_sum
+            - vol_frac
+        )
 
     def rho_update(
         self,
@@ -60,23 +306,14 @@ class MMA_Optimizer(common_density.DensityMethod):
         vol_frac: float,
     ):
         del (
-            iter_num,
             rho_projected,
             u_dofs,
             energy_mean,
-            scaling_rate,
             eta,
             rho_clip_lower,
             rho_clip_upper,
             percentile,
         )
-        try:
-            import nlopt
-        except ImportError as error:
-            raise ImportError(
-                "MMA_Optimizer requires NLopt; install it with `poetry add nlopt`."
-            ) from error
-
         state = self._state
         if state is None:
             raise RuntimeError("Optimizer state is not initialized.")
@@ -87,99 +324,154 @@ class MMA_Optimizer(common_density.DensityMethod):
         objective_gradient = np.asarray(
             dC_drho_design_eles, dtype=float
         ).copy()
-        lower = np.maximum(cfg.rho_min, x0 - move_limit)
-        upper = np.minimum(cfg.rho_max, x0 + move_limit)
-        if np.any(lower > upper):
-            raise ValueError("MMA move limits produced inconsistent bounds")
-
-        rho_full = state.rho.copy()
-        rho_filtered = np.empty_like(rho_full)
-        rho_projected_candidate = np.empty_like(rho_full)
-        projection_derivative = np.empty_like(rho_full)
-        volume_gradient_full = np.empty_like(rho_full)
-
-        def volume_constraint(x, grad):
-            rho_full[design] = x
-            np.copyto(rho_filtered, self.filter.forward(rho_full))
-            projection.heaviside_projection_inplace(
-                rho_filtered,
-                beta=beta,
-                eta=cfg.beta_eta,
-                out=rho_projected_candidate,
-            )
-            volume = np.sum(
-                rho_projected_candidate[design] * elements_volume_design
-            ) / elements_volume_design_sum
-
-            if grad.size:
-                projection.heaviside_projection_derivative_inplace(
-                    rho_filtered,
-                    beta=beta,
-                    eta=cfg.beta_eta,
-                    out=projection_derivative,
-                )
-                volume_gradient_full.fill(0.0)
-                volume_gradient_full[design] = (
-                    elements_volume_design / elements_volume_design_sum
-                )
-                np.multiply(
-                    volume_gradient_full,
-                    projection_derivative,
-                    out=volume_gradient_full,
-                )
-                # The Helmholtz sensitivity filter clips positive inputs to
-                # zero because compliance sensitivities are nonpositive.
-                # Negating before and after filtering preserves the positive
-                # volume-constraint gradient through that API.
-                volume_gradient = -self.filter.gradient(
-                    -volume_gradient_full
-                )
-                grad[:] = volume_gradient[design]
-            return float(volume - vol_frac)
-
-        def objective(x, grad):
-            if grad.size:
-                grad[:] = objective_gradient
-            return float(np.dot(objective_gradient, x - x0))
-
-        initial_volume_gradient = np.empty_like(x0)
-        initial_volume_error = volume_constraint(
-            x0, initial_volume_gradient
+        global_lower = np.full_like(x0, cfg.rho_min)
+        global_upper = np.full_like(x0, cfg.rho_max)
+        lower_asymptote, upper_asymptote = self._mma_history.asymptotes(
+            x0, global_lower, global_upper, cfg
         )
-        denominator = float(np.dot(
-            initial_volume_gradient, initial_volume_gradient
+
+        move = np.broadcast_to(np.asarray(move_limit, dtype=float), x0.shape)
+        lower = np.maximum.reduce((
+            global_lower,
+            lower_asymptote + 0.1 * (x0 - lower_asymptote),
+            x0 - move,
         ))
-        lagrange_multiplier = (
-            max(
-                0.0,
-                -float(np.dot(objective_gradient, initial_volume_gradient))
-                / denominator,
+        upper = np.minimum.reduce((
+            global_upper,
+            upper_asymptote - 0.1 * (upper_asymptote - x0),
+            x0 + move,
+        ))
+        if np.any(lower >= upper):
+            raise ValueError("MMA bounds leave no feasible density step")
+
+        constraint_value, constraint_gradient_full = (
+            self._volume_constraint_value_gradient(
+                x0,
+                state.rho,
+                design,
+                elements_volume_design,
+                elements_volume_design_sum,
+                beta,
+                vol_frac,
             )
-            if initial_volume_error >= 0.0 and denominator > 0.0
-            else 0.0
         )
-        stationarity = (
-            objective_gradient
-            + lagrange_multiplier * initial_volume_gradient
+        x_new, dual, approximated_constraint = (
+            _solve_one_constraint_subproblem(
+                x0=x0,
+                objective_gradient=objective_gradient,
+                constraint_value=constraint_value,
+                constraint_gradient=constraint_gradient_full,
+                lower_asymptote=lower_asymptote,
+                upper_asymptote=upper_asymptote,
+                lower_bound=lower,
+                upper_bound=upper,
+                regularization=cfg.mma_regularization,
+                dual_tolerance=cfg.mma_dual_tolerance,
+                dual_max_iterations=cfg.mma_dual_max_iterations,
+            )
         )
-        stationarity[(x0 <= lower + 1e-8) & (stationarity > 0.0)] = 0.0
-        stationarity[(x0 >= upper - 1e-8) & (stationarity < 0.0)] = 0.0
+        current_physical_constraint = self._volume_constraint_value(
+            x0,
+            state.rho,
+            design,
+            elements_volume_design,
+            elements_volume_design_sum,
+            beta,
+            vol_frac,
+        )
+        candidate_physical_constraint = self._volume_constraint_value(
+            x_new,
+            state.rho,
+            design,
+            elements_volume_design,
+            elements_volume_design_sum,
+            beta,
+            vol_frac,
+        )
+        # The convex reciprocal model linearizes the projected volume at x0.
+        # For a large move, correct its nonlinear projection error along the
+        # feasible segment so the actual FEM design respects the requested
+        # volume fraction.
+        if (
+            current_physical_constraint > -cfg.volume_constraint_tolerance
+            and candidate_physical_constraint
+            < -cfg.volume_constraint_tolerance
+        ):
+            target_constraint = min(
+                current_physical_constraint,
+                cfg.volume_constraint_tolerance,
+            )
+            alpha_lower, alpha_upper = 0.0, 1.0
+            for _ in range(40):
+                alpha = 0.5 * (alpha_lower + alpha_upper)
+                trial = x0 + alpha * (x_new - x0)
+                trial_constraint = self._volume_constraint_value(
+                    trial,
+                    state.rho,
+                    design,
+                    elements_volume_design,
+                    elements_volume_design_sum,
+                    beta,
+                    vol_frac,
+                )
+                if trial_constraint > target_constraint:
+                    alpha_lower = alpha
+                else:
+                    alpha_upper = alpha
+            x_new = x0 + alpha_upper * (x_new - x0)
+        rho_design_eles[:] = x_new
+        np.divide(
+            x_new,
+            x0,
+            out=scaling_rate,
+            where=np.abs(x0) > np.finfo(float).eps,
+        )
+        scaling_rate[np.abs(x0) <= np.finfo(float).eps] = 1.0
+        physical_volume_error = self._volume_constraint_value(
+            rho_design_eles,
+            state.rho,
+            design,
+            elements_volume_design,
+            elements_volume_design_sum,
+            beta,
+            vol_frac,
+        )
+        self._mma_history.advance(
+            x0, lower_asymptote, upper_asymptote
+        )
 
-        opt = nlopt.opt(nlopt.LD_MMA, x0.size)
-        opt.set_lower_bounds(lower)
-        opt.set_upper_bounds(upper)
-        opt.set_min_objective(objective)
-        opt.add_inequality_constraint(
-            volume_constraint, cfg.volume_constraint_tolerance
+        f_approx_gradient = (
+            _reciprocal_coefficients(
+                objective_gradient, x0, lower_asymptote,
+                upper_asymptote, cfg.mma_regularization,
+            )[0] / (upper_asymptote - x_new) ** 2
+            - _reciprocal_coefficients(
+                objective_gradient, x0, lower_asymptote,
+                upper_asymptote, cfg.mma_regularization,
+            )[1] / (x_new - lower_asymptote) ** 2
         )
-        opt.set_maxeval(cfg.mma_maxeval)
-        opt.set_xtol_rel(cfg.mma_xtol_rel)
-        x_new = opt.optimize(x0)
-        rho_design_eles[:] = np.clip(x_new, lower, upper)
-
-        final_volume_error = volume_constraint(rho_design_eles, np.empty(0))
-        self.recorder.feed_data("vol_error", final_volume_error)
-        self.kkt_residual = float(np.linalg.norm(stationarity, ord=np.inf))
+        g_coefficients = _reciprocal_coefficients(
+            constraint_gradient_full,
+            x0,
+            lower_asymptote,
+            upper_asymptote,
+            cfg.mma_regularization,
+        )
+        g_approx_gradient = (
+            g_coefficients[0] / (upper_asymptote - x_new) ** 2
+            - g_coefficients[1] / (x_new - lower_asymptote) ** 2
+        )
+        stationarity = f_approx_gradient + dual * g_approx_gradient
+        active_lower = x_new <= lower + 1e-8
+        active_upper = x_new >= upper - 1e-8
+        stationarity[active_lower] = np.minimum(stationarity[active_lower], 0.0)
+        stationarity[active_upper] = np.maximum(stationarity[active_upper], 0.0)
+        self.kkt_residual = float(max(
+            np.linalg.norm(stationarity, ord=np.inf),
+            max(approximated_constraint, 0.0),
+            abs(dual * approximated_constraint),
+        ))
+        self.recorder.feed_data("vol_error", physical_volume_error)
         self.recorder.feed_data("kkt_residual", self.kkt_residual)
 
 

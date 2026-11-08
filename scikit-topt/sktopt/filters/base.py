@@ -33,3 +33,12 @@ class BaseFilter():
 
     def gradient(self, v: np.ndarray) -> np.ndarray:
         raise NotImplementedError("")
+
+    def gradient_exact(self, v: np.ndarray) -> np.ndarray:
+        """Apply the transpose Jacobian of ``forward`` to a sensitivity.
+
+        Filters whose ``gradient`` method is an exact adjoint can inherit this
+        implementation. Filters that use a sensitivity heuristic should
+        override it.
+        """
+        return self.gradient(v)
