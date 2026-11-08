@@ -1,9 +1,9 @@
 from typing import Optional, Literal
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 
 import numpy as np
-from scipy.sparse.linalg import spsolve
+from scipy.sparse.linalg import splu
 
 from sktopt.skfem_loader import skfem
 from sktopt.skfem_loader import dot, grad
@@ -194,13 +194,71 @@ def solve_helmholtz(
 
 @dataclass
 class HelmholtzFilterNodal(BaseFilter):
+    _basis: object = field(init=False, repr=False)
+    _operator: object = field(init=False, repr=False)
+    _mass: object = field(init=False, repr=False)
+    _fixed_nodes: np.ndarray = field(init=False, repr=False)
+    _free_nodes: np.ndarray = field(init=False, repr=False)
+    _operator_free_fixed: object = field(init=False, repr=False)
+    _forward_solver: object = field(init=False, repr=False)
+    _full_solver: object = field(init=False, repr=False)
+
+    def __post_init__(self):
+        self._rebuild_solver_cache()
+
+    def _rebuild_solver_cache(self):
+        """Assemble and factorize the radius-dependent Helmholtz operator."""
+        self._basis = skfem.Basis(
+            self.mesh, infer_element_from_mesh(self.mesh)
+        )
+
+        @skfem.BilinearForm
+        def operator_form(u, v, w):
+            return u * v + (self.radius ** 2) * dot(grad(u), grad(v))
+
+        @skfem.BilinearForm
+        def mass_form(u, v, w):
+            return u * v
+
+        self._operator = skfem.asm(
+            operator_form, self._basis
+        ).tocsc()
+        self._mass = skfem.asm(mass_form, self._basis).tocsr()
+        if self.design_mask is None:
+            self._fixed_nodes = np.array([], dtype=int)
+        else:
+            self._fixed_nodes = np.unique(
+                self.mesh.t[:, ~self.design_mask].ravel()
+            )
+        self._free_nodes = np.setdiff1d(
+            np.arange(self.mesh.p.shape[1]), self._fixed_nodes
+        )
+        if self._free_nodes.size:
+            operator_ff = self._operator[
+                self._free_nodes
+            ][:, self._free_nodes].tocsc()
+            self._forward_solver = splu(operator_ff)
+            self._operator_free_fixed = self._operator[
+                self._free_nodes
+            ][:, self._fixed_nodes].tocsr()
+        else:
+            self._forward_solver = None
+            self._operator_free_fixed = None
+        self._full_solver = (
+            self._forward_solver
+            if self._fixed_nodes.size == 0
+            else None
+        )
 
     def update_radius(
         self,
         radius: float,
         **args
     ):
+        if radius == self.radius:
+            return
         self.radius = radius
+        self._rebuild_solver_cache()
 
     @classmethod
     def from_defaults(
@@ -221,11 +279,22 @@ class HelmholtzFilterNodal(BaseFilter):
         #     self.mesh, rho_element,
         #     design_mask=self.design_mask
         # )
-        rho_node_filtered = solve_helmholtz(
-            "forward",
-            self.mesh, rho_node, r_min=self.radius,
-            design_mask=self.design_mask
-        )
+        rho_field = self._basis.interpolate(rho_node)
+
+        @skfem.LinearForm
+        def rhs_form(v, w):
+            return rho_field * v
+
+        rhs = skfem.asm(rhs_form, self._basis)
+        rho_node_filtered = np.ones(self.mesh.p.shape[1], dtype=float)
+        if self._free_nodes.size:
+            fixed_value = np.ones(self._fixed_nodes.size, dtype=float)
+            rhs_free = rhs[self._free_nodes]
+            if self._fixed_nodes.size:
+                rhs_free = rhs_free - self._operator_free_fixed @ fixed_value
+            rho_node_filtered[self._free_nodes] = self._forward_solver.solve(
+                rhs_free
+            )
         rho_elem_filtered = node_to_element_density(
             self.mesh, rho_node_filtered
         )
@@ -247,13 +316,16 @@ class HelmholtzFilterNodal(BaseFilter):
         # v_node = np.minimum(v_node, 0.0)
 
         # Helmholtz PDE on nodes
-        v_node_filtered = solve_helmholtz(
-            "gradient",
-            self.mesh,
-            v_node,
-            r_min=self.radius,
-            design_mask=None
-        )
+        v_field = self._basis.interpolate(v_node)
+
+        @skfem.LinearForm
+        def rhs_form(v, w):
+            return v_field * v
+
+        rhs = skfem.asm(rhs_form, self._basis)
+        if self._full_solver is None:
+            self._full_solver = splu(self._operator)
+        v_node_filtered = self._full_solver.solve(rhs)
         # print("np.sum(v_node_filtered > 0):", np.sum(v_node_filtered > 0))
 
         # node to element
@@ -267,32 +339,14 @@ class HelmholtzFilterNodal(BaseFilter):
         return v_elem_filtered
 
     def adjoint(self, v_ele: np.ndarray) -> np.ndarray:
-        basis = skfem.Basis(self.mesh, infer_element_from_mesh(self.mesh))
-
-        @skfem.BilinearForm
-        def a(u, v, w):
-            return u * v + (self.radius ** 2) * dot(grad(u), grad(v))
-
-        @skfem.BilinearForm
-        def m(u, v, w):
-            return u * v
-
-        A = skfem.asm(a, basis).tocsr()
-        M = skfem.asm(m, basis).tocsr()
-
-        if self.design_mask is None:
-            fixed_nodes = np.array([], dtype=int)
-        else:
-            fixed_nodes = np.unique(self.mesh.t[:, ~self.design_mask].ravel())
-        free_nodes = np.setdiff1d(np.arange(self.mesh.p.shape[1]), fixed_nodes)
-
         v_node = node_to_element_density_adjoint(self.mesh, v_ele)
         lambda_node = np.zeros(self.mesh.p.shape[1])
-        if free_nodes.size > 0:
-            A_ff = A[free_nodes][:, free_nodes]
-            lambda_node[free_nodes] = spsolve(A_ff.T, v_node[free_nodes])
+        if self._free_nodes.size > 0:
+            lambda_node[self._free_nodes] = self._forward_solver.solve(
+                v_node[self._free_nodes], trans="T"
+            )
 
-        rho_node_grad = M.T @ lambda_node
+        rho_node_grad = self._mass.T @ lambda_node
         return element_to_node_density_averaging_adjoint(
             self.mesh,
             self.elements_volume,
