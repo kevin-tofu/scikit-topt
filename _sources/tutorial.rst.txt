@@ -28,6 +28,33 @@ Optimizer Configuration, and Run
     optimizer.parameterize()
     optimizer.optimize()
 
+MMA Optimizer
+~~~~~~~~~~~~~
+
+Scikit-Topt includes a density-based Method of Moving Asymptotes (MMA)
+optimizer backed by the separately maintained ``mmahelpy`` package. It is
+installed automatically with ``scikit-topt``. Configure and run it using the
+same task and density schedules as the OC optimizer:
+
+.. code-block:: python
+
+    cfg = sktopt.core.MMA_Config(
+        dst_path="./result/tutorial_box_mma",
+        vol_frac=sktopt.tools.SchedulerConfig.constant(target_value=0.4),
+        max_iters=100,
+        record_times=10,
+    )
+    optimizer = sktopt.core.MMA_Optimizer(cfg, mytask)
+    optimizer.parameterize()
+    optimizer.optimize()
+
+``MMA_Config`` accepts the usual density optimization settings, including
+``p``, ``beta``, ``filter_type``, and ``filter_radius``. MMA-specific controls
+are available through ``mma_dual_tolerance``, ``mma_dual_max_iterations``,
+``mma_asymptote_initial``, ``mma_asymptote_increase``,
+``mma_asymptote_decrease``, ``mma_asymptote_minimum``,
+``mma_asymptote_maximum``, and ``mma_regularization``.
+
 But before running the optimization, we need to set up the task configuration and the design variables.
 
 Task Definition

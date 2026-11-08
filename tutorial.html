@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tutorial Page &mdash; Scikit-Topt 0.3.12 documentation</title>
+  <title>Tutorial Page &mdash; Scikit-Topt 0.3.13 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
@@ -14,7 +14,7 @@
     <link rel="canonical" href="https://kevin-tofu.github.io/scikit-topt/tutorial.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=0cf6a877"></script>
+      <script src="_static/documentation_options.js?v=a88e2c6e"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -50,6 +50,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial Page</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#optimization">Optimization</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#optimizer-configuration-and-run">Optimizer Configuration, and Run</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mma-optimizer">MMA Optimizer</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#task-definition">Task Definition</a><ul>
@@ -115,6 +116,30 @@ This will run a compliance minimization with OC method.</p>
 <span class="n">optimizer</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
 </pre></div>
 </div>
+</section>
+<section id="mma-optimizer">
+<h3>MMA Optimizer<a class="headerlink" href="#mma-optimizer" title="Link to this heading"></a></h3>
+<p>Scikit-Topt includes a density-based Method of Moving Asymptotes (MMA)
+optimizer backed by the separately maintained <code class="docutils literal notranslate"><span class="pre">mmahelpy</span></code> package. It is
+installed automatically with <code class="docutils literal notranslate"><span class="pre">scikit-topt</span></code>. Configure and run it using the
+same task and density schedules as the OC optimizer:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cfg</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">MMA_Config</span><span class="p">(</span>
+    <span class="n">dst_path</span><span class="o">=</span><span class="s2">"./result/tutorial_box_mma"</span><span class="p">,</span>
+    <span class="n">vol_frac</span><span class="o">=</span><span class="n">sktopt</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">SchedulerConfig</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">target_value</span><span class="o">=</span><span class="mf">0.4</span><span class="p">),</span>
+    <span class="n">max_iters</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">record_times</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">sktopt</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">MMA_Optimizer</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">mytask</span><span class="p">)</span>
+<span class="n">optimizer</span><span class="o">.</span><span class="n">parameterize</span><span class="p">()</span>
+<span class="n">optimizer</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">MMA_Config</span></code> accepts the usual density optimization settings, including
+<code class="docutils literal notranslate"><span class="pre">p</span></code>, <code class="docutils literal notranslate"><span class="pre">beta</span></code>, <code class="docutils literal notranslate"><span class="pre">filter_type</span></code>, and <code class="docutils literal notranslate"><span class="pre">filter_radius</span></code>. MMA-specific controls
+are available through <code class="docutils literal notranslate"><span class="pre">mma_dual_tolerance</span></code>, <code class="docutils literal notranslate"><span class="pre">mma_dual_max_iterations</span></code>,
+<code class="docutils literal notranslate"><span class="pre">mma_asymptote_initial</span></code>, <code class="docutils literal notranslate"><span class="pre">mma_asymptote_increase</span></code>,
+<code class="docutils literal notranslate"><span class="pre">mma_asymptote_decrease</span></code>, <code class="docutils literal notranslate"><span class="pre">mma_asymptote_minimum</span></code>,
+<code class="docutils literal notranslate"><span class="pre">mma_asymptote_maximum</span></code>, and <code class="docutils literal notranslate"><span class="pre">mma_regularization</span></code>.</p>
 <p>But before running the optimization, we need to set up the task configuration and the design variables.</p>
 </section>
 </section>
