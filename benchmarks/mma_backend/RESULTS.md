@@ -1,9 +1,10 @@
 # Backend comparison result
 
 The `skfemntv` backend was compared with `skfem` using the same MMA optimizer,
-mesh, constraints, and stopping conditions. The measured native code includes
-the symbolic `trace(sym_grad(...))` fix later released as
-`scikit-fem-native` 0.4.3 (commit `aa221826`).
+mesh, constraints, and stopping conditions. The measured native source is
+`scikit-fem-native` 0.4.3 (commit
+`aa2218266baf5c4f019328e8862290a9455d2f72`), which includes the symbolic
+`trace(sym_grad(...))` fix.
 
 ## Configuration
 
@@ -17,14 +18,20 @@ the symbolic `trace(sym_grad(...))` fix later released as
 
 | Backend | Median optimization time | Range | Median MMA adapter time | Compliance | Absolute volume error |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `skfem` | 96.944 s | 96.728–98.738 s | 71.975 s | 0.4080233177213601 | 1.0e-6 |
-| `skfemntv` | 42.114 s | 41.875–52.174 s | 21.795 s | 0.4080233177213412 | 1.0e-6 |
+| `skfem` | 95.339 s | 94.796–96.664 s | 70.904 s | 0.4080233177213601 | 1.0e-6 |
+| `skfemntv` | 41.372 s | 41.320–42.867 s | 21.480 s | 0.4080233177213412 | 1.0e-6 |
 
-For this case, `skfemntv` completed the optimization loop in 2.30x less time.
-The time inside scikit-topt's MMA adapter was 3.30x lower. Both backends
-produced the same compliance to about 2e-14 and the same volume error. The
+For this case, `skfemntv` completed the optimization loop in 2.304x less time.
+Median whole-process time was 101.096 s for `skfem` and 47.265 s for
+`skfemntv`. The time inside scikit-topt's MMA adapter was 3.30x lower. Both
+backends produced compliance values differing by about 2e-14, the same volume
+error (about 1e-6), and matching KKT residuals to numerical precision. The
 adapter timing includes filtered/projected volume constraint work as well as
 the `mmahelpy` solver call; it is not an isolated timing of the MMA algorithm.
+
+The benchmark command writes the reproducible per-run data to
+`results/latest.json`. It records the native version and commit, Python and
+platform, timings, and optimization result metrics.
 
 These measurements describe one machine and one problem size. Use the
 benchmark script to repeat them on target hardware before relying on the
