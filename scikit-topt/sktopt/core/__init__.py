@@ -6,6 +6,8 @@ from sktopt.core.optimizers.oc import OC_Config
 from sktopt.core.optimizers.oc import OC_Optimizer
 from sktopt.core.optimizers.logmoc import LogMOC_Config
 from sktopt.core.optimizers.logmoc import LogMOC_Optimizer
+from sktopt.core.optimizers.mma_density import MMA_Config
+from sktopt.core.optimizers.mma_density import MMA_Optimizer
 try:
     from sktopt.core.optimizers.oc_scaled import OCScaled_Config
     from sktopt.core.optimizers.oc_scaled import OCScaled_Optimizer
@@ -39,6 +41,8 @@ OCScaled_Config.__module__ = __name__
 OCScaled_Optimizer.__module__ = __name__
 LogMOC_Config.__module__ = __name__
 LogMOC_Optimizer.__module__ = __name__
+MMA_Config.__module__ = __name__
+MMA_Optimizer.__module__ = __name__
 LogMOCScaled_Config.__module__ = __name__
 LogMOCScaled_Optimizer.__module__ = __name__
 
@@ -53,6 +57,8 @@ __all__ = [
     "OCScaled_Optimizer",
     "LogMOC_Config",
     "LogMOC_Optimizer",
+    "MMA_Config",
+    "MMA_Optimizer",
     "LogMOCScaled_Config",
     "LogMOCScaled_Optimizer",
     # "LinearMOC_Config",
