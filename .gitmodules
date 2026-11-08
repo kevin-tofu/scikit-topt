@@ -1,3 +1,6 @@
 [submodule "packages/scikit-fem-native"]
 	path = packages/scikit-fem-native
 	url = https://github.com/kevin-tofu/scikit-fem-native.git
+[submodule "packages/mmapy"]
+	path = packages/mmapy
+	url = git@github.com:kevin-tofu/mmahelpy.git

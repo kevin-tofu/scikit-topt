@@ -33,3 +33,6 @@ class BaseFilter():
 
     def gradient(self, v: np.ndarray) -> np.ndarray:
         raise NotImplementedError("")
+
+    def adjoint(self, v: np.ndarray) -> np.ndarray:
+        return self.gradient(v)

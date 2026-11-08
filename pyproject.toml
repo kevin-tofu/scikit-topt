@@ -26,6 +26,7 @@ dependencies = [
     "imageio>=2.37.0,<3.0.0",
     "scipy>=1.15.2,<2.0.0",
     "scikit-fem-native>=0.4.1,<0.5.0",
+    "mmahelpy>=0.1.0,<0.2.0",
 ]
 
 [project.optional-dependencies]
@@ -38,7 +39,7 @@ petsc = [
 
 [tool.poetry]
 packages = [
-  { include = "sktopt", from = "scikit-topt" }
+  { include = "sktopt", from = "scikit-topt" },
 ]
 
 [tool.poetry.group.dev.dependencies]
@@ -56,6 +57,7 @@ sphinx-sitemap = { version = "^2.6.0", python = ">=3.11" }
 
 [tool.poetry.dependencies]
 scikit-fem-native = {path = "packages/scikit-fem-native", develop = true}
+mmahelpy = {path = "packages/mmapy", develop = true}
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"

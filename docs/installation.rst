@@ -31,6 +31,10 @@ This installs the standard solver stack and does **not** require PETSc.
 Typical workflows using ``solver_option="spsolve"`` or ``"cg_pyamg"``
 work without ``petsc4py``.
 
+The ``mmahelpy`` package is installed as a dependency of ``scikit-topt`` and
+provides the MMA solver used by ``sktopt.core.MMA_Optimizer``. No separate
+installation step is needed to use MMA.
+
 PETSc Optional Installation
 ---------------------------
 
