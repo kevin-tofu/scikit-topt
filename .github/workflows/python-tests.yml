@@ -42,3 +42,8 @@ jobs:
 
       - name: Run tests with coverage
         run: PYTHONPATH=scikit-topt poetry run pytest scikit-topt/tests --cov=sktopt --cov-report=xml
+
+      - name: Verify MMA with the native FEM backend
+        env:
+          SKTOPT_FEM_BACKEND: skfemntv
+        run: PYTHONPATH=scikit-topt poetry run pytest -q scikit-topt/tests/test_mma_optimizer.py

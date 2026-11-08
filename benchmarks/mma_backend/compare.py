@@ -11,6 +11,8 @@ import platform
 import statistics
 import subprocess
 import sys
+import time
+import tomllib
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -44,6 +46,7 @@ def run_once(backend: str, args: argparse.Namespace) -> dict:
         "--filter-radius",
         str(args.filter_radius),
     ]
+    process_start = time.perf_counter()
     try:
         completed = subprocess.run(
             command,
@@ -59,6 +62,7 @@ def run_once(backend: str, args: argparse.Namespace) -> dict:
             "status": "timeout",
             "backend": backend,
             "timeout_seconds": args.timeout,
+            "process_seconds": time.perf_counter() - process_start,
             "stdout_tail": (exc.stdout or "")[-4000:],
             "stderr_tail": (exc.stderr or "")[-4000:],
         }
@@ -83,6 +87,7 @@ def run_once(backend: str, args: argparse.Namespace) -> dict:
 
     result = json.loads(payload)
     result["return_code"] = completed.returncode
+    result["process_seconds"] = time.perf_counter() - process_start
     if completed.stderr:
         result["stderr_tail"] = completed.stderr[-4000:]
     return result
@@ -90,8 +95,8 @@ def run_once(backend: str, args: argparse.Namespace) -> dict:
 
 def summarize(results: dict[str, list[dict]]) -> list[str]:
     lines = [
-        "backend      ok/repeats   median optimize (s)   median MMA adapter (s)   median compliance   median |volume error|",
-        "------------ -----------  -------------------  ----------------------  -----------------  ---------------------",
+        "backend      ok/repeats   median optimize (s)   median process (s)   median MMA adapter (s)   median compliance   median |volume error|",
+        "------------ -----------  -------------------  ------------------  ----------------------  -----------------  ---------------------",
     ]
     for backend, runs in results.items():
         successful = [run for run in runs if run.get("status") == "success"]
@@ -110,6 +115,7 @@ def summarize(results: dict[str, list[dict]]) -> list[str]:
         lines.append(
             f"{backend:<12} {len(successful)}/{len(runs):<9}  "
             f"{statistics.median(r['optimization_seconds'] for r in successful):>19.3f}  "
+            f"{statistics.median(r['process_seconds'] for r in successful):>18.3f}  "
             f"{statistics.median(r['mma_adapter_update_seconds'] for r in successful):>22.3f}  "
             f"{statistics.median(r['compliance'] for r in successful):>17.6g}  "
             f"{statistics.median(abs(r['volume_error']) for r in successful):>21.3g}"
@@ -124,6 +130,23 @@ def summarize(results: dict[str, list[dict]]) -> list[str]:
     else:
         lines.append("End-to-end speedup: unavailable until both backends complete successfully.")
     return lines
+
+
+def native_source_info() -> dict:
+    native_root = ROOT / "packages/scikit-fem-native"
+    try:
+        version = tomllib.loads(
+            (native_root / "pyproject.toml").read_text(encoding="utf-8")
+        )["project"]["version"]
+        commit = subprocess.run(
+            ["git", "-C", str(native_root), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+    except (OSError, KeyError, subprocess.CalledProcessError):
+        return {"available": False}
+    return {"available": True, "version": version, "commit": commit}
 
 
 def main() -> int:
@@ -165,6 +188,7 @@ def main() -> int:
         "created_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         "python": sys.version,
         "platform": platform.platform(),
+        "native_backend_source": native_source_info(),
         "configuration": {
             "backends": args.backends,
             "mesh_size": args.mesh_size,
