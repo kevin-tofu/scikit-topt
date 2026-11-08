@@ -213,10 +213,14 @@ class MMA_Optimizer(common_density.DensityMethod):
             target_error = min(
                 current_error, cfg.volume_constraint_tolerance
             )
+            correction_tolerance = max(
+                0.1 * cfg.volume_constraint_tolerance, 1e-12
+            )
             alpha_lower, alpha_upper = 0.0, 1.0
+            alpha_solution = None
             for _ in range(40):
                 alpha = 0.5 * (alpha_lower + alpha_upper)
-                trial = x0 + alpha * (x_new - x0)
+                trial = x0 + alpha * (result.x - x0)
                 error = self._volume_value(
                     trial,
                     state.rho,
@@ -230,7 +234,15 @@ class MMA_Optimizer(common_density.DensityMethod):
                     alpha_lower = alpha
                 else:
                     alpha_upper = alpha
-            x_new = x0 + alpha_upper * (x_new - x0)
+                if (
+                    error <= target_error
+                    and target_error - error <= correction_tolerance
+                ):
+                    alpha_solution = alpha
+                    break
+            if alpha_solution is None:
+                alpha_solution = alpha_upper
+            x_new = x0 + alpha_solution * (result.x - x0)
 
         rho_design_eles[:] = x_new
         np.divide(

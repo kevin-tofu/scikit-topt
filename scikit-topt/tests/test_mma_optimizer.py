@@ -44,7 +44,7 @@ def test_mma_one_step_is_comparable_to_oc():
         assert np.isfinite(mma_result.compliance)
         assert oc_result.compliance > 0.0
         assert mma_result.compliance > 0.0
-        assert abs(mma_result.vol_error) < 1e-3
+        assert abs(mma_result.vol_error) < mma_cfg.volume_constraint_tolerance
         assert np.max(np.abs(
             mma._state.rho[mma.tsk.design_elements] - 0.8
         )) > 1e-6

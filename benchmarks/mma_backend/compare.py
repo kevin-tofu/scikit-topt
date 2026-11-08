@@ -39,12 +39,16 @@ def run_once(backend: str, args: argparse.Namespace) -> dict:
         str(args.mesh_size),
         "--iterations",
         str(args.iterations),
+        "--record-times",
+        str(args.record_times),
         "--volume-fraction",
         str(args.volume_fraction),
         "--move-limit",
         str(args.move_limit),
         "--filter-radius",
         str(args.filter_radius),
+        "--solver-option",
+        args.solver_option,
     ]
     process_start = time.perf_counter()
     try:
@@ -154,10 +158,16 @@ def main() -> int:
     parser.add_argument("--backends", nargs="+", default=["skfem", "skfemntv"])
     parser.add_argument("--mesh-size", type=float, default=0.5)
     parser.add_argument("--iterations", type=int, default=10)
+    parser.add_argument("--record-times", type=int, default=1)
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--volume-fraction", type=float, default=0.8)
     parser.add_argument("--move-limit", type=float, default=0.2)
     parser.add_argument("--filter-radius", type=float, default=0.1)
+    parser.add_argument(
+        "--solver-option",
+        choices=("spsolve", "cg_pyamg"),
+        default="spsolve",
+    )
     parser.add_argument("--timeout", type=float, default=900.0)
     parser.add_argument(
         "--output",
@@ -166,8 +176,8 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    if args.repeats < 1 or args.iterations < 1:
-        parser.error("--repeats and --iterations must be positive")
+    if args.repeats < 1 or args.iterations < 1 or args.record_times < 1:
+        parser.error("--repeats, --iterations, and --record-times must be positive")
     unknown = set(args.backends) - {"skfem", "skfemntv"}
     if unknown:
         parser.error(f"unknown backend(s): {', '.join(sorted(unknown))}")
@@ -193,10 +203,12 @@ def main() -> int:
             "backends": args.backends,
             "mesh_size": args.mesh_size,
             "iterations": args.iterations,
+            "record_times": args.record_times,
             "repeats": args.repeats,
             "volume_fraction": args.volume_fraction,
             "move_limit": args.move_limit,
             "filter_radius": args.filter_radius,
+            "solver_option": args.solver_option,
         },
         "results": results,
     }

@@ -20,6 +20,13 @@ def run_case(args: argparse.Namespace) -> dict:
 
     backend = sktopt.skfem_loader.backend
     update_timing = {"seconds": 0.0, "calls": 0}
+    mma_step_timing = {
+        "seconds": 0.0,
+        "calls": 0,
+        "dual_iterations": [],
+        "dual_success": [],
+    }
+    volume_eval_timing = {"seconds": 0.0, "calls": 0}
     original_rho_update = MMA_Optimizer.rho_update
 
     def timed_rho_update(self, *call_args, **call_kwargs):
@@ -38,7 +45,7 @@ def run_case(args: argparse.Namespace) -> dict:
         cfg = MMA_Config(
             dst_path=dst_path,
             max_iters=args.iterations,
-            record_times=args.iterations,
+            record_times=args.record_times,
             p=sktopt.tools.SchedulerConfig.constant(target_value=3.0),
             vol_frac=sktopt.tools.SchedulerConfig.constant(
                 target_value=args.volume_fraction
@@ -50,9 +57,34 @@ def run_case(args: argparse.Namespace) -> dict:
             filter_radius=sktopt.tools.SchedulerConfig.constant(
                 target_value=args.filter_radius
             ),
+            solver_option=args.solver_option,
             export_img=False,
         )
         optimizer = MMA_Optimizer(cfg, task)
+        original_mma_step = optimizer._mma.step
+
+        def timed_mma_step(*call_args, **call_kwargs):
+            start = time.perf_counter()
+            result = original_mma_step(*call_args, **call_kwargs)
+            mma_step_timing["seconds"] += time.perf_counter() - start
+            mma_step_timing["calls"] += 1
+            mma_step_timing["dual_iterations"].append(result.dual_iterations)
+            mma_step_timing["dual_success"].append(result.dual_success)
+            return result
+
+        optimizer._mma.step = timed_mma_step
+
+        original_volume_value = optimizer._volume_value
+
+        def timed_volume_value(*call_args, **call_kwargs):
+            start = time.perf_counter()
+            try:
+                return original_volume_value(*call_args, **call_kwargs)
+            finally:
+                volume_eval_timing["seconds"] += time.perf_counter() - start
+                volume_eval_timing["calls"] += 1
+
+        optimizer._volume_value = timed_volume_value
         optimizer.parameterize()
         setup_seconds = time.perf_counter() - setup_start
 
@@ -62,6 +94,13 @@ def run_case(args: argparse.Namespace) -> dict:
 
         final = optimizer.recorder.as_object_latest()
         density = optimizer._state.rho[optimizer.tsk.design_elements]
+        section_timings = {
+            stat.name: {
+                "total_seconds": stat.total,
+                "calls": stat.count,
+            }
+            for stat in optimizer.timer.stats()
+        }
         result = {
             "status": "success",
             "backend": backend,
@@ -73,6 +112,13 @@ def run_case(args: argparse.Namespace) -> dict:
             "optimization_seconds": optimization_seconds,
             "mma_adapter_update_seconds": update_timing["seconds"],
             "mma_adapter_update_calls": update_timing["calls"],
+            "mma_step_seconds": mma_step_timing["seconds"],
+            "mma_step_calls": mma_step_timing["calls"],
+            "mma_dual_iterations": mma_step_timing["dual_iterations"],
+            "mma_dual_success": mma_step_timing["dual_success"],
+            "volume_value_evaluation_seconds": volume_eval_timing["seconds"],
+            "volume_value_evaluation_calls": volume_eval_timing["calls"],
+            "section_timings": section_timings,
             "compliance": float(final.compliance),
             "volume_error": float(final.vol_error),
             "kkt_residual": float(optimizer.kkt_residual),
@@ -86,9 +132,15 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mesh-size", type=float, required=True)
     parser.add_argument("--iterations", type=int, required=True)
+    parser.add_argument("--record-times", type=int, default=1)
     parser.add_argument("--volume-fraction", type=float, required=True)
     parser.add_argument("--move-limit", type=float, required=True)
     parser.add_argument("--filter-radius", type=float, required=True)
+    parser.add_argument(
+        "--solver-option",
+        choices=("spsolve", "cg_pyamg"),
+        default="spsolve",
+    )
     args = parser.parse_args()
 
     try:
