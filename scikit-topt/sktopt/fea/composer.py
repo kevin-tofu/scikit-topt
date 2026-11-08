@@ -7,7 +7,7 @@ from numba import njit, prange
 
 from sktopt.skfem_loader import skfem
 from sktopt.skfem_loader import Basis, asm
-from sktopt.skfem_loader import dot, ddot, sym_grad, trace, eye, grad
+from sktopt.skfem_loader import dot, ddot, sym_grad, div, trace, eye, grad
 from sktopt.skfem_loader import BilinearForm
 from sktopt.skfem_loader import transpose
 from sktopt.skfem_loader import lame_parameters
@@ -92,13 +92,13 @@ def assemble_stiffness_matrix(
     @BilinearForm
     def stiffness_form(u, v, w):
         # sym_grad(u) is the strain tensor ε(u) at integration points
-        # trace(sym_grad(u)) is the volumetric strain (divergence of u)
+        # The trace of the strain is the displacement divergence.
         strain_u = sym_grad(u)
         strain_v = sym_grad(v)
-        # λ * tr(ε(u)) * tr(ε(v))
-        term_volumetric = lam * trace(strain_u) * trace(strain_v)
+        # λ * div(u) * div(v)
+        term_volumetric = (div(u) * div(v)) * lam
         # 2μ * (ε(u) : ε(v))
-        term_dev = 2.0 * mu * ddot(strain_u, strain_v)
+        term_dev = ddot(strain_u, strain_v) * (2.0 * mu)
         return term_volumetric + term_dev  # integrand for stiffness
     # 4. Assemble the stiffness matrix using the basis
     K = asm(stiffness_form, basis)
