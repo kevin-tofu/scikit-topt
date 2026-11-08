@@ -127,7 +127,13 @@ class MMA_Optimizer(common_density.DensityMethod):
                     projection_derivative,
                     out=volume_gradient_full,
                 )
-                volume_gradient = self.filter.gradient(volume_gradient_full)
+                # The Helmholtz sensitivity filter clips positive inputs to
+                # zero because compliance sensitivities are nonpositive.
+                # Negating before and after filtering preserves the positive
+                # volume-constraint gradient through that API.
+                volume_gradient = -self.filter.gradient(
+                    -volume_gradient_full
+                )
                 grad[:] = volume_gradient[design]
             return float(volume - vol_frac)
 

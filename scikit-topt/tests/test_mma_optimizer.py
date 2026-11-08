@@ -10,7 +10,9 @@ def _shared_config(dst_path):
     schedule = sktopt.tools.SchedulerConfig
     return {
         "dst_path": dst_path,
-        "max_iters": 1,
+        # Compare the objective after one completed density update.  The
+        # first recorded compliance is evaluated before the first update.
+        "max_iters": 2,
         "record_times": 1,
         "p": schedule.constant(target_value=3.0),
         "vol_frac": schedule.constant(target_value=0.8),
@@ -45,7 +47,8 @@ def test_mma_one_step_is_comparable_to_oc():
         assert np.isfinite(mma_result.compliance)
         assert oc_result.compliance > 0.0
         assert mma_result.compliance > 0.0
-        assert abs(mma_result.vol_error) < 5e-2
+        assert abs(mma_result.vol_error) < 1e-3
+        assert mma_result.rho_change_max > 1e-6
         assert max(oc_result.compliance, mma_result.compliance) / min(
             oc_result.compliance, mma_result.compliance
-        ) < 10.0
+        ) < 1.2
