@@ -31,6 +31,14 @@ def node_to_element_density(mesh, rho_node):
     return np.mean(rho_node[mesh.t], axis=0)
 
 
+def node_to_element_density_adjoint(mesh, v_elem):
+    n_nodes = mesh.p.shape[1]
+    n_loc = mesh.t.shape[0]
+    v_node = np.zeros(n_nodes)
+    np.add.at(v_node, mesh.t.T.ravel(), np.repeat(v_elem / n_loc, n_loc))
+    return v_node
+
+
 def element_to_node_density_averaging(
     mesh: skfem.Mesh,
     elements_volume: np.ndarray,
@@ -58,6 +66,28 @@ def element_to_node_density_averaging(
     wsum[wsum == 0.0] = 1.0
     rho_node /= wsum
     return rho_node
+
+
+def element_to_node_density_averaging_adjoint(
+    mesh: skfem.Mesh,
+    elements_volume: np.ndarray,
+    v_node: np.ndarray,
+    design_mask: np.ndarray | None = None,
+    weighted: bool = True,
+) -> np.ndarray:
+    t = mesh.t.T
+    if design_mask is None:
+        design_mask = np.ones(len(t), dtype=bool)
+
+    weights = elements_volume if weighted else np.ones(len(t))
+    wsum = np.zeros(mesh.p.shape[1])
+    for e, nodes in enumerate(t):
+        wsum[nodes] += weights[e]
+    wsum[wsum == 0.0] = 1.0
+
+    grad_elem = weights * np.sum(v_node[t] / wsum[t], axis=1)
+    grad_elem[~design_mask] = 0.0
+    return grad_elem
 
 
 #
@@ -235,6 +265,41 @@ class HelmholtzFilterNodal(BaseFilter):
         # print("v_elem_filtered:min/max", v_elem_filtered.min(), v_elem_filtered.max())
         v_elem_filtered = np.minimum(v_elem_filtered, 0.0)
         return v_elem_filtered
+
+    def adjoint(self, v_ele: np.ndarray) -> np.ndarray:
+        basis = skfem.Basis(self.mesh, infer_element_from_mesh(self.mesh))
+
+        @skfem.BilinearForm
+        def a(u, v, w):
+            return u * v + (self.radius ** 2) * dot(grad(u), grad(v))
+
+        @skfem.BilinearForm
+        def m(u, v, w):
+            return u * v
+
+        A = skfem.asm(a, basis).tocsr()
+        M = skfem.asm(m, basis).tocsr()
+
+        if self.design_mask is None:
+            fixed_nodes = np.array([], dtype=int)
+        else:
+            fixed_nodes = np.unique(self.mesh.t[:, ~self.design_mask].ravel())
+        free_nodes = np.setdiff1d(np.arange(self.mesh.p.shape[1]), fixed_nodes)
+
+        v_node = node_to_element_density_adjoint(self.mesh, v_ele)
+        lambda_node = np.zeros(self.mesh.p.shape[1])
+        if free_nodes.size > 0:
+            A_ff = A[free_nodes][:, free_nodes]
+            lambda_node[free_nodes] = spsolve(A_ff.T, v_node[free_nodes])
+
+        rho_node_grad = M.T @ lambda_node
+        return element_to_node_density_averaging_adjoint(
+            self.mesh,
+            self.elements_volume,
+            rho_node_grad,
+            design_mask=self.design_mask,
+            weighted=True,
+        )
 
 
 def test_main():
