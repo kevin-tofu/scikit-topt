@@ -1,4 +1,4 @@
-"""Density optimization adapter for the standalone :mod:`mmapy` solver."""
+"""Density optimization adapter for the standalone :mod:`mmahelpy` solver."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import Protocol
 
 import numpy as np
 from numpy.typing import ArrayLike
-from mmapy import MMA, MMAOptions, MMAResult
+from mmahelpy import MMA, MMAOptions, MMAResult
 
 from sktopt.core import projection
 from sktopt.core.optimizers import common_density
@@ -51,7 +51,7 @@ class MMA_Config(common_density.DensityMethod_OC_Config):
 
 
 class MMA_Optimizer(common_density.DensityMethod):
-    """Density optimizer backed by the reusable, stateful ``mmapy.MMA``."""
+    """Density optimizer backed by the reusable, stateful ``mmahelpy.MMA``."""
 
     exact_filter_gradient = True
 
