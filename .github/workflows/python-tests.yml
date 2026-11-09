@@ -12,12 +12,23 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
-        # python-version: ["3.11", "3.12", "3.13"]
+        include:
+          - os: ubuntu-latest
+            python-version: "3.10"
+          - os: ubuntu-latest
+            python-version: "3.11"
+          - os: ubuntu-latest
+            python-version: "3.12"
+          - os: ubuntu-latest
+            python-version: "3.13"
+          - os: windows-latest
+            python-version: "3.12"
+          - os: macos-latest
+            python-version: "3.12"
 
     steps:
       - uses: actions/checkout@v4
@@ -25,28 +36,32 @@ jobs:
           submodules: recursive
 
       - name: Install system dependencies (OpenGL for gmsh)
+        if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libglu1-mesa
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Set up Poetry
-        uses: abatilo/actions-poetry@v2
-        with:
-          poetry-version: "2.5.1"
+        run: python -m pip install poetry==2.5.1
 
       - name: Install dependencies
         run: poetry install
 
       - name: Run tests with coverage
-        run: PYTHONPATH=scikit-topt poetry run pytest scikit-topt/tests --cov=sktopt --cov-report=xml
+        env:
+          PYTHONPATH: scikit-topt
+        run: poetry run pytest scikit-topt/tests --cov=sktopt --cov-report=xml
 
       - name: Run scikit-fem-native compatibility tests
-        run: PYTHONPATH=scikit-topt poetry run pytest packages/scikit-fem-native/tests
+        env:
+          PYTHONPATH: scikit-topt
+        run: poetry run pytest packages/scikit-fem-native/tests
 
       - name: Verify MMA with the native FEM backend
         env:
           SKTOPT_FEM_BACKEND: skfemntv
-        run: PYTHONPATH=scikit-topt poetry run pytest -q scikit-topt/tests/test_mma_optimizer.py
+          PYTHONPATH: scikit-topt
+        run: poetry run pytest -q scikit-topt/tests/test_mma_optimizer.py
